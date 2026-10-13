@@ -47,6 +47,6 @@
 }
 
 /* Loading / empty state vertical centering */
-.cardCreatorPanel > [data-cell-id='empty-state'] {
+.cardCreatorPanel > [data-tihoka-id='empty-state'] {
   justify-content: center;
 }

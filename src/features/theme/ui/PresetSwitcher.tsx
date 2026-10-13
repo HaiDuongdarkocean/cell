@@ -8,7 +8,7 @@ interface PresetSwitcherProps {
   /** Called when selection changes. */
   onChange: (preset: PresetName) => void;
   /** Optional test id. */
-  'data-cell-id'?: string;
+  'data-tihoka-id'?: string;
 }
 
 const OPTIONS: ReadonlyArray<{ value: PresetName; label: MessageKey }> = [
@@ -19,14 +19,14 @@ const OPTIONS: ReadonlyArray<{ value: PresetName; label: MessageKey }> = [
 ];
 
 /** Preset switcher — choose a Liquid Glass palette. */
-export function PresetSwitcher({ value, onChange, 'data-cell-id': dataCellId }: PresetSwitcherProps): React.JSX.Element {
+export function PresetSwitcher({ value, onChange, 'data-tihoka-id': dataTihokaId }: PresetSwitcherProps): React.JSX.Element {
   return (
     <Select
       value={value}
       options={OPTIONS.map((o) => ({ value: o.value, label: t(o.label) }))}
       onChange={(next) => onChange(next as PresetName)}
       aria-label={t('theme.preset.aria')}
-      data-cell-id={dataCellId}
+      data-tihoka-id={dataTihokaId}
     />
   );
 }

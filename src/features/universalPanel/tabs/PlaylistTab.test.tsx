@@ -46,7 +46,7 @@ describe('PlaylistTab', () => {
     let counter = 0;
     URL.createObjectURL = jest.fn(() => `blob:preview-${++counter}`);
     URL.revokeObjectURL = jest.fn();
-    (globalThis as { __cellSendMessage?: typeof sendMessage }).__cellSendMessage = sendMessage;
+    (globalThis as { __TihokaSendMessage?: typeof sendMessage }).__TihokaSendMessage = sendMessage;
 
     sendMessage.mockReset().mockImplementation((message: unknown) => {
       const type = (message as { type: string }).type;
@@ -58,7 +58,7 @@ describe('PlaylistTab', () => {
 
   afterAll(() => {
     delete (global as { chrome?: unknown }).chrome;
-    delete (globalThis as { __cellSendMessage?: typeof sendMessage }).__cellSendMessage;
+    delete (globalThis as { __TihokaSendMessage?: typeof sendMessage }).__TihokaSendMessage;
   });
 
   async function renderLoadedTab(isActive = true) {

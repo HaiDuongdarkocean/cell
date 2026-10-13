@@ -80,7 +80,7 @@ export function ProfileForm({
       aria-label={isEdit ? t('settings.profiles.form.editAria') : t('settings.profiles.form.addAria')}
     >
       {errors.length > 0 && (
-        <div className={styles.formError} role="alert" data-cell-id="language-profile-validation">
+        <div className={styles.formError} role="alert" data-tihoka-id="language-profile-validation">
           {errors.join(' ')}
         </div>
       )}
@@ -153,6 +153,9 @@ export function ProfileForm({
                 className={styles.choice}
                 onClick={() => setStartFrom('clean')}
               >
+                {startFrom === 'clean' && (
+                  <span className={styles.choiceCheck}><Icon name="check" size="xs" /></span>
+                )}
                 <span className={styles.choiceTitle}>{t('settings.profiles.form.clean')}</span>
                 <span className={styles.choiceDesc}>{t('settings.profiles.form.cleanDesc')}</span>
               </button>
@@ -164,6 +167,9 @@ export function ProfileForm({
                 className={styles.choice}
                 onClick={() => setStartFrom('copy')}
               >
+                {startFrom === 'copy' && (
+                  <span className={styles.choiceCheck}><Icon name="check" size="xs" /></span>
+                )}
                 <span className={styles.choiceTitle}>{t('settings.profiles.form.copy', [activeName])}</span>
                 <span className={styles.choiceDesc}>{t('settings.profiles.form.copyDesc')}</span>
               </button>
@@ -180,8 +186,7 @@ export function ProfileForm({
           type="button"
           size="sm"
           onClick={save}
-          disabled={!isEdit && !target}
-          data-cell-id="save-language-profile"
+          data-tihoka-id="save-language-profile"
         >
           {isEdit ? t('settings.profiles.form.save') : t('settings.profiles.form.add')}
         </Button>

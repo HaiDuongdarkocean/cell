@@ -24,8 +24,8 @@ function makeProfile(id: string, target: string, order: number): LanguageProfile
     subtitleOverlayAutoLoad: true,
     subtitleOverlayAutoLoadAsr: false,
     subtitleOverlayAutoTranslate: false,
-    showReadings: false,
-    showWordTranslations: false,
+    readingDisplay: 'off',
+    glossDisplay: 'off',
     dictionaryPopup: DEFAULT_SETTINGS.dictionaryPopup!,
   };
 }

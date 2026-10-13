@@ -1,9 +1,10 @@
-/* Natural-width segmented capsule on desktop; mobile expands it across the
-   available header space with an even split. */
+/* The capsule fills all remaining header width at every breakpoint; halves
+   split it evenly. */
 .capsule {
   display: inline-flex;
   align-items: center;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 0;
   gap: var(--space-0);
   height: var(--universal-panel-tokenize-height);
   border: var(--border-width-hairline) solid var(--color-border);
@@ -15,23 +16,12 @@
   box-shadow: var(--shadow-sm);
 }
 
-/* Halves hug their icon on desktop; on mobile they share the capsule width. */
 .capsule .half {
+  flex: 1;
+  min-width: 0;
   border-radius: var(--radius-none);
   height: 100%;
   padding: 0 var(--space-3);
-}
-
-@media (max-width: 839px) {
-  .capsule {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .capsule .half {
-    flex: 1;
-    min-width: 0;
-  }
 }
 
 @media (hover: hover) {

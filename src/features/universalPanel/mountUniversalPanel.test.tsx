@@ -13,10 +13,10 @@ interface MockSettingsDialogContentProps {
 
 jest.mock('@/features/settings/ui/SettingsDialogContent', () => ({
   SettingsDialogContent: ({ settings, onChange }: MockSettingsDialogContentProps) => (
-    <div data-cell-id="settings-dialog-content">
+    <div data-tihoka-id="settings-dialog-content">
       <button
         type="button"
-        data-cell-id="settings-first-control"
+        data-tihoka-id="settings-first-control"
         onClick={() => onChange?.(settings as Settings)}
       >
         First control
@@ -28,33 +28,33 @@ jest.mock('@/features/settings/ui/SettingsDialogContent', () => ({
 jest.mock('./tabs/DictionaryTab', () => ({
   DictionaryTab: (props: { initialTerm?: string; prefill?: { term?: string } | null }) => (
     <div
-      data-cell-id="dictionary-tab"
+      data-tihoka-id="dictionary-tab"
       data-initial-term={props.initialTerm ?? ''}
       data-prefill-term={props.prefill?.term ?? ''}
     >
-      <div data-cell-id="dictionary-panel">Dictionary panel</div>
+      <div data-tihoka-id="dictionary-panel">Dictionary panel</div>
     </div>
   ),
 }));
 
 jest.mock('@/features/vocabulary/ui/VocabularyTab', () => ({
   VocabularyTab: (props: { langCode: string; onLookup: (term: string) => void }) => (
-    <div data-cell-id="vocabulary-tab" data-lang={props.langCode}>
-      <button type="button" data-cell-id="vocabulary-lookup-trigger" onClick={() => props.onLookup('apple')}>lookup</button>
+    <div data-tihoka-id="vocabulary-tab" data-lang={props.langCode}>
+      <button type="button" data-tihoka-id="vocabulary-lookup-trigger" onClick={() => props.onLookup('apple')}>lookup</button>
     </div>
   ),
 }));
 
 jest.mock('./tabs/PlaylistTab', () => ({
   PlaylistTab: (props: { isActive: boolean }) => (
-    <div data-cell-id="playlist-tab" data-is-active={String(props.isActive)} />
+    <div data-tihoka-id="playlist-tab" data-is-active={String(props.isActive)} />
   ),
 }));
 
 jest.mock('@/features/sessionRecap', () => ({
   ...jest.requireActual('@/features/sessionRecap'),
   RecapTab: (props: { isActive: boolean }) => (
-    <div data-cell-id="recap-tab" data-is-active={String(props.isActive)} />
+    <div data-tihoka-id="recap-tab" data-is-active={String(props.isActive)} />
   ),
 }));
 
@@ -94,10 +94,10 @@ beforeAll(() => {
 });
 
 function getByTestId(testId: string): HTMLElement {
-  const host = document.getElementById('cell-universal-panel-host');
+  const host = document.getElementById('Tihoka-universal-panel-host');
   const root = host?.shadowRoot ?? host;
-  const element = root?.querySelector(`[data-cell-id="${testId}"]`) as HTMLElement | null;
-  if (!element) throw new Error(`Unable to find element by: [data-cell-id="${testId}"]`);
+  const element = root?.querySelector(`[data-tihoka-id="${testId}"]`) as HTMLElement | null;
+  if (!element) throw new Error(`Unable to find element by: [data-tihoka-id="${testId}"]`);
   return element;
 }
 

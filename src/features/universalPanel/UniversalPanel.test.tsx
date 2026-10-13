@@ -11,9 +11,9 @@ const TOKENIZE_OFF: TokenizePanelState = { enabled: false, showStatus: false, sh
 const TOKENIZE_ON: TokenizePanelState = { enabled: true, showStatus: true, showFrequency: true, subtitleEnabled: false };
 
 describe('UniversalPanel component', () => {
-  const dictionaryPanel = <div data-cell-id="dict-content">Dictionary Content</div>;
-  const settingsPanel = <div data-cell-id="settings-content">Settings Content</div>;
-  const studyModesPanel = <div data-cell-id="study-modes-content">Study Modes</div>;
+  const dictionaryPanel = <div data-tihoka-id="dict-content">Dictionary Content</div>;
+  const settingsPanel = <div data-tihoka-id="settings-content">Settings Content</div>;
+  const studyModesPanel = <div data-tihoka-id="study-modes-content">Study Modes</div>;
 
   beforeEach(() => {
     document.body.innerHTML = '';
@@ -99,7 +99,7 @@ describe('UniversalPanel component', () => {
   });
 
   it('keeps the recap tab mounted across tab switches', () => {
-    const recapPanel = <div data-cell-id="recap-content">Recap</div>;
+    const recapPanel = <div data-tihoka-id="recap-content">Recap</div>;
     const props = {
       isOpen: true,
       onTabChange: jest.fn(),
@@ -252,8 +252,8 @@ describe('UniversalPanel component', () => {
         tokenizeState={TOKENIZE_OFF}
         onToggleTokenize={jest.fn()}
         dictionaryPanel={
-          <Dialog open onOpenChange={onDialogChange} data-cell-id="inner-dialog">
-            <input data-cell-id="inner-input" />
+          <Dialog open onOpenChange={onDialogChange} data-tihoka-id="inner-dialog">
+            <input data-tihoka-id="inner-input" />
           </Dialog>
         }
         settingsPanel={settingsPanel}

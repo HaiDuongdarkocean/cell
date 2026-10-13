@@ -34,8 +34,8 @@ function makeProfile(id: string, target: string, order: number): LanguageProfile
     subtitleOverlayAutoLoad: true,
     subtitleOverlayAutoLoadAsr: false,
     subtitleOverlayAutoTranslate: false,
-    showReadings: false,
-    showWordTranslations: false,
+    readingDisplay: 'off',
+    glossDisplay: 'off',
     dictionaryPopup: DEFAULT_SETTINGS.dictionaryPopup!,
   };
 }
@@ -87,6 +87,7 @@ function makeView(overrides: Partial<SyncStatusView> = {}): SyncStatusView {
       systemConnection: CONN_A,
       lastAppliedAt: 1700000000000,
     },
+    history: [],
     ...overrides,
   };
 }
@@ -113,6 +114,38 @@ describe('SyncPanel', () => {
     );
   });
 
+  it('shows an expandable progress note while connecting', async () => {
+    mocked.getSyncStatus.mockResolvedValue(
+      makeView({
+        directory: { connections: [], bindings: [], systemConnection: null, lastAppliedAt: null },
+      }),
+    );
+    let resolveConnect: (value: unknown) => void = () => undefined;
+    mocked.connectProviderAccount.mockImplementation(
+      () => new Promise((resolve) => { resolveConnect = resolve; }) as never,
+    );
+    render(<SyncPanel settings={makeSettings()} />);
+    fireEvent.click(
+      await screen.findByRole('button', { name: /connect google drive/i }),
+    );
+    const pending = await screen.findByRole('button', {
+      name: /waiting for google sign-in/i,
+    });
+    expect(
+      screen.queryByText(/other drive files are never touched/i),
+    ).not.toBeInTheDocument();
+    fireEvent.click(pending);
+    expect(
+      await screen.findByText(/other drive files are never touched/i),
+    ).toBeInTheDocument();
+    resolveConnect({});
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: /waiting for google sign-in/i }),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
   it('renders accounts with the system badge and last sync time', async () => {
     render(<SyncPanel settings={makeSettings()} />);
     expect((await screen.findAllByText('a@example.com')).length).toBeGreaterThan(0);
@@ -132,6 +165,9 @@ describe('SyncPanel', () => {
     mocked.setScopeBinding.mockResolvedValue(null);
     render(<SyncPanel settings={makeSettings()} />);
     await screen.findAllByText('a@example.com');
+    fireEvent.click(
+      screen.getByRole('button', { name: /advanced/i }),
+    );
     const select = screen.getByRole('button', { name: /sync destination for english/i });
     fireEvent.click(select);
     fireEvent.click(await screen.findByRole('option', { name: /only on this device/i }));
@@ -172,6 +208,10 @@ describe('SyncPanel', () => {
       }),
     );
     render(<SyncPanel settings={makeSettings()} />);
+    await screen.findAllByText('a@example.com');
+    fireEvent.click(
+      screen.getByRole('button', { name: /advanced/i }),
+    );
     const select = await screen.findByRole('button', {
       name: /sync destination for english/i,
     });
@@ -276,6 +316,10 @@ describe('SyncPanel', () => {
       }),
     );
     render(<SyncPanel settings={makeSettings()} />);
+    await screen.findAllByText('a@example.com');
+    fireEvent.click(
+      screen.getByRole('button', { name: /advanced/i }),
+    );
     expect(await screen.findByText(/waiting for/i)).toBeInTheDocument();
   });
 

@@ -8,25 +8,25 @@ import { SettingsDialogContent } from './SettingsDialogContent';
 // this test stays focused on the Audio card merge (spec
 // fnc_audio-settings-pipeline — Task 5).
 jest.mock('./DictionaryPopupSettingsPanel', () => ({
-  DictionaryPopupSettingsPanel: () => <div data-cell-id="dictionary-popup-panel" />,
+  DictionaryPopupSettingsPanel: () => <div data-tihoka-id="dictionary-popup-panel" />,
 }));
 jest.mock('./LanguageProfilePanel', () => ({
-  LanguageProfilePanel: () => <div data-cell-id="language-profile-panel" />,
+  LanguageProfilePanel: () => <div data-tihoka-id="language-profile-panel" />,
 }));
 jest.mock('@/features/theme/ui/ThemePanel', () => ({
-  ThemePanel: () => <div data-cell-id="theme-panel" />,
+  ThemePanel: () => <div data-tihoka-id="theme-panel" />,
 }));
 jest.mock('@/features/dictionary/ui/ResourcesPanel', () => ({
   ResourcesPanel: (props: { langCode: string; activeProfileId?: string | null }) => (
     <div
-      data-cell-id="resources-panel"
+      data-tihoka-id="resources-panel"
       data-lang-code={props.langCode}
       data-active-profile={props.activeProfileId ?? ''}
     />
   ),
 }));
 jest.mock('@/features/tts/ui/TtsLanguagePanel', () => ({
-  TtsLanguagePanel: () => <div data-cell-id="tts-language-panel" />,
+  TtsLanguagePanel: () => <div data-tihoka-id="tts-language-panel" />,
 }));
 function renderContent(
   settings: Settings = DEFAULT_SETTINGS,
@@ -61,7 +61,7 @@ describe('SettingsDialogContent — resources ↔ profile binding', () => {
     } as Settings);
 
     const resourcesCard = container.querySelector('[data-section="resources"]');
-    expect(resourcesCard?.querySelector('[data-cell-id="resources-panel"]')).not.toBeInTheDocument();
+    expect(resourcesCard?.querySelector('[data-tihoka-id="resources-panel"]')).not.toBeInTheDocument();
     expect(screen.getByTestId('resources-goto-profiles')).toBeInTheDocument();
   });
 
@@ -72,7 +72,7 @@ describe('SettingsDialogContent — resources ↔ profile binding', () => {
       activeProfileId: 'p-en',
     } as Settings);
 
-    const panel = container.querySelector('[data-cell-id="resources-panel"]');
+    const panel = container.querySelector('[data-tihoka-id="resources-panel"]');
     expect(panel).toBeInTheDocument();
     expect(panel).toHaveAttribute('data-lang-code', 'en');
   });
@@ -87,7 +87,7 @@ describe('SettingsDialogContent — merged Audio card', () => {
     expect(audioCard).toHaveTextContent('Audio');
     // The merged AudioPanel body is rendered inside the Audio card.
     expect(
-      audioCard?.querySelector('[data-cell-id="audio-panel"]'),
+      audioCard?.querySelector('[data-tihoka-id="audio-panel"]'),
     ).toBeInTheDocument();
 
     expect(
@@ -131,6 +131,7 @@ describe('SettingsDialogContent — merged Audio card', () => {
     const onChange = jest.fn();
     renderContent(DEFAULT_SETTINGS, onChange);
 
+    fireEvent.click(screen.getByTestId('audio-advanced-toggle'));
     fireEvent.click(screen.getByTestId('audio-mode-fast'));
 
     expect(onChange).toHaveBeenCalledWith(
@@ -149,7 +150,7 @@ describe('SettingsDialogContent — merged Audio card', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Number of audios to autoplay' }),
     );
-    fireEvent.click(screen.getByRole('option', { name: '2' }));
+    fireEvent.click(screen.getByRole('option', { name: '2 times' }));
 
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -266,5 +267,65 @@ describe('SettingsDialogContent — nav orientation cutoff', () => {
     main.scrollTop = 200;
     fireEvent.scroll(main);
     expect(body).not.toHaveAttribute('data-nav-hidden');
+  });
+});
+
+describe('SettingsDialogContent — word display', () => {
+  it('renders reading and gloss selects with the current modes', () => {
+    const { container } = renderContent({
+      ...DEFAULT_SETTINGS,
+      readingDisplay: 'always',
+      glossDisplay: 'unknown',
+    } as Settings);
+
+    const section = container.querySelector('[data-section="wordDisplay"]');
+    expect(section).toBeInTheDocument();
+    const reading = section!.querySelector('[data-tihoka-id="reading-display-select"]');
+    const gloss = section!.querySelector('[data-tihoka-id="gloss-display-select"]');
+    expect(reading).toHaveTextContent('Always');
+    expect(gloss).toHaveTextContent('Unknown words');
+    expect(container.querySelector('[data-section-id="wordDisplay"]')).toBeInTheDocument();
+  });
+
+  it('writes the picked mode back through onChange', () => {
+    const { container, onChange } = renderContent();
+    const trigger = container
+      .querySelector('[data-tihoka-id="reading-display-select"]')
+      ?.querySelector('button');
+    fireEvent.click(trigger!);
+    fireEvent.click(screen.getByRole('option', { name: 'One new word' }));
+    expect(onChange).toHaveBeenCalledWith({ ...DEFAULT_SETTINGS, readingDisplay: 'i1' });
+  });
+
+  it('disables On hover while the dictionary popup owns hover, with a cross-link', () => {
+    const { container } = renderContent({
+      ...DEFAULT_SETTINGS,
+      dictionaryPopup: { ...DEFAULT_SETTINGS.dictionaryPopup!, triggerMode: 'hover' },
+    } as Settings);
+
+    const trigger = container
+      .querySelector('[data-tihoka-id="reading-display-select"]')
+      ?.querySelector('button');
+    fireEvent.click(trigger!);
+    expect(screen.getByRole('option', { name: 'On hover' })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByTestId('worddisplay-goto-dictionary-popup')).toBeInTheDocument();
+  });
+
+  it('keeps On hover enabled when the popup trigger is click', () => {
+    const { container } = renderContent();
+    const trigger = container
+      .querySelector('[data-tihoka-id="reading-display-select"]')
+      ?.querySelector('button');
+    fireEvent.click(trigger!);
+    expect(screen.getByRole('option', { name: 'On hover' })).not.toHaveAttribute('aria-disabled');
+    expect(screen.queryByTestId('worddisplay-goto-dictionary-popup')).not.toBeInTheDocument();
+  });
+
+  it('no longer shows the annotation toggles inside the Subtitles card', () => {
+    const { container } = renderContent();
+    const block = container.querySelector('[data-section="block"]');
+    expect(block).toBeInTheDocument();
+    expect(block).not.toHaveTextContent('Show readings');
+    expect(block).not.toHaveTextContent('Show word translations');
   });
 });

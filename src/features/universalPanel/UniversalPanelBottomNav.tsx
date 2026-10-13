@@ -13,7 +13,7 @@ export interface ToolAction {
   icon: 'library' | 'layers' | 'playRoundedRect';
   title: string;
   onClick: () => void;
-  'data-cell-id'?: string;
+  'data-tihoka-id'?: string;
 }
 
 export interface UniversalPanelBottomNavProps {
@@ -42,7 +42,7 @@ export function UniversalPanelBottomNav({
 
   return (
     <>
-      <nav className={`${styles.bottomNav} ${className ?? ''}`.trim()} aria-label={t('panel.nav.aria')} data-cell-id="universal-panel-bottom-nav">
+      <nav className={`${styles.bottomNav} ${className ?? ''}`.trim()} aria-label={t('panel.nav.aria')} data-tihoka-id="universal-panel-bottom-nav">
         {PANEL_BAR_TABS.map((tab) => {
           const isActive = activeTab === tab.key;
           return (
@@ -55,7 +55,7 @@ export function UniversalPanelBottomNav({
               className={styles.navItem}
               aria-current={isActive ? 'page' : undefined}
               onClick={() => onTabChange(tab.key)}
-              data-cell-id={`universal-panel-mobile-tab-${tab.key}`}
+              data-tihoka-id={`universal-panel-mobile-tab-${tab.key}`}
               leadingIcon={<Icon name={tab.icon} />}
             >
               {t(tab.shortLabel)}
@@ -71,7 +71,7 @@ export function UniversalPanelBottomNav({
           aria-expanded={isToolsOpen}
           aria-haspopup="dialog"
           onClick={() => setIsToolsOpen(true)}
-          data-cell-id="universal-panel-mobile-tools"
+          data-tihoka-id="universal-panel-mobile-tools"
           leadingIcon={<Icon name="layoutGrid" />}
         >
           {t('panel.tools.title')}
@@ -83,7 +83,7 @@ export function UniversalPanelBottomNav({
         onOpenChange={setIsToolsOpen}
         title={t('panel.tools.sheetTitle')}
         hideDragHandle
-        data-cell-id="universal-panel-tools-sheet"
+        data-tihoka-id="universal-panel-tools-sheet"
       >
         <div
           role="menu"
@@ -103,7 +103,7 @@ export function UniversalPanelBottomNav({
                 onTabChange(tab.key);
                 setIsToolsOpen(false);
               }}
-              data-cell-id={`universal-panel-mobile-tab-${tab.key}`}
+              data-tihoka-id={`universal-panel-mobile-tab-${tab.key}`}
             >
               {t(tab.label)}
             </MenuItem>
@@ -118,7 +118,7 @@ export function UniversalPanelBottomNav({
                 tool.onClick();
                 setIsToolsOpen(false);
               }}
-              data-cell-id={tool['data-cell-id']}
+              data-tihoka-id={tool['data-tihoka-id']}
             >
               {tool.title}
             </MenuItem>

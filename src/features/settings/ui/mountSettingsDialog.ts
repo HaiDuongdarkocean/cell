@@ -50,8 +50,8 @@ export function mountSettingsDialog(
     css: SHADOW_CSS,
   });
 
-  mount.host.id = 'cell-settings-dialog-host';
-  mount.host.className = 'js-cell-settings-dialog-host';
+  mount.host.id = 'Tihoka-settings-dialog-host';
+  mount.host.className = 'js-Tihoka-settings-dialog-host';
   mount.host.style.cssText =
     'position:fixed;inset:0;width:auto;height:auto;box-sizing:border-box;margin:0;padding:0;border:none;background:transparent;color:var(--color-text);font-size:var(--font-size-base);line-height:normal;isolation:isolate;z-index:var(--z-overlay-settings);pointer-events:none;overflow:hidden;transform:none;';
 

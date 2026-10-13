@@ -199,7 +199,10 @@ describe('SyncEngine.runCycle', () => {
     expect(journal.records.map((r) => r.key)).toEqual(['kv:settings/theme']);
     expect(await t.kv.get('session', SYNC_LOCK_STORAGE_KEY)).toBeUndefined();
     expect(engine.current.state).toBe('idle');
-    expect(t.statuses.map((s) => s.state)).toEqual(['running', 'idle']);
+    const transitions = t.statuses
+      .map((s) => s.state)
+      .filter((state, i, arr) => i === 0 || state !== arr[i - 1]);
+    expect(transitions).toEqual(['running', 'idle']);
   });
 
   it('does not acquire when a foreign live lock exists', async () => {

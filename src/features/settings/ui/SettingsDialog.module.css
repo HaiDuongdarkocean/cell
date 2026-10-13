@@ -43,18 +43,51 @@
   container-type: inline-size;
 }
 
-.shortcutField {
+.shortcutMasonry {
+  columns: 1;
+  column-gap: var(--space-4);
+}
+
+@container (min-width: 880px) {
+  .shortcutMasonry {
+    columns: 2;
+  }
+}
+
+.shortcutCard {
+  break-inside: avoid;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-surface-elevated);
+  border: var(--border-width-hairline) solid var(--color-divider);
   min-width: 0;
 }
 
-.shortcutInputWrap {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
+.shortcutGroup {
+  gap: 0;
 }
 
+.shortcutGroup > *:first-child {
+  margin-bottom: var(--space-1);
+}
+
+.shortcutField {
+  min-width: 0;
+  gap: var(--space-3);
+}
+
+.shortcutInputWrap {
+  flex: 0 0 auto;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Conflict badge — out of flow so the pill stays on the card's key rail. */
 .conflictDot {
-  flex-shrink: 0;
+  position: absolute;
+  inset-inline-end: calc(-1 * var(--space-0-5));
+  top: calc(-1 * var(--space-0-5));
   width: var(--space-2);
   height: var(--space-2);
   border-radius: var(--radius-pill);
@@ -82,4 +115,16 @@
 
 @media (prefers-reduced-motion: reduce) {
   .mainCol { scroll-behavior: auto; }
+}
+
+/* Embedded dictionary panel: fills the stretched lookup column in row mode
+   (column height = sections height) and stays viewport-bounded when the
+   columns stack; the integrated panel scrolls itself inside. */
+.lookupSurface {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 70dvh;
+  overflow: hidden;
 }

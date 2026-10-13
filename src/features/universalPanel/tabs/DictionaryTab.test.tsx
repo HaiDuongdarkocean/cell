@@ -16,9 +16,9 @@ jest.mock('@/features/cardCreator', () => ({
 
 jest.mock('./CardCreatorPanel', () => ({
   CardCreatorPanel: (props: { sourceLang: string; targetLang: string; context?: { term?: string } | null }) => (
-    <div data-cell-id="card-creator-panel" data-source-lang={props.sourceLang} data-target-lang={props.targetLang}>
+    <div data-tihoka-id="card-creator-panel" data-source-lang={props.sourceLang} data-target-lang={props.targetLang}>
       {props.context?.term ? (
-        <div data-cell-id="card-creator-prefill">{props.context.term}</div>
+        <div data-tihoka-id="card-creator-prefill">{props.context.term}</div>
       ) : (
         <div>No card selected</div>
       )}

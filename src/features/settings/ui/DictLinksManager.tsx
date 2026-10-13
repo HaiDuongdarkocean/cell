@@ -103,9 +103,9 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
       label={t('settings.dictionaryPopup.links.title')}
       description={t('settings.dictionaryPopup.links.desc')}
       className={styles.section}
-      data-cell-id="dict-links-manager"
+      data-tihoka-id="dict-links-manager"
       action={
-        <Button variant="outline" size="sm" onClick={openAdd} data-cell-id="dict-link-add">
+        <Button variant="outline" size="sm" onClick={openAdd} data-tihoka-id="dict-link-add">
           <Icon name="plus" size="xs" />
           {t('settings.dictionaryPopup.links.add')}
         </Button>
@@ -127,7 +127,7 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
             <div
               key={link.id}
               role="listitem"
-              data-cell-id={`${SLOT_PREFIX}${link.id}`}
+              data-tihoka-id={`${SLOT_PREFIX}${link.id}`}
               className={`${styles.slot} ${dragged ? styles.slotDragging : ''} ${drag?.settling ? styles.slotSettling : ''}`}
               style={drag
                 ? dragged
@@ -145,7 +145,7 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
                         aria-label={t('settings.dictionaryPopup.links.drag', [link.name])}
                         draggable={false}
                         className={styles.grip}
-                        data-cell-id={`dict-link-drag-${link.id}`}
+                        data-tihoka-id={`dict-link-drag-${link.id}`}
                         onPointerDown={(e) => beginDrag(i, link.id, e)}
                         onKeyDown={(e) => {
                           if (e.key === 'ArrowUp' && i > 0) {
@@ -174,7 +174,7 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
                           }}
                           onBlur={() => commitRename(link.id)}
                           aria-label={t('settings.dictionaryPopup.links.rename', [link.name])}
-                          data-cell-id={`dict-link-rename-${link.id}`}
+                          data-tihoka-id={`dict-link-rename-${link.id}`}
                         />
                       ) : (
                         <button
@@ -186,7 +186,7 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
                             setDraft(link.name);
                           }}
                           aria-label={t('settings.dictionaryPopup.links.rename', [link.name])}
-                          data-cell-id={`dict-link-name-${link.id}`}
+                          data-tihoka-id={`dict-link-name-${link.id}`}
                         >
                           <span className={styles.name}>{link.name}</span>
                         </button>
@@ -201,7 +201,7 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
                     shape="circle"
                     aria-label={t('settings.dictionaryPopup.links.edit', [link.name])}
                     onClick={() => openEdit(link)}
-                    data-cell-id={`dict-link-edit-${link.id}`}
+                    data-tihoka-id={`dict-link-edit-${link.id}`}
                   >
                     <Icon name="pencil" size="xs" />
                   </Button>
@@ -212,7 +212,7 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
                     className={styles.dangerBtn}
                     aria-label={t('settings.dictionaryPopup.links.delete', [link.name])}
                     onClick={() => setDeletingId(link.id)}
-                    data-cell-id={`dict-link-delete-${link.id}`}
+                    data-tihoka-id={`dict-link-delete-${link.id}`}
                   >
                     <Icon name="trash" size="xs" />
                   </Button>
@@ -225,7 +225,7 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
           <div
             className={styles.dropPlaceholder}
             style={{ top: drag.slotTop, height: drag.cardHeight }}
-            data-cell-id="dict-link-drag-placeholder"
+            data-tihoka-id="dict-link-drag-placeholder"
             aria-hidden="true"
           />
         )}
@@ -241,12 +241,12 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
             <Button variant="outline" onClick={closeEditor}>
               {t('settings.dictionaryPopup.links.cancel')}
             </Button>
-            <Button variant="primary" onClick={submitEditor} data-cell-id="dict-link-editor-save">
+            <Button variant="primary" onClick={submitEditor} data-tihoka-id="dict-link-editor-save">
               {editor?.id ? t('settings.dictionaryPopup.links.save') : t('settings.dictionaryPopup.links.add')}
             </Button>
           </>
         }
-        data-cell-id="dict-link-editor"
+        data-tihoka-id="dict-link-editor"
       >
         <div className={styles.editorBody}>
           <label className={styles.field}>
@@ -257,7 +257,7 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
               value={editor?.name ?? ''}
               onChange={(e) => setEditor((s) => s && { ...s, name: e.target.value })}
               autoFocus
-              data-cell-id="dict-link-editor-name"
+              data-tihoka-id="dict-link-editor-name"
             />
           </label>
           <label className={styles.field}>
@@ -275,7 +275,7 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
               value={editor?.urlTemplate ?? ''}
               onChange={(e) => setEditor((s) => s && { ...s, urlTemplate: e.target.value })}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submitEditor(); } }}
-              data-cell-id="dict-link-editor-url"
+              data-tihoka-id="dict-link-editor-url"
             />
           </label>
           {error === 'name' && (
@@ -297,12 +297,12 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
             <Button variant="outline" onClick={() => setDeletingId(null)}>
               {t('settings.dictionaryPopup.links.keep')}
             </Button>
-            <Button variant="destructive" onClick={confirmDelete} data-cell-id="dict-link-delete-confirm">
+            <Button variant="destructive" onClick={confirmDelete} data-tihoka-id="dict-link-delete-confirm">
               {t('settings.dictionaryPopup.links.delete', [deleting?.name ?? ''])}
             </Button>
           </>
         }
-        data-cell-id="dict-link-delete-dialog"
+        data-tihoka-id="dict-link-delete-dialog"
       >
         <Text as="p" color="secondary" className={styles.dialogText}>
           {t('settings.dictionaryPopup.links.deleteBody')}

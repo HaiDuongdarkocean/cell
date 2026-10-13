@@ -73,7 +73,7 @@ export function DictionaryTab({
   }, []);
 
   return (
-    <div className={styles.dictionaryTab} data-cell-id="dictionary-tab">
+    <div className={styles.dictionaryTab} data-tihoka-id="dictionary-tab">
       <div className={styles.leftPane}>
         <Dictionary
           variant="integrated"
@@ -92,7 +92,7 @@ export function DictionaryTab({
       </div>
       <div
         className={`${styles.rightPane} ${styles.dictionaryTab__sheet}`}
-        data-cell-id="dictionary-tab-sheet"
+        data-tihoka-id="dictionary-tab-sheet"
       >
         <CardCreatorPanel
           sourceLang={sourceLang}

@@ -21,9 +21,14 @@ jest.mock('@/features/cardCreator/ui/useCardCreatorState', () => ({
   OpenContext: undefined,
 }));
 
+let mockIsMobile = false;
+jest.mock('@/shared/ui/useIsMobile', () => ({
+  useIsMobile: () => mockIsMobile,
+}));
+
 jest.mock('@/features/cardCreator/ui/CardCreatorDialogContent', () => ({
   CardCreatorDialogContent: ({ state, variant }: { state: unknown; variant: string }) => (
-    <div data-cell-id="card-creator-content" data-variant={variant}>
+    <div data-tihoka-id="card-creator-content" data-variant={variant}>
       {JSON.stringify(state)}
     </div>
   ),
@@ -35,6 +40,7 @@ const mockRemoveOnStorageChangedListener = jest.mocked(removeOnStorageChangedLis
 
 describe('CardCreatorPanel', () => {
   beforeEach(() => {
+    mockIsMobile = false;
     jest.clearAllMocks();
     mockUseCardCreatorState.mockReturnValue({ draft: {} });
     mockLoadSettings.mockResolvedValue(DEFAULT_SETTINGS as Settings);
@@ -92,6 +98,35 @@ describe('CardCreatorPanel', () => {
     expect(openContext.sourceLang).toBe('en');
     expect(openContext.targetLang).toBe('vi');
     expect(openContext.prefill).toBeUndefined();
+  });
+
+  const mobileContext = {
+    term: 'hello',
+    langCode: 'en',
+    reading: '',
+    rawDefinitions: [],
+    contextSentence: '',
+    definitions: [{ pos: 'exclamation', text: 'hi' }],
+  } satisfies CardCreatorPanelProps['context'];
+
+  it('opens the mobile sheet when a send-to-card context arrives', async () => {
+    mockIsMobile = true;
+    const view = render(<CardCreatorPanel sourceLang="en" targetLang="vi" />);
+    await waitFor(() => expect(screen.getByTestId('card-creator-mobile-sheet')).toBeInTheDocument());
+    expect(screen.getByTestId('card-creator-mobile-sheet')).toHaveAttribute('data-snap', 'collapsed');
+
+    view.rerender(<CardCreatorPanel sourceLang="en" targetLang="vi" context={mobileContext} />);
+    await waitFor(() =>
+      expect(screen.getByTestId('card-creator-mobile-sheet')).toHaveAttribute('data-snap', 'half'),
+    );
+  });
+
+  it('mounts the mobile sheet open when a context is already present', async () => {
+    mockIsMobile = true;
+    render(<CardCreatorPanel sourceLang="en" targetLang="vi" context={mobileContext} />);
+    await waitFor(() =>
+      expect(screen.getByTestId('card-creator-mobile-sheet')).toHaveAttribute('data-snap', 'half'),
+    );
   });
 
   it('re-syncs settings when chrome.storage.local changes', async () => {

@@ -13,8 +13,8 @@ const ACTIVE_PROFILE_MIRROR_EXCLUSIONS: readonly PathPattern[] = [
   ['subtitleOverlayTargetStyle'],
   ['subtitleOverlayNativeStyle'],
   ['dictionaryPopup'],
-  ['showReadings'],
-  ['showWordTranslations'],
+  ['readingDisplay'],
+  ['glossDisplay'],
 ];
 
 const TTS_LOCAL_EXCLUSIONS: readonly PathPattern[] = [
@@ -24,6 +24,8 @@ const TTS_LOCAL_EXCLUSIONS: readonly PathPattern[] = [
   ['*', 'tts', 'localTtsLanguage'],
   ['*', 'tts', 'voices'],
   ['*', 'tts', 'downloadedLanguages'],
+  ['*', 'tts', 'supertonicVoices'],
+  ['*', 'tts', 'supertonicDownloadedVoices'],
 ];
 
 const DICT_LINKS_ELEMENT_ARRAY: ElementArrayRule = {

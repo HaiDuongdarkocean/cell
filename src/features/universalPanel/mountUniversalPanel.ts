@@ -29,7 +29,7 @@ import { showToast } from '@/features/subtitle';
 import { addToOceanSrs } from '@/features/srs';
 import { createUniversalPanelController, type UniversalPanelMountController } from './UniversalPanelController';
 import { openSettingsSection } from './deepLink';
-import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/cellUiHosts';
+import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/TihokaUiHosts';
 import { getSessionStorage, setSessionStorage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
@@ -64,7 +64,7 @@ export interface UniversalPanelMountOptions {
   readonly onClose?: () => void;
 }
 
-const HOST_CLASS_NAME = 'js-cell-universal-panel-host';
+const HOST_CLASS_NAME = 'js-Tihoka-universal-panel-host';
 const HOST_Z_INDEX = 'var(--z-overlay-secondary)';
 
 const SHADOW_CSS = [...allModuleCss, buildTokenSpanCssForShadow()];

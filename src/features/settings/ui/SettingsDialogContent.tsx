@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import type { Settings, VideoQuality, ConvertToMp4Mode, ParallelConversionMode, FilenameSource, ShortcutAction } from '@/entities/media';
-import type { UiLanguagePreference } from '@/entities/settings';
+import type { AnnotationDisplayMode, UiLanguagePreference } from '@/entities/settings';
 import { t, type MessageKey, setUiLanguageOverride } from '@/shared/i18n';
 import {
   MIN_PARALLEL_WORKERS,
@@ -33,6 +33,7 @@ import { Select } from '@/shared/ui/Select';
 import { SettingsSection } from '@/shared/ui/SettingsSection';
 import { SettingsGroup } from '@/shared/ui/SettingsGroup';
 import { SettingsRow } from '@/shared/ui/SettingsRow';
+import { Surface } from '@/shared/ui/Surface';
 
 import { NavItem } from '@/shared/ui/NavItem';
 import { Navigation } from '@/shared/ui/Navigation';
@@ -87,6 +88,14 @@ const PREFERRED_FORMAT_LABEL_KEYS: Record<'mp4' | 'm3u8', MessageKey> = {
   mp4: 'settings.download.format.mp4',
 };
 
+const ANNOTATION_DISPLAY_MODES: readonly { value: AnnotationDisplayMode; label: MessageKey }[] = [
+  { value: 'off', label: 'settings.wordDisplay.mode.off' },
+  { value: 'always', label: 'settings.wordDisplay.mode.always' },
+  { value: 'hover', label: 'settings.wordDisplay.mode.hover' },
+  { value: 'i1', label: 'settings.wordDisplay.mode.i1' },
+  { value: 'unknown', label: 'settings.wordDisplay.mode.unknown' },
+];
+
 const SHORTCUT_ACTION_LABELS: Record<ShortcutAction, MessageKey> = {
   'prev-cue': 'settings.shortcuts.action.prevCue',
   'next-cue': 'settings.shortcuts.action.nextCue',
@@ -114,7 +123,7 @@ const SHORTCUT_GROUPS: readonly { label: MessageKey; actions: readonly ShortcutA
 ];
 
 export function SettingsDialogContent({ settings, onChange, className, showSidebarHeader = true, navMode = 'auto' }: SettingsDialogContentProps): React.JSX.Element {
-  const [activeSection, setActiveSection] = useState<string>('languageProfile');
+  const [activeSection, setActiveSection] = useState<string>('wordDisplay');
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const mainColRef = useRef<HTMLDivElement>(null);
 
@@ -139,6 +148,8 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
   const navOrientation = navMode === 'horizontal' || containerWidth < SIDEBAR_LABEL_MIN_WIDTH ? 'horizontal' : 'vertical';
   const sidebarExpanded = containerWidth >= SIDEBAR_LABEL_MIN_WIDTH;
   const activeProfile = getActiveProfileSettings(settings);
+
+  const resourceLang = activeProfile?.resourceLangCode ?? settings.subtitleOverlayTargetLanguage ?? 'en';
 
   useEffect(() => {
     if (navOrientation !== 'horizontal') return;
@@ -192,6 +203,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
   ];
 
   const sidebarItems: { id: string; label: string; icon: string }[] = [
+    { id: 'wordDisplay', label: t('settings.nav.wordDisplay'), icon: 'eye' },
     { id: 'languageProfile', label: t('settings.nav.languageProfile'), icon: 'languages' },
     { id: 'resources', label: t('settings.nav.resources'), icon: 'library' },
     { id: 'media', label: t('settings.nav.media'), icon: 'video' },
@@ -202,7 +214,8 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
     { id: 'download', label: t('settings.nav.download'), icon: 'download' },
     { id: 'shortcuts', label: t('settings.nav.shortcuts'), icon: 'slidersHorizontal' },
     { id: 'theme', label: t('settings.nav.theme'), icon: 'sun' },
-    { id: 'sync', label: t('settings.nav.sync'), icon: 'navRepeat' },
+    { id: 'cloudBackup', label: t('settings.nav.cloudBackup'), icon: 'cloud' },
+    { id: 'ankiSync', label: t('settings.nav.ankiSync'), icon: 'layers' },
   ];
 
   const sectionRef = (id: string) => (el: HTMLElement | null) => { sectionRefs.current[id] = el; };
@@ -244,6 +257,72 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
           {/* === Main column (flat section bands, scrollable) === */}
           <div className={styles.mainCol} ref={mainColRef}>
 
+            {/* === Word display === */}
+            <SettingsSection
+              ref={sectionRef('wordDisplay')}
+              headingLevel={3}
+              title={t('settings.wordDisplay.title')}
+              data-section="wordDisplay"
+            >
+              {(() => {
+                const hoverTaken = (settings.dictionaryPopup?.triggerMode ?? 'click').startsWith('hover');
+                const modeOptions = ANNOTATION_DISPLAY_MODES.map((m) => ({
+                  value: m.value as string,
+                  label: t(m.label),
+                  disabled: hoverTaken && m.value === 'hover',
+                }));
+                return (
+                  <>
+                    <SettingsRow
+                      dense
+                      stacked
+                      title={t('settings.wordDisplay.readings')}
+                      labelFor="set-reading-display"
+                    >
+                      <Select
+                        id="set-reading-display"
+                        className={styles.select}
+                        data-tihoka-id="reading-display-select"
+                        value={settings.readingDisplay}
+                        options={modeOptions}
+                        onChange={(val) => update('readingDisplay', val as AnnotationDisplayMode)}
+                      />
+                    </SettingsRow>
+                    <SettingsRow
+                      dense
+                      stacked
+                      title={t('settings.wordDisplay.gloss')}
+                      labelFor="set-gloss-display"
+                    >
+                      <Select
+                        id="set-gloss-display"
+                        className={styles.select}
+                        data-tihoka-id="gloss-display-select"
+                        value={settings.glossDisplay}
+                        options={modeOptions}
+                        onChange={(val) => update('glossDisplay', val as AnnotationDisplayMode)}
+                      />
+                    </SettingsRow>
+                    {hoverTaken && (
+                      <SettingsRow dense title={t('settings.wordDisplay.hoverTaken')}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          data-tihoka-id="worddisplay-goto-dictionary-popup"
+                          onClick={() => {
+                            setActiveSection('dictionaryPopup');
+                            sectionRefs.current.dictionaryPopup?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }}
+                        >
+                          {t('settings.nav.dictionaryPopup')}
+                        </Button>
+                      </SettingsRow>
+                    )}
+                  </>
+                );
+              })()}
+            </SettingsSection>
+
             {/* === Language Profile === */}
             <SettingsSection
               ref={sectionRef('languageProfile')}
@@ -271,7 +350,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                     <Button
                       type="button"
                       size="sm"
-                      data-cell-id="resources-goto-profiles"
+                      data-tihoka-id="resources-goto-profiles"
                       onClick={() => {
                         setActiveSection('languageProfile');
                         sectionRefs.current.languageProfile?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -283,17 +362,20 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                 />
               ) : (
                 <ResourcesPanel
-                  langCode={activeProfile?.resourceLangCode ?? settings.subtitleOverlayTargetLanguage ?? 'en'}
+                  langCode={resourceLang}
                   frequencyBands={settings.frequencyBands}
                   onFrequencyBandsChange={(bands) => update('frequencyBands', bands)}
                   lookupPanel={
-                    <Dictionary
-                      variant="integrated"
-                      langCode={activeProfile?.resourceLangCode ?? settings.subtitleOverlayTargetLanguage ?? 'en'}
-                      sourceLang={activeProfile?.resourceLangCode ?? settings.subtitleOverlayTargetLanguage ?? 'en'}
-                      targetLang={activeProfile?.native ?? settings.universalNativeLanguage}
-                      isOpen={false}
-                    />
+                    <Surface variant="popover" className={styles.lookupSurface}>
+                      <Dictionary
+                        variant="integrated"
+                        langCode={resourceLang}
+                        sourceLang={resourceLang}
+                        targetLang={activeProfile?.native ?? settings.universalNativeLanguage}
+                        showHistory={false}
+                        isOpen={false}
+                      />
+                    </Surface>
                   }
                 />
               )}
@@ -412,31 +494,6 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                 />
               </SettingsRow>
 
-              <SettingsRow
-                dense
-                divider
-                title={t('settings.block.showReadings')}
-                description={t('settings.block.showReadings.hint')}
-              >
-                <Toggle
-                  checked={settings.showReadings}
-                  onChange={(next) => update('showReadings', next)}
-                  ariaLabel={t('settings.block.showReadings')}
-                />
-              </SettingsRow>
-
-              <SettingsRow
-                dense
-                divider
-                title={t('settings.block.showWordTranslations')}
-                description={t('settings.block.showWordTranslations.hint')}
-              >
-                <Toggle
-                  checked={settings.showWordTranslations}
-                  onChange={(next) => update('showWordTranslations', next)}
-                  ariaLabel={t('settings.block.showWordTranslations')}
-                />
-              </SettingsRow>
             </SettingsSection>
 
             {/* === Dictionary Popup === */}
@@ -512,7 +569,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                   <Select
                     id="set-concurrent"
                     className={styles.select}
-                    data-cell-id="concurrent-select"
+                    data-tihoka-id="concurrent-select"
                     value={String(settings.concurrentDownloads)}
                     options={[1, 2, 3, 5, 10].map((n) => ({ value: String(n), label: String(n) }))}
                     onChange={(val) => update('concurrentDownloads', Number(val))}
@@ -526,7 +583,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                     <Select
                       id="set-format"
                       className={styles.select}
-                      data-cell-id="format-select"
+                      data-tihoka-id="format-select"
                       value={settings.preferredVideoFormat}
                       options={PREFERRED_FORMAT_OPTIONS.map((f) => ({ value: f, label: t(PREFERRED_FORMAT_LABEL_KEYS[f]) }))}
                       onChange={(val) => update('preferredVideoFormat', val as 'mp4' | 'm3u8')}
@@ -536,7 +593,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                     <Select
                       id="set-quality"
                       className={styles.select}
-                      data-cell-id="quality-select"
+                      data-tihoka-id="quality-select"
                       value={settings.defaultQuality}
                       options={QUALITY_OPTIONS.map((q) => ({ value: q, label: QUALITY_LABEL_KEYS[q] ? t(QUALITY_LABEL_KEYS[q]!) : q }))}
                       onChange={(val) => update('defaultQuality', val as VideoQuality)}
@@ -550,7 +607,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                   <Select
                     id="set-convert"
                     className={styles.select}
-                    data-cell-id="convert-select"
+                    data-tihoka-id="convert-select"
                     value={settings.convertToMp4}
                     options={CONVERT_OPTIONS.map((m) => ({
                       value: m,
@@ -571,7 +628,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                   <Select
                     id="set-parallel"
                     className={styles.select}
-                    data-cell-id="parallel-select"
+                    data-tihoka-id="parallel-select"
                     value={settings.parallelConversion}
                     options={PARALLEL_OPTIONS.map((m) => ({ value: m, label: t(PARALLEL_LABEL_KEYS[m]) }))}
                     onChange={(val) => update('parallelConversion', val as ParallelConversionMode)}
@@ -582,7 +639,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                     <Select
                       id="set-workers"
                       className={styles.select}
-                      data-cell-id="workers-select"
+                      data-tihoka-id="workers-select"
                       value={String(settings.manualWorkerCount)}
                       options={WORKER_OPTIONS.map((n) => ({ value: String(n), label: String(n) }))}
                       onChange={(val) => update('manualWorkerCount', Math.max(MIN_PARALLEL_WORKERS, Math.min(MAX_PARALLEL_WORKERS, Number(val))))}
@@ -596,7 +653,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                   <Select
                     id="set-filename-source"
                     className={styles.select}
-                    data-cell-id="filename-source-select"
+                    data-tihoka-id="filename-source-select"
                     value={settings.filenameSource}
                     options={FILENAME_SOURCE_OPTIONS.map((m) => ({ value: m, label: t(FILENAME_SOURCE_LABEL_KEYS[m]) }))}
                     onChange={(val) => update('filenameSource', val as FilenameSource)}
@@ -610,60 +667,69 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               ref={sectionRef('shortcuts')}
               headingLevel={3}
               title={t('settings.shortcuts.title')}
+              description={t('settings.shortcuts.hint')}
               data-section="shortcuts"
             >
               <div className={styles.shortcutSection}>
-                {SHORTCUT_GROUPS.map((group) => (
-                  <SettingsGroup key={group.label} label={t(group.label)}>
-                    <VStack columns={2} responsive gap="2">
-                      {group.actions.map((action) => {
-                        const shortcut = settings.keyboardShortcuts.find((s) => s.action === action);
-                        const currentValue = shortcut
-                          ? { key: shortcut.key, ctrl: shortcut.ctrl, shift: shortcut.shift, alt: shortcut.alt }
-                          : { key: '' };
-                        const conflict = isShortcutConflict(settings.keyboardShortcuts, action);
-                        const actionLabel = t(SHORTCUT_ACTION_LABELS[action]);
-                        return (
-                          <SettingsRow
-                            key={action}
-                            dense
-                            title={actionLabel}
-                            labelFor={`set-shortcut-${action}`}
-                            className={styles.shortcutField}
-                          >
-                            <span className={styles.shortcutInputWrap}>
-                              <ShortcutInput
-                                id={`set-shortcut-${action}`}
-                                data-cell-id={`shortcut-${action}`}
-                                value={currentValue}
-                                onChange={(newShortcut) => {
-                                  const updated = settings.keyboardShortcuts.map((s) =>
-                                    s.action === action
-                                      ? { ...s, key: newShortcut.key, ctrl: newShortcut.ctrl, shift: newShortcut.shift, alt: newShortcut.alt }
-                                      : s,
-                                  );
-                                  update('keyboardShortcuts', updated);
-                                }}
-                                aria-label={actionLabel}
-                                aria-invalid={conflict || undefined}
-                                aria-describedby={conflict ? `shortcut-conflict-${action}` : undefined}
-                              />
-                              {conflict && (
-                                <span
-                                  id={`shortcut-conflict-${action}`}
-                                  className={styles.conflictDot}
-                                  title={t('settings.shortcuts.conflict.title')}
-                                  role="img"
-                                  aria-label={t('settings.shortcuts.conflict.aria')}
+                <div className={styles.shortcutMasonry}>
+                  {SHORTCUT_GROUPS.map((group) => (
+                    <Surface
+                      key={group.label}
+                      variant="card"
+                      className={styles.shortcutCard}
+                      aria-label={t(group.label)}
+                    >
+                      <SettingsGroup label={t(group.label)} className={styles.shortcutGroup}>
+                        {group.actions.map((action) => {
+                          const shortcut = settings.keyboardShortcuts.find((s) => s.action === action);
+                          const currentValue = shortcut
+                            ? { key: shortcut.key, ctrl: shortcut.ctrl, shift: shortcut.shift, alt: shortcut.alt }
+                            : { key: '' };
+                          const conflict = isShortcutConflict(settings.keyboardShortcuts, action);
+                          const actionLabel = t(SHORTCUT_ACTION_LABELS[action]);
+                          return (
+                            <SettingsRow
+                              key={action}
+                              dense
+                              divider
+                              title={actionLabel}
+                              labelFor={`set-shortcut-${action}`}
+                              className={styles.shortcutField}
+                            >
+                              <span className={styles.shortcutInputWrap}>
+                                <ShortcutInput
+                                  id={`set-shortcut-${action}`}
+                                  data-tihoka-id={`shortcut-${action}`}
+                                  value={currentValue}
+                                  onChange={(newShortcut) => {
+                                    const updated = settings.keyboardShortcuts.map((s) =>
+                                      s.action === action
+                                        ? { ...s, key: newShortcut.key, ctrl: newShortcut.ctrl, shift: newShortcut.shift, alt: newShortcut.alt }
+                                        : s,
+                                    );
+                                    update('keyboardShortcuts', updated);
+                                  }}
+                                  aria-label={actionLabel}
+                                  aria-invalid={conflict || undefined}
+                                  aria-describedby={conflict ? `shortcut-conflict-${action}` : undefined}
                                 />
-                              )}
-                            </span>
-                          </SettingsRow>
-                        );
-                      })}
-                    </VStack>
-                  </SettingsGroup>
-                ))}
+                                {conflict && (
+                                  <span
+                                    id={`shortcut-conflict-${action}`}
+                                    className={styles.conflictDot}
+                                    title={t('settings.shortcuts.conflict.title')}
+                                    role="img"
+                                    aria-label={t('settings.shortcuts.conflict.aria')}
+                                  />
+                                )}
+                              </span>
+                            </SettingsRow>
+                          );
+                        })}
+                      </SettingsGroup>
+                    </Surface>
+                  ))}
+                </div>
               </div>
             </SettingsSection>
 
@@ -691,23 +757,32 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                     setUiLanguageOverride(next);
                     update('uiLanguage', next);
                   }}
-                  data-cell-id="settings-ui-language"
+                  data-tihoka-id="settings-ui-language"
                   aria-label={t('settings.uiLanguage.label')}
                 />
               </SettingsRow>
               <ThemePanel />
             </SettingsSection>
 
-            {/* === Sync === */}
+            {/* === Cloud backup — Google Drive === */}
             <SettingsSection
-              ref={sectionRef('sync')}
+              ref={sectionRef('cloudBackup')}
               headingLevel={3}
-              title={t('settings.sync.title')}
+              title={t('settings.cloudBackup.title')}
               hint={t('settings.sync.privacy')}
-              hintAriaLabel={t('settings.hint.aria', [t('settings.sync.title')])}
-              data-section="sync"
+              hintAriaLabel={t('settings.hint.aria', [t('settings.cloudBackup.title')])}
+              data-section="cloudBackup"
             >
               <SyncPanel settings={settings} />
+            </SettingsSection>
+
+            {/* === Anki sync === */}
+            <SettingsSection
+              ref={sectionRef('ankiSync')}
+              headingLevel={3}
+              title={t('settings.ankiSync.title')}
+              data-section="ankiSync"
+            >
               <AnkiStatusSyncPanel settings={settings} onChange={onChange} />
             </SettingsSection>
 

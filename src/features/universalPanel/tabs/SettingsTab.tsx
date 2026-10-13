@@ -67,11 +67,11 @@ export function SettingsTab(): React.JSX.Element | null {
   }, []);
 
   if (!settings) {
-    return <div className={`${styles.settingsTab} ${styles.loading}`} data-cell-id="settings-tab-loading">{t('panel.settings.loading')}</div>;
+    return <div className={`${styles.settingsTab} ${styles.loading}`} data-tihoka-id="settings-tab-loading">{t('panel.settings.loading')}</div>;
   }
 
   return (
-    <div ref={tabRef} className={styles.settingsTab} data-cell-id="settings-tab" tabIndex={-1}>
+    <div ref={tabRef} className={styles.settingsTab} data-tihoka-id="settings-tab" tabIndex={-1}>
       <SettingsDialogContent
         settings={settings}
         onChange={(next) => { void handleChange(next); }}

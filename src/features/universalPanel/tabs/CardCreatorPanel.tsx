@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Spinner } from '@/shared/ui/Spinner';
 import { EmptyState } from '@/shared/ui/EmptyState';
-import { MobileSheet } from '@/shared/ui/MobileSheet';
+import { MobileSheet, type MobileSheetSnap } from '@/shared/ui/MobileSheet';
 import { useIsMobile } from '@/shared/ui/useIsMobile';
 import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { t } from '@/shared/i18n';
@@ -13,7 +13,8 @@ import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/c
 import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { DictionaryPanelPrefill } from '@/features/universalPanel/types';
 import { formatDefinitions } from '@/features/dictionary';
-import { formatDefEntry, formatDefFromLookup } from '@/features/srs';
+import { cardLookupResult, formatDefEntry, formatDefFromLookup } from '@/features/srs';
+import type { FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
 import type { AudioItem, ImageItem } from '@/entities/dictionary';
 import styles from './CardCreatorPanel.module.css';
 
@@ -41,6 +42,27 @@ function selectedAudioItems(context: DictionaryPanelPrefill): readonly AudioItem
   return defaults.length > 0 ? defaults : wordItems.slice(0, 1);
 }
 
+function prefillDefinitions(
+  context: DictionaryPanelPrefill,
+  frequencyFormat: 'stars' | 'rank',
+  frequencyThresholds?: FrequencyBandThresholds,
+): string {
+  const senses = formatDefinitions(context.definitions);
+  const lookupResult = cardLookupResult(context);
+  return lookupResult
+    ? formatDefFromLookup(lookupResult, senses, context.term, frequencyFormat, frequencyThresholds)
+    : formatDefEntry({
+        term: context.term ?? '',
+        reading: context.reading,
+        readingKind: context.readingKind,
+        frequencyStars: context.frequencyStars?.count,
+        frequencies: context.frequencies,
+        frequencyFormat,
+        frequencyThresholds,
+        senses,
+      });
+}
+
 function selectedImageItems(context: DictionaryPanelPrefill): readonly ImageItem[] {
   const items = context.imageItems ?? [];
   const selectedIds = new Set(context.selectedImageIds ?? []);
@@ -56,6 +78,7 @@ function buildOpenContext(
   targetLang: string,
   context: DictionaryPanelPrefill | null | undefined,
   frequencyFormat: 'stars' | 'rank' = 'stars',
+  frequencyThresholds?: FrequencyBandThresholds,
 ): OpenContext {
   return {
     video: context?.video,
@@ -66,20 +89,7 @@ function buildOpenContext(
     prefill: context
       ? {
           targetWord: context.term,
-          definitions: context.lookupResult
-            ? formatDefFromLookup(
-                context.lookupResult,
-                formatDefinitions(context.definitions),
-                context.term,
-                frequencyFormat,
-              )
-            : formatDefEntry({
-                term: context.term ?? '',
-                reading: context.reading,
-                readingKind: context.readingKind,
-                frequencyFormat,
-                senses: formatDefinitions(context.definitions),
-              }),
+          definitions: prefillDefinitions(context, frequencyFormat, frequencyThresholds),
           sentence: context.contextSentence,
           sentenceTranslation: context.translation,
           wordAudioUrls: context.wordAudioUrls,
@@ -153,9 +163,11 @@ function CardCreatorPanelCore({
   onSettingsChange,
 }: CardCreatorPanelCoreProps): React.JSX.Element {
   const cardCreatorSettings = settings.cardCreator ?? DEFAULT_SETTINGS.cardCreator;
+  const frequencyDisplay = settings.dictionaryPopup?.frequencyDisplay ?? 'stars';
+  const frequencyBands = settings.frequencyBands;
   const openContext = useMemo(
-    () => buildOpenContext(sourceLang, targetLang, context, cardCreatorSettings.frequencyDisplay),
-    [sourceLang, targetLang, context, cardCreatorSettings.frequencyDisplay],
+    () => buildOpenContext(sourceLang, targetLang, context, frequencyDisplay, frequencyBands),
+    [sourceLang, targetLang, context, frequencyDisplay, frequencyBands],
   );
 
   const initialAction = context?.initialAction;
@@ -182,6 +194,14 @@ function CardCreatorPanelCore({
     void submit('add');
   }, [initialAction, context, loadStatus, submitting, submit]);
 
+  const [sheetSnap, setSheetSnap] = useState<MobileSheetSnap>(context ? 'half' : 'collapsed');
+  const prevContextRef = useRef(context);
+  useEffect(() => {
+    if (context === prevContextRef.current) return;
+    prevContextRef.current = context;
+    if (context) setSheetSnap('half');
+  }, [context]);
+
   const content = (
     <CardCreatorDialogContent
       state={state}
@@ -195,13 +215,14 @@ function CardCreatorPanelCore({
 
   if (isMobile) {
     return (
-      <div className={`${styles.cardCreatorPanel} ${styles.cardCreatorPanelMobile}`} data-cell-id="card-creator-panel">
+      <div className={`${styles.cardCreatorPanel} ${styles.cardCreatorPanelMobile}`} data-tihoka-id="card-creator-panel">
         <MobileSheet
-          defaultSnap="collapsed"
+          snap={sheetSnap}
+          onSnapChange={setSheetSnap}
           aria-label={t('cardCreator.title')}
           contentClassName={styles.sheetContent}
           className={styles.sheet}
-          data-cell-id="card-creator-mobile-sheet"
+          data-tihoka-id="card-creator-mobile-sheet"
         >
           {content}
         </MobileSheet>
@@ -210,7 +231,7 @@ function CardCreatorPanelCore({
   }
 
   return (
-    <div className={styles.cardCreatorPanel} data-cell-id="card-creator-panel">
+    <div className={styles.cardCreatorPanel} data-tihoka-id="card-creator-panel">
       <div className={styles.scrollArea}>
         {content}
       </div>
@@ -262,7 +283,7 @@ export function CardCreatorPanel({
 
   if (!appSettings) {
     return (
-      <div className={styles.cardCreatorPanel} data-cell-id="card-creator-panel">
+      <div className={styles.cardCreatorPanel} data-tihoka-id="card-creator-panel">
         <EmptyState
           icon={<Spinner size="md" />}
           title={t('cardCreator.loading.title')}

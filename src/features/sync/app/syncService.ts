@@ -33,6 +33,8 @@ import { SYNC_APPLIED_AT_KEY } from './pullCycle';
 import { listPendingDisconnects } from './disconnect';
 import { listCheckpoints } from './checkpoints';
 import type { EngineState } from './backoff';
+import type { SyncRunRecord } from './runHistory';
+import type { SyncProgressItem } from './SyncEngine';
 
 export interface SyncServiceDeps {
   readonly providerFor: (providerId: ProviderId) => StorageProvider;
@@ -126,9 +128,19 @@ export interface SyncStatusView {
       | 'storage-full';
     readonly retryAt?: number;
     readonly lastError?: string;
+    readonly progress?: {
+      readonly phase: 'push' | 'pull' | 'check';
+      readonly pending: number;
+      readonly done: number;
+      readonly scopesDone: number;
+      readonly scopesTotal: number;
+      readonly scope?: Scope;
+      readonly items?: readonly SyncProgressItem[];
+    };
     readonly updatedAt: number;
   };
   readonly directory: SyncStatusSnapshot;
+  readonly history: readonly SyncRunRecord[];
 }
 
 function rebindDeps(

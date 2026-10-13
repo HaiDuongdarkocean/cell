@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { t } from '@/shared/i18n';
 import { OVERLAY_LANGUAGE_OPTIONS } from '@/shared/config/languageRegistry';
-import type { Settings } from '@/entities/settings';
-import { Alert } from '@/shared/ui/Alert';
+import type { LanguageProfile, Settings } from '@/entities/settings';
+import { Accordion } from '@/shared/ui/Accordion';
 import { Badge } from '@/shared/ui/Badge';
 import { Button } from '@/shared/ui/Button';
+import { Bars } from '@/shared/ui/Charts';
 import { Dialog } from '@/shared/ui/Dialog';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Icon } from '@/shared/ui/Icon';
@@ -14,11 +15,14 @@ import { SettingsRow } from '@/shared/ui/SettingsRow';
 import { Spinner } from '@/shared/ui/Spinner';
 import { StatusDot } from '@/shared/ui/StatusDot';
 import { Text } from '@/shared/ui/Text';
+import { createToastHost } from '@/shared/ui/mountToast';
+import { ShadowThemeProvider } from '@/features/theme';
 import { Timestamp } from '@/shared/ui/Timestamp';
 import { VStack } from '@/shared/ui/Stack';
-import type { ConnectionId } from '../domain/types';
+import type { ConnectionId, DataClass } from '../domain/types';
 import { scopeForTarget, targetOf } from '../domain/scope';
 import type { BindingStatusEntry, ConnectionStatusEntry } from '../app/syncService';
+import type { SyncRunRecord } from '../app/runHistory';
 import {
   cancelScopeRebind,
   connectProviderAccount,
@@ -46,52 +50,295 @@ const langLabel = (code: string): string =>
 const providerLabel = (providerId: string): string =>
   providerId === GOOGLE_DRIVE ? t('settings.sync.provider.googleDrive') : providerId;
 
-interface SummaryMeta {
-  readonly dot: 'success' | 'info' | 'warning' | 'neutral';
-  readonly label: string;
+const toastHost = createToastHost({ provider: ShadowThemeProvider });
+
+type HeroTone = 'ok' | 'info' | 'warn' | 'error' | 'neutral';
+
+interface HeroMeta {
+  readonly tone: HeroTone;
   readonly pulse: boolean;
+  readonly title: string;
+  readonly desc: string;
 }
 
-function summaryMeta(view: SyncStatusView): SummaryMeta {
+const DAY_MS = 24 * 60 * 60 * 1000;
+const ACTIVITY_DAYS = 14;
+
+interface DayBucket {
+  readonly dayStart: number;
+  items: number;
+  errors: number;
+  readonly runs: SyncRunRecord[];
+}
+
+function bucketByDay(
+  history: readonly SyncRunRecord[],
+  now: number,
+): { buckets: DayBucket[]; totalItems: number; totalErrors: number } {
+  const todayStart = new Date(now).setHours(0, 0, 0, 0);
+  const buckets: DayBucket[] = [];
+  for (let i = ACTIVITY_DAYS - 1; i >= 0; i--) {
+    buckets.push({ dayStart: todayStart - i * DAY_MS, items: 0, errors: 0, runs: [] });
+  }
+  let totalItems = 0;
+  let totalErrors = 0;
+  for (const run of history) {
+    const idx = Math.floor((run.at - buckets[0]!.dayStart) / DAY_MS);
+    if (idx < 0 || idx >= ACTIVITY_DAYS) continue;
+    const bucket = buckets[idx]!;
+    bucket.runs.push(run);
+    bucket.items += run.ackedKeys + run.appliedDataClasses.length;
+    bucket.errors += run.failed.length + (run.ok ? 0 : 1);
+    totalItems += run.ackedKeys;
+    totalErrors += run.ok ? 0 : 1;
+  }
+  return { buckets, totalItems, totalErrors };
+}
+
+function runKindLabel(kind: SyncRunRecord['kind']): string {
+  return t(`settings.sync.run.kind.${kind}`);
+}
+
+function heroFor(view: SyncStatusView): HeroMeta {
   switch (view.engine.state) {
     case 'running':
-      return { dot: 'info', label: t('settings.sync.state.syncing'), pulse: true };
+      return {
+        tone: 'info',
+        pulse: true,
+        title: t('settings.sync.state.syncing'),
+        desc: t('settings.sync.hero.syncingDesc'),
+      };
     case 'needs-reauth':
-      return { dot: 'warning', label: t('settings.sync.state.signInNeeded'), pulse: false };
+      return {
+        tone: 'warn',
+        pulse: false,
+        title: t('settings.sync.state.signInNeeded'),
+        desc: t('settings.sync.state.signInNeededDesc'),
+      };
     case 'offline':
-      return { dot: 'neutral', label: t('settings.sync.state.offline'), pulse: false };
+      return {
+        tone: 'neutral',
+        pulse: false,
+        title: t('settings.sync.state.offline'),
+        desc: t('settings.sync.state.offlineDesc'),
+      };
     case 'storage-full':
-      return { dot: 'warning', label: t('settings.sync.state.storageFull'), pulse: false };
+      return {
+        tone: 'warn',
+        pulse: false,
+        title: t('settings.sync.state.storageFull'),
+        desc: t('settings.sync.state.storageFullDesc'),
+      };
     case 'backoff':
-      return { dot: 'warning', label: t('settings.sync.state.retrying'), pulse: false };
+      return {
+        tone: 'warn',
+        pulse: false,
+        title: t('settings.sync.state.retrying'),
+        desc: t('settings.sync.state.retryingDesc'),
+      };
     case 'idle':
     default:
-      return { dot: 'success', label: t('settings.sync.state.protected'), pulse: false };
+      return {
+        tone: 'ok',
+        pulse: false,
+        title: t('settings.sync.state.protected'),
+        desc: t('settings.sync.hero.protectedDesc'),
+      };
   }
 }
 
-function engineAlertDescription(state: string): string | undefined {
-  switch (state) {
-    case 'needs-reauth':
-      return t('settings.sync.state.signInNeededDesc');
-    case 'offline':
-      return t('settings.sync.state.offlineDesc');
-    case 'storage-full':
-      return t('settings.sync.state.storageFullDesc');
-    case 'backoff':
-      return t('settings.sync.state.retryingDesc');
-    default:
-      return undefined;
+type ScopeLabeler = (scope: string) => string;
+
+function scopeLabel(
+  scope: string,
+  profiles: readonly LanguageProfile[],
+): string {
+  if (scope === 'global') return t('settings.sync.scope.global');
+  if (scope.startsWith('profile:')) {
+    const target = scope.slice('profile:'.length);
+    return profiles.find((p) => p.target === target)?.name ?? target;
   }
+  return scope;
+}
+
+function dataClassLabel(dataClass: DataClass): string {
+  return t(`settings.sync.dataClass.${dataClass}`);
+}
+
+function progressText(
+  view: SyncStatusView,
+  labelScope: ScopeLabeler,
+): string | null {
+  const progress = view.engine.progress;
+  if (progress === undefined) return null;
+  const scopeSuffix =
+    progress.scope !== undefined ? ` — ${labelScope(progress.scope)}` : '';
+  if (progress.phase === 'push' && progress.pending > 0) {
+    return (
+      t('settings.sync.progress.push', [progress.done, progress.pending]) +
+      scopeSuffix
+    );
+  }
+  return (
+    t(`settings.sync.progress.${progress.phase}`, [
+      progress.scopesDone,
+      progress.scopesTotal,
+    ]) + scopeSuffix
+  );
+}
+
+function RunRow({
+  run,
+  labelScope,
+}: {
+  readonly run: SyncRunRecord;
+  readonly labelScope: ScopeLabeler;
+}): React.JSX.Element {
+  const lines: string[] = [];
+  if (run.pushed.length > 0)
+    lines.push(
+      t('settings.sync.run.uploaded', [
+        run.pushed.map(labelScope).join(', '),
+      ]),
+    );
+  if (run.pulled.length > 0)
+    lines.push(
+      t('settings.sync.run.downloaded', [
+        run.pulled.map(labelScope).join(', '),
+      ]),
+    );
+  if (run.appliedDataClasses.length > 0)
+    lines.push(
+      t('settings.sync.run.applied', [
+        run.appliedDataClasses.map(dataClassLabel).join(', '),
+      ]),
+    );
+  for (const error of run.errors) lines.push(error);
+  return (
+    <li className={styles.runRow}>
+      <span className={styles.runHead}>
+        <span className={styles.runTime}>
+          {new Date(run.at).toLocaleTimeString(undefined, {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </span>
+        <span className={styles.runKind}>{runKindLabel(run.kind)}</span>
+        <span className={styles.runItems}>
+          {t('settings.sync.run.items', [run.ackedKeys])}
+        </span>
+        {!run.ok && (
+          <Badge variant="secondary" size="sm" className={styles.runFailBadge}>
+            {t('settings.sync.run.failed')}
+          </Badge>
+        )}
+      </span>
+      {lines.map((line) => (
+        <span key={line} className={styles.runLine}>
+          {line}
+        </span>
+      ))}
+    </li>
+  );
+}
+
+type QueueFilter = 'all' | 'waiting' | 'active' | 'done';
+type EngineProgressView = NonNullable<SyncStatusView['engine']['progress']>;
+type QueueItem = NonNullable<EngineProgressView['items']>[number];
+
+function itemState(item: QueueItem, activeScope: string | undefined): 'done' | 'active' | 'waiting' {
+  if (item.done >= item.total) return 'done';
+  if (item.scope === activeScope) return 'active';
+  return 'waiting';
+}
+
+function SyncQueue({
+  progress,
+  labelScope,
+}: {
+  readonly progress: EngineProgressView | undefined;
+  readonly labelScope: ScopeLabeler;
+}): React.JSX.Element | null {
+  const [filter, setFilter] = useState<QueueFilter>('all');
+  const items = useMemo(() => progress?.items ?? [], [progress]);
+
+  const withState = useMemo(
+    () =>
+      items.map((item) => ({ item, state: itemState(item, progress?.scope) })),
+    [items, progress?.scope],
+  );
+  const counts = useMemo(
+    () => ({
+      all: withState.length,
+      waiting: withState.filter((e) => e.state === 'waiting').length,
+      active: withState.filter((e) => e.state === 'active').length,
+      done: withState.filter((e) => e.state === 'done').length,
+    }),
+    [withState],
+  );
+  const visible = withState.filter((e) => filter === 'all' || e.state === filter);
+
+  if (withState.length === 0) return null;
+
+  return (
+    <div className={styles.queueCard}>
+      <div className={styles.queueHead}>
+        <Text variant="label" color="secondary">
+          {t('settings.sync.queue.title')}
+        </Text>
+        <div className={styles.queueTabs} role="tablist">
+          {(['all', 'waiting', 'active', 'done'] as const).map((f) => (
+            <button
+              key={f}
+              type="button"
+              role="tab"
+              aria-selected={filter === f}
+              className={`${styles.queueTab} ${filter === f ? styles.queueTabActive : ''}`}
+              onClick={() => setFilter(f)}
+            >
+              {t(`settings.sync.queue.${f}`)} {counts[f]}
+            </button>
+          ))}
+        </div>
+      </div>
+      <ul className={styles.queueList}>
+        {visible.map(({ item, state }) => (
+          <li key={`${item.scope}|${item.dataClass ?? ''}`} className={styles.queueRow}>
+            {state === 'active' ? (
+              <Spinner size="sm" aria-hidden="true" />
+            ) : state === 'done' ? (
+              <Icon name="check" className={styles.queueDoneIcon} />
+            ) : (
+              <span className={styles.queueWaitDot} aria-hidden="true" />
+            )}
+            <span className={styles.queueName}>
+              {labelScope(item.scope)}
+              {item.dataClass !== null && (
+                <span className={styles.queueKind}> · {dataClassLabel(item.dataClass)}</span>
+              )}
+              {item.key !== undefined && (
+                <span className={styles.queueKey}> · {item.key.split('/').pop()}</span>
+              )}
+            </span>
+            <span className={styles.queueCount}>
+              {state === 'done'
+                ? t('settings.sync.queue.doneState')
+                : `${item.done}/${item.total}`}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
   const [view, setView] = useState<SyncStatusView | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [disconnectTarget, setDisconnectTarget] = useState<ConnectionStatusEntry | null>(null);
   const [disconnectLocalMode, setDisconnectLocalMode] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   const refresh = useCallback(async (): Promise<void> => {
     try {
@@ -99,6 +346,9 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
       setLoadFailed(false);
     } catch {
       setLoadFailed(true);
+      toastHost.showToast(t('settings.sync.error.loadTitle'), 'error', {
+        actionId: 'sync-load',
+      });
     }
   }, []);
 
@@ -115,11 +365,14 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
   const run = useCallback(
     async (key: string, action: () => Promise<unknown>): Promise<void> => {
       setBusy(key);
-      setActionError(null);
       try {
         await action();
       } catch (error) {
-        setActionError(error instanceof Error ? error.message : String(error));
+        toastHost.showToast(
+          error instanceof Error ? error.message : String(error),
+          'error',
+          { actionId: 'sync-action' },
+        );
       } finally {
         setBusy(null);
         void refresh();
@@ -130,8 +383,8 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
 
   const connectionLabel = useCallback(
     (connectionId: string): string =>
-      view?.directory.connections.find((c) => c.connectionId === connectionId)
-        ?.displayName ?? connectionId,
+      view?.directory.connections.find((c) => c.connectionId === connectionId)?.displayName ??
+      connectionId,
     [view],
   );
 
@@ -147,36 +400,106 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
       .map((p) => targetOf(p.target))
       .filter((target) => {
         const binding = bindingFor(target);
-        const destination =
-          binding?.destination ?? view.directory.systemConnection ?? 'local';
+        const destination = binding?.destination ?? view.directory.systemConnection ?? 'local';
         return destination === disconnectTarget.connectionId;
       });
   }, [disconnectTarget, view, profiles, bindingFor]);
 
+  const activity = useMemo(
+    () => (view !== null ? bucketByDay(view.history, Date.now()) : null),
+    [view],
+  );
+
+  const labelScope = useCallback<ScopeLabeler>(
+    (scope) => scopeLabel(scope, profiles),
+    [profiles],
+  );
+
+  const willSync = useMemo(() => {
+    const names = profiles.map((p) => p.name);
+    names.push(t('settings.sync.scope.global'));
+    return names.join(', ');
+  }, [profiles]);
+
   const engineState = view?.engine.state;
-  const meta = view !== null ? summaryMeta(view) : null;
-  const showRecoveryAction =
-    engineState === 'needs-reauth' ||
-    engineState === 'backoff' ||
-    engineState === 'storage-full';
+  const hero = view !== null ? heroFor(view) : null;
+  const liveProgress = view !== null ? progressText(view, labelScope) : null;
   const hasConnections = (view?.directory.connections.length ?? 0) > 0;
+
+  const connectPending = busy === 'connect' && (
+    <div className={`${styles.connectPending} ${styles.flat}`}>
+      <Accordion>
+        <Accordion.Item value="connect">
+          <Accordion.Trigger>
+            <span className={styles.connectingLabel}>
+              <Spinner size="sm" aria-hidden="true" />
+              {t('settings.sync.connecting')}
+            </span>
+          </Accordion.Trigger>
+          <Accordion.Content>
+            <Text variant="supporting" color="secondary">
+              {t('settings.sync.connectingDetail')}
+            </Text>
+            <Text variant="supporting" color="secondary">
+              {t('settings.sync.willSync', [willSync])}
+            </Text>
+          </Accordion.Content>
+        </Accordion.Item>
+      </Accordion>
+    </div>
+  );
+
+  const heroAction = (() => {
+    if (view === null || hero === null) return null;
+    if (engineState === 'needs-reauth') {
+      return (
+        <Button
+          variant="primary"
+          size="sm"
+          leadingIcon={<Icon name="link" />}
+          loading={busy === 'reauth'}
+          onClick={() => {
+            const provider =
+              view.directory.connections.find(
+                (c) => c.connectionId === view.directory.systemConnection,
+              )?.providerId ?? view.directory.connections[0]?.providerId;
+            if (provider !== undefined) {
+              void run('reauth', () => connectProviderAccount(provider));
+            }
+          }}
+        >
+          {t('settings.sync.signIn')}
+        </Button>
+      );
+    }
+    return (
+      <Button
+        variant={engineState === 'backoff' || engineState === 'storage-full' ? 'primary' : 'secondary'}
+        size="sm"
+        leadingIcon={<Icon name="repeat" />}
+        loading={busy === 'now' || engineState === 'running'}
+        disabled={engineState === 'offline'}
+        onClick={() => void run('now', () => syncNow())}
+      >
+        {engineState === 'backoff' || engineState === 'storage-full'
+          ? t('settings.sync.error.tryAgain')
+          : t('settings.sync.syncNow')}
+      </Button>
+    );
+  })();
 
   return (
     <VStack className={styles.panel}>
-      {loadFailed && (
-        <Alert
-          variant="error"
+      {view === null && loadFailed && (
+        <SettingsRow
+          dense
           title={t('settings.sync.error.loadTitle')}
           description={t('settings.sync.error.loadDesc')}
-        />
-      )}
-      {actionError !== null && (
-        <Alert
-          variant="error"
-          title={t('settings.sync.error.actionTitle')}
-          description={actionError}
-          onDismiss={() => setActionError(null)}
-        />
+        >
+          <Button variant="ghost" size="sm" onClick={() => void refresh()}>
+            {t('settings.sync.error.tryAgain')}
+          </Button>
+        </SettingsRow>
       )}
 
       {view === null && !loadFailed && (
@@ -187,90 +510,154 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
 
       {view !== null && !hasConnections && (
         <>
+          <ol className={styles.steps} aria-label={t('settings.sync.steps.aria')}>
+            {(['1', '2', '3'] as const).map((n, i) => (
+              <li key={n} className={`${styles.step} ${i === 0 ? styles.stepCurrent : ''}`}>
+                <span className={styles.stepNum} aria-hidden="true">
+                  {i + 1}
+                </span>
+                <span className={styles.stepLabel}>{t(`settings.sync.steps.${n}`)}</span>
+              </li>
+            ))}
+          </ol>
+          <Text variant="supporting" color="secondary" className={styles.willSync}>
+            {t('settings.sync.willSync', [willSync])}
+          </Text>
           <EmptyState
-            icon={<Icon name="link" size="lg" />}
+            icon={<Icon name="cloud" size="lg" />}
             title={t('settings.sync.empty.title')}
             description={t('settings.sync.empty.desc')}
             action={
-              <Button
-                variant="primary"
-                leadingIcon={<Icon name="link" />}
-                loading={busy === 'connect'}
-                onClick={() =>
-                  void run('connect', () => connectProviderAccount(GOOGLE_DRIVE))
-                }
-              >
-                {t('settings.sync.connect.googleDrive')}
-              </Button>
+              <>
+                <Button
+                  variant="primary"
+                  leadingIcon={<Icon name="link" />}
+                  loading={busy === 'connect'}
+                  onClick={() => void run('connect', () => connectProviderAccount(GOOGLE_DRIVE))}
+                >
+                  {t('settings.sync.connect.googleDrive')}
+                </Button>
+                {connectPending}
+              </>
             }
           />
         </>
       )}
 
-      {view !== null && hasConnections && (
+      {view !== null && hasConnections && hero !== null && (
         <>
-          {engineState !== undefined &&
-            engineState !== 'idle' &&
-            engineState !== 'running' && (
-              <Alert
-                variant={engineState === 'offline' ? 'default' : 'warning'}
-                icon={<Icon name={engineState === 'offline' ? 'power' : 'triangleAlert'} />}
-                title={meta?.label}
-                description={engineAlertDescription(engineState)}
-              />
-            )}
-
-          <SettingsRow
-            dense
-            title={
-              <>
-                {meta !== null && (
-                  <StatusDot status={meta.dot} pulse={meta.pulse} aria-label={meta.label} />
+          <div className={`${styles.hero} ${styles[`hero-${hero.tone}`]}`} role="status">
+            <StatusDot
+              status={
+                hero.tone === 'ok'
+                  ? 'success'
+                  : hero.tone === 'warn'
+                    ? 'warning'
+                    : hero.tone === 'error'
+                      ? 'error'
+                      : hero.tone === 'info'
+                        ? 'info'
+                        : 'neutral'
+              }
+              pulse={hero.pulse}
+              aria-label={hero.title}
+              className={styles.heroDot}
+            />
+            <div className={styles.heroText}>
+              <span className={styles.heroTitle}>{hero.title}</span>
+              <span className={styles.heroDesc}>
+                {liveProgress ?? hero.desc}
+                {view.directory.lastAppliedAt !== null && engineState === 'idle' && (
+                  <>
+                    {' · '}
+                    {t('settings.sync.lastSynced')}{' '}
+                    <Timestamp value={view.directory.lastAppliedAt} />
+                  </>
                 )}
-                {meta?.label}
-              </>
-            }
-            description={
-              view.directory.lastAppliedAt !== null ? (
-                <>
-                  {t('settings.sync.lastSynced')}{' '}
-                  <Timestamp value={view.directory.lastAppliedAt} />
-                </>
-              ) : undefined
+              </span>
+              {liveProgress !== null &&
+                (() => {
+                  const progress = view.engine.progress!;
+                  const total = Math.max(
+                    progress.phase === 'push' ? progress.pending : progress.scopesTotal,
+                    1,
+                  );
+                  const done =
+                    progress.phase === 'push' ? progress.done : progress.scopesDone;
+                  return (
+                    <span className={styles.progress} aria-hidden="true">
+                      <span
+                        className={styles.progressFill}
+                        style={{ width: `${Math.min((done / total) * 100, 100)}%` }}
+                      />
+                    </span>
+                  );
+                })()}
+            </div>
+            <div className={styles.heroAction}>{heroAction}</div>
+          </div>
+
+          <SyncQueue
+            progress={view.engine.progress}
+            labelScope={labelScope}
+          />
+
+          {activity !== null && activity.buckets.some((b) => b.runs.length > 0) && (
+            <div className={styles.chartCard}>
+              <div className={styles.chartHead}>
+                <Text variant="label" color="secondary">
+                  {t('settings.sync.activity.title')}
+                </Text>
+                <Text variant="supporting" color="secondary">
+                  {t('settings.sync.activity.summary', [
+                    activity.totalItems,
+                    activity.totalErrors,
+                  ])}
+                </Text>
+              </div>
+              <Bars
+                label={t('settings.sync.activity.aria', [activity.totalItems])}
+                selectedIndex={selectedDay ?? undefined}
+                onSelect={(i) => setSelectedDay((prev) => (prev === i ? null : i))}
+                points={activity.buckets.map((b) => ({
+                  value: b.items,
+                  label: `${new Date(b.dayStart).toLocaleDateString(undefined, {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                  })} — ${t('settings.sync.activity.dayLabel', [b.items, b.errors])}`,
+                }))}
+              />
+              {selectedDay !== null && activity.buckets[selectedDay] !== undefined && (
+                <ul className={styles.runList} aria-label={t('settings.sync.activity.dayAria')}>
+                  {activity.buckets[selectedDay]!.runs.length === 0 ? (
+                    <li className={styles.runLine}>
+                      {t('settings.sync.activity.emptyDay')}
+                    </li>
+                  ) : (
+                    activity.buckets[selectedDay]!.runs.map((r) => (
+                      <RunRow key={r.id} run={r} labelScope={labelScope} />
+                    ))
+                  )}
+                </ul>
+              )}
+            </div>
+          )}
+
+          <SettingsGroup
+            label={t('settings.sync.accounts.title')}
+            action={
+              <Button
+                variant="link"
+                size="sm"
+                className={styles.groupAction}
+                loading={busy === 'connect'}
+                onClick={() => void run('connect', () => connectProviderAccount(GOOGLE_DRIVE))}
+              >
+                <Icon name="plus" size="xs" /> {t('settings.sync.connectAnother')}
+              </Button>
             }
           >
-            {engineState === 'needs-reauth' ? (
-              <Button
-                variant="primary"
-                size="sm"
-                leadingIcon={<Icon name="link" />}
-                loading={busy === 'reauth'}
-                onClick={() => {
-                  const provider =
-                    view.directory.connections.find(
-                      (c) => c.connectionId === view.directory.systemConnection,
-                    )?.providerId ?? view.directory.connections[0]?.providerId;
-                  if (provider !== undefined) {
-                    void run('reauth', () => connectProviderAccount(provider));
-                  }
-                }}
-              >
-                {t('settings.sync.signIn')}
-              </Button>
-            ) : (
-              <Button
-                variant={showRecoveryAction ? 'primary' : 'secondary'}
-                size="sm"
-                leadingIcon={<Icon name="repeat" />}
-                loading={busy === 'now' || engineState === 'running'}
-                onClick={() => void run('now', () => syncNow())}
-              >
-                {t('settings.sync.syncNow')}
-              </Button>
-            )}
-          </SettingsRow>
-
-          <SettingsGroup label={t('settings.sync.accounts.title')}>
             <ul className={styles.list}>
               {view.directory.connections.map((conn) => (
                 <li key={conn.connectionId} className={styles.row}>
@@ -337,115 +724,119 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
                 </li>
               ))}
             </ul>
-            <Button
-              variant="outline"
-              size="sm"
-              leadingIcon={<Icon name="plus" />}
-              loading={busy === 'connect'}
-              onClick={() => void run('connect', () => connectProviderAccount(GOOGLE_DRIVE))}
-            >
-              {t('settings.sync.connectAnother')}
-            </Button>
+            {connectPending}
           </SettingsGroup>
 
-          <SettingsGroup label={t('settings.sync.profiles.title')}>
-            {profiles.length === 0 ? (
-              <Text variant="supporting" color="secondary">
-                {t('settings.sync.profiles.empty')}
-              </Text>
-            ) : (
-              <ul className={styles.list}>
-                {profiles.map((profile) => {
-                  const target = targetOf(profile.target);
-                  const binding = bindingFor(target);
-                  const destination =
-                    binding?.destination ?? view.directory.systemConnection ?? 'local';
-                  const waitingConn =
-                    binding !== undefined && binding.waiting ? binding.destination : null;
-                  const scope = scopeForTarget(target);
-                  return (
-                    <li key={profile.id} className={styles.row}>
-                      <div className={styles.rowText}>
-                        <Text variant="label" truncate className={styles.rowTitle}>
-                          {langLabel(target)}
-                        </Text>
-                        {binding?.frozen === true && (
-                          <span className={styles.statusInfo}>
-                            <Icon name="repeat" size="xs" />
-                            <Text variant="supporting" as="span">
-                              {t('settings.sync.copying')}
-                            </Text>
-                          </span>
-                        )}
-                        {waitingConn !== null && (
-                          <span className={styles.statusWarn}>
-                            <Icon name="link" size="xs" />
-                            <Text variant="supporting" as="span">
-                              {t('settings.sync.waitingFor', [
-                                connectionLabel(waitingConn),
-                              ])}
-                            </Text>
-                          </span>
-                        )}
-                      </div>
-                      {(binding?.frozen === true || waitingConn !== null) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={busy === `cancel:${target}`}
-                          onClick={() =>
-                            void run(`cancel:${target}`, () => cancelScopeRebind(scope))
-                          }
-                        >
-                          {t('settings.sync.cancelRebind')}
-                        </Button>
-                      )}
-                      {binding?.vacatedFrom != null && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={busy === `delete:${target}`}
-                          title={t('settings.sync.deleteOldCopy', [
-                            connectionLabel(binding.vacatedFrom),
-                          ])}
-                          onClick={() =>
-                            void run(`delete:${target}`, () =>
-                              deleteOldCopy(scope, binding.vacatedFrom as ConnectionId),
-                            )
-                          }
-                        >
-                          {t('settings.sync.deleteOldCopyShort')}
-                        </Button>
-                      )}
-                      <Select
-                        size="sm"
-                        variant="outline"
-                        className={styles.destinationSelect}
-                        value={destination}
-                        disabled={binding?.frozen === true || busy === `bind:${target}`}
-                        options={[
-                          ...view.directory.connections.map((conn) => ({
-                            value: conn.connectionId,
-                            label: conn.displayName,
-                          })),
-                          { value: 'local', label: t('settings.sync.destination.local') },
-                        ]}
-                        onChange={(value) =>
-                          void run(`bind:${target}`, () =>
-                            setScopeBinding(
-                              scope,
-                              value === 'local' ? 'local' : (value as ConnectionId),
-                            ),
-                          )
-                        }
-                        aria-label={t('settings.sync.destination.aria', [langLabel(target)])}
-                      />
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </SettingsGroup>
+          <div className={styles.flat}>
+            <Accordion>
+              <Accordion.Item value="advanced">
+                <Accordion.Trigger>
+                  <span className={styles.advTrigger}>
+                    {t('settings.sync.advanced.title')}
+                    <Text as="span" variant="supporting" color="secondary">
+                      {t('settings.sync.advanced.desc')}
+                    </Text>
+                  </span>
+                </Accordion.Trigger>
+                <Accordion.Content>
+                  {profiles.length === 0 ? (
+                    <Text variant="supporting" color="secondary">
+                      {t('settings.sync.profiles.empty')}
+                    </Text>
+                  ) : (
+                    <ul className={styles.list}>
+                      {profiles.map((profile) => {
+                        const target = targetOf(profile.target);
+                        const binding = bindingFor(target);
+                        const destination =
+                          binding?.destination ?? view.directory.systemConnection ?? 'local';
+                        const waitingConn =
+                          binding !== undefined && binding.waiting ? binding.destination : null;
+                        const scope = scopeForTarget(target);
+                        return (
+                          <li key={profile.id} className={styles.row}>
+                            <div className={styles.rowText}>
+                              <Text variant="label" truncate className={styles.rowTitle}>
+                                {langLabel(target)}
+                              </Text>
+                              {binding?.frozen === true && (
+                                <span className={styles.statusInfo}>
+                                  <Icon name="repeat" size="xs" />
+                                  <Text variant="supporting" as="span">
+                                    {t('settings.sync.copying')}
+                                  </Text>
+                                </span>
+                              )}
+                              {waitingConn !== null && (
+                                <span className={styles.statusWarn}>
+                                  <Icon name="link" size="xs" />
+                                  <Text variant="supporting" as="span">
+                                    {t('settings.sync.waitingFor', [connectionLabel(waitingConn)])}
+                                  </Text>
+                                </span>
+                              )}
+                            </div>
+                            {(binding?.frozen === true || waitingConn !== null) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={busy === `cancel:${target}`}
+                                onClick={() =>
+                                  void run(`cancel:${target}`, () => cancelScopeRebind(scope))
+                                }
+                              >
+                                {t('settings.sync.cancelRebind')}
+                              </Button>
+                            )}
+                            {binding?.vacatedFrom != null && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={busy === `delete:${target}`}
+                                title={t('settings.sync.deleteOldCopy', [
+                                  connectionLabel(binding.vacatedFrom),
+                                ])}
+                                onClick={() =>
+                                  void run(`delete:${target}`, () =>
+                                    deleteOldCopy(scope, binding.vacatedFrom as ConnectionId),
+                                  )
+                                }
+                              >
+                                {t('settings.sync.deleteOldCopyShort')}
+                              </Button>
+                            )}
+                            <Select
+                              size="sm"
+                              variant="outline"
+                              className={styles.destinationSelect}
+                              value={destination}
+                              disabled={binding?.frozen === true || busy === `bind:${target}`}
+                              options={[
+                                ...view.directory.connections.map((conn) => ({
+                                  value: conn.connectionId,
+                                  label: conn.displayName,
+                                })),
+                                { value: 'local', label: t('settings.sync.destination.local') },
+                              ]}
+                              onChange={(value) =>
+                                void run(`bind:${target}`, () =>
+                                  setScopeBinding(
+                                    scope,
+                                    value === 'local' ? 'local' : (value as ConnectionId),
+                                  ),
+                                )
+                              }
+                              aria-label={t('settings.sync.destination.aria', [langLabel(target)])}
+                            />
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </Accordion.Content>
+              </Accordion.Item>
+            </Accordion>
+          </div>
         </>
       )}
 
@@ -480,9 +871,7 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
                 const request = disconnectLocalMode
                   ? () => disconnectConnectionLocally(id)
                   : () => disconnectConnection(id);
-                void run('disconnect', request).then(() =>
-                  setDisconnectTarget(null),
-                );
+                void run('disconnect', request).then(() => setDisconnectTarget(null));
               }}
             >
               {disconnectLocalMode

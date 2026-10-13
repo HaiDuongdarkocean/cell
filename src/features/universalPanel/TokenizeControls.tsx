@@ -43,7 +43,7 @@ function TokenizeHalf({ active, disabled = false, icon, label, caption, onClick,
       onClick={onClick}
       onPointerDown={(e): void => { e.currentTarget.blur(); }}
       data-pressed={String(active)}
-      data-cell-id={testId}
+      data-tihoka-id={testId}
       className={styles.half}
       leadingIcon={<Icon name={icon} size="sm" />}
     >
@@ -72,7 +72,7 @@ export function TokenizeControls({
       className={styles.capsule}
       role="group"
       aria-label={t('panel.tokenize.group')}
-      data-cell-id="universal-panel-tokenize-controls"
+      data-tihoka-id="universal-panel-tokenize-controls"
     >
       <TokenizeHalf
         active={text}

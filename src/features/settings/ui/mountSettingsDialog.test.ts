@@ -20,15 +20,15 @@ jest.mock('./SettingsDialog', () => {
       if (!isOpen) return null;
       return React.createElement(
         'div',
-        { 'data-cell-id': 'mock-settings-dialog' },
+        { 'data-tihoka-id': 'mock-settings-dialog' },
         React.createElement(
           'button',
-          { 'data-cell-id': 'mock-settings-close', onClick: onClose, type: 'button' },
+          { 'data-tihoka-id': 'mock-settings-close', onClick: onClose, type: 'button' },
           'Close',
         ),
         React.createElement(
           'button',
-          { 'data-cell-id': 'mock-settings-change', onClick: () => onChange(settings), type: 'button' },
+          { 'data-tihoka-id': 'mock-settings-change', onClick: () => onChange(settings), type: 'button' },
           'Change',
         ),
       );
@@ -97,7 +97,7 @@ async function flush(): Promise<void> {
 }
 
 function getSettingsHost(): HTMLElement | null {
-  return document.getElementById('cell-settings-dialog-host');
+  return document.getElementById('Tihoka-settings-dialog-host');
 }
 
 beforeEach(() => {

@@ -167,8 +167,8 @@ export function syncElementTheme(element: HTMLElement, container: HTMLElement): 
 /** Marks the element `injectThemeTokens` owns — the video container. Host
  *  pages set their own `data-theme`/`data-preset` attributes (StreamFlix,
  *  Netflix, YouTube all do), so the carrier must be identified by a
- *  Cell-specific marker, never by the theme attributes themselves. */
-export const THEME_CARRIER_ATTR = 'data-cell-theme-carrier';
+ *  Tihoka-specific marker, never by the theme attributes themselves. */
+export const THEME_CARRIER_ATTR = 'data-tihoka-theme-carrier';
 
 /**
  * Find the light-DOM element that carries the live `data-theme`/`data-preset`

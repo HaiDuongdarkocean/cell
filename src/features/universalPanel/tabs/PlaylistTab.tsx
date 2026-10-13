@@ -190,7 +190,7 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
   );
 
   const announcer = (
-    <VisuallyHidden as="div" role="status" aria-atomic="true" data-cell-id="playlist-status-announcer">
+    <VisuallyHidden as="div" role="status" aria-atomic="true" data-tihoka-id="playlist-status-announcer">
       {announcement}
     </VisuallyHidden>
   );
@@ -213,7 +213,7 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
           launchPump();
         }
       }}
-      data-cell-id="playlist-phrase-pump"
+      data-tihoka-id="playlist-phrase-pump"
     >
       <Text variant="body" truncate>
         {t('pump.launcher')}
@@ -246,7 +246,7 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
           description={t('condensedAudio.list.emptyHint')}
           size="compact"
           className={styles.empty}
-          data-cell-id="playlist-empty"
+          data-tihoka-id="playlist-empty"
         />
       </>
     );
@@ -291,7 +291,7 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
                     src={previewUrl}
                     controls
                     autoPlay
-                    data-cell-id={`playlist-preview-${record.id}`}
+                    data-tihoka-id={`playlist-preview-${record.id}`}
                   />
                 )}
               </div>
@@ -305,7 +305,7 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
                       aria-label={t('condensedAudio.action.preview')}
                       title={t('condensedAudio.action.preview')}
                       disabled={busy}
-                      data-cell-id={`playlist-preview-btn-${record.id}`}
+                      data-tihoka-id={`playlist-preview-btn-${record.id}`}
                       onClick={() => void onPreview(record)}
                     >
                       <Icon name={previewId === record.id ? 'x' : 'play'} size="sm" />
@@ -317,7 +317,7 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
                       aria-label={t('condensedAudio.action.export')}
                       title={t('condensedAudio.action.export')}
                       disabled={busy}
-                      data-cell-id={`playlist-export-${record.id}`}
+                      data-tihoka-id={`playlist-export-${record.id}`}
                       onClick={() => void act(MESSAGE_TYPES.CONDENSE_AUDIO_EXPORT, record)}
                     >
                       <Icon name="download" size="sm" />
@@ -329,7 +329,7 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
                       aria-label={t('condensedAudio.action.syncDrive')}
                       title={t('condensedAudio.action.syncDrive')}
                       disabled={busy || record.driveSyncedAt !== null}
-                      data-cell-id={`playlist-sync-${record.id}`}
+                      data-tihoka-id={`playlist-sync-${record.id}`}
                       onClick={() => void act(MESSAGE_TYPES.CONDENSE_AUDIO_SYNC_DRIVE, record)}
                     >
                       <Icon name="navRepeat" size="sm" />
@@ -344,7 +344,7 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
                     aria-label={t('condensedAudio.action.retry')}
                     title={t('condensedAudio.action.retry')}
                     disabled={busy}
-                    data-cell-id={`playlist-retry-${record.id}`}
+                    data-tihoka-id={`playlist-retry-${record.id}`}
                     onClick={() => void act(MESSAGE_TYPES.CONDENSE_AUDIO_RETRY, record)}
                   >
                     <Icon name="rotateCcw" size="sm" />
@@ -358,7 +358,7 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
                     aria-label={active ? t('condensedAudio.action.cancel') : t('condensedAudio.action.delete')}
                     title={active ? t('condensedAudio.action.cancel') : t('condensedAudio.action.delete')}
                     disabled={busy}
-                    data-cell-id={`playlist-delete-${record.id}`}
+                    data-tihoka-id={`playlist-delete-${record.id}`}
                     onClick={() =>
                       void act(
                         active
@@ -379,7 +379,7 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
                     aria-label={t('condensedAudio.action.delete')}
                     title={t('condensedAudio.action.delete')}
                     disabled={busy}
-                    data-cell-id={`playlist-delete-${record.id}`}
+                    data-tihoka-id={`playlist-delete-${record.id}`}
                     onClick={() => void act(MESSAGE_TYPES.CONDENSE_AUDIO_DELETE, record)}
                   >
                     <Icon name="trash" size="sm" />

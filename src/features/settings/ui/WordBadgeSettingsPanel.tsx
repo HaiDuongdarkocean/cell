@@ -84,7 +84,7 @@ export function WordBadgeSettingsPanel({
         max={SIZE_MAX}
         step={1}
         aria-label={t('settings.wordBadge.buttonSize.aria')}
-        data-cell-id="word-badge-size"
+        data-tihoka-id="word-badge-size"
         onChange={(value) => onChange({ ...badgePointerTrigger, size: value })}
       />
 
@@ -102,7 +102,7 @@ export function WordBadgeSettingsPanel({
         max={SCALE_MAX}
         step={0.05}
         aria-label={t('settings.wordBadge.pointerScale')}
-        data-cell-id="word-badge-scale"
+        data-tihoka-id="word-badge-scale"
         onChange={(value) => onChange({ ...badgePointerTrigger, pointerScale: value })}
       />
     </div>

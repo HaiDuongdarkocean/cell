@@ -13,13 +13,13 @@ interface MockSettingsDialogContentProps {
 
 jest.mock('@/features/settings/ui/SettingsDialogContent', () => ({
   SettingsDialogContent: ({ settings, onChange }: MockSettingsDialogContentProps) => (
-    <div data-cell-id="settings-dialog-content">
+    <div data-tihoka-id="settings-dialog-content">
       <nav>
-        <button type="button" data-cell-id="settings-sidebar-button">Sidebar</button>
+        <button type="button" data-tihoka-id="settings-sidebar-button">Sidebar</button>
       </nav>
       <button
         type="button"
-        data-cell-id="settings-first-control"
+        data-tihoka-id="settings-first-control"
         onClick={() => onChange?.(settings as Settings)}
       >
         First control
@@ -85,8 +85,8 @@ describe('SettingsTab', () => {
         subtitleOverlayAutoLoad: DEFAULT_SETTINGS.subtitleOverlayAutoLoad,
         subtitleOverlayAutoLoadAsr: DEFAULT_SETTINGS.subtitleOverlayAutoLoadAsr,
         subtitleOverlayAutoTranslate: DEFAULT_SETTINGS.subtitleOverlayAutoTranslate,
-        showReadings: false,
-        showWordTranslations: false,
+        readingDisplay: 'off',
+        glossDisplay: 'off',
         dictionaryPopup: DEFAULT_SETTINGS.dictionaryPopup!,
       }],
       subtitleOverlayAutoLoad: false,

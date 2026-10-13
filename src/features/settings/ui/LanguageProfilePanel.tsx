@@ -132,8 +132,8 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
       subtitleOverlayAutoTranslate:
         base?.subtitleOverlayAutoTranslate ?? DEFAULT_SETTINGS.subtitleOverlayAutoTranslate,
       dictionaryPopup: base?.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS,
-      showReadings: base?.showReadings ?? (toIso6391(baseLangCode(target)) === 'zh'),
-      showWordTranslations: base?.showWordTranslations ?? false,
+      readingDisplay: base?.readingDisplay ?? (toIso6391(baseLangCode(target)) === 'zh' ? 'always' : 'off'),
+      glossDisplay: base?.glossDisplay ?? 'off',
     };
     onChange({
       ...settings,
@@ -192,16 +192,6 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
         />
       </SettingsRow>
 
-      {form?.mode === 'add' && (
-        <ProfileForm
-          mode="add"
-          universalNative={settings.universalNativeLanguage}
-          activeName={active?.name ?? null}
-          onCancel={() => setForm(null)}
-          onSubmit={handleAdd}
-        />
-      )}
-
       {profiles.length === 0 && form?.mode !== 'add' ? (
         <EmptyState
           size="compact"
@@ -228,7 +218,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
               size="sm"
               aria-expanded={form?.mode === 'add'}
               disabled={!canAdd}
-              data-cell-id="add-language-profile"
+              data-tihoka-id="add-language-profile"
               onClick={() => setForm(form?.mode === 'add' ? null : { mode: 'add' })}
             >
               <Icon name={form?.mode === 'add' ? 'x' : 'plus'} size="xs" />
@@ -236,6 +226,15 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
             </Button>
           }
         >
+        {form?.mode === 'add' && (
+          <ProfileForm
+            mode="add"
+            universalNative={settings.universalNativeLanguage}
+            activeName={active?.name ?? null}
+            onCancel={() => setForm(null)}
+            onSubmit={handleAdd}
+          />
+        )}
         <div className={styles.list} role="radiogroup" aria-label={t('settings.profiles.list.aria')} onKeyDown={handleRadioGroupKeyDown}>
           {profiles.map((profile, index) => {
             const resolved = resolveProfile(profile, settings.universalNativeLanguage);
@@ -266,7 +265,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
                   tabIndex={isActive || (noActive && index === 0) ? 0 : -1}
                   onSelect={() => setActive(profile.id)}
                   className={styles.card}
-                  data-cell-id={`language-profile-card-${profile.id}`}
+                  data-tihoka-id={`language-profile-card-${profile.id}`}
                 >
                   <span className={styles.radio} aria-hidden="true" />
                   <span className={styles.flags}>
@@ -335,7 +334,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
             </Button>
             <Button
               variant="destructive"
-              data-cell-id="profile-delete-confirm"
+              data-tihoka-id="profile-delete-confirm"
               onClick={() => {
                 if (deletingId) deleteProfile(deletingId);
                 setDeletingId(null);
@@ -345,7 +344,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
             </Button>
           </>
         }
-        data-cell-id="profile-delete-dialog"
+        data-tihoka-id="profile-delete-dialog"
       >
         <Text as="p" color="secondary">
           {t('settings.profiles.delete.body')}

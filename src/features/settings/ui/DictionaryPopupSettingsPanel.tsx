@@ -52,6 +52,12 @@ const EXAMPLE_LABEL_KEYS: Record<string, MessageKey> = {
   all: 'settings.dictionaryPopup.examples.all',
 };
 
+const FREQUENCY_OPTIONS = ['stars', 'rank'] as const;
+const FREQUENCY_LABEL_KEYS: Record<string, MessageKey> = {
+  stars: 'settings.dictionaryPopup.frequency.stars',
+  rank: 'settings.dictionaryPopup.frequency.rank',
+};
+
 type SurfaceTab = 'audio' | 'image' | 'translate' | 'links';
 
 const SURFACE_TABS: readonly { key: SurfaceTab; icon: 'audioWave' | 'image' | 'languages' | 'link'; labelKey: MessageKey }[] = [
@@ -76,6 +82,11 @@ const STEPS = [
     labelKey: 'settings.dictionaryPopup.examples' as MessageKey,
     valueKey: 'includeAllExamplesOnDefSelect' as const,
     options: EXAMPLE_OPTIONS.map((o) => ({ value: o, labelKey: EXAMPLE_LABEL_KEYS[o] })),
+  },
+  {
+    labelKey: 'settings.dictionaryPopup.frequency' as MessageKey,
+    valueKey: 'frequencyDisplay' as const,
+    options: FREQUENCY_OPTIONS.map((o) => ({ value: o, labelKey: FREQUENCY_LABEL_KEYS[o] })),
   },
 ];
 
@@ -120,7 +131,9 @@ export function DictionaryPopupSettingsPanel({
             ? (settings.defaultActiveTab ?? '')
             : step.valueKey === 'includeAllExamplesOnDefSelect'
               ? (settings.includeAllExamplesOnDefSelect ? 'all' : 'manual')
-              : settings[step.valueKey];
+              : step.valueKey === 'frequencyDisplay'
+                ? (settings.frequencyDisplay ?? 'stars')
+                : settings[step.valueKey];
 
           return (
             <SettingsRow key={step.valueKey} dense stacked title={t(step.labelKey)}>
@@ -157,7 +170,7 @@ export function DictionaryPopupSettingsPanel({
             className={`${styles.surfaceTab} ${surface === tab.key ? styles.surfaceTabActive : ''}`}
             onClick={() => setSurface(tab.key)}
             onKeyDown={moveTabFocus}
-            data-cell-id={`dict-popup-tab-${tab.key}`}
+            data-tihoka-id={`dict-popup-tab-${tab.key}`}
           >
             <Icon name={tab.icon} size="xs" />
             <span>{t(tab.labelKey)}</span>

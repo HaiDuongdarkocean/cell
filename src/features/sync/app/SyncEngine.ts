@@ -51,10 +51,55 @@ import type { SyncStore } from './syncStore';
 
 export type { EngineState } from './backoff';
 
+export interface SyncProgressItem {
+  readonly scope: Scope;
+  readonly dataClass: DataClass | null;
+  readonly total: number;
+  readonly done: number;
+  /** Present when the group holds a single record — UI can show its tail. */
+  readonly key?: string;
+}
+
+export interface EngineProgress {
+  readonly phase: 'push' | 'pull' | 'check';
+  readonly pending: number;
+  readonly done: number;
+  readonly scopesDone: number;
+  readonly scopesTotal: number;
+  readonly scope?: Scope;
+  readonly items?: readonly SyncProgressItem[];
+}
+
+function pendingItems(pending: readonly PendingKey[]): SyncProgressItem[] {
+  const groups = new Map<string, SyncProgressItem>();
+  for (const key of pending) {
+    const id = `${key.scope}|${key.dataClass}`;
+    const group = groups.get(id);
+    if (group !== undefined) {
+      groups.set(id, {
+        scope: group.scope,
+        dataClass: group.dataClass,
+        total: group.total + 1,
+        done: group.done,
+      });
+    } else {
+      groups.set(id, {
+        scope: key.scope,
+        dataClass: key.dataClass,
+        total: 1,
+        done: 0,
+        key: key.key,
+      });
+    }
+  }
+  return [...groups.values()];
+}
+
 export interface EngineStatus {
   readonly state: EngineState;
   readonly retryAt?: number;
   readonly lastError?: string;
+  readonly progress?: EngineProgress;
   readonly updatedAt: number;
 }
 
@@ -234,7 +279,10 @@ export class SyncEngine {
     });
   }
 
+  private progressItems: SyncProgressItem[] = [];
+
   private setStatus(state: EngineState, extra?: { retryAt?: number; lastError?: string }): void {
+    if (state === 'running') this.progressItems = [];
     const next: EngineStatus = { state, updatedAt: this.deps.clock.now() };
     if (extra?.retryAt !== undefined) {
       (next as { retryAt?: number }).retryAt = extra.retryAt;
@@ -244,6 +292,60 @@ export class SyncEngine {
     }
     this.status = next;
     for (const listener of this.listeners) listener(next);
+  }
+
+  private reportProgress(patch: Partial<EngineProgress>): void {
+    if (this.status.state !== 'running') return;
+    const base: EngineProgress = this.status.progress ?? {
+      phase: 'push',
+      pending: 0,
+      done: 0,
+      scopesDone: 0,
+      scopesTotal: 0,
+    };
+    const next: EngineStatus = {
+      ...this.status,
+      progress: { ...base, ...patch, items: this.progressItems },
+    };
+    this.status = next;
+    for (const listener of this.listeners) listener(next);
+  }
+
+  private markItemsDone(scope: Scope): void {
+    this.progressItems = this.progressItems.map((item) =>
+      item.scope === scope ? { ...item, done: item.total } : item,
+    );
+  }
+
+  private addWaitingScopes(scopes: readonly Scope[]): void {
+    const existing = new Set(
+      this.progressItems.map((item) => `${item.scope}|${item.dataClass ?? ''}`),
+    );
+    for (const scope of scopes) {
+      const id = `${scope}|`;
+      if (existing.has(id)) continue;
+      existing.add(id);
+      this.progressItems = [
+        ...this.progressItems,
+        { scope, dataClass: null, total: 1, done: 0 },
+      ];
+    }
+  }
+
+  private markScopeApplied(scope: Scope): void {
+    const hit = this.progressItems.find(
+      (item) => item.scope === scope && item.dataClass === null,
+    );
+    if (hit === undefined) {
+      this.progressItems = [
+        ...this.progressItems,
+        { scope, dataClass: null, total: 1, done: 1 },
+      ];
+      return;
+    }
+    this.progressItems = this.progressItems.map((item) =>
+      item === hit ? { ...item, done: 1 } : item,
+    );
   }
 
   private async executeCycle(): Promise<CycleResult> {
@@ -417,6 +519,15 @@ export class SyncEngine {
         return { ...emptyCycleResult(), acquired: true };
       }
       this.setStatus('running');
+      this.progressItems = pendingItems(pending);
+      this.reportProgress({
+        phase: 'push',
+        pending: pending.length,
+        done: 0,
+        scopesDone: 0,
+        scopesTotal: 0,
+        scope: undefined,
+      });
 
       const skipConnection = new Set<ConnectionId>();
       for (const connection of connected.values()) {
@@ -442,6 +553,9 @@ export class SyncEngine {
         waitingFor,
       );
       ackedKeys += routed.ackedKeys;
+      let pushScopesTotal = 0;
+      for (const bucket of routed.buckets.values()) pushScopesTotal += bucket.size;
+      this.reportProgress({ done: ackedKeys, scopesTotal: pushScopesTotal });
 
       for (const connection of connected.values()) {
         if (skipConnection.has(connection.connectionId)) continue;
@@ -469,6 +583,7 @@ export class SyncEngine {
           let scopeErrors = 0;
           let wrote = false;
           for (const outcome of result.outcomes) {
+            this.reportProgress({ scope: outcome.scope });
             if (outcome.error !== undefined) scopeErrors += 1;
             if (outcome.journalSeq !== undefined) {
               wrote = true;
@@ -483,7 +598,9 @@ export class SyncEngine {
               }
             }
             ackedKeys += outcome.ackedKeys;
+            if (outcome.error === undefined) this.markItemsDone(outcome.scope);
           }
+          this.reportProgress({ done: ackedKeys, scopesDone: scopesPushed.length });
           if (scopeErrors > 0) {
             const retryAt = this.backoff.recordFailure(
               connection.connectionId,
@@ -556,6 +673,7 @@ export class SyncEngine {
     let lockLost = false;
     let cycleError: unknown;
     let didWork = false;
+    let checkScopesTotal = 0;
     const sleep = deps.sleep ?? defaultSleep;
 
     try {
@@ -595,6 +713,14 @@ export class SyncEngine {
               target.connectionId === connection.connectionId
             );
           });
+          checkScopesTotal += scopes.length;
+          this.addWaitingScopes(scopes);
+          this.reportProgress({
+            phase: 'check',
+            scopesDone: appliedScopes.size,
+            scopesTotal: checkScopesTotal,
+            scope: undefined,
+          });
           const pullDeps = {
             provider,
             connection,
@@ -610,6 +736,8 @@ export class SyncEngine {
             onAppliedBatch: (scope: Scope, dataClasses: readonly DataClass[]) => {
               appliedScopes.add(scope);
               for (const dc of dataClasses) appliedDataClasses.add(dc);
+              this.markScopeApplied(scope);
+              this.reportProgress({ scopesDone: appliedScopes.size, scope });
             },
           };
           let pullResult = await runScopesPull(pullDeps, scopes);
@@ -711,12 +839,22 @@ export class SyncEngine {
     let ackedKeys = 0;
     let lockLost = false;
     let cycleError: unknown;
+    let pullScopesTotal = 0;
 
     try {
       const pending = await collectPendingKeys(
         deps.sources,
         deps.pendingLimit ?? DEFAULT_PENDING_LIMIT,
       );
+      this.progressItems = pendingItems(pending);
+      this.reportProgress({
+        phase: 'push',
+        pending: pending.length,
+        done: 0,
+        scopesDone: 0,
+        scopesTotal: 0,
+        scope: undefined,
+      });
       const connected = new Map<ConnectionId, Connection>();
       for (const connection of await deps.connections()) {
         connected.set(connection.connectionId, connection);
@@ -809,6 +947,9 @@ export class SyncEngine {
       );
       const buckets = routed.buckets;
       ackedKeys += routed.ackedKeys;
+      let pushScopesTotal = 0;
+      for (const bucket of buckets.values()) pushScopesTotal += bucket.size;
+      this.reportProgress({ done: ackedKeys, scopesTotal: pushScopesTotal });
 
       for (const connection of connected.values()) {
         if (skipConnection.has(connection.connectionId)) continue;
@@ -835,6 +976,7 @@ export class SyncEngine {
           let scopeErrors = 0;
           let wrote = false;
           for (const outcome of result.outcomes) {
+            this.reportProgress({ scope: outcome.scope });
             if (outcome.error !== undefined) scopeErrors += 1;
             if (outcome.journalSeq !== undefined) {
               wrote = true;
@@ -849,7 +991,9 @@ export class SyncEngine {
               }
             }
             ackedKeys += outcome.ackedKeys;
+            if (outcome.error === undefined) this.markItemsDone(outcome.scope);
           }
+          this.reportProgress({ done: ackedKeys, scopesDone: scopesPushed.length });
           if (scopeErrors > 0) {
             const retryAt = this.backoff.recordFailure(
               connection.connectionId,
@@ -872,6 +1016,14 @@ export class SyncEngine {
           }
 
           const pullScopes = await listPullScopes(provider, connection, routing);
+          pullScopesTotal += pullScopes.length;
+          this.addWaitingScopes(pullScopes);
+          this.reportProgress({
+            phase: 'pull',
+            scopesDone: appliedScopes.size,
+            scopesTotal: pullScopesTotal,
+            scope: undefined,
+          });
           const pullResult = await runConnectionPull(
             {
               provider,
@@ -901,6 +1053,8 @@ export class SyncEngine {
               onAppliedBatch: (scope, dataClasses) => {
                 appliedScopes.add(scope);
                 for (const dc of dataClasses) appliedDataClasses.add(dc);
+                this.markScopeApplied(scope);
+                this.reportProgress({ scopesDone: appliedScopes.size, scope });
               },
               allConnectionIds: async () =>
                 (await deps.connections()).map((c) => c.connectionId),

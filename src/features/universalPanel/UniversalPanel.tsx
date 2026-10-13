@@ -51,27 +51,27 @@ export interface UniversalPanelProps {
   readonly queuePanel?: ReactNode;
 }
 
-const TOOLS: { id: string; icon: 'library' | 'layers' | 'playRoundedRect'; title: MessageKey; onClick: () => void; 'data-cell-id'?: string }[] = [
+const TOOLS: { id: string; icon: 'library' | 'layers' | 'playRoundedRect'; title: MessageKey; onClick: () => void; 'data-tihoka-id'?: string }[] = [
   {
     id: 'reader',
     icon: 'library',
     title: 'panel.tools.reader.title',
     onClick: () => { void sendMessage({ type: MESSAGE_TYPES.OPEN_READER, payload: {} }); },
-    'data-cell-id': 'universal-panel-reader',
+    'data-tihoka-id': 'universal-panel-reader',
   },
   {
     id: 'srs',
     icon: 'layers',
     title: 'panel.tools.srs.title',
     onClick: () => { void sendMessage({ type: MESSAGE_TYPES.SRS_OPEN_STUDY_PAGE, payload: {} }); },
-    'data-cell-id': 'universal-panel-srs-study',
+    'data-tihoka-id': 'universal-panel-srs-study',
   },
   {
     id: 'player',
     icon: 'playRoundedRect',
     title: 'panel.tools.player.title',
     onClick: () => { window.open(getLocalPlayerUrl(), '_blank'); },
-    'data-cell-id': 'universal-panel-tab-local-player',
+    'data-tihoka-id': 'universal-panel-tab-local-player',
   },
 ];
 
@@ -118,7 +118,7 @@ export function UniversalPanel({
     if (ae && panel.contains(ae) && ae.offsetParent !== null) return;
     const item = Array.from(
       panel.querySelectorAll<HTMLElement>(
-        `[data-cell-id="universal-panel-tab-${activeTab}"],[data-cell-id="universal-panel-mobile-tab-${activeTab}"]`,
+        `[data-tihoka-id="universal-panel-tab-${activeTab}"],[data-tihoka-id="universal-panel-mobile-tab-${activeTab}"]`,
       ),
     ).find((el) => el.offsetParent !== null);
     item?.focus();
@@ -175,9 +175,9 @@ export function UniversalPanel({
 
   return (
     <div
-      className={`${overlayClass} js-cell-universal-panel`}
+      className={`${overlayClass} js-Tihoka-universal-panel`}
       onClick={handleBackdropClick}
-      data-cell-id="universal-panel-backdrop"
+      data-tihoka-id="universal-panel-backdrop"
     >
       <Surface
         ref={panelRef}
@@ -193,14 +193,14 @@ export function UniversalPanel({
           }
         }}
         className={panelClass}
-        data-cell-id="universal-panel"
+        data-tihoka-id="universal-panel"
       >
         <CollapsibleSidebar
           as="nav"
           collapsed={isCollapsed}
           onCollapsedChange={setIsCollapsed}
           aria-label={t('panel.tabs.aria')}
-          data-cell-id="universal-panel-tab-bar"
+          data-tihoka-id="universal-panel-tab-bar"
           className={styles.desktopSidebar}
           sections={[
             {
@@ -212,7 +212,7 @@ export function UniversalPanel({
                 label: t(tab.label),
                 active: activeTab === tab.key,
                 onClick: () => onTabChange(tab.key),
-                'data-cell-id': `universal-panel-tab-${tab.key}`,
+                'data-tihoka-id': `universal-panel-tab-${tab.key}`,
               })),
             },
             {
@@ -223,7 +223,7 @@ export function UniversalPanel({
                 icon: tool.icon,
                 label: t(tool.title),
                 onClick: tool.onClick,
-                'data-cell-id': tool['data-cell-id'],
+                'data-tihoka-id': tool['data-tihoka-id'],
               })),
             },
           ]}
@@ -240,7 +240,7 @@ export function UniversalPanel({
             onProfileChange={onProfileChange}
           />
 
-          <div className={styles.content} data-cell-id={`universal-panel-content-${activeTab}`}>
+          <div className={styles.content} data-tihoka-id={`universal-panel-content-${activeTab}`}>
             {(visitedTabs.has('dictionary') || activeTab === 'dictionary') && (
               <div className={styles.tabPane} role="region" aria-label={t('panel.tab.dictionary')} hidden={activeTab !== 'dictionary'}>{dictionaryPanel}</div>
             )}

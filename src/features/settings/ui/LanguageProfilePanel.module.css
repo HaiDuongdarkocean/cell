@@ -24,7 +24,7 @@
   gap: var(--space-1);
   min-width: 0;
   padding-right: var(--space-1);
-  border: var(--border-width-hairline) solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-divider);
   border-radius: var(--radius-lg);
   background: transparent;
 }
@@ -158,9 +158,9 @@
 
 /* === Inline profile form (add + edit) === */
 .profileForm {
-  border: var(--border-width-hairline) solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-divider);
   border-radius: var(--radius-lg);
-  background: var(--color-surface);
+  background: transparent;
   padding: var(--space-3);
   display: flex;
   flex-direction: column;
@@ -232,7 +232,8 @@
 }
 
 .choice {
-  border: var(--border-width-hairline) solid var(--color-border);
+  position: relative;
+  border: var(--border-width-hairline) solid var(--color-divider);
   background: transparent;
   border-radius: var(--radius-lg);
   padding: var(--space-3);
@@ -264,6 +265,13 @@
 }
 
 .choice:focus-visible { box-shadow: var(--shadow-focus); outline: none; }
+
+.choiceCheck {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  color: var(--color-text-accent-strong);
+}
 
 .choiceTitle {
   font-size: var(--font-size-sm);

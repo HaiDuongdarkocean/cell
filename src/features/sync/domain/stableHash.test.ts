@@ -30,6 +30,6 @@ describe('stableHash', () => {
   });
 
   it('returns an 8-char lowercase hex string', () => {
-    expect(stableHash({ x: 'cell' })).toMatch(/^[0-9a-f]{8}$/);
+    expect(stableHash({ x: 'Tihoka' })).toMatch(/^[0-9a-f]{8}$/);
   });
 });

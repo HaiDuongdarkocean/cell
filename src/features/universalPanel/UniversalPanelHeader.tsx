@@ -52,7 +52,7 @@ export function UniversalPanelHeader({
   const profileName = activeProfile?.name ?? t('panel.profile.select');
 
   return (
-    <header className={styles.header} data-cell-id="universal-panel-header">
+    <header className={styles.header} data-tihoka-id="universal-panel-header">
       {activeProfile && onProfileChange && (
         <>
           <Button
@@ -66,7 +66,7 @@ export function UniversalPanelHeader({
             aria-haspopup="menu"
             aria-expanded={isProfileMenuOpen}
             title={profileName}
-            data-cell-id="universal-panel-profile-button"
+            data-tihoka-id="universal-panel-profile-button"
           >
             <FlagIcon lang={activeProfile.target ?? ''} title={profileName} />
           </Button>
@@ -75,7 +75,7 @@ export function UniversalPanelHeader({
             onClose={() => setIsProfileMenuOpen(false)}
             triggerRef={profileTriggerRef}
             ariaLabel={t('panel.profileDialog.title')}
-            data-cell-id="universal-panel-profile-menu"
+            data-tihoka-id="universal-panel-profile-menu"
           >
             {languageProfiles.map((profile) => (
               <MenuItem
@@ -86,7 +86,7 @@ export function UniversalPanelHeader({
                   onProfileChange(profile.id);
                   setIsProfileMenuOpen(false);
                 }}
-                data-cell-id={`universal-panel-profile-option-${profile.id}`}
+                data-tihoka-id={`universal-panel-profile-option-${profile.id}`}
               >
                 {profile.name}
               </MenuItem>
@@ -108,7 +108,7 @@ export function UniversalPanelHeader({
         aria-label={t('panel.close')}
         className={styles.closeButton}
         onClick={onClose}
-        data-cell-id="universal-panel-close"
+        data-tihoka-id="universal-panel-close"
       >
         <Icon name="x" />
       </Button>
