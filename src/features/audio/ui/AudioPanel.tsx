@@ -18,7 +18,7 @@
 
 import { useMemo, useState, type ReactElement } from 'react';
 import { t, type MessageKey } from '@/shared/i18n';
-import { Button, Icon, Input, SegmentedControl, Select, SettingsGroup, SettingsRow } from '@/shared/ui';
+import { Button, HintIcon, Icon, Input, SegmentedControl, Select, SettingsGroup, SettingsRow } from '@/shared/ui';
 import type {
   AudioEngineKind,
   PronunciationSettings,
@@ -156,21 +156,33 @@ export function AudioPanel({
   return (
     <div className={styles.panel} data-cell-id="audio-panel">
       {/* Sources: pick a mode → see the order → configure a source → hear it. */}
-      <SettingsGroup
-        label={<span className={styles.groupLabel}>{t('audio.group.sources')}</span>}
-        description={t('audio.group.sources.desc')}
-      >
-        <SettingsRow
-          dense
-          stacked
-          title={t('audio.outputMode')}
-          hint={t('audio.outputMode.hint')}
-          hintAriaLabel={t('audio.outputMode.aria')}
-          hintTestId="audio-mode-hint"
-        >
+      <SettingsGroup>
+        <SettingsRow dense stacked>
+          <div className={styles.modeHead}>
+            <span className={styles.modeTitle}>
+              {t('audio.outputMode')}
+              <HintIcon
+                hint={t('audio.outputMode.hint')}
+                ariaLabel={t('audio.outputMode.aria')}
+                dataTestId="audio-mode-hint"
+              />
+            </span>
+            <button
+              type="button"
+              className={styles.advancedToggle}
+              onClick={() => setModesOpen((o) => !o)}
+              aria-expanded={advancedVisible}
+              data-open={advancedVisible}
+              data-cell-id="audio-advanced-toggle"
+            >
+              <span className={styles.advancedLabel}>{t('audio.modes.advanced')}</span>
+              <Icon name="chevronDown" size={16} />
+            </button>
+          </div>
           <div className={styles.modeRow}>
             <SegmentedControl
               variant="chips"
+              size="md"
               ariaLabel={t('audio.outputMode.aria')}
               options={[
                 {
@@ -186,6 +198,7 @@ export function AudioPanel({
             {advancedVisible && (
               <SegmentedControl
                 variant="chips"
+                size="md"
                 ariaLabel={t('audio.modes.advanced.aria')}
                 options={ADVANCED_MODES.map((mode) => ({
                   value: mode.value,
@@ -197,17 +210,6 @@ export function AudioPanel({
                 onChange={handleModeChange}
               />
             )}
-            <button
-              type="button"
-              className={styles.advancedToggle}
-              onClick={() => setModesOpen((o) => !o)}
-              aria-expanded={advancedVisible}
-              data-open={advancedVisible}
-              data-cell-id="audio-advanced-toggle"
-            >
-              <span className={styles.advancedLabel}>{t('audio.modes.advanced')}</span>
-              <Icon name="chevronDown" size={16} />
-            </button>
           </div>
         </SettingsRow>
 

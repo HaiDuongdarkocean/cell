@@ -149,6 +149,10 @@
   composes: chip sm outline from './Chip.module.css';
 }
 
+.chipOptionMd {
+  composes: chip md outline from './Chip.module.css';
+}
+
 .chipOptionActive {
   composes: selected from './Chip.module.css';
 }
