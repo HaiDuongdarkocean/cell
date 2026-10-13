@@ -180,7 +180,7 @@ test('import uploads chunks with an in-flight window and collects jobId from any
   g.CompressionStream = undefined;
   const chunks: SentChunk[] = [];
   const pendingResolvers: ((res: MessageResponse) => void)[] = [];
-  g.__cellSendMessage = (m) => {
+  g.__TihokaSendMessage = (m) => {
     if (m.type === MESSAGE_TYPES.RESOURCE_LIST) {
       return Promise.resolve({ success: true, data: { resources: [] } });
     }
