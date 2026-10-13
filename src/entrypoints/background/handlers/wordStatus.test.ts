@@ -102,16 +102,14 @@ describe('WORD_STATUS_SET', () => {
       expect.objectContaining({
         type: MESSAGE_TYPES.WORD_STATUS_CHANGED,
         payload: { tabId: 1, langCode: 'en', term: 'call', status: 'known' },
-      }),
-      { frameId: 0 },
+      })
     );
     expect(mockTabsSendMessage).toHaveBeenCalledWith(
       3,
       expect.objectContaining({
         type: MESSAGE_TYPES.WORD_STATUS_CHANGED,
         payload: { tabId: 1, langCode: 'en', term: 'call', status: 'known' },
-      }),
-      { frameId: 0 },
+      })
     );
     expect(mockTabsSendMessage).not.toHaveBeenCalledWith(
       1,
@@ -202,8 +200,7 @@ describe('WORD_STATUS_CYCLE', () => {
       expect.objectContaining({
         type: MESSAGE_TYPES.WORD_STATUS_CHANGED,
         payload: { tabId: 1, langCode: 'en', term: 'call', status: 'known' },
-      }),
-      { frameId: 0 },
+      })
     );
   });
 });
@@ -232,8 +229,7 @@ describe('WORD_STATUS_DELETE', () => {
       expect.objectContaining({
         type: MESSAGE_TYPES.WORD_STATUS_DELETED,
         payload: { tabId: 1, langCode: 'en', term: 'call' },
-      }),
-      { frameId: 0 },
+      })
     );
   });
 });
@@ -338,8 +334,7 @@ describe('WORD_STATUS_SET_MANY', () => {
       expect.objectContaining({
         type: MESSAGE_TYPES.WORD_STATUS_SET_MANY,
         payload: { tabId: 1, langCode: 'en', terms: ['a', 'b'], status: 'tracking' },
-      }),
-      { frameId: 0 },
+      })
     );
     expect(mockTabsSendMessage).not.toHaveBeenCalledWith(1, expect.anything(), expect.anything());
     expect(requestRemoteCheck).toHaveBeenCalled();
@@ -367,8 +362,7 @@ describe('WORD_STATUS_SET_MANY', () => {
       expect.objectContaining({
         type: MESSAGE_TYPES.WORD_STATUS_SET_MANY,
         payload: { tabId: 1, langCode: 'en', terms: ['a', 'b'], status: 'tracking' },
-      }),
-      { frameId: 0 },
+      })
     );
   });
 
@@ -421,8 +415,7 @@ describe('WORD_STATUS_TRASH_MANY', () => {
       expect.objectContaining({
         type: MESSAGE_TYPES.WORD_STATUS_TRASH_MANY,
         payload: { tabId: 1, langCode: 'en', terms: ['a', 'b'] },
-      }),
-      { frameId: 0 },
+      })
     );
     expect(requestRemoteCheck).toHaveBeenCalled();
   });
@@ -467,8 +460,7 @@ describe('WORD_STATUS_RESTORE_MANY', () => {
       expect.objectContaining({
         type: MESSAGE_TYPES.WORD_STATUS_RESTORE_MANY,
         payload: { tabId: 1, langCode: 'en', terms: ['a', 'b'] },
-      }),
-      { frameId: 0 },
+      })
     );
     expect(notifyUserMarkedKnown).toHaveBeenCalledWith('en', 'a');
     expect(notifyUserMarkedKnown).not.toHaveBeenCalledWith('en', 'b');

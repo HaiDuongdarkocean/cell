@@ -3,7 +3,7 @@
  *
  * Direct File handoff — extension-origin senders (popup) skip byte chunks:
  * RESOURCE_IMPORT_BEGIN registers the job, then the File rides
- * BroadcastChannel('cell-import') straight to the offscreen runner. Any
+ * BroadcastChannel('Tihoka-import') straight to the offscreen runner. Any
  * begin failure must fall back to the chunk path under the same jobId.
  */
 
@@ -19,7 +19,7 @@ jest.mock('../logic/signatureGenerator', () => ({
 
 type SendOverride = (m: { type: string; payload: Record<string, unknown> }) => Promise<MessageResponse>;
 const g = globalThis as {
-  __cellSendMessage?: SendOverride;
+  __TihokaSendMessage?: SendOverride;
   BroadcastChannel?: unknown;
 };
 
@@ -40,7 +40,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  delete g.__cellSendMessage;
+  delete g.__TihokaSendMessage;
   g.BroadcastChannel = savedBroadcastChannel;
 });
 
@@ -59,7 +59,7 @@ function makeRealFile(name: string, content: string): ReadableFile {
 
 test('extension-origin import posts import-run on the channel after a successful begin', async () => {
   const sent: { type: string; payload: Record<string, unknown> }[] = [];
-  g.__cellSendMessage = async (m) => {
+  g.__TihokaSendMessage = async (m) => {
     sent.push(m);
     if (m.type === MESSAGE_TYPES.RESOURCE_LIST) return { success: true, data: { resources: [] } };
     if (m.type === MESSAGE_TYPES.RESOURCE_IMPORT_BEGIN) {
@@ -93,7 +93,7 @@ test('begin passes through a resolved replace decision', async () => {
     format: 'json' as const, signature: 'sig-1', wordCount: 42,
     installationFinished: true, importedAt: 1,
   };
-  g.__cellSendMessage = async (m) => {
+  g.__TihokaSendMessage = async (m) => {
     if (m.type === MESSAGE_TYPES.RESOURCE_LIST) return { success: true, data: { resources: [existing] } };
     if (m.type === MESSAGE_TYPES.RESOURCE_IMPORT_BEGIN) {
       return { success: true, data: { direct: true, jobId: 'bg-job-2' } };
@@ -113,7 +113,7 @@ test('begin passes through a resolved replace decision', async () => {
 
 test('falls back to chunk upload when begin fails', async () => {
   const sent: { type: string; payload: Record<string, unknown> }[] = [];
-  g.__cellSendMessage = async (m) => {
+  g.__TihokaSendMessage = async (m) => {
     sent.push(m);
     if (m.type === MESSAGE_TYPES.RESOURCE_LIST) return { success: true, data: { resources: [] } };
     if (m.type === MESSAGE_TYPES.RESOURCE_IMPORT_BEGIN) {

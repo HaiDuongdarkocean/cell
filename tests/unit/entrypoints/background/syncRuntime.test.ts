@@ -32,16 +32,13 @@ const payload: SyncAppliedPayload = {
 
 let query: jest.Mock;
 let sendMessage: jest.Mock;
-let getAllFrames: jest.Mock;
 
 beforeEach(() => {
   jest.clearAllMocks();
   query = jest.fn(async () => [{ id: 1 }, { id: 2 }]);
   sendMessage = jest.fn(() => Promise.resolve(undefined));
-  getAllFrames = jest.fn(async () => [{ frameId: 0 }, { frameId: 3 }]);
   (globalThis as { chrome?: unknown }).chrome = {
     tabs: { query, sendMessage },
-    webNavigation: { getAllFrames },
   };
 });
 
@@ -59,17 +56,16 @@ describe('providerFor memoization (SC-1b)', () => {
 });
 
 describe('broadcastApplied tab fan-out (SC-13)', () => {
-  it('broadcasts to the runtime and fans out to every frame of every tab', async () => {
+  it('broadcasts to the runtime and sends one message per tab', async () => {
     const broadcast = jest.fn();
     createSyncRuntime({ broadcast });
     await broadcastApplied(payload);
     expect(broadcast).toHaveBeenCalledWith('SYNC_DATA_APPLIED', payload);
     expect(query).toHaveBeenCalledWith({});
-    expect(sendMessage).toHaveBeenCalledTimes(4);
+    expect(sendMessage).toHaveBeenCalledTimes(2);
     expect(sendMessage).toHaveBeenCalledWith(
       2,
       { type: MESSAGE_TYPES.SYNC_DATA_APPLIED, payload },
-      { frameId: 3 },
     );
   });
 
