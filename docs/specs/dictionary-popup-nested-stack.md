@@ -109,7 +109,7 @@ nested level closes.
 
 - Same word re-clicked → same level updates, no new level.
 - Click word in level N while deeper levels open → prune > N+1, reuse N+1.
-- Click highlighted `.js-cell-token` inside definitions → re-lookup same level.
+- Click highlighted `.js-Tihoka-token` inside definitions → re-lookup same level.
 - Rapid clicks → stale responses dropped via per-level requestId.
 - Viewport edges → `computePopupPosition` clamps per level; child anchor lives
   inside parent popup, placement picks the free side.
@@ -136,9 +136,9 @@ nested level closes.
   discard, per-level highlight lifecycle, video pause/resume on stack-empty,
   `setAnchor` → `usePopupPosition` recompute.
 - E2E (`e2e/stage2/`): lv1 from subtitle target → click word in definitions →
-  both `.js-cell-popup-host` remain → click another word in lv1 → lv2
+  both `.js-Tihoka-popup-host` remain → click another word in lv1 → lv2
   still single child → outside click → stack gone. Reuse existing
-  `cellEnvironment` fixture (headed Chrome, real `dist/`).
+  `TihokaEnvironment` fixture (headed Chrome, real `dist/`).
 
 ## Definition of done
 

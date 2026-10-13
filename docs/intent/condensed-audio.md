@@ -9,7 +9,7 @@
 | Concept | Statement | Evidence | Confidence |
 |---|---|---|---|
 | Need | Người immersion muốn nạp input trong thời gian inactive (ra ngoài, nấu ăn, tập) — audio gốc ~50% là không-thoại nên density thấp và không portable | user direction 2026-10-01; Condenser/AJATT ghi nhận condensed audio ngắn hơn ~50% (ercanserteli.com/condenser, ajatt.top/blog/passive-listening) | high |
-| Change | Hiện tại Cell chỉ phục vụ immersion khi đang xem (video + cues); tương lai: mọi video có cues sinh ra một file audio chỉ-gồm-thoại mang đi mọi nơi | backlog #20 pain; hiện không có export audio nào ngoài clip 15s của cardCreator | high |
+| Change | Hiện tại Tihoka chỉ phục vụ immersion khi đang xem (video + cues); tương lai: mọi video có cues sinh ra một file audio chỉ-gồm-thoại mang đi mọi nơi | backlog #20 pain; hiện không có export audio nào ngoài clip 15s của cardCreator | high |
 | Solution | Một pipeline "condense": cắt audio theo cue ranges (+padding) → ghép → xuất mp3 — hai leg sản xuất: file-based (ffmpeg offscreen) cho media tải được, realtime record (JUMP playback + captureStream) cho streaming không tải được | user direction: "hai hướng… tải về rồi condense ra mp3; không tải được thì recording lại rồi ghép → mp3" | high |
 | Value | Biến dead-time thành immersion; ~2x language density so với nghe nguyên bản; đóng vòng "xem → nghe lại" của immersion loop | AJATT/impd rationale; Migaku Player ship condensed audio export như flagship | high |
 | Stakeholder | Immersionist theo chủ nghĩa immersion (Anh) — persona 5–80 tuổi, RAM ≥1GB | AGENTS.md persona | high |
@@ -19,10 +19,10 @@
 
 | Group | Who | Their need re: this change | Capability/constraint |
 |---|---|---|---|
-| Team | Cell maintainer | Cần ffmpeg pipeline mới (atrim/concat/encode) + record session ổn định | ffmpeg-core.wasm đã vendored (kiểm chứng encoder mp3 ở SPECIFY); offscreen + jobs infra sẵn |
+| Team | Tihoka maintainer | Cần ffmpeg pipeline mới (atrim/concat/encode) + record session ổn định | ffmpeg-core.wasm đã vendored (kiểm chứng encoder mp3 ở SPECIFY); offscreen + jobs infra sẵn |
 | Customer | Immersionist | File nghe được mọi nơi kể cả phone, không thao tác thủ công | Persona rộng — UI phải đơn giản, progress rõ |
 | Supplier/Dependency | ffmpeg wasm core, File System Access API, MediaRecorder/captureStream | mp3 encode trong wasm build; `showDirectoryPicker` cần user gesture + secure context | ffmpeg vendored; picker đã chạy từ shadow-DOM panel (`LocalPronunciationSettingsPanel.tsx:84`) |
-| Organization | Repo Cell | Không phá local-first, không dep nặng | không thêm dep nếu ffmpeg core sẵn có encoder phù hợp |
+| Organization | Repo Tihoka | Không phá local-first, không dep nặng | không thêm dep nếu ffmpeg core sẵn có encoder phù hợp |
 | Regulator | Chrome Web Store policy, bản quyền nội dung | Record audio stream = sao chép nội dung có bản quyền cho personal use — cùng phong vị rủi ro với download feature đã ship | `download`/`transmux` feature đã tồn tại; giữ local-first, không phát tán |
 
 ## Needs

@@ -4,7 +4,7 @@
 
 ## Design Read
 
-One new visual only — a *selected* mark on `.js-cell-token` that must coexist with the status underline (bottom edge) and the frequency pill (fill) without being mistaken for either.
+One new visual only — a *selected* mark on `.js-Tihoka-token` that must coexist with the status underline (bottom edge) and the frequency pill (fill) without being mistaken for either.
 
 ## Function audit
 
@@ -38,7 +38,7 @@ Baseline: `DESIGN_VARIANCE 2` (mark must feel native to existing token grammar),
 
 ## Inspiration anchor
 
-Cell's own selected grammar (`inset-selected` shadow token) + the nature story: a pebble ringed, a leaf washed — the mark is a *gesture of marking*, not a new object.
+Tihoka's own selected grammar (`inset-selected` shadow token) + the nature story: a pebble ringed, a leaf washed — the mark is a *gesture of marking*, not a new object.
 
 ## Context quote
 

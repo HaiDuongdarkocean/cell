@@ -3,7 +3,7 @@
 ## 1. Findings
 
 ### 1.1 Intent summary (from `docs/intent/reader.md`)
-- Build a Reader feature inside the Cell MV3 extension for foreign-language learners.
+- Build a Reader feature inside the Tihoka MV3 extension for foreign-language learners.
 - Import and read EPUB / PDF / TXT / HTML, tokenize text, show the existing dictionary popup, play TTS by sentence, save words/sentences to Anki via the existing Card Creator, and track progress.
 - MVP = TXT + HTML + tokenize + dictionary + TTS + progress/resume.
 - Slices 2/3/4 add EPUB (`@abfcode/spine`), PDF (`pdfjs-dist`), polish, settings, and Anki auto-save.
@@ -26,7 +26,7 @@
 | Storage (settings) | `src/shared/lib/storage/settingsStore.ts` | Schema-versioned `loadSettings`/`saveSettings` with migrations. Reader settings can be a new slice added with `CURRENT_SCHEMA_VERSION` bump. |
 | Large file storage | `src/shared/lib/storage/opfsStorage.ts` | OPFS helpers (`ensureDownloadSubdir`, `createOpfsWriter`, `readFile`, `readJsonFile`, `writeJsonFile`, `isQuotaExceededError`). Already used for downloads; can be adapted to store imported books and extracted text. |
 | Local-player page pattern | `src/entrypoints/local-player/main.tsx` + `index.html` + `src/entrypoints/background/handlers/localPlayer.ts` | A dedicated extension page is opened with `chrome.tabs.create({ url: chrome.runtime.getURL('src/entrypoints/<page>/index.html') })` and `web_accessible_resources`. The Reader should follow this exact pattern. |
-| IndexedDB pattern | `src/features/local-player/services/mediaLibraryRepository.ts` | `DB_NAME`, `DB_VERSION`, object stores for videos/history. Reader can add a new DB (`cell-reader`) for book metadata, progress, and saved words. |
+| IndexedDB pattern | `src/features/local-player/services/mediaLibraryRepository.ts` | `DB_NAME`, `DB_VERSION`, object stores for videos/history. Reader can add a new DB (`Tihoka-reader`) for book metadata, progress, and saved words. |
 
 ### 1.3 File format parsing — technical reality
 
@@ -232,7 +232,7 @@ No new dependencies are needed for TXT/HTML (native `FileReader` + `DOMParser`).
 
 Use existing `opfsStorage.ts` helpers: `ensureDownloadSubdir` pattern reimplemented as `ensureReaderBookDir(bookId)`.
 
-### 5.2 IndexedDB: `cell-reader` database
+### 5.2 IndexedDB: `Tihoka-reader` database
 
 ```ts
 const DB_NAME = 'cell-reader';

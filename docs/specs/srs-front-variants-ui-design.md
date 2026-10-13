@@ -8,7 +8,7 @@
 
 ## 1. Feature context
 
-Cell là Chrome extension học ngoại ngữ (SRS flashcard). Một **note** (từ vựng + câu + media) sinh ra **card**; mỗi card được ôn qua nhiều **variant** — mỗi variant là một bài tập nhỏ với *mặt trước* (front) hiển thị một số "nguyên liệu" của note và *mặt sau* (back) hiển thị đáp án để tự chấm.
+Tihoka là Chrome extension học ngoại ngữ (SRS flashcard). Một **note** (từ vựng + câu + media) sinh ra **card**; mỗi card được ôn qua nhiều **variant** — mỗi variant là một bài tập nhỏ với *mặt trước* (front) hiển thị một số "nguyên liệu" của note và *mặt sau* (back) hiển thị đáp án để tự chấm.
 
 Trước đây cố định 3 variant. Feature này biến variant thành **entity người dùng tự quản**: tạo/sửa/xóa/đổi tên/tìm kiếm, tự chọn field hiển thị trên front, và mỗi variant có tiến trình + lịch ôn riêng (FSRS). **Back luôn canonical đầy đủ — không cấu hình.** Variant được nhóm trong **preset** — collection có preset mặc định, deck có thể override hoặc share preset với deck khác.
 
@@ -99,7 +99,7 @@ Toggle options degrade theo material: thiếu `wordAudio` → audio toggle colla
 
 Trong editor/manager phải có cách thấy trạng thái này (dim row, "Hidden on this note" trong preview) — variant ẩn **không phải lỗi**, là behavior đúng.
 
-## 6. Design constraints (Cell design system — bắt buộc)
+## 6. Design constraints (Tihoka design system — bắt buộc)
 
 - **Không** Liquid Glass/blur; solid surfaces: `background → surface → surface-card → surface-elevated`.
 - Chỉ dùng tokens `src/shared/styles/tokens.json` (`var(--color-*)`, `--space-*`, `--radius-*`, `--font-*`) — cấm hex/px hardcode, cấm `--md-sys-*`.

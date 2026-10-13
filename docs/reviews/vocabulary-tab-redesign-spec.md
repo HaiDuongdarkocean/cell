@@ -35,7 +35,7 @@ None.
 10. Edit-mode state crossing Trash segment undefined ("keeps mode state" vs "trash has no edit mode") — specify reset/restore on return. [A,C]
 11. REQ-9 gaps: preconditions "none" (needs panel open / Trash selectable), no exception flow for `TRASH_LIST` failure, no remaining-time format, no trash pagination rule. [A,C]
 12. Traceability orphans: REQ-4/REQ-5 absent from Need→REQ table (mark "preserved behavior"); N10 maps "—" (acceptable, NFR-covered); S1–S5 unmapped (optional). [B,C]
-13. `data-cell-id` stability claim conflicts with redesign — `vocabulary-filter-unknown` must disappear; list which hooks keep vs change (blast radius small: only 2 test files consume). [A,C]
+13. `data-tihoka-id` stability claim conflicts with redesign — `vocabulary-filter-unknown` must disappear; list which hooks keep vs change (blast radius small: only 2 test files consume). [A,C]
 14. `updatedAt` on restore unspecified — affects `recent` sort. [C]
 15. NFR-5 "O(n) per read" too strict — `selectEntries` sorts O(n log n); reword. [C]
 16. DoD includes `npm run lint`; AC-11 omits it — sync. [C]
@@ -59,7 +59,7 @@ None.
 6. Add ACs (or cite existing tests) for REQ-1/2/3/4/5 — §Success Criteria
 7. Spec `'unknown'` incoming event = removal in source — REQ-8
 8. Complete plumbing checklist (MessageType union, barrel, local emit, clearAllStores, onversionchange) — §Data
-9. Minor edits: line 308/DoD, "sweeps" wording, edit-mode×trash, REQ-9 gaps, traceability REQ-4/5, data-cell-id list, updatedAt, NFR-5, lint/AC-11, trash count source, DELETE-vs-trash, filter role, 700px checkpoint — per §Minor
+9. Minor edits: line 308/DoD, "sweeps" wording, edit-mode×trash, REQ-9 gaps, traceability REQ-4/5, data-tihoka-id list, updatedAt, NFR-5, lint/AC-11, trash count source, DELETE-vs-trash, filter role, 700px checkpoint — per §Minor
 
 ## Round-1 resolution (author applied, re-review waived by user)
 
@@ -73,7 +73,7 @@ All 9 action items were applied to spec v2:
 6. AC-12 added covering REQ-1/2/3/4/5 preserved behaviors; AC-13 added for the `changed{unknown}` receiver contract.
 7. REQ-8 now specifies incoming `changed{status:'unknown'}` = removal in list surfaces.
 8. §Data plumbing checklist completed: MessageType union, zod schemas, registry, handlers, client fns + barrel, local emit (broadcast excludes source tab), `STORES`/`createAllStores`/version bump + test-assertion sync, `clearAllStores`, `dbCache` versionchange close.
-9. Minors applied: DoD restored; sweep wording = "filters out and physically removes"; edit-mode×trash defined (exit on Trash, view mode on return); REQ-9 preconditions/exception/time-format/pagination added; REQ-4/5 mapped as preserved; data-cell-id keep/retire/add list added; `updatedAt` on restore = now; NFR-5 reworded to "no complexity regression"; lint added to AC-11; trash count = post-purge survivors from `WORD_STATUS_TRASH_LIST`; `WORD_STATUS_DELETE` clears pending trash; filter role = `tablist`; ~700px checkpoint added to NFR-1/AC-7.
+9. Minors applied: DoD restored; sweep wording = "filters out and physically removes"; edit-mode×trash defined (exit on Trash, view mode on return); REQ-9 preconditions/exception/time-format/pagination added; REQ-4/5 mapped as preserved; data-tihoka-id keep/retire/add list added; `updatedAt` on restore = now; NFR-5 reworded to "no complexity regression"; lint added to AC-11; trash count = post-purge survivors from `WORD_STATUS_TRASH_LIST`; `WORD_STATUS_DELETE` clears pending trash; filter role = `tablist`; ~700px checkpoint added to NFR-1/AC-7.
 
 Re-review round waived by user directive (single review round only); fixes verified by author against the action-item list.
 

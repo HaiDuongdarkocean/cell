@@ -8,7 +8,7 @@ Component `Sidebar` hiện tại đang bị ôm đồm quá nhiều trách nhi�
 
 ## 2. User
 
-Developer trong dự án Cell và người dùng cuối tương tác với UI trên cả 3 nền tảng (Desktop, Tablet, Mobile/Android).
+Developer trong dự án Tihoka và người dùng cuối tương tác với UI trên cả 3 nền tảng (Desktop, Tablet, Mobile/Android).
 
 ## 3. Current workflow
 

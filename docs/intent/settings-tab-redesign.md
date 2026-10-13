@@ -6,7 +6,7 @@
 
 ## Business Case
 
-BACCM inference — every cell cites evidence (`file:line`) or `[assumption]` + confidence.
+BACCM inference — every Tihoka cites evidence (`file:line`) or `[assumption]` + confidence.
 
 | Concept | Statement | Evidence | Confidence |
 |---|---|---|---|

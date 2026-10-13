@@ -5,7 +5,7 @@
 
 ## 1. Objective
 
-Chuyển Cell sang hệ component **borderless-by-default**: hierarchy do **tonal ladder + spacing + shadow-chỉ-cho-floating** gánh; `border` chỉ tồn tại khi nó *mang thông tin*.
+Chuyển Tihoka sang hệ component **borderless-by-default**: hierarchy do **tonal ladder + spacing + shadow-chỉ-cho-floating** gánh; `border` chỉ tồn tại khi nó *mang thông tin*.
 
 ### Công thức màu 3 lớp (trả lời "background thế nào, card ra sao, item thế nào")
 
@@ -103,7 +103,7 @@ Bỏ viền **không** đổi `border-width` thành `0` ở chỗ đang có `bor
 
 ## 8. Follow-up sweep (out of MVP)
 
-Danh sách file feature-level còn hairline sau phase này (grep `border.*--color-border`): universalPanel dividers/bottom-nav, dictionaryPopup header/cells, cardCreator FieldRow trigger, LanguageProfilePanel, SubtitleOffsetPanel, tokenize spans… Chuyển dần theo nguyên tắc: pane-separator → `border-subtle` hoặc tonal step; item outline → xóa.
+Danh sách file feature-level còn hairline sau phase này (grep `border.*--color-border`): universalPanel dividers/bottom-nav, dictionaryPopup header/Tihokas, cardCreator FieldRow trigger, LanguageProfilePanel, SubtitleOffsetPanel, tokenize spans… Chuyển dần theo nguyên tắc: pane-separator → `border-subtle` hoặc tonal step; item outline → xóa.
 
 ## 9. Success criteria
 

@@ -1,4 +1,4 @@
-# Cell Reader — Adversarial Review (#1)
+# Tihoka Reader — Adversarial Review (#1)
 
 > Phạm vi: `docs/specs/reader.md`, `docs/intent/reader.md`, `docs/specs/reader-requirements.md`, `docs/research/reader-technical.md`, `docs/mockups/reader-README.md`.
 > Nhiệm vụ: tìm lỗi/giả định nguy hiểm. Không validate, không tóm tắt điểm mạnh, không sửa mã nguồn.
@@ -72,7 +72,7 @@
 21. **Tái sử dụng `DictionaryPanelView`/`useDictionaryLookup`/`CardCreatorDialogContent` trong ngữ cảnh sách import giả định chúng hoạt động mà không cần DOM web thật.**
     - Các component này thiết kế cho web text với `element`, cursor offset, context sentence. Đưa “synthetic `TokenBlock` với `document.body`” là hack chưa được kiểm chứng, có thể gây lỗi lookup/context.
 
-22. **Không có kế hoạch migration IndexedDB `cell-reader` vượt quá `DB_VERSION = 1`.**
+22. **Không có kế hoạch migration IndexedDB `Tihoka-reader` vượt quá `DB_VERSION = 1`.**
     - Schema hiện gồm 4 object stores. Khi Slice 4 thêm saved word/sentence/collaboration, sẽ cần nâng version. Spec không đề cập `onupgradeneeded`, dễ dẫn đến data loss khi deploy update.
 
 23. **Không có kế hoạch cụ thể tích hợp `navigator.storage.estimate()` và xử lý quota đầy.**

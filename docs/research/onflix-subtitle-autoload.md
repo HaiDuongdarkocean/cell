@@ -3,9 +3,9 @@
 ## Input
 
 - **URL (supplied by user):** `https://onflix.lat/xem-phim/dac-vu-kim-tai-khoi-dong/vietsub-sn/vietsub/1`
-- **Date/profile:** 2026-09-08 / disposable stealth Chrome clones (`cell-3fbe8475d7cc`, `cell-8c548a989e04`, etc.)
+- **Date/profile:** 2026-09-08 / disposable stealth Chrome clones (`Tihoka-3fbe8475d7cc`, `Tihoka-8c548a989e04`, etc.)
 - **Access status:** Page loads, player iframe renders, `.vtt` subtitle files are fetched.
-- **User goal:** Detect real subtitle files used by the player, add them to background inventory, preserve language metadata, deliver the selected subtitle to the correct frame, and auto-load it into Cell's subtitle overlay panel.
+- **User goal:** Detect real subtitle files used by the player, add them to background inventory, preserve language metadata, deliver the selected subtitle to the correct frame, and auto-load it into Tihoka's subtitle overlay panel.
 
 ## Player topology
 
@@ -28,8 +28,8 @@
 | Network `.vtt` requests for `m-center.onflixcdn.com/content/<uuid>.vtt` observed | E2 | Real dialogue subtitle sources exist. |
 | `thumb.vtt` storyboard VTT also fetched | E2 | Must be filtered out of subtitle selection. |
 | `performance.getEntriesByType('resource')` lists exact VTT URLs | E3 | Direct network evidence, not just player UI. |
-| Background inventory (`GET_DETECTED_MEDIA`) contains 3 subtitle entries (`vi`, `en`, `unknown`) | E4 | Cell successfully discovers and normalizes ONFLIX subtitles. |
-| `data-cell-autoload-handled` from player iframe shows overlay loaded `62a1234f...vtt` (English) | E4 | `AUTO_LOAD_SUBTITLES` reaches the correct frame and the overlay initializes. |
+| Background inventory (`GET_DETECTED_MEDIA`) contains 3 subtitle entries (`vi`, `en`, `unknown`) | E4 | Tihoka successfully discovers and normalizes ONFLIX subtitles. |
+| `data-tihoka-autoload-handled` from player iframe shows overlay loaded `62a1234f...vtt` (English) | E4 | `AUTO_LOAD_SUBTITLES` reaches the correct frame and the overlay initializes. |
 
 ## List
 
@@ -50,11 +50,11 @@
 ## Replay contract
 
 - **URL context:** Direct `https://m-center.onflixcdn.com/...` URLs with no signed tokens or expiry visible.
-- **Referer/Origin:** `playembed.vip` (the iframe). Cell's DNR path already rewrites the Referer/Origin from the request initiator.
+- **Referer/Origin:** `playembed.vip` (the iframe). Tihoka's DNR path already rewrites the Referer/Origin from the request initiator.
 - **Auth/cookie:** None required for the observed `.vtt` files.
 - **Fetch verification:** Background resolves the UUID-based `vtt` by fetching and parsing the body; language is detected from content.
 
-## Cell delivery
+## Tihoka delivery
 
 - **Discovery:** `webRequest.onBeforeRequest` catches the `.vtt` URLs; `PageScanner` and MAIN-world fetch interceptor also contribute the `blob:` track.
 - **Normalization:** `resolveUnknownSubtitleLanguages` fetches each UUID-named VTT, parses cues, and runs frequency-based language detection.
@@ -96,7 +96,7 @@ Implemented (all in `src/`):
 4. **Storyboard filter.**
    - `NON_SUBTITLE_KEYWORDS` in `subtitleDetector.ts` now includes `thumb\.vtt`, preventing seek-preview storyboards from being treated as dialogue subtitles.
 5. **E4 observability aid.**
-   - `content-script.ts` polls `GET_DETECTED_MEDIA` and mirrors the tab's subtitle/video count to `data-cell-debug-media` on the top `documentElement`, so cross-origin iframe tests can verify background inventory without needing the extension sidepanel.
+   - `content-script.ts` polls `GET_DETECTED_MEDIA` and mirrors the tab's subtitle/video count to `data-tihoka-debug-media` on the top `documentElement`, so cross-origin iframe tests can verify background inventory without needing the extension sidepanel.
 
 ### Known ceiling
 
@@ -113,7 +113,7 @@ Implemented (all in `src/`):
   - The `thumb.vtt` storyboard no longer interferes with auto-load.
   - Repeating the navigation twice produces the same end-to-end result.
 - **Assumed:**
-  - The overlay actually renders cues because `data-cell-autoload-handled` proves the controller received and accepted the payload. Direct DOM inspection of the cross-origin player iframe was blocked by same-origin policy.
+  - The overlay actually renders cues because `data-tihoka-autoload-handled` proves the controller received and accepted the payload. Direct DOM inspection of the cross-origin player iframe was blocked by same-origin policy.
 - **Not verified:**
   - Native (Vietnamese) side of bilingual overlay on this page, because the active target language in the test profile was English. Both `vi` and `en` are in inventory and the user can switch target language.
   - Download-to-disk path for these specific VTTs (the download pipeline was not exercised in this browser test).

@@ -8,7 +8,7 @@ Verified exact: `useFocusTrap.ts:29-41` (`getRootNode()` host-root lookup; `offs
 
 ## 2. Defects found (all applied — see `## Applied fixes`)
 
-- **D1 (minor):** evidence cells cited `loop/` artifacts (`computed-styles.json`, `02-code-audit.md`, `03-visual-mobile.md`) as primary anchors — `loop/` is ephemeral; durable rows in `docs/audits/20261006-universal-panel-ux-audit.md` carry the same numbers.
+- **D1 (minor):** evidence Tihokas cited `loop/` artifacts (`computed-styles.json`, `02-code-audit.md`, `03-visual-mobile.md`) as primary anchors — `loop/` is ephemeral; durable rows in `docs/audits/20261006-universal-panel-ux-audit.md` carry the same numbers.
 - **D2 (minor):** `tokens.css` line refs are generated output (`scripts/generate-tokens.js`) — line numbers drift; values must anchor to `tokens.json` SSOT.
 - **D3 (nit):** "item 33 depends transitively" — `product-backlog.md:68` lists item 30 as a direct dependency.
 - Forward flag (not a defect): `hasTouch: true` alone does not make `@media (pointer: coarse)` match in Chromium — coarse-pointer verification needs a mobile device descriptor (`isMobile`+`hasTouch`, e.g. `devices['Pixel 5']`) or CDP `Emulation.setEmulatedMedia` with `pointer: coarse`; the audit spec has no touch emulation today. AC #1 must not hardcode `hasTouch: true` as the sole mechanism.

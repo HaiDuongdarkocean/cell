@@ -5,7 +5,7 @@
 
 ## Context
 
-English headwords commonly carry several part-of-speech homographs with independent pronunciation, frequency, senses and learning status (`present` adj/verb/noun). Sources provide this data natively: COCA 60000 ships per-POS rank + genre counts, MacmillanEnEn renders one `.homograph` block per POS (own IPA + audio + stars + senses), and Macmillan 2nd Ed carries dual UK/US pronunciations per block. Cell previously stored one undifferentiated `DictionaryEntry`/`FrequencyEntry`/`WordStatus` row per term, so `present·verb` and `present·noun` could not be tracked or rendered independently.
+English headwords commonly carry several part-of-speech homographs with independent pronunciation, frequency, senses and learning status (`present` adj/verb/noun). Sources provide this data natively: COCA 60000 ships per-POS rank + genre counts, MacmillanEnEn renders one `.homograph` block per POS (own IPA + audio + stars + senses), and Macmillan 2nd Ed carries dual UK/US pronunciations per block. Tihoka previously stored one undifferentiated `DictionaryEntry`/`FrequencyEntry`/`WordStatus` row per term, so `present·verb` and `present·noun` could not be tracked or rendered independently.
 
 Spec: `docs/specs/pos-dictionary-variants.md`. Design: `docs/intent/pos-dictionary-variants-design-brief.md` (Concept A — chapter links).
 

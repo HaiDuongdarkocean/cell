@@ -31,7 +31,7 @@ REQ-1: Render compact word rows with play-left anatomy
   3. system shows meta sub-line under the term containing status word + frequency rank + repeat count as readable text; meta stays one line and ellipsizes at ≥280px
 - Alt flow: `rows` empty → EmptyState (unchanged)
 - Exception: `rank === null` → meta omits the `freq #N` part only (rank and `band` are independent fields; `band`'s visual role is a DESIGN-stage decision, not silently dropped)
-- Rules: no green rank chip, no bare `×N` orphan, no token underline color on the term; whole row remains the lookup hit-target except the play button. The term element keeps `js-cell-token` + `js-cell-token--status-*` classes as lookup/status hooks — their visuals are neutralized by `!important` overrides scoped under the module class only (the shared base rule in `tokenSpanCss.ts` is all-`!important`); `applyTokenStatus` may transiently re-add a status class between renders — accepted, never edit `tokenSpanCss.ts`
+- Rules: no green rank chip, no bare `×N` orphan, no token underline color on the term; whole row remains the lookup hit-target except the play button. The term element keeps `js-Tihoka-token` + `js-Tihoka-token--status-*` classes as lookup/status hooks — their visuals are neutralized by `!important` overrides scoped under the module class only (the shared base rule in `tokenSpanCss.ts` is all-`!important`); `applyTokenStatus` may transiently re-add a status class between renders — accepted, never edit `tokenSpanCss.ts`
 - Postcondition: every row exposes term, meta, play affordance
 - NFR refs: NFR-1, NFR-2, NFR-3, NFR-4
 
@@ -66,7 +66,7 @@ REQ-4: Lookup via word area
 - Preconditions: row visible
 - Basic flow:
   1. actor taps the word area (term + meta block, or row outside the play button)
-  2. system calls `onTokenClick(term, termEl, contextText)` — term element still carries the full attribute contract the lookup pipeline queries: `js-cell-token`, `data-cell-term`, `data-cell-start` on the term; `data-cue-start`, `data-cue-end` on the row (feeds `lookupCueRange`/`isLookupFromSubtitle` — asserted by `PrimerTab.test.tsx`)
+  2. system calls `onTokenClick(term, termEl, contextText)` — term element still carries the full attribute contract the lookup pipeline queries: `js-Tihoka-token`, `data-tihoka-term`, `data-tihoka-start` on the term; `data-cue-start`, `data-cue-end` on the row (feeds `lookupCueRange`/`isLookupFromSubtitle` — asserted by `PrimerTab.test.tsx`)
 - Alt flow: keyboard Enter/Space on the row (unchanged)
 - Exception: `termEl === null` → no-op (existing guard); `VisuallyHidden` status span may be dropped since the meta line now voices the status — meta text must convey the same info to screen readers (no `aria-label` needed on top of readable text)
 - Rules: status (unknown vs tracking) still distinguishable — via the status word in the meta sub-line
@@ -102,9 +102,9 @@ REQ-6: Cue list manual scroll desyncs from playback-follow; "Sync to video" pill
   - programmatic aligns never count as user scroll — track expected scrollTop after each align; a scroll event diverging >2px from expected is user-initiated (catches scrollbar drags, which produce no wheel/touch events)
   - `filterEpoch` change resets to following (extends the existing scrollTop=0 reset)
   - external scrollTop restore (`scrollPositionPreserve.ts`) registers as desynced state — the restored position now sticks instead of being stomped by the next align
-  - pill = real button (`data-cell-id="cue-list-sync"`), anchored bottom-center above the scroller (sibling of `cue-list-scroll` inside a new `position:relative` wrapper — it must not scroll with content), `z-overlay-base` ordering so the blur overlay still covers it
+  - pill = real button (`data-tihoka-id="cue-list-sync"`), anchored bottom-center above the scroller (sibling of `cue-list-scroll` inside a new `position:relative` wrapper — it must not scroll with content), `z-overlay-base` ordering so the blur overlay still covers it
   - while the pill shows, the list gets bottom padding so the last cue is not obscured
-  - `data-cell-id="cue-list-scroll"` remains on the scroll element — e2e/test selectors unchanged
+  - `data-tihoka-id="cue-list-scroll"` remains on the scroll element — e2e/test selectors unchanged
 - Postcondition: scroll position stays where the actor left it until explicit resync
 - NFR refs: NFR-1, NFR-3, NFR-6
 
@@ -116,7 +116,7 @@ REQ-6: Cue list manual scroll desyncs from playback-follow; "Sync to video" pill
 | NFR-2 | Term/meta contrast readable on dark panel; colors from `--color-text`/`--color-text-secondary` tokens only | U | visual check |
 | NFR-3 | i18n: all new meta strings keyed through `t()` in en + vi — expected new keys e.g. `primer.header`, `primer.meta`, `primer.freqRank`, `primer.repeatCount`; status word reuses `vocabulary.status.*`; aria-labels preserved | U | both locales compile |
 | NFR-4 | Row block size reduced vs current — padding steps down ≥1 token level (e.g. `--space-1-5` → `--space-1`); the play button hit area still honors `--touch-target` floor; only tokens, no hardcoded px for spacing | U | visual check / computed styles |
-| NFR-5 | `data-cell-id` hooks preserved: `primer-tab`, `primer-header`, `primer-list`, `primer-row`, `primer-seek`; plus attribute contract — `data-cell-term`, `data-cell-start` on term, `data-cue-start`, `data-cue-end` on row | S | e2e/test selectors pass |
+| NFR-5 | `data-tihoka-id` hooks preserved: `primer-tab`, `primer-header`, `primer-list`, `primer-row`, `primer-seek`; plus attribute contract — `data-tihoka-term`, `data-tihoka-start` on term, `data-cue-start`, `data-cue-end` on row | S | e2e/test selectors pass |
 | NFR-6 | Desync detection is O(1) per scroll event (scrollTop comparison only — no cue scans, no layout reads beyond scrollTop); sync pill is keyboard-reachable with i18n label in en + vi | S | unit test + visual check |
 
 ## Flows / States
@@ -178,9 +178,9 @@ No storage changes; `PrimerRow` shape unchanged.
 
 ## Boundaries
 
-- Always: shared/ui atoms + tokens; `t()` for all strings; keep the full attribute contract — `js-cell-token` (+`js-cell-token--status-*`) on the term, `data-cell-term`, `data-cell-start`, and `data-cue-start`/`data-cue-end` on the row; visual overrides scoped under the module class with `!important` (the shared token base rule is all-`!important`)
+- Always: shared/ui atoms + tokens; `t()` for all strings; keep the full attribute contract — `js-Tihoka-token` (+`js-Tihoka-token--status-*`) on the term, `data-tihoka-term`, `data-tihoka-start`, and `data-cue-start`/`data-cue-end` on the row; visual overrides scoped under the module class with `!important` (the shared token base rule is all-`!important`)
 - Ask first: changing `PrimerRow`/`buildPrimerList`; touching `tokenSpanCss.ts` or cue-list token CSS
-- Never: hardcoded hex/px spacing; editing generated `tokens.css`; dropping `data-cell-id` hooks or the cue-range attributes
+- Never: hardcoded hex/px spacing; editing generated `tokens.css`; dropping `data-tihoka-id` hooks or the cue-range attributes
 
 ## Success Criteria
 
@@ -191,7 +191,7 @@ No storage changes; `PrimerRow` shape unchanged.
 - [ ] SC-5: Term reads with `--color-text`-family foreground via module-scoped `!important` overrides; `tokenSpanCss.ts` untouched; transient status-class re-add by `applyTokenStatus` accepted
 - [ ] SC-6: Play button uses `Icon name="navPlay"`, `shape="circle"`, hit area ≥ `--touch-target`; tap seeks without lookup; Enter/Space pressed while the button is focused does NOT fire lookup
 - [ ] SC-7: Row vertical padding drops ≥1 token step vs current (e.g. `--space-1-5` → `--space-1`); more rows visible per 600px viewport; spacing from tokens only
-- [ ] SC-8: Word area opens dictionary lookup; all NFR-5 hooks (`primer-tab/header/list/row/seek` + `data-cell-term`, `data-cell-start`, `data-cue-start`, `data-cue-end`) intact; Enter/Space on the row still opens lookup
+- [ ] SC-8: Word area opens dictionary lookup; all NFR-5 hooks (`primer-tab/header/list/row/seek` + `data-tihoka-term`, `data-tihoka-start`, `data-cue-start`, `data-cue-end`) intact; Enter/Space on the row still opens lookup
 - [ ] SC-9: en + vi strings for all new meta text (`primer.header`, `primer.meta`/parts); no hardcoded `·` separators
 - [ ] SC-10: Unknown vs tracking distinguishable via the meta status word (`vocabulary.status.*` keys)
 - [ ] SC-11: With only the Subtitles tab renderable (no `playlistContent`, primer unavailable or `primerRows === null`), no `role="tablist"`/`subtitle-panel-tab-*` exists in the DOM and the cue list fills the space; when a second tab becomes renderable, the strip appears

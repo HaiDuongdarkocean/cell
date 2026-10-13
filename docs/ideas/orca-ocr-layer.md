@@ -1,12 +1,12 @@
-# Orca — OCR Layer cho Cell (hard-sub video + image + screenshot)
+# Orca — OCR Layer cho Tihoka (hard-sub video + image + screenshot)
 
-> Codename "Orca" = hướng nghiên cứu OCR layer cho Cell.
+> Codename "Orca" = hướng nghiên cứu OCR layer cho Tihoka.
 > Output của idea-refine Phase 3. Concept sharp, evidence-grounded.
 > Ngày: 2026-08-21.
 
 ## Problem Statement
 
-**How might we make text inside visual media (hard-sub video, image, screenshot, webpage) feel like native selectable text for Cell's language-learning users — with mixed-language (Chinese+English+Japanese+...) as a core requirement, not a phase-2 afterthought — running offline inside a Chrome/Edge MV3 extension on machines with ≥1GB available RAM?**
+**How might we make text inside visual media (hard-sub video, image, screenshot, webpage) feel like native selectable text for Tihoka's language-learning users — with mixed-language (Chinese+English+Japanese+...) as a core requirement, not a phase-2 afterthought — running offline inside a Chrome/Edge MV3 extension on machines with ≥1GB available RAM?**
 
 Workflow hiện tại (không OCR): pause → đọc → type → dictionary → resume.
 Workflow mục tiêu: click word trên visual text → dictionary mở ngay (OCR đã chạy ahead, cache sẵn).
@@ -51,7 +51,7 @@ interface OcrEngine {
 - `TesseractEngine` — fallback rare langs (Cyrillic/Arabic/Thai/Hindi) khi user enable, lazy-load traineddata.
 - `ChromeLensEngine` — stub `NOT_IMPLEMENTED`. Chrome KHÔNG có stable public extension OCR API (TextDetector behind flag, Lens = UI feature, Screen AI = internal). Adapter cho future nếu Chrome expose API.
 
-### Integration vào existing Cell
+### Integration vào existing Tihoka
 
 OCR layer feed text + bbox + script vào existing pipeline:
 - `chinesePlugin` (FMM segmentation + pinyin) — đã có, OCR text → segment → dictionary.
@@ -78,8 +78,8 @@ OCR layer feed text + bbox + script vào existing pipeline:
 - [x] **WebGPU trong extension worker faster WASM đủ justify complexity** — ✅ 3.7-4.3x faster sau warmup (134ms vs 583ms). First run 5s shader JIT — hide bằng dummy warmup.
 - [ ] **pHash trên subtitle crop detect subtitle change, false-negative < 5%**. Test: 100 frame sample, hash vs OCR-text-diff.
 - [ ] **~35MB model bundle không kill install rate**. Mitigate: lazy-load IndexedDB sau install, không bundle .crx.
-- [x] **`@paddleocr/paddleocr-js` v0.4.2 chạy trong Cell Vite + MV3 build** — ✅ POC validated (cần `optimizeDeps.include: ['@techstark/opencv-js']`).
-- [x] **MV3 CSP `script-src 'self' 'wasm-unsafe-eval'` đủ cho ORT WASM** — ✅ Cell manifest.json đã có (cho sql.js). Không cần sửa.
+- [x] **`@paddleocr/paddleocr-js` v0.4.2 chạy trong Tihoka Vite + MV3 build** — ✅ POC validated (cần `optimizeDeps.include: ['@techstark/opencv-js']`).
+- [x] **MV3 CSP `script-src 'self' 'wasm-unsafe-eval'` đủ cho ORT WASM** — ✅ Tihoka manifest.json đã có (cho sql.js). Không cần sửa.
 
 ## MVP Scope (product thực, không MVP — nhưng phase 1 focus)
 
@@ -191,7 +191,7 @@ OcrResult = { image: {width,height}, items: OcrResultItem[], metrics: {detMs,rec
 - [x] **`@paddleocr/paddleocr-js` chạy trong Vite** — ✅ với opencv-js pre-bundle fix.
 - [x] **poly format** — ✅ `[[x1,y1]...]` 4-point.
 - [ ] **pHash subtitle change detection** — chưa test (phase 2).
-- [x] **MV3 CSP wasm-unsafe-eval** — ✅ Cell manifest.json dòng 103 đã có `script-src 'self' 'wasm-unsafe-eval'` (cho sql.js). PaddleOCR.js cần đúng directive này — KHÔNG cần sửa manifest.
+- [x] **MV3 CSP wasm-unsafe-eval** — ✅ Tihoka manifest.json dòng 103 đã có `script-src 'self' 'wasm-unsafe-eval'` (cho sql.js). PaddleOCR.js cần đúng directive này — KHÔNG cần sửa manifest.
 - [ ] **Real subtitle frame accuracy** — synthetic text chỉ, cần test real video frame (phase 2).
 
 ## Evidence Sources

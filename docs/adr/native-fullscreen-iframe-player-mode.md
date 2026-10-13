@@ -2,11 +2,11 @@
 
 ## Context
 
-Cell content scripts run in all frames (`all_frames: true`). On cross-origin iframe players (AnimeKai/megaplay, moviepire/vidnest, anikage.cc, etc.) the video element lives inside the child iframe, while the top AnimeKai page only embeds the `<iframe>`. We want the Player Mode UI to fill the full viewport and remain interactive without breaking the video.
+Tihoka content scripts run in all frames (`all_frames: true`). On cross-origin iframe players (AnimeKai/megaplay, moviepire/vidnest, anikage.cc, etc.) the video element lives inside the child iframe, while the top AnimeKai page only embeds the `<iframe>`. We want the Player Mode UI to fill the full viewport and remain interactive without breaking the video.
 
 ## Problem
 
-Earlier T045/ADR-078 Player Mode worked well for same-origin players (YouTube, themoviebox) because the host `<video>`/player container can be reparented into the Cell shadow DOM video stage. For cross-origin iframes this is impossible:
+Earlier T045/ADR-078 Player Mode worked well for same-origin players (YouTube, themoviebox) because the host `<video>`/player container can be reparented into the Tihoka shadow DOM video stage. For cross-origin iframes this is impossible:
 
 - `position: fixed` is bounded by the iframe's browsing context; the child-frame overlay can only cover the iframe rectangle, not the top viewport.
 - Reparenting the `<video>` out of the cross-origin iframe document is forbidden by the same-origin policy.
@@ -17,10 +17,10 @@ Earlier T045/ADR-078 Player Mode worked well for same-origin players (YouTube, t
 Use the native Fullscreen API inside the child iframe, and project the host player into the Player Mode `videoStage` within the same child document.
 
 - When the user toggles Player Mode in a child frame, call `document.documentElement.requestFullscreen()`.
-- The browser puts the child document in fullscreen top-layer, so the Cell overlay (already `position: fixed; inset: 0` on `#cell-subtitle-root`) now fills the real viewport.
+- The browser puts the child document in fullscreen top-layer, so the Tihoka overlay (already `position: fixed; inset: 0` on `#Tihoka-subtitle-root`) now fills the real viewport.
 - Sync `playerMode` state with the `fullscreenchange` event: `setPlayerMode(document.fullscreenElement === document.documentElement)`.
-- Skip body-reparenting of the shadow host in child frames; `attachFullscreenReparenting` (configured by `mountReactShadow`) already moves `#cell-subtitle-root` into `document.fullscreenElement` on fullscreen change.
-- In `PlayerModeOverlay`, find the player container with `findPlayerContainer()` and reparent it into the shadow host's light DOM as the `cell-video` slot. Because this is the same child document, the move does not trigger a cross-origin violation and the video keeps playing.
+- Skip body-reparenting of the shadow host in child frames; `attachFullscreenReparenting` (configured by `mountReactShadow`) already moves `#Tihoka-subtitle-root` into `document.fullscreenElement` on fullscreen change.
+- In `PlayerModeOverlay`, find the player container with `findPlayerContainer()` and reparent it into the shadow host's light DOM as the `Tihoka-video` slot. Because this is the same child document, the move does not trigger a cross-origin violation and the video keeps playing.
 - Use the same `PlayerModeOverlay.module.css` for child and top frames: the `videoStage` has a dark letterbox background and the slotted player is sized to the stage by the responsive geometry effect. The slotted player gets `pointer-events: auto` so native controls remain clickable.
 
 ## Consequences
@@ -36,7 +36,7 @@ Use the native Fullscreen API inside the child iframe, and project the host play
 ### Cons
 
 - Requires `allow="fullscreen"` on the `<iframe>`. If a site omits it, `requestFullscreen()` rejects and Player Mode can't activate for that player.
-- Native fullscreen is a browser top-layer; OS-level exit (Esc) also exits Cell Player Mode, which is expected and consistent.
+- Native fullscreen is a browser top-layer; OS-level exit (Esc) also exits Tihoka Player Mode, which is expected and consistent.
 - The host player is reparented within the child document into the `videoStage` slot. While this is the same-origin document, any provider scripts that assume the player stays in its original parent could be affected; the mount effect preserves `originalParent`/`originalNextSibling` and the cleanup restores them on exit.
 
 ## Alternatives Considered
@@ -56,7 +56,7 @@ Use the native Fullscreen API inside the child iframe, and project the host play
   - `playerMode` host style effect skips `document.body` reparenting when `isChildFrame()`.
 
 - `PlayerModeOverlay.tsx` / `.module.css`:
-  - Mount effect no longer returns early for child frames; it reparents the player container into the shadow host slot `cell-video`.
+  - Mount effect no longer returns early for child frames; it reparents the player container into the shadow host slot `Tihoka-video`.
   - Top frame: if the host page is already in native fullscreen, the mount effect returns early.
   - Child frame: the shadow host is already inside `document.fullscreenElement`, so the mount effect does not move it to `document.body`.
   - Removed the `.childFrame` transparent/click-through override; the overlay and `videoStage` use the same dark letterbox background and slotted `pointer-events: auto` as the top frame.
@@ -76,9 +76,9 @@ Use the native Fullscreen API inside the child iframe, and project the host play
 ## AC (Acceptance Criteria)
 
 1. On AnimeKai child iframe, pressing Player Mode calls `document.documentElement.requestFullscreen()`.
-2. The video and Cell overlay fill the entire screen; the top page header is not visible.
-3. The host player is reparented into the Cell `videoStage` slot without crossing the same-origin boundary, so the video stays playing and is not reloaded.
-4. Cell Player Mode controls (dock, cue list, resize handle, subtitle area) are visible and interactive.
+2. The video and Tihoka overlay fill the entire screen; the top page header is not visible.
+3. The host player is reparented into the Tihoka `videoStage` slot without crossing the same-origin boundary, so the video stays playing and is not reloaded.
+4. Tihoka Player Mode controls (dock, cue list, resize handle, subtitle area) are visible and interactive.
 5. The video fits the `videoStage` and is responsive to viewport changes; the slotted player keeps `pointer-events: auto` so native controls are clickable.
 6. Exiting fullscreen (Player Mode exit button or Esc) restores the normal in-page overlay and the video continues.
 7. Top-frame Player Mode (YouTube/themoviebox) still reparents the host player into the video stage unchanged.

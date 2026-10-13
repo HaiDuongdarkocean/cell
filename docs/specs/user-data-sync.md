@@ -157,14 +157,14 @@ Path encoding (JSON-pointer style): segments joined by `/`; `~` → `~0`, `/` �
 | Sync directory | `storage.local.syncState` | global | see Record keys | LWW per key |
 | Secondary keys | `themeMode`, `themeConfig`, `tokenizeSettings`, `ocrSettings`, `studyModes`, `auto_download_whitelist` | global | `kv:<storageKey>/<path>` | LWW per key |
 | SRS study configs | `studyConfigs` | every profile scope whose collection `defaultStudyConfigId` or deck `studyConfigId` references it (written into each) | `studyConfigs:<id>` | LWW per key (a device holding several scopes merges the copies by HLC) |
-| SRS collections, decks, notetypes, notes | `cell-srs-*` | profile of Target(`collection.targetLanguage`) | `<store>:<id>` | LWW per key |
+| SRS collections, decks, notetypes, notes | `Tihoka-srs-*` | profile of Target(`collection.targetLanguage`) | `<store>:<id>` | LWW per key |
 | SRS cards | `cards` | profile | `cards:<id>` | Put vs put: `noteId`, `createdAt` immutable; `deckId` from the record with the higher HLC; per component winner = greater (`fsrsState.lastReview` absent = −∞, `reviewCount`), then record HLC; the winner's `studyAgainDue[component]` travels with it; `exploreCount` = max of both sides; `nextDue`/`maintenanceMode` recomputed via the existing card write path. Put vs tombstone: record HLC |
 | SRS review events | `reviewEvents` | profile | `reviewEvents:<id>` | Immutable union by id (tombstone only via cascade delete) |
 | SRS assets | `audioAssets`, `imageAssets` | profile | `<store>:<id>` | LWW per key by record HLC; bytes in `blobs/<contentHash>` |
 | Dictionary resource | `langResourceInfo` + entries/frequency (`orca-dict-*-<target>`) | profile:<target> | `resource:<contentHash>` + field keys | Content immutable (blob); each metadata field LWW per key |
 | Word status | `langWordStatus` | profile:<target> | `word:<term>` | LWW per key; setting `unknown` = tombstone |
-| Reader book | `cell-reader.books` | profile:Target(`languageCode`) | `book:<id>` + field keys | Each field LWW per key; `paragraphs` in `blobs/<contentHash>` |
-| Reader progress | `cell-reader.progress` | same as its book | `progress:<bookId>/position`, `progress:<bookId>/readTime/<deviceId>` | Position LWW per key. Read time: each device only writes its own `readTime/<ownDeviceId>` key (grow-only; merge = max); local `readTimeMs` = Σ of all devices' values. Local storage adds optional `readTimeByDevice` to `ReaderProgressRecord`; the reader write path adds its delta to the own-device entry; migration moves existing `readTimeMs` into the own-device entry |
+| Reader book | `Tihoka-reader.books` | profile:Target(`languageCode`) | `book:<id>` + field keys | Each field LWW per key; `paragraphs` in `blobs/<contentHash>` |
+| Reader progress | `Tihoka-reader.progress` | same as its book | `progress:<bookId>/position`, `progress:<bookId>/readTime/<deviceId>` | Position LWW per key. Read time: each device only writes its own `readTime/<ownDeviceId>` key (grow-only; merge = max); local `readTimeMs` = Σ of all devices' values. Local storage adds optional `readTimeByDevice` to `ReaderProgressRecord`; the reader write path adds its delta to the own-device entry; migration moves existing `readTimeMs` into the own-device entry |
 
 Cascade on apply: applying a tombstone for a collection/deck/note/card runs the existing cascade locally (`deleteCascade.ts`) through the apply path (no outbox rows — every device performs the same cascade). A book tombstone also deletes/tombstones all `progress:<bookId>/*` keys. An incoming child put whose parent's latest meta is a tombstone is retained as an opaque record but not materialized.
 
@@ -181,7 +181,7 @@ Settings objects are flattened to leaf paths; the registry declares what syncs a
 - **Maps** (`subtitlePreference`, `subtitleOffset`, `cardCreator.fieldMappings`, `dictionaryPopup.defaultActiveTabPerLang`, `tokenizeSettings`, `ocrSettings.origins`) merge per inner key automatically through leaf-path flattening.
 - Incoming values pass through the existing normalizers (`coerceDefaultTypes`, `validateNavClusterFields`, `validateLocalPlayerSettings`, `normalizeOverlayStyle`) before apply.
 
-Device-local by design (not in any data class): `orca-local-player` library/history and immersion stats derived from it, `cell-local-audio-index`, `cell-local-file-handles`, `langWordTrash` (24 h soft-delete window; the delete itself syncs as a tombstone), UI layout prefs (`cueFilterMode`, `playerModeContentPct`, `splitViewPct`, `orbitalBadgePosition`, `localPlayerSubtitlePanelOpen`, `dictionarySearchHistory`, `subtitleManagerSheetHeightVh`, `universalPanelTab`), session keys, `lookupLog`, `ankiSchemaCache`, and every `sync*` key except `syncState` (the sync directory, which is a synced data class).
+Device-local by design (not in any data class): `orca-local-player` library/history and immersion stats derived from it, `Tihoka-local-audio-index`, `Tihoka-local-file-handles`, `langWordTrash` (24 h soft-delete window; the delete itself syncs as a tombstone), UI layout prefs (`cueFilterMode`, `playerModeContentPct`, `splitViewPct`, `orbitalBadgePosition`, `localPlayerSubtitlePanelOpen`, `dictionarySearchHistory`, `subtitleManagerSheetHeightVh`, `universalPanelTab`), session keys, `lookupLog`, `ankiSchemaCache`, and every `sync*` key except `syncState` (the sync directory, which is a synced data class).
 
 ## Requirements
 
@@ -284,7 +284,7 @@ REQ-7: Capture local changes
 - Goal: Every sync-relevant mutation is captured with its scope and HLC, atomically, with no echo of remote applies
 - Preconditions: ≥1 connection exists (before the first connection nothing is captured; REQ-9's snapshot covers prior state)
 - Basic flow (IndexedDB data classes):
-  1. mutations in the synced stores (SRS DB, `langResourceInfo`, `langWordStatus`, `cell-reader`) call a shared helper inside the same transaction; repositories open that transaction over the mutated store plus the parent stores needed for scope resolution and `syncOutbox`/`syncMeta` (SRS DB v2, dictionary DB v13, reader DB v2)
+  1. mutations in the synced stores (SRS DB, `langResourceInfo`, `langWordStatus`, `Tihoka-reader`) call a shared helper inside the same transaction; repositories open that transaction over the mutated store plus the parent stores needed for scope resolution and `syncOutbox`/`syncMeta` (SRS DB v2, dictionary DB v13, reader DB v2)
   2. the helper resolves scope before the write/delete executes: card/note/deck/asset/review event → parent chain → Target(`collection.targetLanguage`); cascades delete children before parents (`src/features/srs/repositories/deleteCascade.ts`) so the chain exists at every step; study configs → every referencing profile scope; dictionary/word status → Target(DB lang); books/progress → Target(`languageCode`) rule
   3. the helper mints an HLC (context clock), writes `{ scope, dataClass, key, op }` to `syncOutbox` and record meta to `syncMeta`; per-field record keys (dictionary metadata, book fields) are derived by diffing the previous row against the new row inside the transaction
   4. dictionary entry/frequency bulk writes during import create no per-row records; import completion writes the `resource:<contentHash>` put and its field keys
@@ -518,7 +518,7 @@ pulling/copying --learner cancels→ bound(A), freeze lifted, held keys pushed t
 | Migrations | `profileIdentity` | `storage.local.syncMigrations` | persistent |
 | New field | `ResourceInfo.contentHash?` | `langResourceInfo` | with resource |
 | New field | profile ids `profile-<target>` | `settings.languageProfiles` | persistent |
-| New field | `ReaderProgressRecord.readTimeByDevice?` | `cell-reader.progress` | with progress |
+| New field | `ReaderProgressRecord.readTimeByDevice?` | `Tihoka-reader.progress` | with progress |
 
 SRS DB v1→v2, dictionary DB v12→v13 and Reader DB v1→v2 upgrades install `onversionchange` close handlers (mirroring `baseRepository.ts:48-51`) so open connections in other contexts do not block an upgrade.
 

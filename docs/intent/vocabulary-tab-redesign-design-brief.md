@@ -137,6 +137,6 @@ User refinements on B:
 2. **No timestamp in rows** — drop the `x ago`/`toLocaleDateString` meta; it adds noise without value.
 3. **Status chip cycles only the 3 persisted states** — `tracking → known → ignore → tracking`. A word inside the Vocabulary tab is by definition marked; `unknown` is never reachable from the chip. Only external surfaces (dictionary popup footer, shortcut keys 1–4) can set `unknown`, which auto-removes the row from this tab (removal semantics, not a ghost row).
 
-Row anatomy (final): `term (flex-1, ellipsis) — status chip (dictionary cellHeaderStatus pastel) — [reserved action slot: delete icon in Edit mode]`.
+Row anatomy (final): `term (flex-1, ellipsis) — status chip (dictionary TihokaHeaderStatus pastel) — [reserved action slot: delete icon in Edit mode]`.
 
 Trash row anatomy: `term — previousStatus chip (static) — "Nh left" retention — restore icon — delete-forever icon`.

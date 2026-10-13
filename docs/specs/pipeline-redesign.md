@@ -4,7 +4,7 @@
 
 ## Objective
 
-Redesign pipeline agentic SDLC của Cell (`.agents/skills/`, 48 skills) từ đầu: dời trọng tâm chất lượng từ downstream gate-stacking lên upstream — **BA theo IIBA** (needs đúng + đủ, scope khoanh vùng) → **system requirements** có traceability → **UI/UX design + validate trước build** → **deliver lean**. Thêm enforcement layer dựa trên machine-readable pipeline state + hooks, thay cho "agent tự nhớ route".
+Redesign pipeline agentic SDLC của Tihoka (`.agents/skills/`, 48 skills) từ đầu: dời trọng tâm chất lượng từ downstream gate-stacking lên upstream — **BA theo IIBA** (needs đúng + đủ, scope khoanh vùng) → **system requirements** có traceability → **UI/UX design + validate trước build** → **deliver lean**. Thêm enforcement layer dựa trên machine-readable pipeline state + hooks, thay cho "agent tự nhớ route".
 
 User: Anh yêu (PO vận hành pipeline qua agent). Đau điểm gốc (evidence trong intent doc): câu hỏi BA generic thiếu khung IIBA; intent sai → output sai; UI quyết lúc build → rework tay (FAB); nhiều gate chậm downstream; enforcement mềm.
 
@@ -56,7 +56,7 @@ Non-feature work (bugfix, audit, research, debt, meta) **không đi qua pipeline
 - **`all` mode — self-interrogation:** cùng quy trình, agent tự hypothesis + tự trả lời; claim cite `file:line`/backlog row hoặc `[assumption]`.
 - Kỹ thuật hỗ trợ (migrate interview-me/idea-refine): divergent trước converge, want-vs-should probe, document analysis (kể cả nguồn public), observation, research.
 - **Confidence mapping:** `high ≥80% | medium 50–79% | low <50%`; `low` → `awaiting: flagged:<reason>`, không stall loop.
-- **`ui_surface` write:** intent doc + `set uiSurface` + backlog `UI` cell (3 chỗ).
+- **`ui_surface` write:** intent doc + `set uiSurface` + backlog `UI` Tihoka (3 chỗ).
 - **Backward edge:** `loops += 1`; `loops == 3` → `flagged:loop-cap` + escalate.
 
 **SPECIFY = system analysis (thế giới thật → thế giới số). Method chain:** user stories + business process + logic (từ ANALYZE) → use-case-like requirements → flows/states → function/feature structure → data. Overview trước, detail sau; review cả 2 chiều (top-down + bottom-up — "trong tổng quan có chi tiết, trong chi tiết có tổng quan").

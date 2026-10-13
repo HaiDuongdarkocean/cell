@@ -221,7 +221,7 @@ No resolver changes: `bandProbe` already exists on `UnknownCueResolver`.
 - `StepEditor.tsx`: `SKIP_OPTIONS = ['never', 'non-i1']`; chip group rendered
   only when `index === 0`; `'never'` maps to `skip: undefined` (OptionGroup
   writes literal values, so skip gets a small custom group);
-  `data-cell-id` convention `step-0-skip-*`.
+  `data-tihoka-id` convention `step-0-skip-*`.
 - `formatStepSummary.ts`: append `, skip non-i1` when `step.skip` set.
 
 ## Out of scope

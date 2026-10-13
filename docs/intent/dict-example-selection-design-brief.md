@@ -55,7 +55,7 @@ User statement: "example cũng cần cơ chế dấu chấm · và người dùn
 - **Typography treatment:** example text in `core.light.textSecondary`
 - **Motion signature:** box fade+scale-in on reveal (`static.motion.duration-fast` `static.motion.ease-out`)
 - **UX flow:** gutter/row tap toggles; example text stays lookup-able + selectable (mirrors def text guard)
-- **UI structure:** sibling `cellDefExampleItem` rows under the def's `cellDefItem` — no nested checkboxes
+- **UI structure:** sibling `TihokaDefExampleItem` rows under the def's `TihokaDefItem` — no nested checkboxes
 - **3 dials:** DESIGN_VARIANCE: low · MOTION_INTENSITY: low · VISUAL_DENSITY: unchanged
 - **Why it fits:** user's prescription verbatim; zero new visual language to learn
 - **Risk:** reveal-on-hover means touch users only see the box after first tap/press — same trade-off defs already made
@@ -112,7 +112,7 @@ User statement: "example cũng cần cơ chế dấu chấm · và người dùn
 
 ## Anti-patterns Avoided
 
-- No invented checkbox visual — reuses `cellDefCheck`/`cellDefCheckBox` contract
+- No invented checkbox visual — reuses `TihokaDefCheck`/`TihokaDefCheckBox` contract
 - No nested `role="checkbox"` (sibling structure)
 - No scope creep: `SenseLine role:'example'` lines untouched
 - No new tokens — all values from tokens.json

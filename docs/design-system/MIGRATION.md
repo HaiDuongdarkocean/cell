@@ -1,4 +1,4 @@
-# MIGRATION — Cell Design System
+# MIGRATION — Tihoka Design System
 
 > From / To / Action cho mọi breaking change (DESIGN.md §10.3). Mới nhất ở trên.
 
@@ -54,7 +54,7 @@
 | `regionSelector.ts` (OCR overlay) | `#fff`, `rgba(0,0,0,…)`, `rgba(255,255,255,…)` | `STATIC_TOKENS` `--overlay-text(-rgb)`/`--overlay-background-rgb` |
 | Showcase pages | `--color-primary-contrast`/`primary-fg`/`surface-2`/`surface-sunken` | `--color-primary-foreground`/`--color-surface`/`--color-field` |
 
-**Giữ nguyên có chủ đích:** crash boundary `SubtitlePanels.tsx` (phải render khi theme hỏng), mock sites mô phỏng nền tảng ngoài, `contrast.ts`/`colorGenerator` (toán màu), `--sb-*`/`--subtitle-*`/`--cell-token-*` (runtime override có fallback), `--radius-m3-medium`/`--text-*`/`--font-sans` (chỉ trong showcase/demo).
+**Giữ nguyên có chủ đích:** crash boundary `SubtitlePanels.tsx` (phải render khi theme hỏng), mock sites mô phỏng nền tảng ngoài, `contrast.ts`/`colorGenerator` (toán màu), `--sb-*`/`--subtitle-*`/`--Tihoka-token-*` (runtime override có fallback), `--radius-m3-medium`/`--text-*`/`--font-sans` (chỉ trong showcase/demo).
 
 ### Action
 

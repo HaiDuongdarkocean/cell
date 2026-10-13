@@ -1,6 +1,6 @@
 # Component Mapping — dict-example-selection
 
-> Chosen concept: **A — Mirror rows**, user amendment: def + example share the same small `•`/`·` idle dot (the existing `cellDefCheck::before` circle — already what Concept A renders for both).
+> Chosen concept: **A — Mirror rows**, user amendment: def + example share the same small `•`/`·` idle dot (the existing `TihokaDefCheck::before` circle — already what Concept A renders for both).
 
 | Element | Component | Decision | Token(s) | Icon |
 |---|---|---|---|---|
@@ -16,9 +16,9 @@
 
 Notes:
 
-- "Example row host" extends `DictionaryCheckable.module.css` with a new `cellDefExampleItem` class — same compound-selector contract as `cellDefItem` (co-located per that file's warning header).
-- "Example text" is a new `cellDefExampleText` class in `CandidateView.module.css` — needed as the click-guard sentinel (mirrors `cellDefText`) and for secondary text color.
-- "Idle `•` dot" reuses `cellDefCheck::before` — the small circle the user pointed at; identical for def and example rows.
+- "Example row host" extends `DictionaryCheckable.module.css` with a new `TihokaDefExampleItem` class — same compound-selector contract as `TihokaDefItem` (co-located per that file's warning header).
+- "Example text" is a new `TihokaDefExampleText` class in `CandidateView.module.css` — needed as the click-guard sentinel (mirrors `TihokaDefText`) and for secondary text color.
+- "Idle `•` dot" reuses `TihokaDefCheck::before` — the small circle the user pointed at; identical for def and example rows.
 - "Settings pill step" reuses the feature-local pill row inside `DictionaryPopupSettingsPanel` (string-valued pills coerced to boolean per spec REQ-5).
 - "Card-text marker" is the `· ` line prefix emitted by `formatDefinitions` — deliberately distinct from the `• ` def prefix so the `sendToCard` string-parse fallback can re-attach example lines (spec REQ-4); the visual UI marker stays the shared `•` dot.
 - `sendToCard` precedence flip + snapshot field are logic-layer, no visual element.

@@ -308,7 +308,7 @@ shared: related, etymology, wordFamily, wordNet, derivedTerms, audio list,
 
 - Always: converter = ONLY place vendor markup được parse (script, js-mdict); `posNormalize` là SSOT duy nhất cho pos mapping; shared blocks (etymology/related/…) không scope theo variant; `pronunciation`/`reading`/`frequencies`/`status`/`definitions` cũ không bị break; gates trước commit.
 - Ask first: thêm dependency; sửa `manifest.json`; đổi Anki note model; ship vendor data; mdd audio extraction (phase 2 — item riêng).
-- Never: parse MDX trong app; vendor names trong schema/UI; guess-split markup lạ; store audio bytes trong IndexedDB phase này (chỉ refs); đổi `cell-key.pem`/manifest key.
+- Never: parse MDX trong app; vendor names trong schema/UI; guess-split markup lạ; store audio bytes trong IndexedDB phase này (chỉ refs); đổi `Tihoka-key.pem`/manifest key.
 
 ## Success Criteria
 

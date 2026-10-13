@@ -1,2 +1,2 @@
-Indie maker & Product Engineer — Cell, a language-learning extension.
+Indie maker & Product Engineer — Tihoka, a language-learning extension.
 

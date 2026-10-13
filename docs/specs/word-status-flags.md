@@ -45,7 +45,7 @@ REQ-2: Popup status controls
   3. system renders new base status on pill + token surfaces
 - Alt flow: term carries `tracking`/`learning` flag → segmented control renders the flag as the pill's right segment `[base | flag]`; flag segment click toggles tracking (same semantics as key `4`, no-op/read-only on `learning`); base segment still shows/cycles the 3 bases only
 - Exception: none
-- Rules: pill never displays or cycles into tracking/learning; SRS icon is a state-aware button in `cellHeaderActions` — ghost (no card) → `addToOceanSrs` creates card → flag=learning; learning fill (card exists) → `openSrsStudyPage` → `srs-study` deck detail (view only); disabled when base ≠ `unknown`
+- Rules: pill never displays or cycles into tracking/learning; SRS icon is a state-aware button in `TihokaHeaderActions` — ghost (no card) → `addToOceanSrs` creates card → flag=learning; learning fill (card exists) → `openSrsStudyPage` → `srs-study` deck detail (view only); disabled when base ≠ `unknown`
 - Postcondition: base status updated; flag preserved if base stays `unknown` (see REQ-4 reconcile rule), cleared otherwise
 - NFR refs: NFR-1
 
@@ -113,7 +113,7 @@ REQ-6: Token status-gradient underline
   3. `+learning` = smooth gradient learning→unknown colors
 - Alt flow: known/ignore render existing visual (unchanged)
 - Exception: host pages with aggressive CSS → existing `!important` layer covers
-- Rules: colors from `--cell-token-status-*` tokens only; same visual on subtitle overlay, cue list, web tokenize
+- Rules: colors from `--Tihoka-token-status-*` tokens only; same visual on subtitle overlay, cue list, web tokenize
 - Postcondition: three branches visually distinct
 - NFR refs: NFR-1, NFR-4
 
@@ -225,7 +225,7 @@ tokenize → resolve statuses → per sentenceIndex count not-known tokens
 
 ## Boundaries
 
-- Always: statuses resolved through helpers — no raw enum comparisons scattered; i18n keys for new text; token colors from `--cell-token-status-*`; `'learning'` writes only via system writers (REQ-1 guard)
+- Always: statuses resolved through helpers — no raw enum comparisons scattered; i18n keys for new text; token colors from `--Tihoka-token-status-*`; `'learning'` writes only via system writers (REQ-1 guard)
 - Ask first: IDB schema change (none planned); new dependency (none planned)
 - Never: user-settable `learning`; flag on `known`/`ignore`; migrate existing rows
 

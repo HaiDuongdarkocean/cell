@@ -17,8 +17,8 @@
 7. [Metric & tác động](#7-metric--tác-động)
 8. [Sơ đồ tổng hợp](#8-sơ-đồ-tổng-hợp)
 9. [So sánh Agentic SDLC vs SDLC truyền thống](#9-so-sánh-agentic-sdlc-vs-sdlc-truyền-thống)
-10. [Takeaway cho Cell](#10-takeaway-cho-cell)
-11. [Cell Agentic SDLC Runbook](#11-cell-agentic-sdlc-runbook)
+10. [Takeaway cho Tihoka](#10-takeaway-cho-Tihoka)
+11. [Tihoka Agentic SDLC Runbook](#11-Tihoka-agentic-sdlc-runbook)
 12. [Nguồn tài liệu](#12-nguồn-tài-liệu)
 
 ---
@@ -373,11 +373,11 @@ Agent sinh code nhanh → PR voluminous → **con người không review kịp**
 
 ---
 
-## 10. Takeaway cho Cell
+## 10. Takeaway cho Tihoka
 
 > Audit 2026-09-17 — đo bằng **artifact thật trong repo**, không đo bằng skill tồn tại trên giấy.
 
-| Nguyên lý agentic SDLC | Cell hiện có | Bằng chứng trong repo | Trạng thái |
+| Nguyên lý agentic SDLC | Tihoka hiện có | Bằng chứng trong repo | Trạng thái |
 |---|---|---|---|
 | **Spec-driven** | `spec-driven-development` + `elicitation` auto-spec (Autonomous Mode) | 37 specs trong `docs/specs/` — nhưng `immersion-playback` commit intent+spec+plan+code trong **1 commit** (b3770b8f) → spec-as-record, chưa chứng minh spec-as-gate | ⚠️ Artifact đầy đủ, ordering chưa chặt |
 | **On the loop** | AGENTS.md gate: typecheck + test:unit + build + browser verify trước commit | `pre-commit-gate` skill; mandate trong AGENTS.md | ✅ Đã có |
@@ -391,9 +391,9 @@ Agent sinh code nhanh → PR voluminous → **con người không review kịp**
 | **Post-ship business review** | `shipping-and-launch` § Post-Launch Business Review | Human confirm "đúng thứ cần build" vs spec Success Criteria | ✅ Đã có (2026-09-13) — chưa có track record |
 | **Pipeline retrospective** | `learning-and-apply` type `process` + `process/` store | 1 atom: `process-generated-catalog-drift` — 4 ngày không có atom mới | ⚠️ Có cơ chế, chưa thành thói quen |
 | **Stakeholder sign-off** | `elicitation` step 9 = async veto + `shipping-and-launch` post-launch review | Blocking gate chỉ còn 2: intent frame + business outcome | ✅ Đã có (2026-09-13) |
-| **Parallel orchestration** | `autonomous-pipeline` — `subagent_general` lanes + `subagent_explore` verify + git worktree isolation (`../cell-worktrees/`) | Custom subagent profile: `vision-reader` (`.devin/agents/`); built-in `subagent_explore`/`subagent_general`/`spec-reviewer`. **Skill này đã chết 4 ngày** (2026-09-13 → 17): frontmatter YAML invalid → loader drop → router trỏ tới skill không invoke được; fix bằng quote description | ⚠️ Đã hồi sinh 2026-09-17 — vẫn chưa có track record chạy thật |
+| **Parallel orchestration** | `autonomous-pipeline` — `subagent_general` lanes + `subagent_explore` verify + git worktree isolation (`../Tihoka-worktrees/`) | Custom subagent profile: `vision-reader` (`.devin/agents/`); built-in `subagent_explore`/`subagent_general`/`spec-reviewer`. **Skill này đã chết 4 ngày** (2026-09-13 → 17): frontmatter YAML invalid → loader drop → router trỏ tới skill không invoke được; fix bằng quote description | ⚠️ Đã hồi sinh 2026-09-17 — vẫn chưa có track record chạy thật |
 
-Cell implement **~90%** nguyên lý agentic SDLC. Khoảng trống còn lại không nằm ở "thiếu skill" mà ở **thiếu enforcement**: pipeline chạy nhờ agent tự nhớ route (soft), chưa có hook nào ép transition (hard). Xem §10.3.
+Tihoka implement **~90%** nguyên lý agentic SDLC. Khoảng trống còn lại không nằm ở "thiếu skill" mà ở **thiếu enforcement**: pipeline chạy nhờ agent tự nhớ route (soft), chưa có hook nào ép transition (hard). Xem §10.3.
 
 Audit 2026-09-17 bổ sung 1 lớp gap nữa — **silent failure ở ranh giới catalog↔loader**: mọi check integrity đều so index với disk, nhưng không check nào mô phỏng cái loader thật parse thế nào. `autonomous-pipeline` — mắt xích orchestration duy nhất — đã chết 4 ngày mà không ai biết, đúng pattern của atom `process-generated-catalog-drift` nhưng ở layer sâu hơn: không phải index stale, mà là **parser giả validate cho parser thật**.
 
@@ -440,7 +440,7 @@ Audit 2026-09-17 bổ sung 1 lớp gap nữa — **silent failure ở ranh giớ
 
 > Pipeline không phải "dùng skill nào" mà là "primitive nào giữ phase nào". 5 primitives của Devin CLI có vai trò khác nhau căn bản — nhầm vai trò = pipeline mềm.
 
-| Primitive | Bản chất | Vai trò trong pipeline | Cell đang dùng |
+| Primitive | Bản chất | Vai trò trong pipeline | Tihoka đang dùng |
 |---|---|---|---|
 | **Rule** | Text luôn trong context, mọi turn | Luật bất biến: conventions, boundaries, mandate | `AGENTS.md` (project) + Ponytail plugin `AGENTS.md` |
 | **Skill** | Playbook nạp on-demand khi task match | Tri thức chuyên sâu theo phase — không phải luật | 52 skills `.agents/skills/` + 6 `/ponytail:*` |
@@ -517,7 +517,7 @@ User prompt ──► UserPromptSubmit ──► hook-ponytail (mode tracker)
 
 #### Vì sao phân biệt 3 loại "instruction"
 
-| Nếu viết sai chỗ | Hậu quả thật đã thấy ở Cell |
+| Nếu viết sai chỗ | Hậu quả thật đã thấy ở Tihoka |
 |---|---|
 | Convention để trong skill (on-demand) | Agent không invoke skill → không biết rule tồn tại. Index stale 3 tuần (2026-09-13 audit) vì "phải regen" nằm trong skill text |
 | Playbook dài để trong rule (always-on) | Context rot — AGENTS.md từng ép đọc 3 docs mọi task (~1,768 dòng forced), audit 2026-09-13 phải diet xuống conditional loading |
@@ -527,7 +527,7 @@ User prompt ──► UserPromptSubmit ──► hook-ponytail (mode tracker)
 
 ---
 
-## 11. Cell Agentic SDLC Runbook
+## 11. Tihoka Agentic SDLC Runbook
 
 > Ánh xạ lý thuyết sang commands, skills, và output files cụ thể trong repo. Đây là SSOT vận hành; khi skill hoặc command thay đổi, cập nhật section này.
 

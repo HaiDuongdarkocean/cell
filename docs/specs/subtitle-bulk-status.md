@@ -24,14 +24,14 @@ REQ-1: Tokenize the local-player subtitle block and wire its status-key path
 - Goal: overlay target line renders tokenized, status-colored word spans identical to the streaming overlay, and status keys work on it
 - Preconditions: `subtitleOverlayTargetLanguage` set (same gate as the existing local-player `cueListTokenize`); cues loaded in `cuesStore`
 - Basic flow:
-  1. system creates one `createSubtitleTokenizeController` for the local-player page, wired with: `getLineElements` → the live overlay line spans (`[data-cell-id="subtitle-block"] [data-role="target"|"native"] span`, **scoped to the live block — excludes the editable `OverlayPreview` instance**); `getExtraShadowRoots` → `[data-cell-split-view="panel"].shadowRoot` (same `SPLIT_VIEW_PANEL_SELECTOR` pattern as the content script — the local-player cue list lives in a shadow root too, `subtitleSplitView.ts:280`); `onOpenDictionary` → the local `webTextCtrl.handleLookup` (same adapter as `cueListTokenize.onTokenClick`); `getPopupStatusTarget` → `webTextCtrl.getPopupStatusTarget`
+  1. system creates one `createSubtitleTokenizeController` for the local-player page, wired with: `getLineElements` → the live overlay line spans (`[data-tihoka-id="subtitle-block"] [data-role="target"|"native"] span`, **scoped to the live block — excludes the editable `OverlayPreview` instance**); `getExtraShadowRoots` → `[data-tihoka-split-view="panel"].shadowRoot` (same `SPLIT_VIEW_PANEL_SELECTOR` pattern as the content script — the local-player cue list lives in a shadow root too, `subtitleSplitView.ts:280`); `onOpenDictionary` → the local `webTextCtrl.handleLookup` (same adapter as `cueListTokenize.onTokenClick`); `getPopupStatusTarget` → `webTextCtrl.getPopupStatusTarget`
   2. system subscribes to `cuesStore` and drives `setCues(targetCues, nativeCues)` on cue-list changes and `render(targetActiveIndex, nativeActiveIndex)` on active-index changes
   3. system binds token spans for the **active cue only** (`render` binds `activeTargetIndex`; the ±`DEFAULT_WINDOW` scope is the preloader's prepare window, not a bind scope) and resolves status/frequency metadata
   4. the controller's `createStatusKeyControls` attaches its capture-phase window keydown — 1–4 become live for the whole local-player page
 - Alt flow: no target language configured → controller never created; block stays plain text and keys do nothing (today's behavior)
 - Exception: metadata resolution failure → tokens render uncolored (same graceful degradation as streaming); controller destroyed on page teardown/language change
 - Rules: only the target line is tokenized — native line stays plain; `getLineElements` must return the live overlay spans only (the manager-panel `OverlayPreview` renders a second `SubtitleBlock editable` and must never be tokenized)
-- Postcondition: overlay block shows `.js-cell-token` spans with status/frequency classes; ctrl+click on them multi-selects (free via the controller's `onTokenCtrlClick` wiring); 1–4 apply on the page
+- Postcondition: overlay block shows `.js-Tihoka-token` spans with status/frequency classes; ctrl+click on them multi-selects (free via the controller's `onTokenCtrlClick` wiring); 1–4 apply on the page
 - NFR refs: NFR-1, NFR-4
 
 REQ-2: Apply a status to a native text selection on any subtitle surface
@@ -41,7 +41,7 @@ REQ-2: Apply a status to a native text selection on any subtitle surface
 - Basic flow:
   1. actor drag-selects text in the subtitle block or subtitle panel
   2. actor presses 1/2/3/4
-  3. system resolves the status (`1→unknown, 2→tracking, 3→known, 4→ignore`) and extracts `data-cell-term` values intersecting the selection via `extractTermsFromSelection`; the allowed root set is **`document` ∪ every registered shadow root** — required because the local player mixes a light-DOM overlay with a shadow-DOM panel (registering the panel root alone would filter out overlay selections)
+  3. system resolves the status (`1→unknown, 2→tracking, 3→known, 4→ignore`) and extracts `data-tihoka-term` values intersecting the selection via `extractTermsFromSelection`; the allowed root set is **`document` ∪ every registered shadow root** — required because the local player mixes a light-DOM overlay with a shadow-DOM panel (registering the panel root alone would filter out overlay selections)
   4. system calls `setWordStatus` per term and emits `WORD_STATUS_CHANGED` per term; clears the native selection
   5. every live surface showing a changed term repaints via the existing subscriptions (cue-list token map, overlay block, open popup; other tabs via the `wordStatusCrossTab` message relay)
 - Alt flow: open dictionary popup term wins over selection (existing `getPopupStatusTarget` priority); `selectedTerms` non-empty wins over native selection; neither present → `hoveredTerm` fallback **on bound-span surfaces only** (overlay/page text — cue lists wire no hover tracking); all empty → key returns false and the event passes through
@@ -70,7 +70,7 @@ REQ-4: Visible selected state on tokenized surfaces
 - Goal: see which words are currently selected, and have the selection count readable by assistive tech
 - Preconditions: a term is present in a context's selection store
 - Basic flow:
-  1. system marks every rendered token whose term ∈ the selection store backing its surface with the `js-cell-token--selected` modifier — bound spans (`tokenSpanRenderer` display options + restyle path) and cue-list spans (`CueList`) alike
+  1. system marks every rendered token whose term ∈ the selection store backing its surface with the `js-Tihoka-token--selected` modifier — bound spans (`tokenSpanRenderer` display options + restyle path) and cue-list spans (`CueList`) alike
   2. system updates the marks whenever that store changes (store subscribe → `restyleTokenBlock` in place for bound blocks; React re-render via the `CueListTokenize` adapter for cue lists)
   3. system announces selection-count changes through one document-level `VisuallyHidden` `aria-live="polite"` region per page (e.g., "2 words selected" / "selection cleared") — covers every surface uniformly
 - Alt flow: term selected but not currently rendered → no mark needed until it renders
@@ -150,7 +150,7 @@ selection: ∅ --ctrl+click term--> {term…} --ctrl+click same term--> {term…
 | Resolve a bulk status intent | `createStatusKeyControls` instance per context (capture-phase window keydown, popup-target priority, selection→hover fallbacks) |
 | Extract terms from a text selection | `extractTermsFromSelection` with allowed roots = `document` ∪ registered shadow roots (`SPLIT_VIEW_PANEL_SELECTOR` panel root in both contexts) |
 | Track a multi-token selection | `selectedTerms` in each controller's tokenize state store + a controller selection API (toggle/read/subscribe) consumed by cue-list surfaces via extended `CueListTokenize` |
-| Mark selected tokens | `js-cell-token--selected` styling in both token-span CSS builders + selected-class application in `tokenSpanRenderer` and `CueList` |
+| Mark selected tokens | `js-Tihoka-token--selected` styling in both token-span CSS builders + selected-class application in `tokenSpanRenderer` and `CueList` |
 | Announce selection to AT | one document-level `VisuallyHidden` `aria-live="polite"` region per page, fed by store subscribe |
 | Persist + broadcast a status | `setWordStatus` + `emitWordStatusChanged`; existing `onWordStatusChanged` subscriptions repaint cue lists, overlay maps, popups; `wordStatusCrossTab` relay for other tabs |
 | Open dictionary on click | existing `onTokenClick` wiring (unchanged — CueList intercepts ctrl/meta before it) |
@@ -193,7 +193,7 @@ selection: ∅ --ctrl+click term--> {term…} --ctrl+click same term--> {term…
 
 ## Boundaries
 
-- Always: reuse the listed primitives; keep `data-cell-id`/`data-cell-term`/`js-cell-token` contracts stable; barrel imports; unit tests for selection extraction (light-DOM + shadow + mixed roots), key resolution order, and CueList selection; design tokens only for the selected-state styling; `getLineElements` scoped to the live overlay block (never `OverlayPreview`).
+- Always: reuse the listed primitives; keep `data-tihoka-id`/`data-tihoka-term`/`js-Tihoka-token` contracts stable; barrel imports; unit tests for selection extraction (light-DOM + shadow + mixed roots), key resolution order, and CueList selection; design tokens only for the selected-state styling; `getLineElements` scoped to the live overlay block (never `OverlayPreview`).
 - Ask first: any manifest/permission change (none anticipated); any new dependency (none anticipated); changing `setWordStatus` semantics (owned by the vocab spec).
 - Never: persist or sync selection across tabs; add new bulk UI chrome (checkboxes/toolbars); write status via any path other than `setWordStatus`; edit generated token files; tokenize the `OverlayPreview`/editable subtitle block.
 
@@ -202,7 +202,7 @@ selection: ∅ --ctrl+click term--> {term…} --ctrl+click same term--> {term…
 - [ ] AC-1: In the local player, drag-selecting ≥1 token (verified with 2+) in the shadow-DOM subtitle panel and pressing `3` sets every selected term to `known`, recolors them in place, and emits `WORD_STATUS_CHANGED` per term.
 - [ ] AC-2: In the local player, the subtitle block renders status-colored token spans for the active cue; drag-select→1–4 and ctrl+click→1–4 both apply to them; the `OverlayPreview` block is never tokenized.
 - [ ] AC-3: Ctrl/cmd+click on a cue-list token toggles it in the multi-selection on streaming split view, streaming Player Mode, and local player (3 contexts verified separately); pressing 1–4 applies to all selected terms; Esc clears; plain click still opens the dictionary; a `CueListTokenize` consumer without selection members keeps ctrl+click→dictionary.
-- [ ] AC-4: Selected tokens render `js-cell-token--selected` — a distinct visual mark that is not a status recolor — on bound spans (page text, overlay) and cue-list tokens, updating live on selection change.
+- [ ] AC-4: Selected tokens render `js-Tihoka-token--selected` — a distinct visual mark that is not a status recolor — on bound spans (page text, overlay) and cue-list tokens, updating live on selection change.
 - [ ] AC-5: An open dictionary popup's term still wins over any selection for 1–4 (local player included); keys are inert inside editable fields.
 - [ ] AC-6: No new bulk UI exists — gestures/keys match page text exactly; selection is never persisted or synced, and is dropped on cue reload/navigation (verified).
 - [ ] AC-7: `npm run typecheck && npm run lint && npm run test:unit && npm run build` pass; no new dependencies.
@@ -221,7 +221,7 @@ selection: ∅ --ctrl+click term--> {term…} --ctrl+click same term--> {term…
 
 ## Open Questions / Accepted Risks
 
-- The Words tab (`PrimerTab`) renders `.js-cell-token` spans in the same panel root — it inherits native-select→1–4 "for free" once a status-key handler exists, but NOT ctrl+click (its row `onClick` routes unconditionally to `onTokenClick`). Accepted consequence, not in scope.
+- The Words tab (`PrimerTab`) renders `.js-Tihoka-token` spans in the same panel root — it inherits native-select→1–4 "for free" once a status-key handler exists, but NOT ctrl+click (its row `onClick` routes unconditionally to `onTokenClick`). Accepted consequence, not in scope.
 - Cross-store apply semantics on streaming (first-non-empty-store wins per keypress; the other store applies on the next key) — accepted; revisit if real-browser verification shows confusing stale marks.
 - Ctrl+click on macOS maps to metaKey — `tokenSpanRenderer` already routes both; CueList must apply the same `ctrl||meta` check; real-browser check confirms no context-menu regression.
 - If `vocabulary-tab-redesign` lands `unknown`-as-absence first, bulk `1` semantics follow automatically since every write goes through `setWordStatus` — no coordination needed.

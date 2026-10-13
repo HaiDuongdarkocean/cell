@@ -6,7 +6,7 @@ Accepted — build verification passed; foundation tokens shipped in tokens.css.
 
 ## Context
 
-Motion trong UI không phải decoration — nó là feedback. Cell hiện có tokens `duration-fast: 150ms`, `duration-normal: 250ms`, `duration-slow: 500ms` nhưng chưa có easing scale rõ ràng, chưa có nguyên lý khi nào dùng loại nào.
+Motion trong UI không phải decoration — nó là feedback. Tihoka hiện có tokens `duration-fast: 150ms`, `duration-normal: 250ms`, `duration-slow: 500ms` nhưng chưa có easing scale rõ ràng, chưa có nguyên lý khi nào dùng loại nào.
 
 Với brand **"quiet confidence"**, motion phải **nhanh, nhẹ, có mục đích**. Không flashy, không kéo dài, không gây phân tâm.
 

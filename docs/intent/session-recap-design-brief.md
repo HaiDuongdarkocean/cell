@@ -38,7 +38,7 @@ Một cột cuộn: **hero card phiên gần nhất** (đầy đủ metrics) + *
 └─────────────────────────────────────────────┘
 ```
 
-States: loading (Spinner), empty (EmptyState: "xem video với Cell subtitles để có recap"), error (Alert + retry). Fields ẩn khi không có data — không hiển thị "0".
+States: loading (Spinner), empty (EmptyState: "xem video với Tihoka subtitles để có recap"), error (Alert + retry). Fields ẩn khi không có data — không hiển thị "0".
 
 ## Interaction
 

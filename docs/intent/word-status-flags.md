@@ -32,7 +32,7 @@
 | N1 | Phân biệt 3 nhánh chưa-biết: `unknown`, `unknown+tracking`, `unknown+learning` | F | interview; `isNew()` gộp cả 3 `comprehensionScore.ts:23-25` | high |
 | N2 | Status pill popup chỉ cycle `unknown → known → ignore`; tracking là badge riêng | U | interview + screenshot annotation; `CandidateView.tsx:275-283`, `STATUS_CYCLE` `popupTypes.ts:19` | high |
 | N3 | Phím tắt remap `1=unknown, 2=known, 3=ignore, 4=tracking`; bỏ phím 5 | U | interview; `statusKeyControls.ts:7-13` | high |
-| N4 | `learning` chỉ set khi từ có thẻ SRS (memory Cell hoặc Anki); không set tay; view SRS read-only trong popup | F | interview; `statusKeyControls.ts:12` phím 5 hiện cho set tay | high |
+| N4 | `learning` chỉ set khi từ có thẻ SRS (memory Tihoka hoặc Anki); không set tay; view SRS read-only trong popup | F | interview; `statusKeyControls.ts:12` phím 5 hiện cho set tay | high |
 | N5 | Xóa/mất thẻ SRS → từ về `unknown` thuần (không giữ tracking) | F | interview | high |
 | N6 | i+1: câu đúng 1 từ chưa-biết (đếm cả 3 nhánh) → gap word hiển thị status + frequency pill background; câu khác không đánh dấu | F | interview; `markIPlus1Tokens` `comprehensionScore.ts:35-45` | high |
 | N7 | Token underline thể hiện status bằng gradient: unknown màu riêng; +tracking = gradient unknown+tracking; +learning = gradient unknown+learning | U | interview + screenshot `msedge_s9kr1mxR1X` | high |

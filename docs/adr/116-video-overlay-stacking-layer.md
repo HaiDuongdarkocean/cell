@@ -1,4 +1,4 @@
-# ADR-116: Video Overlay Stacking Layer — subtitle above host overlays, below Cell surfaces
+# ADR-116: Video Overlay Stacking Layer — subtitle above host overlays, below Tihoka surfaces
 
 ## Status
 
@@ -10,12 +10,12 @@ Accepted
 
 ## Context
 
-On `m.youtube.com`, Cell's subtitle overlay rendered **underneath** YouTube's native
+On `m.youtube.com`, Tihoka's subtitle overlay rendered **underneath** YouTube's native
 control overlay (`#player-control-overlay` inside `#player-control-container`) — the
 subtitle panel and its buttons were unpainted under the scrim and unreachable.
 
-The cause is structural, not a z-index value problem. Cell mounts
-`#cell-subtitle-root` into the container returned by `findVideoContainer`
+The cause is structural, not a z-index value problem. Tihoka mounts
+`#Tihoka-subtitle-root` into the container returned by `findVideoContainer`
 (ADR-008 D2) — the nearest sized ancestor of `<video>` — which on m.youtube sits
 inside `#player`. `#player-control-container` is a **sibling** of `#player`; no
 z-index inside the `#player` subtree can ever paint above it. The same cap exists
@@ -26,10 +26,10 @@ host sat at `layer:2 → z-index:200`.
 The required order (per user spec) is:
 
 ```
-host page overlays < Cell subtitle overlay < other Cell overlays
+host page overlays < Tihoka subtitle overlay < other Tihoka overlays
 ```
 
-Cell's other surfaces already satisfy "above the subtitle" structurally:
+Tihoka's other surfaces already satisfy "above the subtitle" structurally:
 dictionary popup / universal panel / dialogs mount on `document.body` (outside
 the video container's stacking context), manager portal and `.blockLayer` use
 `z-index:2147483647` in-container, OCR region selector uses 99998/99999.
@@ -41,23 +41,23 @@ dialog/dictionary popup/Card Creator.
 ## Decision
 
 1. **Mount container**: `findVideoOverlayContainer(video)` (in
-   `shared/lib/dom/findPlayerContainer.ts`) is the SSOT for Cell video-level UI
+   `shared/lib/dom/findPlayerContainer.ts`) is the SSOT for Tihoka video-level UI
    mounts (subtitle host via `contentScriptController`, OCR overlay + region
    selector). On m.youtube it lifts the mount from the `#player` subtree to the
    shared ancestor `#player-container-id` — guarded by `#player-control-container`
    presence plus a same-size (±10%/dim) check so `inset:0` keeps tracking the
    video box. All other sites fall back to `findVideoContainer` unchanged.
 
-2. **Host z-index**: `#cell-subtitle-root` is set to `var(--z-overlay-video)`
-   (10000) in `mountSubtitle` — the token slot that means "Cell video overlay:
-   above host video UI, below Cell dialogs". This beats every known host
+2. **Host z-index**: `#Tihoka-subtitle-root` is set to `var(--z-overlay-video)`
+   (10000) in `mountSubtitle` — the token slot that means "Tihoka video overlay:
+   above host video UI, below Tihoka dialogs". This beats every known host
    player-internal layer (max ~1000) and remains below `--z-overlay-settings/top/orbital`
    surfaces and the max-int portals.
 
 3. **In-container sibling order**: surfaces that must sit above the subtitle host
    keep a higher in-context z: `.subtitle-drag-hint` → `calc(var(--z-overlay-video) + 1)`,
    OCR hitbox overlay → 10001, region selector → 99998/99999 (unchanged),
-   `.blockLayer` / `#cell-manager-portal` → 2147483647 (unchanged).
+   `.blockLayer` / `#Tihoka-manager-portal` → 2147483647 (unchanged).
 
 ## Alternatives Considered
 
@@ -104,8 +104,8 @@ dialog/dictionary popup/Card Creator.
 
 Live probing in Brave surfaced two split-view defects the original fix exposed:
 
-1. **`#cell-subtitle-root` permanently lost on split-view close (all sites).**
-   `useSplitView` cleanup ran `wrapper.remove()` — detaching the stageCell that
+1. **`#Tihoka-subtitle-root` permanently lost on split-view close (all sites).**
+   `useSplitView` cleanup ran `wrapper.remove()` — detaching the stageTihoka that
    holds the subtitle host — *before* re-querying it via
    `document.getElementById`, which only searches connected DOM → null → the
    restore never ran. Fixed by capturing the element reference while still

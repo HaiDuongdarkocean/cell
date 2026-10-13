@@ -5,7 +5,7 @@
 
 ## 1. Summary
 
-Cell gains an **immersion clock**: real watch time is recorded on both surfaces — local player, and streaming sites **while Cell has cues for that tab** (comprehensible-input session) — persisted in the existing `history` IDB store, and surfaced as a stats card at the top of the local-player `LibraryView`: total input hours, last-7-days hours, day streak, and progress along the Dreaming-Spanish-style level ladder (0/50/150/300/600/1000/1500 h → Level 1–7).
+Tihoka gains an **immersion clock**: real watch time is recorded on both surfaces — local player, and streaming sites **while Tihoka has cues for that tab** (comprehensible-input session) — persisted in the existing `history` IDB store, and surfaced as a stats card at the top of the local-player `LibraryView`: total input hours, last-7-days hours, day streak, and progress along the Dreaming-Spanish-style level ladder (0/50/150/300/600/1000/1500 h → Level 1–7).
 
 ## 2. Data model
 
@@ -78,7 +78,7 @@ export function createImmersionTracker(deps: {
 };
 ```
 
-- **Session gate**: `noteTimeUpdate`/`notePlayState` no-op unless `hasSession(tabId)` — `ctx.lastCuesByTab` is populated by `SUBTITLE_CUES_LOADED` and cleared on episode change/tab close, so counting = "playing while Cell cues exist for the tab" (CI-session proxy). Accepted hole: SW restart empties the map → undercounts until cues reload — fail-closed, documented.
+- **Session gate**: `noteTimeUpdate`/`notePlayState` no-op unless `hasSession(tabId)` — `ctx.lastCuesByTab` is populated by `SUBTITLE_CUES_LOADED` and cleared on episode change/tab close, so counting = "playing while Tihoka cues exist for the tab" (CI-session proxy). Accepted hole: SW restart empties the map → undercounts until cues reload — fail-closed, documented.
 - **`SUBTITLE_CUES_LOADED` broadcast-on-load fix (required for the gate to work at all)**: previously `broadcastCues` only ran on generate-native, manager-track-switch, and visibility/episode re-sends — the dominant auto-load path (`onCuesUpdated` → `subtitleTokenizeCtrl.setCues`) never broadcast, so `lastCuesByTab` stayed empty on exactly the pages the tracker targets (verified in smoke: panel full of cues, map empty). Fix: `onCuesUpdated` broadcasts `mergeCuesForPanel(target, native)` whenever the cue-list identity changes (`cuesReloaded` gate — active-index changes don't re-send). Empty merged list → background handler `delete`s the tab entry so deselecting tracks ends the session. Bonus: the side panel's initial cue sync now works without the pull fallback.
 - `noteTimeUpdate(tabId, currentTimeMs, isPlaying?)`: a defined `isPlaying` first syncs the tab's play-state map (ground truth at emit time — `false` closes the segment and drops the event; `true` unblocks counting for autoplay-before-attach tabs). Then: dropped when last play-state is paused; first event opens segment `{sessionStartMs, lastEventAt=now, acc=0, hostPromise}`; subsequent events `acc += accumulateDelta`.
 - **Flush**: when `acc − flushedAcc ≥ FLUSH_INTERVAL_MS` → upsert segment record (`id = stream-<tabId>-<sessionStartMs>`), `flushedAcc = acc`.
@@ -164,11 +164,11 @@ Schema test: float `currentTimeMs` passes `VideoTimeUpdatePayloadSchema` (regres
 
 `ImmersionStats.test.tsx` + `LibraryView.test.tsx`: renders on empty library (above EmptyState), hours/streak/level, progressbar aria attrs, zeroed state, i18n keys.
 
-Real-Chrome smoke (`tmp/immersion-clock/smoke.mjs`): local-player drop video+srt → real playback ~20 s → stats card shows >0 total + level; mock streaming page with Cell subtitles → play ~20 s → `stream` source grows; reload → totals persist; side-panel time relay verified alive (schema fix).
+Real-Chrome smoke (`tmp/immersion-clock/smoke.mjs`): local-player drop video+srt → real playback ~20 s → stats card shows >0 total + level; mock streaming page with Tihoka subtitles → play ~20 s → `stream` source grows; reload → totals persist; side-panel time relay verified alive (schema fix).
 
 ## 11. Non-goals
 
-- Counting tabs where Cell has no cues (raw playback ≠ CI session) — gate is deliberate.
+- Counting tabs where Tihoka has no cues (raw playback ≠ CI session) — gate is deliberate.
 - Calendar heatmap, per-video totals UI, manual time entry, cross-device sync.
 - Comprehension-weighted hours — future item.
 - Pill/overlay surface on streaming sites; per-site breakdown UI (`stream:<host>` is stored, not yet rendered).

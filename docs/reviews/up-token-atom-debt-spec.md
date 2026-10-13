@@ -9,7 +9,7 @@ All 5 prior action items re-verified against source.
 - REQ-6 `will-change` (was Major): **resolved** — deleted outright, `panelClass` (`:180`) always open|close verified, first-frame verify + escalate-not-restore clause is honest.
 - REQ-2 (was Major): **resolved** — converged 7-file set verified against grep; Out enumeration is exactly the remaining in-scope sites.
 - REQ-6 recap gating (was Major): **resolved** — `{activeTab === 'recap' && recapPanel}` (`:287`) verified deliberate, kept verbatim, rationale recorded.
-- REQ-4 unwrapped-children (was Minor): **resolved** — verified vs `Button.tsx:137` (`data-cell-ripple-self`), `:143` (`.label` span), `.defLineReveal > span` (`CandidateView.module.css:341`).
+- REQ-4 unwrapped-children (was Minor): **resolved** — verified vs `Button.tsx:137` (`data-tihoka-ripple-self`), `:143` (`.label` span), `.defLineReveal > span` (`CandidateView.module.css:341`).
 - REQ-7 (was Minor): **resolved** — `parse-error` exempt + non-zero (`:401`/`:470`), exit-2-on-empty, `--rules` semantics now explicit; measured baseline "exactly 13" verified by grep (StudyModes 5 + RecapTab 4 + PlaylistTab 4 = 13 undefined sites; `condensedAudio` typos out of scope as claimed).
 - REQ-1 `PlaylistTab:10` `--border-width-thick, 2px` fallback (was Minor): **resolved** — dropped in the new table row.
 - D2 magnitude 13.3px correction (was Minor): **resolved**.

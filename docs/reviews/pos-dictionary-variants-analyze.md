@@ -6,7 +6,7 @@ Mode: interactive · Reviewer: Anh (user approval)
 ## Decisions recorded
 
 - Per-POS word status (term+pos key) — user confirmed.
-- Deliverable: convert → import vào Cell + POS switcher trong popup (full feature).
+- Deliverable: convert → import vào Tihoka + POS switcher trong popup (full feature).
 - Audio `.mdd` deferred — phase sau.
 - COCA giữ breakdown 5 genre.
 - POS menu UI: bar đầu popup, `adjective | verb | noun` text links, theme-consistent (mockup `docs/mockups/pos-dictionary-variants-pos-menu.png` — lấy layout, không lấy nền sáng).

@@ -73,7 +73,7 @@ A learner opens the subtitle panel → Words tab. The system renders the primer 
 | Risk | Type | Impact | Team's ability to respond |
 |---|---|---|---|
 | Dropping the rank chip loses "how common is this word" signal if no substitute is designed | human/UX | medium | DESIGN stage keeps frequency meaning via sub-line text or a subtle band dot — user decides at mockup |
-| `js-cell-token--status-*` styling is shared with cue-list tokens — overriding it inside PrimerTab must not leak to cue list | internal | medium | Scope the override under `.primerTab` module class; visual check on both surfaces |
+| `js-Tihoka-token--status-*` styling is shared with cue-list tokens — overriding it inside PrimerTab must not leak to cue list | internal | medium | Scope the override under `.primerTab` module class; visual check on both surfaces |
 | Very long words with sub-line could still crowd on 280–320px panels | operational | low | ellipsis on term; sub-line truncates |
 | Play-left placement flips the click affordance users may have learned | human | low | Whole row still opens lookup; play button is bigger + labeled aria |
 
@@ -91,4 +91,4 @@ no-go — user pivoted on 2026-09-19: the Words (primer) tab is removed entirely
 - [ ] Row vertical spacing reduced vs current; no visual regression at desktop width
 - [ ] Play button seeks to first cue; word area opens dictionary lookup; unknown vs tracking still distinguishable
 - [ ] i18n strings for the sub-line (en + vi)
-- [ ] `data-cell-id` hooks preserved (`primer-tab`, `primer-list`, `primer-row`, `primer-seek`)
+- [ ] `data-tihoka-id` hooks preserved (`primer-tab`, `primer-list`, `primer-row`, `primer-seek`)

@@ -1,6 +1,6 @@
 # Keyboard Shortcuts — Design Brief
 
-> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Cell. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
+> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Tihoka. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
 
 ## Design Read
 The shipped `Keyboard Shortcuts` card renders actions as a **label/pill grid**: label above the pill, 1 column on mobile, 2 columns on desktop.
@@ -20,7 +20,7 @@ without reading the whole list, on desktop and Android.
 
 ## Inspiration anchor
 A calm studio mixer: every action has its own fader, labels are vertical, the active
-channels glow softly, and nothing shouts. The liquid-glass world of Cell — water, sky,
+channels glow softly, and nothing shouts. The liquid-glass world of Tihoka — water, sky,
 pebbles — means the surface should feel transparent, gentle, and responsive.
 
 > Context quote: *"tôi muốn liquic glass sẽ là design system style, màu chủ đạo là màu
@@ -56,7 +56,7 @@ pebbles — means the surface should feel transparent, gentle, and responsive.
 - **3 dials:** VARIANCE 6, MOTION 3, DENSITY 7
 - **Why it fits:** spatial memory — users remember *where* a key is, not *which* list row.
   Conflicts are immediately visible (two badges on one key). The search/filter pattern is
-  familiar from the rest of Cell.
+  familiar from the rest of Tihoka.
 - **Risk:** a full keyboard map does not fit a 320 px phone width without horizontal scroll;
   combos are harder to represent on a single keycap.
 - **Audit findings:** N/A.
@@ -122,7 +122,7 @@ pebbles — means the surface should feel transparent, gentle, and responsive.
   tiles show a dashed "Press key" placeholder.
 - **3 dials:** VARIANCE 8, MOTION 4, DENSITY 7
 - **Why it fits:** breaks the long list into glanceable, touch-friendly tiles; the group tint
-  and large key pill fit the liquid-glass card language used in other Cell settings.
+  and large key pill fit the liquid-glass card language used in other Tihoka settings.
 - **Risk:** more vertical scrolling than a list; tiles can feel heavy if the action count
   grows beyond ~12.
 - **Audit findings:** N/A.

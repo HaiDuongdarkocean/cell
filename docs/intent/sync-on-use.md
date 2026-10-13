@@ -33,7 +33,7 @@
 | N2 | Another device must detect remote changes when its user performs a word-status-related action, at most once per ~3s, and must spend nothing when nobody acts | P/+financial | user decision (option 1 + "máy để yên không sync"); quota table | high |
 | N3 | Detection must cost one cheap request when nothing changed; pulling a change must touch only the scopes this device holds, not blobs/meta/tree listings | P/+financial | full cycle shape `SyncEngine.ts:219-570`, `pullCycle.ts:107-186` | medium |
 | N4 | A push must not pay repeated remote listings that cannot find anything (existence lookup for a fresh journal, chain re-listing every push) | P | `pushCycle.ts:244-255,317-341`, `chainHealth.ts:31-34`, provider `write` `:339-341` | medium |
-| N5 | Every open Cell surface (web-page panels, subtitle/web tokenize colors, extension pages) must refresh when synced word data is applied | U/R | `messageBus.ts:117-119` vs `wordStatusCrossTab.ts:17-25` | high |
+| N5 | Every open Tihoka surface (web-page panels, subtitle/web tokenize colors, extension pages) must refresh when synced word data is applied | U/R | `messageBus.ts:117-119` vs `wordStatusCrossTab.ts:17-25` | high |
 | N6 | Correctness guarantees stay: cursor contiguity, self-heal, compaction, GC, rebind/disconnect handling — the full cycle remains the backstop | R | `sync-drive-folders` spec REQ-4..8 | high |
 | N7 | Works identically on Chrome, Brave, Firefox (desktop + Android) with no keep-alive tricks | S/R | Firefox event page + port semantics (MDN) | medium |
 
@@ -70,7 +70,7 @@ On Chrome the user opens the vocabulary tab (or looks up a word, marks a word, o
 - S1: As a multi-browser learner, I want a word-status change to leave my device right away so that my other browsers can pick it up — done when the change is on Drive within ~1.5s without any timer.
 - S2: As a multi-browser learner, I want my other browser to catch up the moment I use a vocabulary feature there so that I never act on stale word states — done when a qualifying action on the other browser shows the new state within ~3s.
 - S3: As a learner on a weak or metered device, I want sync to cost almost nothing when I'm not using it so that battery, data and quota are preserved — done when an idle browser makes no probe requests (only the 15-minute backstop runs) and an unchanged check costs one cheap request.
-- S4: As a learner with a panel already open, I want it to refresh on its own when synced data lands so that I don't reload pages — done when applied word data refreshes every open Cell surface.
+- S4: As a learner with a panel already open, I want it to refresh on its own when synced data lands so that I don't reload pages — done when applied word data refreshes every open Tihoka surface.
 
 ## Risks
 

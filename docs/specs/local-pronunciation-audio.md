@@ -15,7 +15,7 @@
 
 ## Objective
 
-Cho phép user sử dụng bộ audio phát âm local (Forvo English Lingvo DSL) trong Cell. Khi tra từ:
+Cho phép user sử dụng bộ audio phát âm local (Forvo English Lingvo DSL) trong Tihoka. Khi tra từ:
 
 - Extension tìm file audio trong local package theo từ.
 - Local audio xuất hiện trong Audio tab của dictionary popup.

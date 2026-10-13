@@ -19,7 +19,7 @@
 
 | Group | Who | Their need re: this change | Capability/constraint |
 |---|---|---|---|
-| Team | Cell maintainer | Build 3 chiều sync + status mới + Anki addon | Anki addon = codebase thứ hai (Python) + kênh phân phối riêng; AnkiConnect version drift |
+| Team | Tihoka maintainer | Build 3 chiều sync + status mới + Anki addon | Anki addon = codebase thứ hai (Python) + kênh phân phối riêng; AnkiConnect version drift |
 | Customer | Immersionist có deck Anki | Không mark tay; trạng thái nhất quán mọi nơi | Cần cài addon thủ công — friction, phải degrade êm khi chưa cài |
 | Supplier/Dependency | AnkiConnect (localhost HTTP, no push), Anki addon API (Python hooks) | Push events, `setSpecificValueOfCard` cho mark-mature | Anki không có native push — addon bắt buộc cho realtime; `setSpecificValueOfCard` version-sensitive [verify SPECIFY] |
 | Organization | Repo + release channel | Addon ship như artifact nào (zip trong release? AnkiWeb?) | Chưa có precedent — quyết ở SPECIFY |

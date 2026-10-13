@@ -6,7 +6,7 @@ Accepted — build verification passed; foundation tokens shipped in tokens.css.
 
 ## Context
 
-Typography là công cụ hierarchy và readability. Cell hiện dùng `Figtree` với scale `4xs → 5xl` và leading/tracking cơ bản. Vấn đề:
+Typography là công cụ hierarchy và readability. Tihoka hiện dùng `Figtree` với scale `4xs → 5xl` và leading/tracking cơ bản. Vấn đề:
 - Scale dùng tên `4xs`, `3xs`, `2xs` không có semantic meaning — dev phải đoán dùng `2xl` hay `3xl` cho heading.
 - Không có phân biệt display/body/label rõ ràng.
 - Tracking không được điều chỉnh theo size — display quá lỏng, caption quá chặt.
@@ -22,7 +22,7 @@ Brand cần: **calm, focused, learnable, đơn giản, thanh lịch**. Typograph
 
 **Lý do:**
 - Inter được thiết kế cho màn hình máy tính, x-height cao, giúp đọc text nhỏ và mixed-case tốt hơn ([rsms.me/inter](https://rsms.me/inter/)).
-- Inter là variable font, hỗ trợ weight tùy ý trong range 100-900; nhưng Cell chỉ dùng 4 weight chuẩn (400, 500, 600, 700). Weight 510 đã thử nghiệm nhưng bị loại để giữ bộ font file đơn giản và type scale rõ ràng.
+- Inter là variable font, hỗ trợ weight tùy ý trong range 100-900; nhưng Tihoka chỉ dùng 4 weight chuẩn (400, 500, 600, 700). Weight 510 đã thử nghiệm nhưng bị loại để giữ bộ font file đơn giản và type scale rõ ràng.
 - Inter đã được Figma, GitLab, NASA, Unity, và nhiều productivity tools dùng — chứng minh độ ổn định.
 - Figtree (hiện tại) có vẻ "light-hearted" quá, gần với consumer app hơn là "focused learning tool".
 - Geist (Vercel) quá "developer tool / Swiss minimal", không có sự ấm áp cần cho app học ngôn ngữ.
@@ -36,7 +36,7 @@ Brand cần: **calm, focused, learnable, đơn giản, thanh lịch**. Typograph
 
 Dùng 5 roles: **Display, Headline, Title, Body, Label**. Mỗi role có các size. Giúp designer/dev chọn đúng mục đích.
 
-| Role | Mục đích | Ví dụ trong Cell |
+| Role | Mục đích | Ví dụ trong Tihoka |
 |------|----------|------------------|
 | Display | Hero, marketing, lớn nhất | Landing page, empty state headline |
 | Headline | Section title, page title | "Settings", "Subtitle Manager" |
@@ -96,7 +96,7 @@ Các giá trị dưới đây là mục tiêu; SSOT chi tiết là `tokens.json`
 
 Linear dùng `cv01` (single-story 'a') và `ss03` (geometric alternates) để biến Inter thành "technical instrument" ([nguồn](https://github.com/soulcore-dev/soul-design-md/blob/main/designs/linear/DESIGN.md)).
 
-Với Cell, đề xuất giữ mặc định Inter trước. Khi cần "geometric feel" hơn, enable:
+Với Tihoka, đề xuất giữ mặc định Inter trước. Khi cần "geometric feel" hơn, enable:
 ```css
 font-feature-settings: "cv01" 1, "ss03" 1;
 ```

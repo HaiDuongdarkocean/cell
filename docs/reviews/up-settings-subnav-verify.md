@@ -50,7 +50,7 @@
 
 - `overscroll-behavior-x: contain` on `.horizontal` — small, in-scope addition listed in the design brief (scrollTrack precedent).
 - `Navigation` horizontal consumers confirmed = `SettingsDialogContent` only (panel rail is a different `nav`; bottom nav uses `Button`; showcases don't ship). `.vertical` and both `@container` collapsed rules in `NavItem.module.css` are byte-identical; `.label` ellipsis correctly re-scoped to `.vertical` — `CollapsibleSidebar` (vertical-only consumer) unaffected.
-- `t('settings.nav.scrollLeft/Right')` inside the shared atom is spec-mandated (`en.json:414-415`, `vi.json:414-415`); `data-cell-id` hooks present; `aria-current`, nav `aria-label`, `title` tooltip contract preserved.
+- `t('settings.nav.scrollLeft/Right')` inside the shared atom is spec-mandated (`en.json:414-415`, `vi.json:414-415`); `data-tihoka-id` hooks present; `aria-current`, nav `aria-label`, `title` tooltip contract preserved.
 - Strip height: sidebar horizontal rect = 49px ≤ `max-height` budget (56px fine / 60px coarse) — spec's open-risk item resolved fine.
 - Arrow hit area: measured 40×40 under fine pointer; `.arrow` enforces `min --touch-target` block/inline → 44px under coarse pointer. OK.
 - Item-30 contracts intact (buttons keep `aria-label`, `title`, `type="button"`); item-31/33 boundaries respected (no bottom-nav, no recipe changes).

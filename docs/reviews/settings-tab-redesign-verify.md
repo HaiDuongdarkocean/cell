@@ -26,7 +26,7 @@
 
 **REQ-6 — Subnav/scroll behavior: PASS.** `Navigation.tsx` untouched; `data-section`/`sectionRefs`/`aria-current`/hide-on-scroll/reduced-motion contract intact; `scroll-margin-top: var(--space-12)` covers the sticky subnav. Evidence PNGs show the labeled subnav rendering at 600px and 320px.
 
-**REQ-7 — Function preservation: PASS.** All `onChange`→`saveSettings` paths, `data-cell-id`s, workers clamp (`:641`), storage sync, and focus-into behavior unchanged. Label associations now actually work where `labelFor` is used.
+**REQ-7 — Function preservation: PASS.** All `onChange`→`saveSettings` paths, `data-tihoka-id`s, workers clamp (`:641`), storage sync, and focus-into behavior unchanged. Label associations now actually work where `labelFor` is used.
 
 ## Findings on fix claims
 
@@ -53,7 +53,7 @@
 ### Remaining (non-blocking)
 
 - **I-4b — `docs/0-wiki.md` changelog entry** is still absent; deferred to the ship step per repo convention (`docs/` → wiki at ship). Track it in `tasks/todo-settings-tab-redesign.md` S5.
-- **I-9 (deferred, pre-existing):** `data-testid` vs `data-cell-id` convention on `LanguageProfilePanel.tsx` profile cards; raw `err.message` in sync Alerts; dict-popup tabstrip `role="tablist"` without `aria-controls`/`tabpanel`. Pre-date this change; acceptable to defer.
+- **I-9 (deferred, pre-existing):** `data-testid` vs `data-tihoka-id` convention on `LanguageProfilePanel.tsx` profile cards; raw `err.message` in sync Alerts; dict-popup tabstrip `role="tablist"` without `aria-controls`/`tabpanel`. Pre-date this change; acceptable to defer.
 - **AC-8 unverified:** gates (`typecheck`, `lint`, `test:unit`, `build`) were not runnable in this read-only review — run them before commit. No unused imports or dead CSS-module refs found statically (the `shortcutGroup` dead ref is fixed).
 - **Note:** `flex: 0 0 calc(var(--space-9) * 10)` is a compliant token expression for the 360px lookup column; flagged only as stylistically unusual, not a violation.
 

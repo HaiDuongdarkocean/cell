@@ -2,13 +2,13 @@
 
 > Source: "Learning Algorithms: A Programmer's Guide to Writing Better Code" by George Heineman (O'Reilly, 2021)
 > Extracted from: `learning-algorithms.epub`
-> Purpose: Algorithm knowledge base for Cell extension development
+> Purpose: Algorithm knowledge base for Tihoka extension development
 
 ## Book Overview
 
 This book provides practical guidance on implementing and analyzing algorithms to write more efficient code. It covers fundamental algorithms, performance analysis, and problem-solving strategies.
 
-## Key Concepts for Cell Extension Development
+## Key Concepts for Tihoka Extension Development
 
 ### 1. Problem Solving (Chapter 1)
 
@@ -18,7 +18,7 @@ This book provides practical guidance on implementing and analyzing algorithms t
 - Models can predict algorithm performance before implementation
 - Tournament algorithm: find largest values efficiently
 
-**Relevance to Cell:**
+**Relevance to Tihoka:**
 - Video processing algorithms need efficient data structures
 - Subtitle extraction requires pattern matching
 - Content analysis needs optimized search algorithms
@@ -39,7 +39,7 @@ This book provides practical guidance on implementing and analyzing algorithms t
 - O(n²): Quadratic time
 - O(2ⁿ): Exponential time
 
-**Relevance to Cell:**
+**Relevance to Tihoka:**
 - Video file processing: prefer O(n) over O(n²)
 - Subtitle search: binary search for large subtitle files
 - Memory management: consider space complexity
@@ -52,7 +52,7 @@ This book provides practical guidance on implementing and analyzing algorithms t
 - Dynamic hashtables: resize when load factor exceeds threshold
 - Perfect hashing: collision-free for known key sets
 
-**Applications for Cell:**
+**Applications for Tihoka:**
 - Caching video metadata using hashtables
 - Subtitle index: hash by timestamp or language
 - User preferences: fast lookup via hash tables
@@ -65,7 +65,7 @@ This book provides practical guidance on implementing and analyzing algorithms t
 - Array representation: parent at i, children at 2i+1 and 2i+2
 - Operations: insert O(log n), extract-max O(log n)
 
-**Applications for Cell:**
+**Applications for Tihoka:**
 - Priority queue for video download tasks
 - Subtitle synchronization: prioritize by timestamp
 - Resource allocation: manage bandwidth/memory priorities
@@ -80,7 +80,7 @@ This book provides practical guidance on implementing and analyzing algorithms t
 - Heap Sort: O(n log n) - in-place, not stable
 - Tim Sort: O(n log n) - hybrid, stable (Python's default)
 
-**Relevance to Cell:**
+**Relevance to Tihoka:**
 - Sorting subtitles by timestamp
 - Organizing video playlists
 - Sorting search results by relevance
@@ -93,7 +93,7 @@ This book provides practical guidance on implementing and analyzing algorithms t
 - Self-balancing trees (AVL, Red-Black): guarantee O(log n)
 - Traversals: inorder, preorder, postorder
 
-**Applications for Cell:**
+**Applications for Tihoka:**
 - Subtitle index tree for range queries
 - Video metadata hierarchical organization
 - User preference tree structure
@@ -106,7 +106,7 @@ This book provides practical guidance on implementing and analyzing algorithms t
 - Dijkstra's Algorithm: shortest path with weighted edges
 - Floyd-Warshall: all-pairs shortest paths
 
-**Applications for Cell:**
+**Applications for Tihoka:**
 - Video recommendation graph
 - Subtitle dependency graph
 - User interaction analysis
@@ -120,12 +120,12 @@ This book provides practical guidance on implementing and analyzing algorithms t
 - Heap: heapq module
 - Priority Queue: queue.PriorityQueue
 
-**Relevance to Cell:**
+**Relevance to Tihoka:**
 - Use appropriate data structures for video processing
 - Leverage Python's built-in optimized structures
 - Consider memory vs speed tradeoffs
 
-## Algorithm Selection Guidelines for Cell
+## Algorithm Selection Guidelines for Tihoka
 
 ### When to Use O(1) Algorithms:
 - Direct array access by index
@@ -152,7 +152,7 @@ This book provides practical guidance on implementing and analyzing algorithms t
 - Quadratic sorting algorithms
 - Naive string matching
 
-## Specific Applications for Cell Extension
+## Specific Applications for Tihoka Extension
 
 ### Video Processing:
 - **Frame extraction**: O(n) - process each frame once
@@ -199,7 +199,7 @@ This book provides practical guidance on implementing and analyzing algorithms t
 - Chapter 7: Graph algorithms
 - Chapter 8: Python implementation details
 
-## Integration with Cell Codebase
+## Integration with Tihoka Codebase
 
 This knowledge should be applied to:
 - `src/background/` - background service algorithms

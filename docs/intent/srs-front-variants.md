@@ -12,8 +12,8 @@
 | Change | ComponentType cố định → **Variant entity** user quản (CRUD + search + rename + preset scope collection/deck + preview trong editor). Mỗi variant = 1 memory component riêng trên card (progress + FSRS riêng). Front variant = danh sách nguyên liệu khai báo; thiếu nguyên liệu → variant disabled cho note đó ("căn cứ vào front"). 3 builtin = variant mặc định với contract mới: sound=text-only, meaning=image-only, spelling=dictation audio+input (2 mode persist). | User answers: "Component riêng", "số lần variant hiện khi card mới", "chọn 1 [full CRUD] + nút reset default", "per collection + per deck… cần preset" | high |
 | Solution | Domain mới: `SrsVariant` (name, front spec, back spec, newLoops) gom trong `SrsVariantPreset` (collection default, deck override/share). `card.components` keyed theo variantId (builtin id giữ `'sound'|'meaning'|'spelling'` → không migration data cũ). Scheduler + learning path + maintenance đọc preset của deck để biết card có những variant nào; guard servability tính từ front spec của variant vs `note.fields`. | User statement "tất cả phải căn cứ vào front" + preset answer | high |
 | Value | Mỗi lần chạm thẻ = retrieval effort thật đúng kỹ năng variant đó đo; learner tự thiết kế cách học (vd variant riêng "nghe câu → gõ câu" cho advanced) mà không đổi deck; preset chia sẻ cấu hình giữa decks. | User statement về context recall + deck sharing edge case | high |
-| Stakeholder | Người học ngoại ngữ trên Cell (5–80, desktop/tablet/Android); Anh = product owner quyết pedagogy. | spec gốc §User | high |
-| Context | Offline-first IndexedDB `cell-srs-*`; một system notetype duy nhất (Anki import normalize về `createDefaultNotetype` — `importWriter.ts:220-224`); settings hiện có tab General/Customize (`SrsStudySettings.tsx`); `srsUiPrefs` localStorage persist được pref. | `docs/specs/ocean-language-acquisition-srs.md` §Constraints | high |
+| Stakeholder | Người học ngoại ngữ trên Tihoka (5–80, desktop/tablet/Android); Anh = product owner quyết pedagogy. | spec gốc §User | high |
+| Context | Offline-first IndexedDB `Tihoka-srs-*`; một system notetype duy nhất (Anki import normalize về `createDefaultNotetype` — `importWriter.ts:220-224`); settings hiện có tab General/Customize (`SrsStudySettings.tsx`); `srsUiPrefs` localStorage persist được pref. | `docs/specs/ocean-language-acquisition-srs.md` §Constraints | high |
 
 ## Stakeholders
 
@@ -21,8 +21,8 @@
 |---|---|---|---|
 | Team | Devin + future agents | Model variant rõ ràng, SSOT ở 1 chỗ; builtin ids giữ nguyên để khỏi migrate review history cũ | Card schema `components: Record<ComponentType,…>` → `Record<variantId,…>` — compat nếu builtin giữ id cũ |
 | Customer | Learner 5–80 | Front không lộ đáp án; tự quản variant; preset share giữa decks; preview trước khi lưu | <3s response, a11y, i18n, RAM ≥1GB persona |
-| Supplier/Dependency | IndexedDB `cell-srs-*`, ts-fsrs adapter (opaque state per component), sync merge policies | components keyed string → merge policy + stats + deck detail phải theo; FSRS state per variant vẫn opaque | `sync/domain/merge/policies.ts`, `getSrsStats`, `SrsDeckDetail` đều iterate components |
-| Organization | Anh — owner pedagogy + Cell product | Pedagogy mặc định đúng (3 variant builtin = contract đã chốt) nhưng user toàn quyền chỉnh | none |
+| Supplier/Dependency | IndexedDB `Tihoka-srs-*`, ts-fsrs adapter (opaque state per component), sync merge policies | components keyed string → merge policy + stats + deck detail phải theo; FSRS state per variant vẫn opaque | `sync/domain/merge/policies.ts`, `getSrsStats`, `SrsDeckDetail` đều iterate components |
+| Organization | Anh — owner pedagogy + Tihoka product | Pedagogy mặc định đúng (3 variant builtin = contract đã chốt) nhưng user toàn quyền chỉnh | none |
 | Regulator | none | none | none |
 
 ## Needs

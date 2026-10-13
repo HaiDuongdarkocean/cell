@@ -30,7 +30,7 @@ The whole spec references these recipes. Every one already exists in the system 
 | R-PANEL-EDGE | Panel shell vs page | `shadow-modal` + visible `border-subtle`/`border` hairline | `tokens.json` `panel.*` group `:690-697` (single consumer — `variant="panel"` used only by `UniversalPanel.tsx:193`) |
 | R-MENU | List of choices/actions | `Menu` + `MenuItem` + `MenuSeparator` (`Menu.tsx`; surface = `Popover variant="menu"`, opaque + bordered + `shadow-popover`); `MenuItem` `radio`/`selected` for single choice, `destructive` for destructive, `emphasis` prop for sheet-style rows | `VocabularyTab.tsx:259-316` (already canonical) |
 | R-TRIGGER | Menu/select trigger | Visible affordance — bordered or filled `Button` skin + chevron + `aria-haspopup`/`aria-expanded`; never bare text/underlined link | defect class V-5; skin chosen in DESIGN from existing `Button` variants |
-| R-CHIP-STATUS | Status chip (unknown/tracking/learning/known/ignore) | One `shared/ui` molecule consuming the `--chip-status-*` pastel token pairs; hover = solid token-pair swap; never `filter: brightness()` | token pairs defined for the popup's `.cellHeaderStatus` (`CandidateView.module.css:169-179`); shared `Chip.tsx` hover contract (`Chip.module.css:70-104`) |
+| R-CHIP-STATUS | Status chip (unknown/tracking/learning/known/ignore) | One `shared/ui` molecule consuming the `--chip-status-*` pastel token pairs; hover = solid token-pair swap; never `filter: brightness()` | token pairs defined for the popup's `.TihokaHeaderStatus` (`CandidateView.module.css:169-179`); shared `Chip.tsx` hover contract (`Chip.module.css:70-104`) |
 | R-EMPH | Emphasis ladder | ≤1 `primary` per surface (L-SCARCITY, `Button.module.css:147`); enabled-secondary = bordered `secondary`/`outline` fill — distinct from `primary`, `ghost`, and `:disabled`; destructive = `destructive`/`error` variant or `MenuItem destructive`; disabled = `--opacity-disabled`/`--button-disabled-opacity` only when actually disabled | `Button.module.css` variant table; `Menu.module.css:43-53` danger rows |
 | R-DIVIDER | Region/row grouping | hairline `var(--color-divider)` — `Separator` atom or border; `border-subtle` is outlines-only (vanishes on elevated, `DESIGN.md §5.1:155`); never structural voids, never doubled edges | `Menu.module.css:93-97` separator; `DictionaryTab.module.css:18` hairline |
 | R-EMPTY | Empty pane | shared `EmptyState` — icon + title + description + optional action; `size="compact"` in panel | `EmptyState.tsx`; `RecapTab.tsx:241-246` |
@@ -110,21 +110,21 @@ REQ-3: Every choice list through `Menu`/`MenuItem` (N3 · V-5 residual, F-11, F-
 
 - Alt flow: `Select`/`SearchableSelect` keep `listbox`/`option` semantics (form fields, not menus) — their surfaces converge via REQ-2 only; nav lists (sidebar, bottom nav) are navigation, excluded.
 - Exception: a choice list whose interaction `MenuItem` genuinely cannot express (e.g., needs inline controls per row) → justify per golden rule 9; none expected — tools rows are flat actions.
-- Rules: `Menu` owns surface, dismissal (outside-click via `composedPath`, Escape via `pushEscapeLayer`, scroll), and arrow-key roving — never re-implemented locally (`Menu.tsx:28-34` contract); `data-cell-id`s preserved.
+- Rules: `Menu` owns surface, dismissal (outside-click via `composedPath`, Escape via `pushEscapeLayer`, scroll), and arrow-key roving — never re-implemented locally (`Menu.tsx:28-34` contract); `data-tihoka-id`s preserved.
 - Postcondition: `grep` for hand-rolled menu surfaces (`.menu`, `.menuItem` custom classes under panel scope) → 0 outside shared/ui.
 - NFR refs: NFR-1, NFR-3, NFR-4
 
 REQ-4: One status-chip molecule (N4 · F-13)
 - Actor: Maintainer
 - Goal: The status-chip job (unknown/tracking/learning/known/ignore) has exactly one implementation in `shared/ui`, consuming the `--chip-status-*` pastel pairs, with one hover physics.
-- Preconditions: three impls today — shared `Chip` (lookup chips `RecapTab.tsx:50-53`, `+N` `:54,:87`), hand-rolled `.statusChip` (`RecapTab.tsx:78-86` + `RecapTab.module.css:98-131`, hover `filter: brightness(1.06)`), `.statusBadge` (`VocabularyTab.tsx:447-455` interactive + `:373` static trash variant + `VocabularyTab.module.css:112-137`, hover `brightness(0.95)` — opposite direction, verified). `--chip-status-*` tokens exist (used by the popup's `.cellHeaderStatus`, `CandidateView.module.css:169-179`).
+- Preconditions: three impls today — shared `Chip` (lookup chips `RecapTab.tsx:50-53`, `+N` `:54,:87`), hand-rolled `.statusChip` (`RecapTab.tsx:78-86` + `RecapTab.module.css:98-131`, hover `filter: brightness(1.06)`), `.statusBadge` (`VocabularyTab.tsx:447-455` interactive + `:373` static trash variant + `VocabularyTab.module.css:112-137`, hover `brightness(0.95)` — opposite direction, verified). `--chip-status-*` tokens exist (used by the popup's `.TihokaHeaderStatus`, `CandidateView.module.css:169-179`).
 - Basic flow:
   1. actor promotes the molecule: new `StatusChip` in `src/shared/ui/` (or a `status` variant on `Chip` — DESIGN picks per golden rule 9, smallest proposal; either way it consumes `--chip-status-*` and ships showcase + test per `DESIGN.md §10.2`).
   2. hover/active = solid token-pair swap consistent with `Chip`'s contract (`Chip.module.css:70-104`); `filter: brightness()` is deleted, both directions.
   3. `RecapTab.tsx:78-86` `.statusChip` buttons → molecule; `VocabularyTab.tsx:447-455` cycle button and `:373` static trash badge → molecule (`static`/non-interactive prop — no pointer cursor, no hover swap).
   4. `.statusChip`/`.statusBadge` CSS + `STATUS_CLASS` maps deleted; status labels/`aria-label`s preserved verbatim.
 - Alt flow: none — one molecule, all consumers.
-- Exception: dictionary popup `.cellHeaderStatus` adoption is out of scope (popup surface outside the panel) — but the molecule must consume the same `--chip-status-*` tokens so the popup can adopt it later.
+- Exception: dictionary popup `.TihokaHeaderStatus` adoption is out of scope (popup surface outside the panel) — but the molecule must consume the same `--chip-status-*` tokens so the popup can adopt it later.
 - Rules: RECAP lookup `Chip`s are a different job (filter chips) — they stay `Chip`; only status chips converge; sizes follow the molecule's own scale (panel = `sm`).
 - Postcondition: `grep -rn "statusChip\|statusBadge"` → 0; `filter: brightness` on chips → 0.
 - NFR refs: NFR-1, NFR-4
@@ -168,7 +168,7 @@ REQ-7: One EmptyState anatomy (N7 · V-11, F-25)
   3. playlist loading branch (`records === null` → `Spinner` + `role="status"`, `:164-169`) is a *loading* state, not empty — kept, or mapped to the shared loading pattern if one exists in `shared/ui`.
 - Alt flow: a tab whose empty state needs a CTA (e.g., add-first-item) uses `EmptyState`'s `action` slot — same anatomy.
 - Exception: EmptyState vertical *centering* inside the pane is item 28's (`CardCreatorPanel.module.css:72-74` owns it today) — not touched, not regressed.
-- Rules: `role="status"` announcement preserved (atom provides it); `data-cell-id`s kept.
+- Rules: `role="status"` announcement preserved (atom provides it); `data-tihoka-id`s kept.
 - Postcondition: one empty anatomy across all six tabs.
 - NFR refs: NFR-1, NFR-3
 
@@ -271,7 +271,7 @@ REQ-12: Surface-family unity — card scale + opacity-as-color removal (N12 · F
 |---|---|---|---|
 | NFR-1 | Visual verification — before/after screenshots or pixel-scan per touched surface (DOM rect/computed alone insufficient, per AGENTS.md) | R | every subsystem commit carries captures; overlays re-checked after scroll + near viewport edges |
 | NFR-2 | No contrast/a11y regression — opacity→token and selected-recipe changes keep ≥4.5:1 text contrast in light + dark | S | computed-style check on resting AND `primary-subtle`-selected states; WCAG 1.4.x |
-| NFR-3 | Behavior parity — handlers and `data-cell-id`s unchanged; `aria-*`/`role` unchanged except REQ-3's sanctioned `Menu` migrations (radio→`menuitemradio`, dialog→menu); existing i18n keys unchanged, new keys added only where anatomy requires (REQ-7 `vocabulary.empty*` hints) | R | unit tests stay green; interaction flows verified on real Chromium |
+| NFR-3 | Behavior parity — handlers and `data-tihoka-id`s unchanged; `aria-*`/`role` unchanged except REQ-3's sanctioned `Menu` migrations (radio→`menuitemradio`, dialog→menu); existing i18n keys unchanged, new keys added only where anatomy requires (REQ-7 `vocabulary.empty*` hints) | R | unit tests stay green; interaction flows verified on real Chromium |
 | NFR-4 | Blast radius — shared-atom edits (`Menu`, `Button.secondary`, `NavItem`, `SegmentedControl`, `StatusChip`, `tokens.json` groups) verified against ALL consumers (dictionary popup, settings dialog, showcase, local player) | S/resource | consumer capture sweep before merge |
 | NFR-5 | Sequencing discipline — re-read items 28–32 diffs before locking file-level scope; converge what they ship | ops | spec site map re-verified at DELIVER start |
 | NFR-6 | No new tokens/components unless DESIGN proves the gap (then one token + ADR per `DESIGN.md §10`) | resource | zero unapproved additions |

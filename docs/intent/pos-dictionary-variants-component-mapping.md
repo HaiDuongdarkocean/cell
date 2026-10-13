@@ -8,13 +8,13 @@ Chosen direction: text-link POS bar pinned at top of popup + `AmE/BrE` accent la
 | POS link item | Reuse | Button | `variant="transparent"` + feature css class; selected state = `--color-text-primary` + `static.font.weights.semibold`, `aria-current`. `min-height: 44px` via padding. |
 | Pipe separator | Create | — | Plain text node, `--color-muted-foreground`, `aria-hidden`. |
 | Accent label `AmE`/`BrE` before IPA | Reuse | Button | `variant="transparent"` styled as inline link (same visual language as POS links); cycles variant accents; static `span` when only one accent. New feature component `AccentToggle` co-located in CandidateView module css. |
-| Reading row container | Reuse | — | Existing `.cellHeaderReading` row in `CandidateView` — gains the accent label child before the IPA span. |
+| Reading row container | Reuse | — | Existing `.TihokaHeaderReading` row in `CandidateView` — gains the accent label child before the IPA span. |
 | Play-audio icon button | Reuse | IconButton | Existing audio button; icon: `volumeHigh`. Audio source follows selected accent (`audioRef` per accent in variant `prons[]`). |
-| Frequency stars / level | Reuse | — | Existing `.cellHeaderLevel` spans; stars now come from selected variant's `prons`/`frequencyStars`. |
-| Status pill | Reuse | Button | Existing `.cellHeaderStatus` + `--chip-status-unknown-bg` family; now reads/writes `(term,pos)` composite key; label = selected variant's resolved status. |
-| Frequency chip (two-tone `COCA · 1,334`) | Extend | Tooltip | Existing `.cellHeaderFrequency` two-tone capsule; add `Tooltip` on hover/focus showing COCA genre breakdown (`SPOK · FIC · MAG · NEWS · ACAD`). Content swaps per variant's joined frequency row. |
+| Frequency stars / level | Reuse | — | Existing `.TihokaHeaderLevel` spans; stars now come from selected variant's `prons`/`frequencyStars`. |
+| Status pill | Reuse | Button | Existing `.TihokaHeaderStatus` + `--chip-status-unknown-bg` family; now reads/writes `(term,pos)` composite key; label = selected variant's resolved status. |
+| Frequency chip (two-tone `COCA · 1,334`) | Extend | Tooltip | Existing `.TihokaHeaderFrequency` two-tone capsule; add `Tooltip` on hover/focus showing COCA genre breakdown (`SPOK · FIC · MAG · NEWS · ACAD`). Content swaps per variant's joined frequency row. |
 | Toolbar (audio/image/translate/links/pronunciation) | Reuse | — | `DictionaryToolbar` unchanged; panel content re-keys on variant switch (image query becomes `${term} ${pos}`). |
-| Variant swap region | Reuse | — | Same remount-key pattern as `.cellTabContent`: wrapper `div key={pos}` replays fade+rise; respects `prefers-reduced-motion` globally. |
+| Variant swap region | Reuse | — | Same remount-key pattern as `.TihokaTabContent`: wrapper `div key={pos}` replays fade+rise; respects `prefers-reduced-motion` globally. |
 | Sense checkable rows | Reuse | Checkbox | Existing checkable definition rows; scope = selected variant's merged senses (same-POS providers concatenated per spec). |
 | Headword + send/quick-add actions | Reuse | Heading | Unchanged — term stays put, only variant-scoped content swaps. |
 | `other` bucket item | Create | — | Same POS nav item, label = localized `other`, forced last, pos key `''`. |

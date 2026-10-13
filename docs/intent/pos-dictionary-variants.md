@@ -22,7 +22,7 @@
 | Team | Agent dev | Converter + schema + popup UI nằm trong domain dictionary đã có | js-mdict/jiti/fflate sẵn; adapter macmillan đã tồn tại |
 | Customer | Anh (language learner) | Tra từ theo POS + accent; data từ 3 file MDX cá nhân | Files verified readable (`tmp/mdx-sample`) |
 | Supplier/Dependency | COCA 60000 MDX (53,967 keys, per-POS rank+total+5 genre), MacmillanEnEn MDX (173,925 keys, `.homograph` per-POS AmE IPA + `.dict-top` POS menu), Macmillan 2nd Ed MDX (67,138 keys, per-homograph UK+US IPA + `zzz_uk/us` audio), MacmillanEnEn.mdd 456MB (audio `sound://` — phase sau) | Data đúng cấu trúc cần thiết | Offline converter; không cần network |
-| Organization | Cell repo | Schema mới phải giữ invariants: no vendor names, never split unknown structure | `docs/specs/tihoka-dict-v1.md:17-33` |
+| Organization | Tihoka repo | Schema mới phải giữ invariants: no vendor names, never split unknown structure | `docs/specs/tihoka-dict-v1.md:17-33` |
 | Regulator | Dictionary copyright | Data user-import local only — KHÔNG ship nội dung từ điển trong bundle/release | `[assumption]` personal-use license | medium |
 
 ## Needs
@@ -70,7 +70,7 @@ Anh mở terminal → chạy converter trên 3 file MDX (COCA, MacmillanEnEn, Ma
 - S1: As a learner, I want each POS of a word treated as its own entry so that pronunciation, frequency and meanings match the usage I'm reading — done when a multi-POS lookup shows a POS selector and switching swaps every POS-scoped field.
 - S2: As a learner, I want per-POS frequency so that I know which usage is actually common — done when the COCA import stores (term, pos) → rank + total + 5-genre breakdown and the popup shows the selected variant's rank.
 - S3: As a learner, I want learning status per (word, POS) so that knowing one usage doesn't mark the whole word known — done when status key = term+pos, old term-level rows vẫn đọc được (fallback), và subtitle highlighting có rule aggregate nhất quán.
-- S4: As Anh, I want my local MDX dictionaries converted into Cell resources — done when both files convert end-to-end qua `tihoka-convert-dictionary` và import được qua Resources panel.
+- S4: As Anh, I want my local MDX dictionaries converted into Tihoka resources — done when both files convert end-to-end qua `tihoka-convert-dictionary` và import được qua Resources panel.
 - S5: As a learner with a single-POS word, I want lookup unchanged — done when entries without POS variants render exactly như hiện tại (không menu, không regression).
 
 ## Risks

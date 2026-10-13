@@ -11,7 +11,7 @@
 | # | Element | Component | Decision | Tokens | Icon |
 |---|---|---|---|---|---|
 | 1 | Tab scroll region (one per tab) | — | **Extend** — new `.scrollport` class in `src/shared/ui/Scrollable.module.css`: `composes: themed` + `flex:1; min-width:0; min-height:0; overflow-y:auto; overscroll-behavior:contain`; mechanics-only, zero padding (REQ-2) | `color-scrollbar-thumb`, `color-scrollbar-thumb-hover` | — |
-| 2 | Content host `.content` | — | **Redesign** — strip `padding`, the `data-cell-id` carve-out, and both media-query padding overrides; keeps `display:flex; flex-direction:column; overflow:hidden` as the clip boundary (REQ-3) | — | — |
+| 2 | Content host `.content` | — | **Redesign** — strip `padding`, the `data-tihoka-id` carve-out, and both media-query padding overrides; keeps `display:flex; flex-direction:column; overflow:hidden` as the clip boundary (REQ-3) | — | — |
 | 3 | Page-gutter contract vars on `.body` | — | **Create** — custom properties `universal-panel-tab-gutter` (`--spacing-3` `--spacing-4` → 12/16) and `universal-panel-tab-scroll-inset` (`--spacing-4`) declared once on `.body`, consumed per tab; shell-scoped contract vars, not registry tokens (REQ-3/REQ-4) | `spacing-3`, `spacing-4` | — |
 | 4 | Per-tab gutter application | — | **Extend** — `padding: var(…gutter); padding-block-end: var(…scroll-inset)` on playlist `.list`, recap `.body`/`.stateWrap`, vocabulary `.tab`, studyModes `.tab` (REQ-3/REQ-4) | `spacing-3`, `spacing-4` | — |
 | 5 | Keep-alive tab pane (recap joins siblings) | — | **Reuse** — `.tabPane` + `visitedTabs` + `[hidden]` pattern, identical for all six (REQ-1) | — | — |

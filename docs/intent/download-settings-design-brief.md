@@ -1,9 +1,9 @@
 # Download Settings — Design Brief
 
-> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Cell. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
+> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Tihoka. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
 
 ## Design Read
-The shipped `Download` card is a flat stack of `label-left / select-right` rows broken up by faint uppercase group labels — functional and compact, but the groups blur together, the conditional `Workers` row appears without ceremony, and nothing about the surface reflects the liquid-glass, nature-first language Cell is built on.
+The shipped `Download` card is a flat stack of `label-left / select-right` rows broken up by faint uppercase group labels — functional and compact, but the groups blur together, the conditional `Workers` row appears without ceremony, and nothing about the surface reflects the liquid-glass, nature-first language Tihoka is built on.
 
 ## Primary job
 Let a language learner (age 5–80) set how many downloads run at once, what format/quality to prefer, how conversion behaves, and how files are named — quickly, on a 320 px phone up to a desktop, without reading every row.

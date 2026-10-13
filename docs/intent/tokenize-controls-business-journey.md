@@ -1,4 +1,4 @@
-# Cell — Tokenize Controls: Business & User Journey
+# Tihoka — Tokenize Controls: Business & User Journey
 
 > Tạm lưu ý định nghiệp vụ cho redesign `aria-label="Tokenize controls"` trong `UniversalPanelHeader`.
 > Dựa trên thảo luận với PM.

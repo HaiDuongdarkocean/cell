@@ -1,6 +1,6 @@
 # Spec: Study Modes
 
-> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Cell. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
+> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Tihoka. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
 
 > Status: **Final — review-resolved, implementation-ready.**
 > Intent source: `docs/intent/media-study-modes.md`.
@@ -191,7 +191,7 @@ Start cue
 
 ### Storage
 
-- Key: `STUDY_MODES` trong `src/shared/config/config.ts` → `cell:studyMode:state`.
+- Key: `STUDY_MODES` trong `src/shared/config/config.ts` → `Tihoka:studyMode:state`.
 - Lưu trong `chrome.storage.local`.
 - State bao gồm `version` để forward-compatible migration.
 - Initial state:
@@ -281,7 +281,7 @@ interface UniversalPanelProps {
 ### Render
 
 ```tsx
-<div className={styles.content} data-cell-id={`universal-panel-content-${activeTab}`}>
+<div className={styles.content} data-tihoka-id={`universal-panel-content-${activeTab}`}>
   {activeTab === 'dictionary' && dictionaryPanel}
   {activeTab === 'studyModes' && studyModesPanel}
   {activeTab === 'settings' && settingsPanel}

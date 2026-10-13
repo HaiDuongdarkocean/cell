@@ -6,7 +6,7 @@ Accepted — build verification passed; foundation tokens shipped in tokens.css.
 
 ## Context
 
-Cell đang xây lại foundation với bản sắc **"quiet confidence"**: calm, focused, learnable, điềm đạm, có hứng thú học tập, đơn giản, thanh lịch. Color là mảng quan trọng nhất vì nó chi phối cảm xúc đầu tiên của người dùng khi mở popup, sidepanel, options, hay bất kỳ màn hình nào.
+Tihoka đang xây lại foundation với bản sắc **"quiet confidence"**: calm, focused, learnable, điềm đạm, có hứng thú học tập, đơn giản, thanh lịch. Color là mảng quan trọng nhất vì nó chi phối cảm xúc đầu tiên của người dùng khi mở popup, sidepanel, options, hay bất kỳ màn hình nào.
 
 Vấn đề hiện tại:
 - Palette cũ dùng primary `#2563eb` (xanh dương bão hòa rất cao, gần như mặc định Tailwind), cảm giác "công cụ generic" hơn là bản sắc riêng.
@@ -24,7 +24,7 @@ Sẽ dùng **neutral palette làm chủ đạo** và **một accent duy nhất**
 
 > "Use color consistently throughout your interface... Avoid using the same color to mean different things." — [Apple HIG Color](https://developer.apple.com/design/human-interface-guidelines/foundations/color)
 
-Lý do cho Cell:
+Lý do cho Tihoka:
 - Người học ngoại ngữ thường ở trong ứng dụng lâu (xem video, đọc phụ đề, tra từ). Nếu màu sắc rực rỡ khắp nơi sẽ gây mệt.
 - Single accent giúp user biết đâu là hành động chính, đâu là nội dung. Không có "nhiều màu cạnh tranh sự chú ý".
 - Neutral-first tạo cảm giác "điềm đạm" nhưng không buồn tẻ, vì surface lift + subtle borders tạo hierarchy.

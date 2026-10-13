@@ -1,6 +1,6 @@
 <!doctype html>
 
-<!-- Superseded note (2026-09-08): tài liệu này tham chiếu Liquid Glass — đã bị loại khỏi Cell. Xem docs/design-system/DESIGN_RATIONALE.md. -->
+<!-- Superseded note (2026-09-08): tài liệu này tham chiếu Liquid Glass — đã bị loại khỏi Tihoka. Xem docs/design-system/DESIGN_RATIONALE.md. -->
 
 <html lang="vi" data-theme="dark">
 <head>
@@ -476,32 +476,32 @@
 
       <!-- Preview — 160px, matches production OverlayPreview structure -->
       <div class="app-preview-wrap">
-        <div class="app-preview" data-cell-id="overlay-preview">
+        <div class="app-preview" data-tihoka-id="overlay-preview">
           <span class="app-preview-hint">Click text to edit</span>
-          <div class="app-preview-overlay" data-cell-id="overlay-preview-root">
+          <div class="app-preview-overlay" data-tihoka-id="overlay-preview-root">
 
             <!-- NavCluster — matches NavCluster.tsx: main (prev, repeat, next) + secondary (rewind, play, forward) -->
-            <div class="app-preview-nav" data-cell-id="nav-cluster" aria-label="Subtitle navigation">
-              <div class="app-preview-nav-col" data-cell-id="nav-main">
-                <button class="app-preview-nav-btn" aria-label="Previous sentence" data-cell-id="nav-prev"><span class="icon-wrap" data-icon="navPrev"></span></button>
-                <button class="app-preview-nav-btn" aria-label="Repeat current sentence" data-cell-id="nav-repeat"><span class="icon-wrap" data-icon="navRepeat"></span></button>
-                <button class="app-preview-nav-btn" aria-label="Next sentence" data-cell-id="nav-next"><span class="icon-wrap" data-icon="navNext"></span></button>
+            <div class="app-preview-nav" data-tihoka-id="nav-cluster" aria-label="Subtitle navigation">
+              <div class="app-preview-nav-col" data-tihoka-id="nav-main">
+                <button class="app-preview-nav-btn" aria-label="Previous sentence" data-tihoka-id="nav-prev"><span class="icon-wrap" data-icon="navPrev"></span></button>
+                <button class="app-preview-nav-btn" aria-label="Repeat current sentence" data-tihoka-id="nav-repeat"><span class="icon-wrap" data-icon="navRepeat"></span></button>
+                <button class="app-preview-nav-btn" aria-label="Next sentence" data-tihoka-id="nav-next"><span class="icon-wrap" data-icon="navNext"></span></button>
               </div>
-              <div class="app-preview-nav-col secondary" data-cell-id="nav-secondary">
-                <button class="app-preview-nav-btn" aria-label="Rewind 5 seconds" data-cell-id="nav-rewind"><span class="icon-wrap" data-icon="navRewind"></span></button>
-                <button class="app-preview-nav-btn" aria-label="Play video" data-cell-id="nav-play"><span class="icon-wrap" data-icon="navPlay"></span></button>
-                <button class="app-preview-nav-btn" aria-label="Forward 10 seconds" data-cell-id="nav-forward"><span class="icon-wrap" data-icon="navForward"></span></button>
+              <div class="app-preview-nav-col secondary" data-tihoka-id="nav-secondary">
+                <button class="app-preview-nav-btn" aria-label="Rewind 5 seconds" data-tihoka-id="nav-rewind"><span class="icon-wrap" data-icon="navRewind"></span></button>
+                <button class="app-preview-nav-btn" aria-label="Play video" data-tihoka-id="nav-play"><span class="icon-wrap" data-icon="navPlay"></span></button>
+                <button class="app-preview-nav-btn" aria-label="Forward 10 seconds" data-tihoka-id="nav-forward"><span class="icon-wrap" data-icon="navForward"></span></button>
               </div>
             </div>
 
             <!-- SubtitleBlock — matches SubtitleBlock.tsx: target + native layers -->
-            <div class="app-preview-text" data-cell-id="subtitle-block">
+            <div class="app-preview-text" data-tihoka-id="subtitle-block">
               <div class="app-preview-line">This is how the target subtitle will look.</div>
               <div class="app-preview-line native">This is how the native subtitle will look.</div>
             </div>
 
             <!-- Toolbar (clusterRight) — matches OverlayPreview.tsx: primaryCol + secondaryCol -->
-            <div class="app-preview-toolbar" data-cell-id="overlay-preview-toolbar">
+            <div class="app-preview-toolbar" data-tihoka-id="overlay-preview-toolbar">
               <div class="app-preview-toolbar-col">
                 <button class="app-preview-toolbar-btn" aria-label="Quick add card"><span class="icon-wrap" data-icon="zap"></span></button>
                 <button class="app-preview-toolbar-btn" aria-label="Edit card"><span class="icon-wrap" data-icon="pencil"></span></button>
@@ -715,7 +715,7 @@
       <div class="search-section" data-search-view="no-keys" hidden>
         <div class="search-head">
           <span class="search-title">Search subtitles</span>
-          <button class="api-chip error" type="button" aria-expanded="false" aria-controls="manage-keys-panel" data-cell-id="search-api-chip">
+          <button class="api-chip error" type="button" aria-expanded="false" aria-controls="manage-keys-panel" data-tihoka-id="search-api-chip">
             <span class="chip-icon" data-icon="settings"></span>
             <span>No API key</span>
             <span class="chip-caret" data-icon="chevronDown"></span>
@@ -745,13 +745,13 @@
       <div class="search-section" data-search-view="manage-keys" hidden>
         <div class="search-head">
           <span class="search-title">Search subtitles</span>
-          <button class="api-chip ok" type="button" aria-expanded="true" aria-controls="manage-keys-panel" data-cell-id="search-api-chip">
+          <button class="api-chip ok" type="button" aria-expanded="true" aria-controls="manage-keys-panel" data-tihoka-id="search-api-chip">
             <span class="chip-icon" data-icon="settings"></span>
             <span>2 keys</span>
             <span class="chip-caret" data-icon="chevronDown"></span>
           </button>
         </div>
-        <div class="manage-keys" id="manage-keys-panel" data-cell-id="search-manage-keys">
+        <div class="manage-keys" id="manage-keys-panel" data-tihoka-id="search-manage-keys">
           <div class="manage-keys-head">SubDL</div>
           <div class="key-card">
             <span class="key-label">SubDL Free</span>
@@ -806,7 +806,7 @@
       <div class="search-section" data-search-view="idle">
         <div class="search-head">
           <span class="search-title">Search subtitles</span>
-          <button class="api-chip ok" type="button" aria-expanded="false" aria-controls="manage-keys-panel" data-cell-id="search-api-chip">
+          <button class="api-chip ok" type="button" aria-expanded="false" aria-controls="manage-keys-panel" data-tihoka-id="search-api-chip">
             <span class="chip-icon" data-icon="settings"></span>
             <span>2 keys</span>
             <span class="chip-caret" data-icon="chevronDown"></span>
@@ -833,7 +833,7 @@
       <div class="search-section" data-search-view="loading" hidden>
         <div class="search-head">
           <span class="search-title">Search subtitles</span>
-          <button class="api-chip ok" type="button" aria-expanded="false" data-cell-id="search-api-chip">
+          <button class="api-chip ok" type="button" aria-expanded="false" data-tihoka-id="search-api-chip">
             <span class="chip-icon" data-icon="settings"></span>
             <span>2 keys</span>
             <span class="chip-caret" data-icon="chevronDown"></span>
@@ -868,7 +868,7 @@
       <div class="search-section" data-search-view="results" hidden>
         <div class="search-head">
           <span class="search-title">Search subtitles</span>
-          <button class="api-chip ok" type="button" aria-expanded="false" data-cell-id="search-api-chip">
+          <button class="api-chip ok" type="button" aria-expanded="false" data-tihoka-id="search-api-chip">
             <span class="chip-icon" data-icon="settings"></span>
             <span>2 keys</span>
             <span class="chip-caret" data-icon="chevronDown"></span>
@@ -890,32 +890,32 @@
           <button class="search-btn" type="button">Search</button>
         </div>
         <div class="results-area">
-          <ul class="results-list" role="listbox" data-cell-id="search-results-list">
-            <li class="result-item" role="option" aria-selected="false" data-cell-id="search-result-0">
+          <ul class="results-list" role="listbox" data-tihoka-id="search-results-list">
+            <li class="result-item" role="option" aria-selected="false" data-tihoka-id="search-result-0">
               <span class="result-name">Inception</span>
               <span class="result-meta"><span class="tag">العربية (Arabic)</span><span class="tag">opensubtitles</span><span class="tag">SRT</span></span>
             </li>
-            <li class="result-item" role="option" aria-selected="false" data-cell-id="search-result-1">
+            <li class="result-item" role="option" aria-selected="false" data-tihoka-id="search-result-1">
               <span class="result-name">Inception: 4Movie Premiere Special</span>
               <span class="result-meta"><span class="tag">Български (Bulgarian)</span><span class="tag">opensubtitles</span><span class="tag">SRT</span></span>
             </li>
-            <li class="result-item" role="option" aria-selected="false" data-cell-id="search-result-2">
+            <li class="result-item" role="option" aria-selected="false" data-tihoka-id="search-result-2">
               <span class="result-name">Inception</span>
               <span class="result-meta"><span class="tag">हिन्दी (Hindi)</span><span class="tag">opensubtitles</span><span class="tag">SRT</span><span class="result-badge">SDH</span></span>
             </li>
-            <li class="result-item" role="option" aria-selected="false" data-cell-id="search-result-3">
+            <li class="result-item" role="option" aria-selected="false" data-tihoka-id="search-result-3">
               <span class="result-name">Inception</span>
               <span class="result-meta"><span class="tag">ไทย (Thai)</span><span class="tag">opensubtitles</span><span class="tag">SRT</span></span>
             </li>
-            <li class="result-item" role="option" aria-selected="false" data-cell-id="search-result-4">
+            <li class="result-item" role="option" aria-selected="false" data-tihoka-id="search-result-4">
               <span class="result-name">Inception</span>
               <span class="result-meta"><span class="tag">Српски (Serbian)</span><span class="tag">opensubtitles</span><span class="tag">SRT</span></span>
             </li>
-            <li class="result-item" role="option" aria-selected="false" data-cell-id="search-result-5">
+            <li class="result-item" role="option" aria-selected="false" data-tihoka-id="search-result-5">
               <span class="result-name">Inception (2010) 1080p BluRay</span>
               <span class="result-meta"><span class="tag">English</span><span class="tag">subdl</span><span class="tag">SRT</span><span class="tag">1.2 MB</span></span>
             </li>
-            <li class="result-item" role="option" aria-selected="false" data-cell-id="search-result-6">
+            <li class="result-item" role="option" aria-selected="false" data-tihoka-id="search-result-6">
               <span class="result-name">Inception.2010.720p.BRRip.x264</span>
               <span class="result-meta"><span class="tag">English</span><span class="tag">subdl</span><span class="tag">SRT</span><span class="result-badge">Forced</span></span>
             </li>
@@ -927,7 +927,7 @@
       <div class="search-section" data-search-view="selected" hidden>
         <div class="search-head">
           <span class="search-title">Search subtitles</span>
-          <button class="api-chip ok" type="button" aria-expanded="false" data-cell-id="search-api-chip">
+          <button class="api-chip ok" type="button" aria-expanded="false" data-tihoka-id="search-api-chip">
             <span class="chip-icon" data-icon="settings"></span>
             <span>2 keys</span>
             <span class="chip-caret" data-icon="chevronDown"></span>
@@ -950,7 +950,7 @@
         </div>
         <div class="results-area">
           <ul class="results-list" role="listbox">
-            <li class="result-item" role="option" aria-selected="true" data-cell-id="search-result-0">
+            <li class="result-item" role="option" aria-selected="true" data-tihoka-id="search-result-0">
               <span class="result-name">Inception</span>
               <span class="result-meta"><span class="tag">English</span><span class="tag">subdl</span><span class="tag">SRT</span><span class="tag">1.2 MB</span></span>
             </li>
@@ -963,9 +963,9 @@
               <span class="result-meta"><span class="tag">English</span><span class="tag">opensubtitles</span><span class="tag">SRT</span></span>
             </li>
           </ul>
-          <div class="role-picker" data-cell-id="search-role-picker-0">
-            <button class="role-btn primary" type="button" data-cell-id="search-load-target-0">Load as Target</button>
-            <button class="role-btn" type="button" data-cell-id="search-load-native-0">Load as Native</button>
+          <div class="role-picker" data-tihoka-id="search-role-picker-0">
+            <button class="role-btn primary" type="button" data-tihoka-id="search-load-target-0">Load as Target</button>
+            <button class="role-btn" type="button" data-tihoka-id="search-load-native-0">Load as Native</button>
           </div>
         </div>
       </div>
@@ -974,7 +974,7 @@
       <div class="search-section" data-search-view="preview" hidden>
         <div class="search-head">
           <span class="search-title">Search subtitles</span>
-          <button class="api-chip ok" type="button" aria-expanded="false" data-cell-id="search-api-chip">
+          <button class="api-chip ok" type="button" aria-expanded="false" data-tihoka-id="search-api-chip">
             <span class="chip-icon" data-icon="settings"></span>
             <span>2 keys</span>
             <span class="chip-caret" data-icon="chevronDown"></span>
@@ -998,14 +998,14 @@
         <div class="results-area">
           <!-- Collapsed result row (selected one) -->
           <ul class="results-list" role="listbox" style="max-height: none;">
-            <li class="result-item" role="option" aria-selected="true" data-cell-id="search-result-0">
+            <li class="result-item" role="option" aria-selected="true" data-tihoka-id="search-result-0">
               <span class="result-name">Inception (2010) 1080p BluRay</span>
               <span class="result-meta"><span class="tag">English</span><span class="tag">subdl</span><span class="tag">SRT</span><span class="tag">1.2 MB</span></span>
             </li>
           </ul>
 
           <!-- Subtitle content preview — first N cues -->
-          <div class="preview-panel" data-cell-id="search-preview">
+          <div class="preview-panel" data-tihoka-id="search-preview">
             <div class="preview-head">
               <div class="preview-head-info">
                 <span class="preview-head-name">Inception (2010) 1080p BluRay</span>
@@ -1065,8 +1065,8 @@
               <div class="preview-cue more">Show all 388 cues ↓</div>
             </div>
             <div class="preview-footer">
-              <button class="role-btn primary" type="button" data-cell-id="search-load-target-0">Load as Target</button>
-              <button class="role-btn" type="button" data-cell-id="search-load-native-0">Load as Native</button>
+              <button class="role-btn primary" type="button" data-tihoka-id="search-load-target-0">Load as Target</button>
+              <button class="role-btn" type="button" data-tihoka-id="search-load-native-0">Load as Native</button>
             </div>
           </div>
         </div>
@@ -1076,7 +1076,7 @@
       <div class="search-section" data-search-view="error" hidden>
         <div class="search-head">
           <span class="search-title">Search subtitles</span>
-          <button class="api-chip error" type="button" aria-expanded="false" data-cell-id="search-api-chip">
+          <button class="api-chip error" type="button" aria-expanded="false" data-tihoka-id="search-api-chip">
             <span class="chip-icon" data-icon="settings"></span>
             <span>Exhausted</span>
             <span class="chip-caret" data-icon="chevronDown"></span>
@@ -1098,9 +1098,9 @@
           <button class="search-btn" type="button">Search</button>
         </div>
         <div class="results-area">
-          <div class="search-error" role="alert" data-cell-id="search-error">
+          <div class="search-error" role="alert" data-tihoka-id="search-error">
             <span>Network error: Failed to fetch from SubDL</span>
-            <button class="retry-btn" type="button" data-cell-id="search-retry">Retry</button>
+            <button class="retry-btn" type="button" data-tihoka-id="search-retry">Retry</button>
           </div>
         </div>
       </div>
@@ -1109,7 +1109,7 @@
       <div class="search-section" data-search-view="empty" hidden>
         <div class="search-head">
           <span class="search-title">Search subtitles</span>
-          <button class="api-chip ok" type="button" aria-expanded="false" data-cell-id="search-api-chip">
+          <button class="api-chip ok" type="button" aria-expanded="false" data-tihoka-id="search-api-chip">
             <span class="chip-icon" data-icon="settings"></span>
             <span>2 keys</span>
             <span class="chip-caret" data-icon="chevronDown"></span>
@@ -1131,7 +1131,7 @@
           <button class="search-btn" type="button">Search</button>
         </div>
         <div class="results-area">
-          <div class="search-empty" data-cell-id="search-empty">No results found</div>
+          <div class="search-empty" data-tihoka-id="search-empty">No results found</div>
         </div>
       </div>
 

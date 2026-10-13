@@ -79,7 +79,7 @@ UniversalPanel (one shell, all six tabs identical):
 │ │ dict    │ │ │ UniversalPanelHeader                     │ │ │
 │ │ vocab   │ │ ├──────────────────────────────────────────┤ │ │
 │ │ modes   │ │ │ .content ── flush host, overflow:hidden, │ │ │
-│ │ playlist│ │ │  NO padding, NO data-cell-id selectors   │ │ │
+│ │ playlist│ │ │  NO padding, NO data-tihoka-id selectors   │ │ │
 │ │ recap   │ │ │ ┌──────────────────────────────────────┐ │ │ │
 │ │ settings│ │ │ │ .tabPane (keep-alive) ×6             │ │ │ │
 │ │         │ │ │ │ hidden panes: display:none, isActive │ │ │ │
@@ -137,7 +137,7 @@ F-1, F-3, F-5, F-9, F-10, F-19, M-3, V-11/M-14 (centering part) — all solved p
 
 ## Anti-patterns avoided
 
-- No `data-cell-id`-keyed CSS anywhere (the carve-out dies, never re-appears).
+- No `data-tihoka-id`-keyed CSS anywhere (the carve-out dies, never re-appears).
 - `.scrollport` is mechanics-only — zero padding in the shared recipe (gutters would break flush tabs like dictionary panes).
 - No `scroll-padding-bottom` / spacer divs for the inset — `padding-block-end` extends the scroll extent honestly.
 - No MutationObserver/`[hidden]` polling — `isActive` is a prop bound at the mount seam (precedent: `renderDictionaryPanel(open)`).

@@ -51,9 +51,9 @@ REQ-3: Gloss rendering — below the word
 - Actor: system
 - Goal: gloss paints under the token glyph, coexisting with the IPA cap above
 - Basic flow:
-  1. `tokenSpanRenderer` sets `data-gloss` on the inner `.js-cell-token-word` span next to `data-reading` (`tokenSpanRenderer.ts:63-115`); `restyleTokenBlock` re-applies it
+  1. `tokenSpanRenderer` sets `data-gloss` on the inner `.js-Tihoka-token-word` span next to `data-reading` (`tokenSpanRenderer.ts:63-115`); `restyleTokenBlock` re-applies it
   2. CSS in BOTH builders (`buildTokenSpanCss` + `buildTokenSpanCssForShadow`, `tokenSpanCss.ts`): `::after { content: attr(data-gloss); position: absolute; top: 100%; left: 50%; transform: translateX(-50%); font-size: 0.6em; opacity: 0.85; white-space: nowrap; pointer-events: none; user-select: none }` — pseudo-element = copy-clean by construction
-  3. Bottom headroom: `margin-bottom` on `.js-cell-token--word` when glosses enabled — the wrap-collision fix pattern proven for `margin-top: 0.85em` (`tokenSpanCss.ts`); a per-token class `js-cell-token--gloss-off` mirrors `reading-off`, applied by `applyTokenClasses` (`tokenSpanRenderer.ts:65-69`), so headroom only applies when the feature is on
+  3. Bottom headroom: `margin-bottom` on `.js-Tihoka-token--word` when glosses enabled — the wrap-collision fix pattern proven for `margin-top: 0.85em` (`tokenSpanCss.ts`); a per-token class `js-Tihoka-token--gloss-off` mirrors `reading-off`, applied by `applyTokenClasses` (`tokenSpanRenderer.ts:65-69`), so headroom only applies when the feature is on
   4. Live visibility flip (no re-tokenize): `applyTokenClasses` toggles `gloss-off` per token span alongside `reading-off`, driven by the same render-flag plumbing
   5. Only the subtitle overlay block renders glosses in v1 — cue list/card preview stay untouched per intent scope ("chọn 1")
 - Exception: gloss wider than token → `max-width` + `text-overflow: ellipsis` on the pseudo slot, never reflow the line

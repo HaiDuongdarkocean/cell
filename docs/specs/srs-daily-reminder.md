@@ -122,7 +122,7 @@ REQ-7: `dayStartHour` mirror for the service worker
 - Goal: SW evaluates "today" on the same boundary as the UI streak logic
 - Preconditions: `srsUiPrefs` loaded or mutated in an extension page
 - Basic flow:
-  1. system writes `prefs.dayStartHour` into `chrome.storage.local` under `cell.srs.uiPrefsMirror` on `setSrsUiPrefs`, and once when the reminder settings row first mounts (not on module import — no import-time side effects)
+  1. system writes `prefs.dayStartHour` into `chrome.storage.local` under `Tihoka.srs.uiPrefsMirror` on `setSrsUiPrefs`, and once when the reminder settings row first mounts (not on module import — no import-time side effects)
   2. SW-side reminder reads the mirror key; absent → default 4 (same as `SRS_UI_PREF_DEFAULTS.dayStartHour`)
 - Alt flow: none.
 - Exception: `chrome`/`chrome.storage` unavailable → skip silently (content/test contexts).
@@ -174,8 +174,8 @@ init --disabled→ cleared
 | Entity | Key fields | Lives in | Retention |
 |---|---|---|---|
 | ReminderConfig | `enabled: boolean`, `preferredHour: 0-23` | `settings.srs.reminder` (chrome.storage.local, schema v38) | user lifetime; **deliberately synced** via `['srs']` path — deviation from intent Non-goal ("device-local accepted"), chosen so the discipline scaffold travels with the user's profiles; false-positive consequence documented in Open Questions |
-| ReminderState | `learnedHour: number|null`, `lastNotifiedDayKey: string|null`, `lastFireAt: number` | `chrome.storage.local['cell.srs.reminderState']` | device-local, overwritten each arm/fire; not synced |
-| UiPrefsMirror | `dayStartHour` | `chrome.storage.local['cell.srs.uiPrefsMirror']` | device-local mirror of localStorage SSOT |
+| ReminderState | `learnedHour: number|null`, `lastNotifiedDayKey: string|null`, `lastFireAt: number` | `chrome.storage.local['Tihoka.srs.reminderState']` | device-local, overwritten each arm/fire; not synced |
+| UiPrefsMirror | `dayStartHour` | `chrome.storage.local['Tihoka.srs.uiPrefsMirror']` | device-local mirror of localStorage SSOT |
 | Review events (existing) | `answeredAt`, `cardId` | IDB `reviewEvents`, `by_timestamp` index | ≤365d (`reviewEventMaxAgeDays`) |
 | SrsCard (existing) | `nextDue`, `deckId` | IDB `cards`, `by_deck_due` index | — |
 
@@ -209,7 +209,7 @@ init --disabled→ cleared
 - Scope In/Out/Non-goals: as defined in `docs/intent/srs-daily-reminder.md` — this spec adds no scope beyond it (one deliberate deviation: `srs.reminder` stays synced, see Data table).
 - Always: reuse `dayKeyFor`/`dayStartMs`/`computeStreak`/`getStreakStats`/`getSrsHomeStats` (exporting module-local helpers if needed — no parallel logic); alarm pattern like `wireAnkiStatusSyncScheduling`; fixed notification id; i18n keys for every string; gates `typecheck + lint + test:unit + build` before commit.
 - Ask first: manifest changes beyond `optional_permissions`; any new message type beyond what's specced (storage.onChanged is the re-arm channel — no new message type expected); syncing `srs.reminder` is accepted by default — flag if a reason emerges to add it to `excludedPaths`.
-- Never: `notifications` under `permissions`; `localStorage` reads in SW code; new day-boundary logic duplicating `getSrsHomeStats.ts`; writes to `cell.srs.uiPrefsMirror` from the SW.
+- Never: `notifications` under `permissions`; `localStorage` reads in SW code; new day-boundary logic duplicating `getSrsHomeStats.ts`; writes to `Tihoka.srs.uiPrefsMirror` from the SW.
 
 ## Success Criteria
 

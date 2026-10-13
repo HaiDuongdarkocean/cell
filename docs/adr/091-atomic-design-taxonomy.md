@@ -1,15 +1,15 @@
-# ADR-091: Atomic Design Taxonomy for Cell Design-System Showcase
+# ADR-091: Atomic Design Taxonomy for Tihoka Design-System Showcase
 
 **Status:** Accepted  
 **Date:** 2025  
-**Author:** Cell team  
+**Author:** Tihoka team  
 **Context:** Restructuring `src/entrypoints/design-system-showcase` sidebar taxonomy.
 
 ---
 
 ## 1. Context
 
-The Cell design-system showcase uses a Brad-Frost-style atomic design hierarchy (`foundations`, `atoms`, `molecules`, `organisms`, `pages`) to organize 100+ showcases. During a sidebar redesign, there was confusion over whether color, typography, spacing, shape, motion, iconography, and grid should be treated as "foundations" or whether concrete UI components such as `Heading`, `Text`, `Icon`, `Grid`, `Flex`, `Container`, `Section`, `Box`, `AspectRatio`, `Separator`, and `Transition` should be moved into `foundations` because they relate to those dimensions.
+The Tihoka design-system showcase uses a Brad-Frost-style atomic design hierarchy (`foundations`, `atoms`, `molecules`, `organisms`, `pages`) to organize 100+ showcases. During a sidebar redesign, there was confusion over whether color, typography, spacing, shape, motion, iconography, and grid should be treated as "foundations" or whether concrete UI components such as `Heading`, `Text`, `Icon`, `Grid`, `Flex`, `Container`, `Section`, `Box`, `AspectRatio`, `Separator`, and `Transition` should be moved into `foundations` because they relate to those dimensions.
 
 This ADR records the original definitions, the distinction between design tokens (subatomic) and functional UI atoms, and the resulting classification rules used in the showcase.
 
@@ -94,7 +94,7 @@ This is consistent with other major design systems:
 
 3. **Do not reclassify a concrete UI component as `foundations` merely because it consumes or displays a token.** A `Color` token scale showcase can be `foundations`; a `Heading` component cannot.
 
-4. **M3 Design Tokens**, because it documents an external / deprecated reference, is classified under `atoms/Reference` with `status: 'deprecated'` rather than being presented as a Cell foundation.
+4. **M3 Design Tokens**, because it documents an external / deprecated reference, is classified under `atoms/Reference` with `status: 'deprecated'` rather than being presented as a Tihoka foundation.
 
 ---
 

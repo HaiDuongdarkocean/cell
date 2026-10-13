@@ -1,7 +1,7 @@
 # Design System Learning Map
 
 > Sources: Material Design 3, Refactoring UI, DesignSystems.one, W3C Design Token Community Group, Atomic Design (Brad Frost), WCAG 2.2
-> Purpose: Fast-path learning track from zero to designing Cell's design system
+> Purpose: Fast-path learning track from zero to designing Tihoka's design system
 
 ---
 
@@ -35,11 +35,11 @@ These constraints determine 80% of whether a UI looks coherent.
 - **Grid system**: 12-column grid, container, gutter
 - **Breakpoints**: mobile-first 320px → 768px → 1280px+
 - **Layout patterns**: stack, flex, grid, sidebar, card, dialog
-  - Cell reference: `docs/design-system/DESIGN.md` §4
+  - Tihoka reference: `docs/design-system/DESIGN.md` §4
 
 ### 1.5 Shape & Elevation
 - **Border radius scale**: xs, sm, md, lg, full, pill
-  - Cell tokens: `radius-pill`, `radius-card`, `radius-md`
+  - Tihoka tokens: `radius-pill`, `radius-card`, `radius-md`
 - **Shadows/elevation**: use shadow to show depth, not decoration
   - Source: Refactoring UI — "Working with Shadows"
 
@@ -52,7 +52,7 @@ These constraints determine 80% of whether a UI looks coherent.
 ### 1.7 Iconography
 - **Icon style**: filled / outlined / rounded, stroke, corner radius
 - **Icon sizes**: 16, 20, 24, 32, 48 px
-  - Cell reference: `docs/design-system/DESIGN.md` §6
+  - Tihoka reference: `docs/design-system/DESIGN.md` §6
 
 ---
 
@@ -67,7 +67,7 @@ These constraints determine 80% of whether a UI looks coherent.
 - **Token types**: color, spacing, radius, shadow, typography, motion
 - **Theming**: light/dark, brand, density
 - **SSOT**: one source file generates CSS, TS, Figma variables
-  - Cell reference: `src/shared/styles/README.md` — `tokens.json` is canonical, `tokens.css` is generated
+  - Tihoka reference: `src/shared/styles/README.md` — `tokens.json` is canonical, `tokens.css` is generated
 
 ---
 
@@ -79,7 +79,7 @@ These constraints determine 80% of whether a UI looks coherent.
   - Source: Spell UI design system guide — https://spell.sh/blog/design-system-guide
 - **Component states**: default, hover, active, focus, disabled, loading, error, empty
 - **Variants**: primary/secondary/tertiary, size (sm/md/lg), danger, ghost
-- **Cell inventory**: `src/shared/ui/` has 30+ components with consistent patterns
+- **Tihoka inventory**: `src/shared/ui/` has 30+ components with consistent patterns
 
 ---
 
@@ -100,7 +100,7 @@ These constraints determine 80% of whether a UI looks coherent.
 - **Screen readers**: semantic HTML, ARIA, alt text
 - **Reduced motion**: `prefers-reduced-motion`
 - **Touch targets**: 44×44px mobile, 40×40px desktop
-  - Cell reference: `docs/design-system/DESIGN.md` §4.4
+  - Tihoka reference: `docs/design-system/DESIGN.md` §4.4
 
 ---
 
@@ -171,9 +171,9 @@ Trước khi thêm thứ gì, hỏi:
 
 ---
 
-## Fast-Track Learning Plan for Cell
+## Fast-Track Learning Plan for Tihoka
 
-| Week | Topic | Apply to Cell |
+| Week | Topic | Apply to Tihoka |
 |------|-------|---------------|
 | 1 | Color, spacing, tokens | Read `tokens.json` → understand `color-*`, `space-*` |
 | 2 | Typography, layout, shape | Edit `tokens.json` → run `node scripts/generate-tokens.js` → verify in design-system showcase |
@@ -199,7 +199,7 @@ Trước khi thêm thứ gì, hỏi:
 
 ---
 
-## Integration with Cell Codebase
+## Integration with Tihoka Codebase
 
 Apply this knowledge to:
 - `src/shared/styles/tokens.json` — canonical token source

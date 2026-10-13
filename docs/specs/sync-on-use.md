@@ -4,13 +4,13 @@
 
 ## Objective
 
-Make cross-browser word-status sync feel near-realtime while cutting Drive load. The system must: push local IDB changes within ~1.5s of commit through a push-only pass (N1, N4); detect remote changes with one cheap bell probe triggered only by qualifying user actions, throttled, zero cost when idle (N2, N3); pull only the scopes this device holds (N3); refresh every open Cell surface when synced data is applied (N5); and keep the existing full cycle as a slower correctness backstop (N6), identically on Chrome, Brave and Firefox (N7).
+Make cross-browser word-status sync feel near-realtime while cutting Drive load. The system must: push local IDB changes within ~1.5s of commit through a push-only pass (N1, N4); detect remote changes with one cheap bell probe triggered only by qualifying user actions, throttled, zero cost when idle (N2, N3); pull only the scopes this device holds (N3); refresh every open Tihoka surface when synced data is applied (N5); and keep the existing full cycle as a slower correctness backstop (N6), identically on Chrome, Brave and Firefox (N7).
 
 ## Actor ↔ System Boundary
 
 | Actor | Triggers | Inputs | Receives/Views |
 |---|---|---|---|
-| Learner (via Cell surfaces: universal panel, dictionary popup, tokenize, Reader, SRS pages) | word-status messages to background; IDB writes through repositories | terms, statuses, langCode | refreshed lists/colors after apply |
+| Learner (via Tihoka surfaces: universal panel, dictionary popup, tokenize, Reader, SRS pages) | word-status messages to background; IDB writes through repositories | terms, statuses, langCode | refreshed lists/colors after apply |
 | Browser runtime (Chrome SW / Firefox event page) | alarms, `online`, startup, tab navigation events | alarm name, tabId, changeInfo | — |
 | Google Drive API | — | HTTP responses (file metadata, `version`, bytes) | HTTP requests |
 | Peer devices (other browsers on the same account) | journal files + bell bumps on Drive | — | journals, bell version |

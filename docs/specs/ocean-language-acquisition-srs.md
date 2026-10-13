@@ -1,6 +1,6 @@
 # Spec: Ocean Language Acquisition SRS
 
-> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Cell. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
+> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Tihoka. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
 
 > Status: **Final Draft v5**.
 > Intent source: `docs/intent/ocean-language-acquisition-srs.md`.
@@ -13,7 +13,7 @@
 1. **V1 target language validation = English**; multi-language schema sẵn sàng trong Notetype/Field, nhưng validation đầy đủ chờ phase sau.
 2. **FSRS engine** sử dụng `ts-fsrs` v5.x như scheduler boundary, trừ khi T0 spike cho thấy bundle/compat không ổn. User judgment là binary (Forget/Remember); adapter map sang `Rating.Again` / `Rating.Good`.
 3. **Audio stimulus** tái dùng Ocean Pronunciation Engine (`docs/specs/ocean-pronunciation-engine.md`) và TTS fallback chain (`fnc_tts.md`); SRS không tự tổng hợp audio.
-4. **Storage** cho notes/cards/reviews ở IndexedDB `cell-srs-{hash}`, copy pattern `baseRepository` từ `src/features/dictionary/repositories/baseRepository.ts`. Settings/StudyConfig ở `chrome.storage.local` qua `settingsStore`.
+4. **Storage** cho notes/cards/reviews ở IndexedDB `Tihoka-srs-{hash}`, copy pattern `baseRepository` từ `src/features/dictionary/repositories/baseRepository.ts`. Settings/StudyConfig ở `chrome.storage.local` qua `settingsStore`.
 5. **Card source V1**: Notes/Learning Objects được tạo qua universal dictionary panel / site dictionary panel (reuse UI sẵn có), có thể chỉnh sửa thủ công trước khi lưu. Import nhanh từ reader / video là Slice 11 (post-MVP core V1).
 6. **Spelling recall** là exact match với normalization tối thiểu (lowercase, trim, collapse whitespace, strip leading/trailing punctuation). V1 không cho partial credit.
 7. **V1 dùng entrypoint mới** `src/entrypoints/srs-study/`, đăng ký trong `vite.config.ts` `rollupOptions.input` và `manifest.json` `web_accessible_resources`.
@@ -29,11 +29,11 @@ SRS/flashcard thông thường tối ưu cho *card completion*, không phải la
 
 ### User
 
-Người học ngoại ngữ trên Cell (persona chính 10–25 tuổi, hỗ trợ 5–80), dùng Chrome/Edge/Brave MV3, desktop/tablet/Android, học bằng content có sẵn (từ điển, reader, video, subtitle).
+Người học ngoại ngữ trên Tihoka (persona chính 10–25 tuổi, hỗ trợ 5–80), dùng Chrome/Edge/Brave MV3, desktop/tablet/Android, học bằng content có sẵn (từ điển, reader, video, subtitle).
 
 ### Current workflow
 
-Gặp từ mới → tra dictionary popup / reader / video → lưu vào deck. Nếu dùng Anki: một card = một state, review khi đến hạn, đánh giá Again/Hard/Good/Easy. Nếu biết nghĩa nhưng không phát âm được, thẻ vẫn bị "Again"; tiếng mẹ đẻ thường là cầu nối chính. Trong Cell hiện chưa có SRS tích hợp.
+Gặp từ mới → tra dictionary popup / reader / video → lưu vào deck. Nếu dùng Anki: một card = một state, review khi đến hạn, đánh giá Again/Hard/Good/Easy. Nếu biết nghĩa nhưng không phát âm được, thẻ vẫn bị "Again"; tiếng mẹ đẻ thường là cầu nối chính. Trong Tihoka hiện chưa có SRS tích hợp.
 
 ### Pain point
 
@@ -45,7 +45,7 @@ Một learning object có thể meaning giỏi, sound yếu, spelling khá; app 
 
 ### Desired outcome
 
-Hệ thống SRS trong Cell mà mỗi Learning Object (từ/cụm) có 3 Memory Component độc lập: **Meaning, Sound, Spelling**. Mỗi component có progress, FSRS state, scheduling riêng. Scheduler chọn component cần reinforce, chọn stimulus + template, hiển thị Front, learner tự đánh giá **Forget/Remember** đúng component đang test. Back là verification surface đầy đủ. UI hiển thị learning path và progress từng component. V1 tập trung recognition + recall chính tả.
+Hệ thống SRS trong Tihoka mà mỗi Learning Object (từ/cụm) có 3 Memory Component độc lập: **Meaning, Sound, Spelling**. Mỗi component có progress, FSRS state, scheduling riêng. Scheduler chọn component cần reinforce, chọn stimulus + template, hiển thị Front, learner tự đánh giá **Forget/Remember** đúng component đang test. Back là verification surface đầy đủ. UI hiển thị learning path và progress từng component. V1 tập trung recognition + recall chính tả.
 
 ---
 
@@ -65,7 +65,7 @@ Hệ thống SRS trong Cell mà mỗi Learning Object (từ/cụm) có 3 Memory 
 
 ## Objective
 
-Xây dựng **Ocean Language Acquisition SRS** — hệ thống spaced repetition trong Cell, offline-first, tối ưu cho *language acquisition* chứ không phải *flashcard completion*.
+Xây dựng **Ocean Language Acquisition SRS** — hệ thống spaced repetition trong Tihoka, offline-first, tối ưu cho *language acquisition* chứ không phải *flashcard completion*.
 
 ### User stories
 
@@ -122,7 +122,7 @@ User mở Ocean SRS, review một từ, thấy Front stimulus (image/audio/sente
 - **State**: Zustand 5 for UI state; `chrome.storage.local` for settings/study config; IndexedDB for SRS data.
 - **Scheduler**: `ts-fsrs` v5.x (MIT, Node.js ≥20, ES module/UMD), wrapped behind `SrsFsrsAdapter` interface. T0 spike required before final dependency pin.
 - **Audio**: Reuse `PronunciationAudioOrchestrator` / TTS fallback chain from `features/pronunciation`.
-- **Storage pattern**: Copy `baseRepository` pattern in dedicated `cell-srs-{hash}` IndexedDB.
+- **Storage pattern**: Copy `baseRepository` pattern in dedicated `Tihoka-srs-{hash}` IndexedDB.
 - **Validation**: Zod at message and persistence boundaries.
 - **UI**: `src/shared/ui/` components + CSS modules + design tokens.
 - **Test**: Jest + jsdom (unit), Playwright (E2E).
@@ -1219,7 +1219,7 @@ Background handler mở tab `chrome-extension://<id>/src/entrypoints/srs-study/i
 
 ## Storage & Migration
 
-### IndexedDB: `cell-srs-{hash}`
+### IndexedDB: `Tihoka-srs-{hash}`
 
 ```
 collections        keyPath: id, index: by_languageProfileId
@@ -1598,7 +1598,7 @@ Feature được coi là hoàn thành khi:
   - Unit tests cho `resolvePool`, `pickHighestPriority`, `by_deck_due` cursor, batch fetch, deck scoping.
   - Không có async fetch bên trong IndexedDB cursor.
 - [ ] **Storage & migration**:
-  - IndexedDB schema `cell-srs-{hash}` đúng stores/indexes.
+  - IndexedDB schema `Tihoka-srs-{hash}` đúng stores/indexes.
   - Migration v26 → v27 tạo `Settings.srs` slice với `activeLanguageProfileId`.
   - Delete-cascade collection/deck/note/card/assets/reviewEvents hoạt động đúng.
 - [ ] **Message bus**:
@@ -1659,7 +1659,7 @@ Feature được coi là hoàn thành khi:
 
 ### Persona
 
-**Linh** — 24 tuổi, đang học tiếng Anh để xem video/đọc báo. Dùng Cell trên Chrome laptop. Chưa từng dùng SRS nào. Mục tiêu: nhớ từ theo **nghĩa, âm, chính tả** thay vì chỉ dịch nghĩa.
+**Linh** — 24 tuổi, đang học tiếng Anh để xem video/đọc báo. Dùng Tihoka trên Chrome laptop. Chưa từng dùng SRS nào. Mục tiêu: nhớ từ theo **nghĩa, âm, chính tả** thay vì chỉ dịch nghĩa.
 
 ---
 
@@ -1669,7 +1669,7 @@ Feature được coi là hoàn thành khi:
 1. Linh mở extension popup → chọn tab "Ocean SRS".
    - Hoặc: Linh mở universal panel trên trang web → chọn tab "Ocean SRS".
 2. Màn hình đầu tiên:
-   - Header có **language profile selector** (dropdown) cho phép Linh chuyển đổi giữa các profile language đã có trong Cell.
+   - Header có **language profile selector** (dropdown) cho phép Linh chuyển đổi giữa các profile language đã có trong Tihoka.
    - Nếu chưa có Collection nào cho language đang chọn:
      - Thông báo "Chào mừng. Dữ liệu SRS chỉ lưu trên máy."
      - Hệ thống lấy `targetLanguage` và `languageProfileId` từ profile đang chọn.
@@ -1855,7 +1855,7 @@ Feature được coi là hoàn thành khi:
 ```
 1. Linh đang ở SRS dashboard, đang học tiếng Anh.
 2. Linh click **language profile selector** ở header.
-3. Danh sách hiển thị các language profile đã có trong Cell (en, ja, es, ...).
+3. Danh sách hiển thị các language profile đã có trong Tihoka (en, ja, es, ...).
 4. Linh chọn "Spanish".
 5. Hệ thống:
    - Đặt `activeLanguageProfileId = 'es'` trong `Settings.srs` slice.

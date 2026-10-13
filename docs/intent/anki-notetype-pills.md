@@ -19,7 +19,7 @@
 
 | Group | Who | Their need re: this change | Capability/constraint |
 |---|---|---|---|
-| Team | Cell maintainers | Reuse `Chip`, `Dialog`/`MobileSheet`, `useIsMobile`; no new deps | Existing components cover all parts |
+| Team | Tihoka maintainers | Reuse `Chip`, `Dialog`/`MobileSheet`, `useIsMobile`; no new deps | Existing components cover all parts |
 | Customer | Anki migrants with multi-notetype decks | See + choose + enable/disable notetypes without hunting | Persona: 5–80, desktop + mobile widths |
 | Supplier/Dependency | none — data already normalized (`NormalizedAnkiData.notetypes`) | — | — |
 | Organization | future contributors | Pill bar must not fork card-selection logic — keep one `sampleIdx`/`selectedNt` source of truth | — |

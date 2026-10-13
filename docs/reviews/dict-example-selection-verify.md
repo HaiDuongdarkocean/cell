@@ -11,7 +11,7 @@ VERDICT: PASS
 
 ## Findings per spec criterion
 
-- AC-1/AC-2 (rows + dot→checkbox contract): sibling `cellDefExampleItem` rows with `role="checkbox"`, `aria-checked`, `tabIndex=0`, Space/Enter + `preventDefault`/`stopPropagation`, idle `·` dot + hover/focus/press/checked compound states — `CandidateView.tsx`, `DictionaryCheckable.module.css`. PASS
+- AC-1/AC-2 (rows + dot→checkbox contract): sibling `TihokaDefExampleItem` rows with `role="checkbox"`, `aria-checked`, `tabIndex=0`, Space/Enter + `preventDefault`/`stopPropagation`, idle `·` dot + hover/focus/press/checked compound states — `CandidateView.tsx`, `DictionaryCheckable.module.css`. PASS
 - AC-3 (example→def cascade): `toggleExample` selects parent def on check only — `useCandidate.ts`. PASS
 - AC-4/5/6 (def toggle semantics): `toggleDefinition` clears `exampleSelection[defId]` on uncheck; fills all indices only when `includeAllExamples` (loaded `?? false`, manual default). PASS
 - AC-7/AC-8 (deselect-last keeps def; composite ids): empty `Set` preserved; `selectedExamples` emitted in source order with `defId:index` ids — `buildCandidatePrefill.ts`, `definitionSelection.ts`. PASS

@@ -15,7 +15,7 @@
 5. **Showcase bypass mountSubtitle**: `VideoPlayerPage.showcase.tsx`, `SubtitleOverlayPage.showcase.tsx` render `<SubtitlePanels>` trực tiếp, bypass `mountSubtitle` → props contract có thể lệch production.
 
 **User story (primary):**
-> **As** a maintainer của Cell subtitle overlay, **I want** toolbar phải, manager layer, offset layer và shared types mỗi thứ là một module riêng, **so that** khi thêm/đổi nút toolbar tôi sửa 1 file (`ClusterRightToolbar.tsx`) thay vì 3 file (`SubtitlePanels.tsx` + `PlayerModeOverlay.tsx` + `OverlayPreview.module.css`), và `logic/` files không phải import type từ UI file. Metric: số file cần sửa khi thay toolbar giảm 3 → 1; `logic/` import type từ `subtitlePanelsTypes.ts` thay vì `SubtitlePanels.tsx`.
+> **As** a maintainer của Tihoka subtitle overlay, **I want** toolbar phải, manager layer, offset layer và shared types mỗi thứ là một module riêng, **so that** khi thêm/đổi nút toolbar tôi sửa 1 file (`ClusterRightToolbar.tsx`) thay vì 3 file (`SubtitlePanels.tsx` + `PlayerModeOverlay.tsx` + `OverlayPreview.module.css`), và `logic/` files không phải import type từ UI file. Metric: số file cần sửa khi thay toolbar giảm 3 → 1; `logic/` import type từ `subtitlePanelsTypes.ts` thay vì `SubtitlePanels.tsx`.
 
 **Substories:**
 - **Manager**: As maintainer, I want `ManagerLayer` là SSOT render `SubtitleManagerPanel` (mobile Sheet + desktop panelLayer + host-sheet iframe-child), so that persist `SUBTITLE_MANAGER_SHEET_HEIGHT_VH` + backdrop logic chỉ ở 1 chỗ (hiện duplicate giữa `SubtitlePanels` lines 1505-1544 và `HostManagerSheet.tsx`).
@@ -43,7 +43,7 @@
 - **C2 (style)**: Named export, no `any`, no default export, no hardcoded. Icon từ `ICON_CATALOG`, CSS token từ `tokens.css`.
 - **C3 (storage)**: `STORAGE_KEYS.SUBTITLE_MANAGER_SHEET_HEIGHT_VH` giữ nguyên key (backward-compatible).
 - **C4 (API)**: `mountSubtitle` imperative ref contract giữ nguyên cho `contentScriptController`.
-- **C5 (DOM)**: Tất cả `data-cell-id`/test selectors giữ nguyên (`subtitle-panels-root`, `subtitle-manager-layer`, `subtitle-offset-layer`, `quick-add-btn`, `edit-card-btn`, `subtitle-tools-extra`, `panel-toggle-btn`, `generate-native-btn`, `tools-toggle-btn`, `update-current-card-btn`, `manager-toggle-btn`, `player-mode-btn`, `player-mode-exit-btn`, `subtitle-hint-layer`, `nav-cluster-right`, `player-mode-actions`).
+- **C5 (DOM)**: Tất cả `data-tihoka-id`/test selectors giữ nguyên (`subtitle-panels-root`, `subtitle-manager-layer`, `subtitle-offset-layer`, `quick-add-btn`, `edit-card-btn`, `subtitle-tools-extra`, `panel-toggle-btn`, `generate-native-btn`, `tools-toggle-btn`, `update-current-card-btn`, `manager-toggle-btn`, `player-mode-btn`, `player-mode-exit-btn`, `subtitle-hint-layer`, `nav-cluster-right`, `player-mode-actions`).
 
 ## Decisions `[REVIEW FIX]`
 
@@ -180,7 +180,7 @@ export function ManagerLayer({ manager, isMobile, exiting, onClose, sheetHeightV
 - **Test hiện có phải pass**: `mountSubtitle.test.tsx`, `SubtitleManagerPanel.test.tsx`, `SubtitleOffsetPanel.test.tsx`, `HostManagerSheet.test.tsx`, `managerStateSerializer.test.ts`, `SubtitleBlock.test.tsx`, `NavCluster.test.tsx`, `SubtitleToast.test.tsx`, `SubtitleHint.test.tsx` — tất cả pass sau refactor.
 - **Type check**: `npm run typecheck` pass (verify types dời không break import).
 - **Build**: `npm run build` pass (verify Vite/rollup không break CSS import path + shadow CSS manifest đầy đủ).
-- **DOM selector preservation** `[REVIEW FIX]`: Test verify tất cả `data-cell-id` ở C5 vẫn tồn tại sau refactor (grep + DOM query trong test).
+- **DOM selector preservation** `[REVIEW FIX]`: Test verify tất cả `data-tihoka-id` ở C5 vẫn tồn tại sau refactor (grep + DOM query trong test).
 - **Browser test (skill `browser-testing-with-devtools`)** `[REVIEW FIX]`:
   1. **Text**: `https://www.geeksforgeeks.org/machine-learning/machine-learning-algorithms/` — overlay render, toolbar phải (quick-add/edit/tools/manager/player-mode), manager mở/đóng (desktop + mobile), offset.
   2. **Video**: `https://themoviebox.xyz/movies/oh-boy-was-i-wrong-about-her-KZp0CGxDxI2?id=2281575019673174328&type=/movie/detail&detailSe=&detailEp=&lang=en` — overlay + player mode (toolbar share) + split view.
@@ -240,7 +240,7 @@ export function ManagerLayer({ manager, isMobile, exiting, onClose, sheetHeightV
 10. **`npm run test:unit` pass** — tất cả test hiện có pass + test mới cho molecule pass (covering branch chính + failure path).
 11. **`npm run build` pass** — Vite/rollup không break CSS import path.
 12. **Shadow CSS manifest đầy đủ** `[REVIEW FIX]` — `mountSubtitle.tsx` (`css[]` + `managerShadowCss[]`) + `hostManagerSheetShadowCss.ts` đều chứa `subtitlePanelsSharedCss` + molecule CSS mới. Metric: grep 3 manifest array.
-13. **DOM selector preservation** `[REVIEW FIX]` — tất cả `data-cell-id` ở C5 vẫn tồn tại sau refactor. Metric: grep + DOM query trong test.
+13. **DOM selector preservation** `[REVIEW FIX]` — tất cả `data-tihoka-id` ở C5 vẫn tồn tại sau refactor. Metric: grep + DOM query trong test.
 14. **Browser verify pass** `[REVIEW FIX]` — 4 environment (text + video + anti-automation + mock iframe) pass checklist observable ở Testing Strategy. No console error, no visual regression.
 15. **`docs/2-architechture-system.md` cập nhật** — tree + dependency + CSS manifest + function index cho `subtitle/ui` phản ánh molecule mới.
 16. **ADR tạo** — `docs/adr/NNN-subtitle-panels-atom-decomposition.md` ghi WHY tách (chỉ WHY).

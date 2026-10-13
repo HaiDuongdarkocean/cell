@@ -14,7 +14,7 @@ Interactive mode — user approval record.
 
 ## Review notes
 
-- Needs are evidence-cited (`useSubtitleActions.ts:77-94`, `CueList.tsx:113`, `statusKeyControls.ts`, grep-verified absence of `js-cell-token--selected` and of status-key wiring in `src/entrypoints/local-player/`).
+- Needs are evidence-cited (`useSubtitleActions.ts:77-94`, `CueList.tsx:113`, `statusKeyControls.ts`, grep-verified absence of `js-Tihoka-token--selected` and of status-key wiring in `src/entrypoints/local-player/`).
 - Scope excludes `setWordStatus` semantics — owned by concurrent `vocabulary-tab-redesign` item.
 - Journey AS-IS/TO-BE complete; Decision=go.
 

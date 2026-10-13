@@ -8,7 +8,7 @@
 
 ## 8-field frame
 
-1. **Who**: Cell user học qua comprehensible input — xem streaming (split-view subtitle panel) hoặc local player, đã bật subtitle tokenize.
+1. **Who**: Tihoka user học qua comprehensible input — xem streaming (split-view subtitle panel) hoặc local player, đã bật subtitle tokenize.
 2. **Problem**: vào video mới, từ lạ dồn dập theo cue — user không biết "phải gánh bao nhiêu từ" hay "từ nào đáng học trước" → bỏ cuộc. Coverage badge nói *bao nhiêu* (42 new) nhưng không nói *là những từ nào*.
 3. **Current workaround**: lướt CueList săn underline đỏ — chậm, không ranking; hoặc tra từng từ khi đang xem → gián đoạn input.
 4. **Trigger**: ngay sau khi video + cues load — trước khi bấm play / trong lúc video pause — user mở subtitle panel.

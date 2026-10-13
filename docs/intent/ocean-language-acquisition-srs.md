@@ -1,6 +1,6 @@
 # Intent: Ocean Language Acquisition SRS
 
-> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Cell. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
+> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Tihoka. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
 
 > Elicitation result — confirmed by user.
 
@@ -11,7 +11,7 @@
 | Field | Confirmed value |
 |---|---|
 | **Problem** | SRS/flashcard thông thường tối ưu cho card completion, không phải language acquisition. Coi một từ là một trạng thái nhớ duy nhất, dựa nhiều vào native translation, khiến learner không xây dựng liên kết trực tiếp với target language. |
-| **User** | Người học ngoại ngữ trên Cell, 10–25 chính, hỗ trợ 5–80, MV3, desktop/tablet/Android. |
+| **User** | Người học ngoại ngữ trên Tihoka, 10–25 chính, hỗ trợ 5–80, MV3, desktop/tablet/Android. |
 | **Current workflow** | Gặp từ mới → tra dictionary popup / reader / video → lưu vào deck. Nếu Anki: một card = một state, 4 rating. Nếu biết nghĩa nhưng không phát âm được, thẻ vẫn "Again". |
 | **Pain point** | Một learning object có thể meaning giỏi, sound yếu, spelling khá; app không phân biệt. Progress không hiển thị theo component. Offline review phụ thuộc AI/cloud. |
 | **Evidence** | `Ocean_Language_Acquisition_SRS_Intent.md` v1.0: 41 phần + 9 design test cases A–I + 20 non-negotiable rules. |
@@ -25,7 +25,7 @@
 
 | # | Assumption | Risk | Mitigation / accepted risk |
 |---|---|---|---|
-| 1 | FSRS per component | No existing FSRS in Cell | `ts-fsrs` or internal port; keep FSRS as scheduler boundary only. |
+| 1 | FSRS per component | No existing FSRS in Tihoka | `ts-fsrs` or internal port; keep FSRS as scheduler boundary only. |
 | 2 | Exact match spelling | Inflection may fail | V1 minimal normalization; revisit for non-English. |
 | 3 | Template system | Combinatorial explosion | Default templates per component; user can add but not required. |
 | 4 | Audio offline | Audio may not be pre-downloaded | Reuse Pronunciation Engine fallback; non-audio Sound template. |

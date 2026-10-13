@@ -134,7 +134,7 @@ NavItem `aria-current` (pill bar + `primary-subtle` + accent icon) and bottom-na
 
 - Interactive hover: deepened status bg via `color-mix` of the status bg token with `color-text` 8% — the Chip contract (subtle → muted swap, `Chip.module.css:78-100`) adapted because the status family ships no muted variant; `filter: brightness()` dies both directions.
 - Static = `as="span"` (existing prop — no new `static` API).
-- `RecapTab .statusChip` + `VocabularyTab .statusBadge` (interactive + static-trash) consume it; `STATUS_CLASS` maps + bespoke CSS die; dictionary-popup `.cellHeaderStatus` adoption stays out of scope but shares the tokens.
+- `RecapTab .statusChip` + `VocabularyTab .statusBadge` (interactive + static-trash) consume it; `STATUS_CLASS` maps + bespoke CSS die; dictionary-popup `.TihokaHeaderStatus` adoption stays out of scope but shares the tokens.
 - New public API on a stable atom → `Chip.showcase` + `Chip.test` additions per `DESIGN.md §10.2`; status stays `experimental` until two consumers land (they do here).
 
 ### R-EMPH — `.secondary` atom + footer/destructive recipes

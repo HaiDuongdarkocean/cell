@@ -31,7 +31,7 @@
 | N1 | Selecting words in the local-player subtitle panel (CueList) and pressing 1–4 changes all selected words' status | F | no `statusKeyControls` in `src/entrypoints/local-player/`; CueList already tokenized (`useSubtitleActions.ts:77-94`); `extractTermsFromSelection` works on light DOM | high |
 | N2 | The local-player subtitle block (overlay) is tokenized and supports the same select→1–4 bulk change | F | overlay shows plain text — no `subtitleTokenizeController` in local player; user confirmed surface scope | high |
 | N3 | Ctrl/Cmd+click on a token in the subtitle panel toggles it into the multi-selection — works on streaming (split view + Player Mode) and local player | F | `CueList.tsx:113` binds only `onTokenClick`; `tokenSpanRenderer.ts:68-71` already routes ctrl/meta-click to `onTokenCtrlClick` | high |
-| N4 | Selected words render a visible selected state on every tokenized surface | U | `[assumption]` — no `js-cell-token--selected` class exists anywhere (grep-verified); invisible selection makes ctrl+click undiscoverable today | medium |
+| N4 | Selected words render a visible selected state on every tokenized surface | U | `[assumption]` — no `js-Tihoka-token--selected` class exists anywhere (grep-verified); invisible selection makes ctrl+click undiscoverable today | medium |
 | N5 | A status change made on a subtitle surface re-renders every live surface showing that term (panel, overlay, popup) via the existing broadcast | R | `emitWordStatusChanged`/`onWordStatusChanged` already drive CueList (`CueList.tsx:163-168`) + videoTokenMap (`subtitleTokenizeController.ts:99-117`) | high |
 | N6 | The mechanism is identical to what works on web page text — same keys, same gestures, no new UI controls | U | user confirmed "giống hiện tại" | high |
 | N7 | Reuse existing tokenize/status primitives; no new dependencies | +infra | AGENTS.md conventions; all primitives cited above exist | high |
@@ -54,7 +54,7 @@ Person↔device, streaming page: the learner already drag-selects subtitle text 
 1. Learner opens the local player, loads a video with subtitles, and opens the subtitle panel — the cue list shows tokenized, status-colored words (`cueListTokenize` wired in `useSubtitleActions.ts:77-94`).
 2. They drag-select a phrase in the panel and press `3` (known) — nothing happens: no `statusKeyControls` exists in the local-player entrypoint, so the keypress dies; the overlay block above the video is plain text with no word coloring at all.
 3. Their only path is clicking one word → dictionary popup → footer status buttons — one word at a time (`CueList.tsx:113` → `onTokenClick`).
-4. On a streaming page the same learner can drag-select the overlay or the split-view panel and press 1–4 — but ctrl+click on a cue-list token does nothing (`CueList` binds no `onTokenCtrlClick`), and words they ctrl+click on page text or the overlay enter `selectedTerms` with zero visual feedback (no `js-cell-token--selected` class exists).
+4. On a streaming page the same learner can drag-select the overlay or the split-view panel and press 1–4 — but ctrl+click on a cue-list token does nothing (`CueList` binds no `onTokenCtrlClick`), and words they ctrl+click on page text or the overlay enter `selectedTerms` with zero visual feedback (no `js-Tihoka-token--selected` class exists).
 
 ### TO-BE
 

@@ -180,13 +180,13 @@ Host page sends `MGR_ACTION` with action name + args. Child iframe maps to callb
 ### AC-3: Host-side bridge
 - [ ] `installManagerSheetBridge(): () => void` — installs message listener on host page
 - [ ] Validate `event.origin` against iframe `src` origin before processing
-- [ ] On `MGR_OPEN`: create shadow host on `document.body`, `createRoot(shadowHost).render(<ThemeProvider theme={cellTheme}><ManagerSheetBridge /></ThemeProvider>)`
+- [ ] On `MGR_OPEN`: create shadow host on `document.body`, `createRoot(shadowHost).render(<ThemeProvider theme={TihokaTheme}><ManagerSheetBridge /></ThemeProvider>)`
 - [ ] On `MGR_STATE`: update sheet props (React state update)
 - [ ] On `MGR_ACTION` from sheet: send `MGR_ACTION` to child iframe (match by `frameSrc`)
 - [ ] On `MGR_CLOSE` (user clicks X/outside): send `MGR_CLOSE` to child, wait for `MGR_CLOSED` (timeout 2s), remove portal
 - [ ] If `MGR_CLOSED` timeout → force remove portal (child may have navigated away)
 - [ ] If React mount fail → send `MGR_OPENED {ok:false}`, log error
-- [ ] Cleanup function: uninstall on `document.addEventListener('cell:cleanup')` or extension unload
+- [ ] Cleanup function: uninstall on `document.addEventListener('Tihoka:cleanup')` or extension unload
 - [ ] No-op when `window.self === window.top` and no iframe (same-origin sites)
 
 ### AC-4: SubtitlePanels integration (child iframe)
@@ -231,7 +231,7 @@ Host page sends `MGR_ACTION` with action name + args. Child iframe maps to callb
 | Search results không serialize được | Med | Host page calls `sendMessage` directly (same background SW). Không cần serialize. |
 | Appearance state quá lớn | Low | Serialize đầy đủ, chỉ gửi khi manager open. Throttle 100ms. |
 | Action latency (postMessage round-trip) | Low | ~1ms per message, imperceptible |
-| Host page không có React context | Med | `createRoot` + `<ThemeProvider theme={cellTheme}>` trên shadow host (reuse cellTheme) |
+| Host page không có React context | Med | `createRoot` + `<ThemeProvider theme={TihokaTheme}>` trên shadow host (reuse TihokaTheme) |
 | Multiple iframes | Low | Match by `frameSrc` (already in bridge) |
 | Child iframe navigate away | High | `beforeunload` → `MGR_CLOSED`. Host timeout 2s → force remove portal. |
 | Race condition: action after close | Med | Child guards: `if (!managerOpen) return`. Host ignores `MGR_STATE` after `MGR_CLOSE` sent. |

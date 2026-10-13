@@ -1,12 +1,12 @@
-# Cell Design System — Audit, Operating Model và Roadmap
+# Tihoka Design System — Audit, Operating Model và Roadmap
 
 > Trạng thái audit: 2026-08-28  
-> Phạm vi: Design System phục vụ Chrome-family MV3 extension Cell, UI React 19 + Vite 8, Shadow DOM, desktop/tablet và responsive viewport.  
+> Phạm vi: Design System phục vụ Chrome-family MV3 extension Tihoka, UI React 19 + Vite 8, Shadow DOM, desktop/tablet và responsive viewport.  
 > Đây là assessment nội bộ có denominator minh bạch, không phải chứng nhận tiêu chuẩn ngành.
 
 ## 1. Mục tiêu thành công
 
-Cell có Design System thành công khi team luôn trả lời được năm câu hỏi:
+Tihoka có Design System thành công khi team luôn trả lời được năm câu hỏi:
 
 1. **Mình đang làm gì?** Mọi UI task bắt đầu từ user problem, layer trong hệ thống và acceptance criteria.
 2. **Mình đang có gì?** Inventory token, component, pattern, trạng thái và coverage được sinh từ code thực tế.
@@ -14,11 +14,11 @@ Cell có Design System thành công khi team luôn trả lời được năm câ
 4. **Mình kiểm chứng bằng gì?** Quality gate tự động, tái lập trong CI; manual browser chỉ bổ sung cho exploratory smoke test.
 5. **Mình thay đổi hệ thống thế nào?** Có governance, versioning, migration và vòng lặp đo adoption.
 
-Target không phải “có nhiều component nhất”. Target là hệ thống nhỏ nhất giúp Cell nhất quán, accessible, responsive và an toàn khi thay đổi.
+Target không phải “có nhiều component nhất”. Target là hệ thống nhỏ nhất giúp Tihoka nhất quán, accessible, responsive và an toàn khi thay đổi.
 
 ## 2. Product-specific design direction
 
-### 2.1 Bối cảnh Cell
+### 2.1 Bối cảnh Tihoka
 
 - Sản phẩm học ngoại ngữ chạy dưới dạng MV3 extension.
 - Persona rất rộng 5–80 tuổi, nhóm chính 10–25 tuổi.
@@ -27,14 +27,14 @@ Target không phải “có nhiều component nhất”. Target là hệ thống
 - Phải phản hồi dưới 3 giây và tránh phụ thuộc runtime không cần thiết.
 -  tôi là Dương, dương của hải dương cũng là dương của thái dương, tôi yêu thiên
   nhiên, bản mệnh là mộc, tôi thích những hàng cây với những tán lá đung đưa theo gió, tôi yêu nước vì nó yên bình, nhẹ nhàng, lả
-  lướt, mọi thứ đều cần nước để tồn tại, nước phản ánh bản tâm, phản ánh thế giới, cell được sinh ra cũng từ nước lớn lên và phát
+  lướt, mọi thứ đều cần nước để tồn tại, nước phản ánh bản tâm, phản ánh thế giới, Tihoka được sinh ra cũng từ nước lớn lên và phát
   triển, những cú cá tung tắng ở dưới nước làm mặt hồ gợn sóng, những viên sỏi nằm ở dưới đáy hồ cũng làm tôi cảm thấy chúng có một
   vị trí đặc biệt mà chỉ cần nằm im cũng chứng tỏ sự quan trọng quả nó, tôi yêu bầu trời với màu xanh dương nhẹ nhàng. đó chính là
   tôi người muốn có một cuộc sống gần gũi với thiên nhiên tôi muốn liquic glass sẽ là design system style, màu chủ đạo là màu xanh
   dương của bầu trời, tiếp đó là màu xanh lá của cây, trong suốt của nước, màu xám của các viên sỏi, màu nâu của đất, màu vàng của
   ánh mặt trời. tôi muốn chúng là một phần của hệ thống này.
 
-> ⚠️ **Cập nhật 2026-09-08 — supersede:** Liquid Glass **không còn** là design system style của Cell. Câu chuyện thiên nhiên (trời xanh, lá, nước, sỏi, đất, mặt trời) vẫn là nguồn gốc của **palette màu**, nhưng vật liệu glass/blur đã bị loại. Luật quyết định mới: `docs/design-system/DESIGN_RATIONALE.md`.
+> ⚠️ **Cập nhật 2026-09-08 — supersede:** Liquid Glass **không còn** là design system style của Tihoka. Câu chuyện thiên nhiên (trời xanh, lá, nước, sỏi, đất, mặt trời) vẫn là nguồn gốc của **palette màu**, nhưng vật liệu glass/blur đã bị loại. Luật quyết định mới: `docs/design-system/DESIGN_RATIONALE.md`.
 
 ### 2.2 Nguyên tắc quyết định
 
@@ -119,7 +119,7 @@ Thứ tự giải quyết xung đột: **code/token hiện tại → STANDARD �
 - **Asset completeness:** cao; foundations, tokens, components, icons, pattern catalog và showcase đã hình thành.
 - **Operational maturity:** khá; governance, health report, automated UI quality gates (a11y/keyboard/visual/responsive) và CI artifact đã có; còn một số stale doc, token alias bloat, và component gap nhỏ.
 - **Confidence:** medium-high cho inventory; medium-high cho maturity vì rubric nội bộ đã được cập nhật bằng evidence từ code và CI.
-- Không nên báo “Cell đạt 87% chuẩn quốc tế”. Cách nói đúng: **Cell đạt 87/100 theo rubric vận hành được định nghĩa ở trên**.
+- Không nên báo “Tihoka đạt 87% chuẩn quốc tế”. Cách nói đúng: **Tihoka đạt 87/100 theo rubric vận hành được định nghĩa ở trên**.
 
 ## 6. Cái gì nên giữ, improve hoặc xóa
 
@@ -220,7 +220,7 @@ dist/design-system-showcase/             # generated, ignored, disposable
 - Không thêm Chromatic/Percy khi Playwright screenshot đã đủ cho local/CI baseline.
 - Không chuyển 403 tests sang Vitest chỉ vì “modern hơn”. Đo cold run, watch latency, flake và migration diff trước.
 - Không dùng Playwright Component Testing experimental trên critical path.
-- Không chạy extension E2E trên Firefox/WebKit rồi gọi đó là Chrome-extension compatibility. MV3 package của Cell cần Chromium-family E2E; showcase CSS có thể có browser matrix riêng nếu sản phẩm thật hỗ trợ.
+- Không chạy extension E2E trên Firefox/WebKit rồi gọi đó là Chrome-extension compatibility. MV3 package của Tihoka cần Chromium-family E2E; showcase CSS có thể có browser matrix riêng nếu sản phẩm thật hỗ trợ.
 - Không coi Chrome Android là extension runtime được hỗ trợ khi Chrome Android không cài desktop extension; chỉ kiểm responsive viewport cho UI độc lập.
 
 ### 8.3 Nguồn chính thức

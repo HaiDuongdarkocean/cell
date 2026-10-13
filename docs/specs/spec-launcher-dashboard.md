@@ -1,8 +1,8 @@
 # Spec: Launcher Dashboard — Liquid Glass Prototype Entrypoint
 
-> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Cell. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
+> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Tihoka. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
 
-> Intent: prototype a full-screen Liquid Glass launcher for Cell to validate the `liquid-glass-concept.md` language on a real page before applying it to popup/sidepanel/options.  
+> Intent: prototype a full-screen Liquid Glass launcher for Tihoka to validate the `liquid-glass-concept.md` language on a real page before applying it to popup/sidepanel/options.  
 > Status: Draft for plan approval  
 > Confirmed: 2026-08-30
 
@@ -13,7 +13,7 @@
 Build a new Vite entrypoint `launcher-dashboard` that renders a standalone launcher screen:
 
 - A **search bar** (pill glass) at the top.
-- A **grid of glass tiles** (squircle) representing Cell features: Dictionary, Subtitle Manager, Settings, History, Reader, Local Player, Help.
+- A **grid of glass tiles** (squircle) representing Tihoka features: Dictionary, Subtitle Manager, Settings, History, Reader, Local Player, Help.
 - A **floating user/action bar** at the bottom with 3-5 circular glass icon buttons (Profile, Theme, Settings, Add).
 - A **responsive background** (gradient + subtle animated mesh) so glass layers show their translucency.
 - An **interactive demo**: hover/press states, click feedback, light/dark mode toggle, preset switcher.

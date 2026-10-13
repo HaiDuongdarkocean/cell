@@ -11,7 +11,7 @@ none — every gap has a viable fallback, but the Majors below had to be resolve
 
 ## Major findings (as reported)
 
-1. [REQ-4] [TL]: Pill repositioning was an unresolved "hoặc" between (a) PM mutates foreign-owned `.js-cell-comprehension-pill-host` (inline styles lost on remount, no restore contract) vs (b) PM-owned anchor + marker. → pick mechanism, owner, remount/restore contract.
+1. [REQ-4] [TL]: Pill repositioning was an unresolved "hoặc" between (a) PM mutates foreign-owned `.js-Tihoka-comprehension-pill-host` (inline styles lost on remount, no restore contract) vs (b) PM-owned anchor + marker. → pick mechanism, owner, remount/restore contract.
 2. [REQ-3] [TL]: `cue-filter-fab` is owned by `SubtitlePanel` internals (`cueListWrap` + lastGood/practiceMode/panelBlurred state), not the dock — rail reuse needs hoist-state (deep refactor) or CSS-slot; also fab behavior in `active` mode undefined.
 3. [C5 vs AC-13] [PO/TL]: `tools-toggle-btn`/`subtitle-tools-extra`/`player-mode-actions`/`panel-toggle-btn` intentionally dissolved on mobile → AC-13 untestable without branch-scoped table.
 4. [REQ-1/5/6] [PO]: mobile cueRegion chrome (panel header + StudyModeActionBar) and ⋯ inventory undefined; mode-select + speed can't trivially be MenuItems.
@@ -39,7 +39,7 @@ none — every gap has a viable fallback, but the Majors below had to be resolve
 
 Applied to spec v2 (all items):
 
-1. REQ-4: decided pill mechanism — PM sets `data-cell-player-mode-mobile` + `--pm-anchor-bottom` on `document.documentElement`; `ComprehensionPill.module.css` reads via `:host-context()` → remount-safe, auto-restore, zero changes to `mountComprehensionPill`.
+1. REQ-4: decided pill mechanism — PM sets `data-tihoka-player-mode-mobile` + `--pm-anchor-bottom` on `document.documentElement`; `ComprehensionPill.module.css` reads via `:host-context()` → remount-safe, auto-restore, zero changes to `mountComprehensionPill`.
 2. REQ-3: decided fab mechanism — portal slot (`pm-fab-slot`): PM owns slot div in rail, SubtitlePanel `createPortal`s `cueFilterFab` into it; state stays in panel; fab hidden in `active` mode; slot collapses without gap.
 3. C5 contract rewritten as branch-scoped table (≥600px vs <600px): preserved ids enumerated, `player-mode-actions` reused as rail wrapper, `nav-cluster` kept on transport group, `tools-toggle-btn`/`subtitle-tools-extra` explicitly dropped on mobile only, new ids listed (`pm-bottom-bar`, `pm-anchor-row`, `pm-more-btn`, `pm-more-menu`, `pm-fab-slot`, `pm-cue-active-card`).
 4. REQ-7: mobile cueRegion = barebones — panel header + StudyModeActionBar/PracticeOptions hidden; ⋯ menu inventory enumerated (rewind/forward-conditional, cue-list toggle, OCR, study-mode radios, speed radios, practice).

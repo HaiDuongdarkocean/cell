@@ -1,7 +1,7 @@
 # Verification review — primer-tab-redesign (REQ-5, REQ-6)
 
 - **Commit under review:** `6eda69e6` (parent `466f5391`), branch `feat/primer-tab-redesign`
-- **Worktree:** `cell-worktrees/primer-tab-redesign`
+- **Worktree:** `Tihoka-worktrees/primer-tab-redesign`
 - **Spec:** `docs/specs/primer-tab-redesign.md` — REQ-5, REQ-6, NFR-6, SC-11..SC-13 only (REQ-1..4 out of scope)
 - **Design brief:** `docs/intent/primer-tab-redesign-design-brief.md` — REQ-5/REQ-6 sections
 - **Note:** branch HEAD has since advanced to `2f2a4e8f` ("disable scroll anchoring on cue list"), a post-review hardening commit. Findings below are evaluated at `6eda69e6`; where the follow-up changes the picture it is noted.
@@ -46,15 +46,15 @@
      (SubtitlePanel.module.css:78–85) and `.session` (SubtitlePractice.module.css:1–7); showcase `.panelBody`
      is also flex-column — all three consumers keep working with the new wrapper.
    - Pill is the shared `Button` (`variant="overlay"`, `size="sm"`, `elevation="med"`, `leadingIcon`) — a real
-     `<button type="button">`, keyboard-reachable, `data-cell-id` forwarded via `...rest` (Button.tsx:136).
+     `<button type="button">`, keyboard-reachable, `data-tihoka-id` forwarded via `...rest` (Button.tsx:136).
      `shape` omitted → defaults to `pill` for icon+label buttons (Button.tsx:102), matching the design brief.
      `Icon name="crosshair" size="xs"` valid; icon registered in `ICON_CATALOG` with licensed lucide svg.
    - `z-index: var(--z-overlay-base)` (= 0) sits under `.blurOverlay` (`--z-overlay-low` = 10,
      SubtitlePanel.module.css:87–95) — blur covers the pill per spec rule.
    - i18n `cueList.syncToVideo` in en ("Sync to video") + vi ("Đồng bộ với video"), matching the brief.
 
-4. **Contracts** — `data-cell-id="cue-list-scroll"` unchanged on the scroller (`scrollPositionPreserve` and
-   `.cueListWrap[data-cue-filter] [data-cell-id='cue-list-scroll']` padding rule still resolve);
+4. **Contracts** — `data-tihoka-id="cue-list-scroll"` unchanged on the scroller (`scrollPositionPreserve` and
+   `.cueListWrap[data-cue-filter] [data-tihoka-id='cue-list-scroll']` padding rule still resolve);
    `subtitle-panel-tab-*` hooks exist only inside the Tabs branch. **PASS**
 
 5. **Edge cases / test consistency** — jsdom behavior is consistent: the legacy suite stubs layout metrics
@@ -106,7 +106,7 @@ source order, while still losing to the intentional cue-filter padding rule (0,3
 - **N2** — `cueList.syncToVideo` was inserted between the `cueFilter.*` and `cueHeat.*` groups in
   `en.json`/`vi.json`; alphabetical group order would place `cueList` after `cueHeat`. Cosmetic.
 - **N3** — Follow-up `2f2a4e8f` replaced the `[role="tablist"]` absence assertion in
-  `SubtitlePanel.test.tsx` with `[data-cell-id^="subtitle-panel-tab-"]`; `SubtitlePanel.primer.test.tsx`
+  `SubtitlePanel.test.tsx` with `[data-tihoka-id^="subtitle-panel-tab-"]`; `SubtitlePanel.primer.test.tsx`
   still asserts `queryByRole('tablist')` absence, so SC-11 coverage is retained overall.
 - **N4** — `handleListScroll` is recreated per render (not memoized) — consistent with codebase style,
   negligible cost.

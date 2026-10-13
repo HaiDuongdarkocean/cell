@@ -84,7 +84,7 @@ Person↔device: the learner opens the Universal Panel, switches to Vocabulary, 
 | Trash data model: new IDB store/index needs schema version bump + migration; per-record fields do not | internal | low | Prefer optional fields on `WordStatusEntry` (records are schemaless); bump only if an index is required |
 | Lazy purge (on read) leaves expired rows until next read — storage drift | hidden/operational | low | Rows are tiny; purge on every list read keeps drift bounded; document accepted bound |
 | Concurrent WIP in working tree (dictionaryPopup/tokenize/cueDifficulty) contaminates diff | operational | medium | Commit only this item's files; verify `git status` before commit |
-| Redesign regressions on existing `data-cell-id` hooks used by tests/e2e | internal | low | Keep stable ids; grep consumers before renaming |
+| Redesign regressions on existing `data-tihoka-id` hooks used by tests/e2e | internal | low | Keep stable ids; grep consumers before renaming |
 
 ## Decision
 

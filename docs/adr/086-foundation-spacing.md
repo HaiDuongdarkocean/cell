@@ -6,7 +6,7 @@ Accepted — build verification passed; foundation tokens shipped in tokens.css.
 
 ## Context
 
-Spacing quyết định relationship và hierarchy. Cell hiện dùng 4px base với scale khá tốt, nhưng chưa có lý do rõ ràng cho lựa chọn này. Nhiều hệ thống khác dùng 8pt/8px base (Carbon, Atlassian). Cần đưa ra quyết định conscious.
+Spacing quyết định relationship và hierarchy. Tihoka hiện dùng 4px base với scale khá tốt, nhưng chưa có lý do rõ ràng cho lựa chọn này. Nhiều hệ thống khác dùng 8pt/8px base (Carbon, Atlassian). Cần đưa ra quyết định conscious.
 
 ## Decision
 
@@ -15,7 +15,7 @@ Spacing quyết định relationship và hierarchy. Cell hiện dùng 4px base v
 **Quyết định:** spacing base unit = `4px`.
 
 **Lý do:**
-- Cell là **MV3 extension** với UI surfaces nhỏ: popup, sidepanel, options, dictionary popup. Không gian chật, cần micro-spacing (2px, 6px, 10px) để điều chỉnh chính xác.
+- Tihoka là **MV3 extension** với UI surfaces nhỏ: popup, sidepanel, options, dictionary popup. Không gian chật, cần micro-spacing (2px, 6px, 10px) để điều chỉnh chính xác.
 - 4px là base unit của **Material 3 spacing tokens** ([nguồn](https://m3.material.io/styles/spacing/tokens)).
 - 4px cho phép scale mịn: 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 36, 40, 48, 56, 64, 80, 96.
 - 8px base sẽ ép spacing thành 8, 16, 24, 32 — quá thô cho popup nhỏ.

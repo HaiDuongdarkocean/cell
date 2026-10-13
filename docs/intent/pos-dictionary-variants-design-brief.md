@@ -8,7 +8,7 @@ Một từ đa-nghĩa là một "cuốn từ điển mini" — POS selector là 
 
 - **Feeling:** từ điển giấy nhiều mục — lật tab mục từ, trang mới hiện ra nguyên vẹn, không cần học UI mới.
 - **Non-digital reference:** dải khắc chỉ mục ở gáy từ điển Oxford/Macmillan bản in — mỗi thẻ là một loại từ, chọn thẻ nào thấy trang đó.
-- **Visual ref:** `docs/mockups/pos-dictionary-variants-pos-menu.png` (GoldenDict-style `adjective | verb | noun` bar của Macmillan `.dict-top`) — layout được mượn, **không** mượn nền sáng; mọi màu/surface lấy từ Cell theme color tokens của theme hiện tại.
+- **Visual ref:** `docs/mockups/pos-dictionary-variants-pos-menu.png` (GoldenDict-style `adjective | verb | noun` bar của Macmillan `.dict-top`) — layout được mượn, **không** mượn nền sáng; mọi màu/surface lấy từ Tihoka theme color tokens của theme hiện tại.
 
 ## Primary job
 

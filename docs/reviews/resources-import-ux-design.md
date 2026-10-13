@@ -21,7 +21,7 @@ User picked **Concept B — Water fill** ("anh chọn b water fill. xong rồi �
 
 ## Rationale captured
 
-- Water fill keeps the job in the exact list position the resource will occupy — no tray→list teleport, least new chrome, strongest fit with Cell's water story.
+- Water fill keeps the job in the exact list position the resource will occupy — no tray→list teleport, least new chrome, strongest fit with Tihoka's water story.
 - One card grammar covers pending / importing / done / error / duplicate / dragging states.
 - Right-edge status cluster (spinner → % + fill → terminal icon) satisfies the "thanh tiến trình xoay ở bên phải ngoài cùng" requirement non-color-only.
 

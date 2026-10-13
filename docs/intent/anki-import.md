@@ -19,7 +19,7 @@
 
 | Group | Who | Their need re: this change | Capability/constraint |
 |---|---|---|---|
-| Team | Cell maintainers/agents | Buildable with existing deps (sql.js, ts-fsrs, AnkiConnect client); needs zstd decode for anki21b (fflate already used for gzip — check zstd support) | Must not destabilize SRS store; deep-import rules apply |
+| Team | Tihoka maintainers/agents | Buildable with existing deps (sql.js, ts-fsrs, AnkiConnect client); needs zstd decode for anki21b (fflate already used for gzip — check zstd support) | Must not destabilize SRS store; deep-import rules apply |
 | Customer | Migrating Anki user (low-tech Mai; power-user Hùng) | Keep schedule + card content + media; do not lose data silently; preview before committing | May not know what export/AnkiConnect is — guided flow required |
 | Supplier/Dependency | Anki desktop (AnkiConnect addon), `.apkg` files, AnkiDroid apkg export | Stable, documented formats/APIs | AnkiConnect does not expose `memory_state` or `col.crt` — approximation accepted |
 | Organization | Tihoka product direction | Positions Memory as Anki successor, not companion | none — aligns |

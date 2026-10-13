@@ -59,6 +59,6 @@
 | AC11 | Tab persistence | E10 | ☐ |
 | AC12 | Token-only style | V5 + M1–M8 | ☐ |
 | AC13 | A11y | E11 + Task 5 | ☐ |
-| AC14 | data-cell-id / test | V3 | ☐ |
+| AC14 | data-tihoka-id / test | V3 | ☐ |
 | AC15 | E2E pass | E1–E11 | ☐ |
 

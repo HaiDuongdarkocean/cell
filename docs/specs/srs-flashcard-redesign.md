@@ -1,6 +1,6 @@
 # Spec: srs-flashcard-redesign
 
-Intent: `docs/intent/srs-flashcard-redesign.md` · uiSurface: yes · Reference: 4 user-supplied screenshots (Migaku-style review). Structure must match the reference; colors come from Cell tokens only — no hardcoded hex for layout surfaces.
+Intent: `docs/intent/srs-flashcard-redesign.md` · uiSurface: yes · Reference: 4 user-supplied screenshots (Migaku-style review). Structure must match the reference; colors come from Tihoka tokens only — no hardcoded hex for layout surfaces.
 
 ## Requirements
 

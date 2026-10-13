@@ -190,7 +190,7 @@ phrase match  →  surface token  →  origin lemma
 Each candidate is an independent `Entry` (phrase entries are ordinary entries —
 `take care of` has its own defs from the collocations/MW provider). The popup
 renders them as a vertical stack inside one frame with a bottom chip bar +
-scroll-spy (existing `cellCandidatesChips` in `DictionaryPanelView`).
+scroll-spy (existing `TihokaCandidatesChips` in `DictionaryPanelView`).
 
 ## Rendering contract (popup)
 

@@ -19,7 +19,7 @@
 Key SSOT violations:
 - **19 custom molecules** should be promoted/reused, most notably `searchHistory`, `CandidateSkeleton`, `ModeCard`, `CueStrip`, `StepEditor`, `ApiKeyManager`, `TtsLanguagePanel`, `ThemePanel`.
 - **Shared atoms** `Button`, `Icon`, `Toggle`, `Input`, `Dialog`, `NavItem`, `Sidebar` contain hardcoded px, hardcoded cubic-bezier, or raw `×`/emoji characters.
-- **Legacy tokens** (`--font-size-xm`, `--border-radius-sm`, `--radius-m3-small`, `--border-radius-md`, `cell-*` namespace) break the token contract.
+- **Legacy tokens** (`--font-size-xm`, `--border-radius-sm`, `--radius-m3-small`, `--border-radius-md`, `Tihoka-*` namespace) break the token contract.
 - **Native HTML inputs** bypass the shared UI in Card Creator, Dictionary Popup, and TTS settings.
 
 ---
@@ -284,14 +284,14 @@ Key SSOT violations:
 |---|---|---|
 | `MultiSelect` | Promote to `src/shared/ui/MultiSelect.tsx` | Used in Media section; hardcoded `50vh`, scale keyframes, non-SSOT `.container` |
 | `ApiKeyManager` | Promote to `src/shared/ui/ApiKeyManager` or keep feature-organism | Hardcoded transitions/cubic-bezier, `2px` focus rings, `rgba(239,68,68,0.1)` fallback, `.root` wrapper |
-| `TtsLanguagePanel` | Full rewrite to tokens; then evaluate if reusable | Entire `cell-*` token namespace + hardcoded hex |
+| `TtsLanguagePanel` | Full rewrite to tokens; then evaluate if reusable | Entire `Tihoka-*` token namespace + hardcoded hex |
 | `ThemePanel`/`ModeCards`/`ColorCustomization`/`ContrastBadges`/`ThemePreview`/`ThemeImportExport` | Split into shared molecules or keep as feature organisms | Non-SSOT `.panel`/`.wrapper`, emoji in TSX, spacing token used as font-size, `opacity: 0.8` |
 | `CardCreatorSettingsPanel` / `DictionaryPopupSettingsPanel` | Use `Input`/`Select` from `@/shared/ui` | Native `<input>`/`<select>` |
 | `ResourcesPanel` / `Dropzone` / `ResourceCard` / `ImportProgress` | Use `Card` surface, `Badge`, `Progress`; remove `.panel` wrapper | Non-SSOT wrapper, custom card chrome |
 
 ### 5.4 P0/P1 issues
 
-- **P0:** `TtsLanguagePanel.module.css` entire file uses `cell-*` tokens and falls back to hardcoded hex/type; duplicate Settings header (`SettingsDialogContent.tsx:160`); nested card surfaces (`ThemePanel`, `TtsVoiceManagerPanel`, `ResourcesPanel`); undefined tokens `--radius-m3-small`/`--border-radius-md` (`SettingsDialog.module.css:138,253`).
+- **P0:** `TtsLanguagePanel.module.css` entire file uses `Tihoka-*` tokens and falls back to hardcoded hex/type; duplicate Settings header (`SettingsDialogContent.tsx:160`); nested card surfaces (`ThemePanel`, `TtsVoiceManagerPanel`, `ResourcesPanel`); undefined tokens `--radius-m3-small`/`--border-radius-md` (`SettingsDialog.module.css:138,253`).
 - **P1:** `ApiKeyManager.module.css` hardcoded transitions/cubic-bezier/`2px` outline; native inputs in `CardCreatorSettingsPanel`, `DictionaryPopupSettingsPanel`, `TtsVoiceManagerPanel`; `SettingsDialog.module.css` hardcoded `1px`/`280px`; `ModeCards` uses spacing token for `font-size`/`border-width`; `MultiSelect` `50vh`; `NavItem` `border-radius: 50%`.
 
 ---
@@ -344,7 +344,7 @@ Key SSOT violations:
 | `--color-background-hover` | undefined | `QueueSidebar.module.css:52` | `--color-surface-hover` |
 | `--radius-m3-small` | undefined | `SettingsDialog.module.css:138` | `--radius-md` or `--radius-sm` |
 | `--border-radius-md` | undefined | `SettingsDialog.module.css:253` | `--radius-md` |
-| `cell-*` | legacy/undefined | `TtsLanguagePanel.module.css` | rewrite to `--space-*`, `--color-text-*`, `--font-size-*`, etc. |
+| `Tihoka-*` | legacy/undefined | `TtsLanguagePanel.module.css` | rewrite to `--space-*`, `--color-text-*`, `--font-size-*`, etc. |
 
 ---
 

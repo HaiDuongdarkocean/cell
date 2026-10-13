@@ -36,8 +36,8 @@ Pixel evidence (Concept B wash visible, underline preserved):
 - Keys `1–4` apply the status to every selected term and clear the selection afterward (`statusKeyControls` reads `selectedTerms` before hover/native-selection fallback).
 - `Escape` clears selection; plain click opens the dictionary popup; an open popup keeps priority for status keys (`getPopupStatusTarget` unchanged, first in the priority chain).
 - Selection clears on active-cue change (`render` index-change guard) and on `setCues`.
-- Concept B visual: `js-cell-token--selected` → `background-image` `linear-gradient(color-mix(--color-primary 18%))` layered so underline/frequency remain visible — asserted via computed style, not just class presence.
-- Accessibility: `#cell-token-selection-announcer` (`role=status`, `aria-live=polite`, visually hidden) announces localized count/cleared via `tokenize.selection.count` / `tokenize.selection.cleared` (en+vi).
+- Concept B visual: `js-Tihoka-token--selected` → `background-image` `linear-gradient(color-mix(--color-primary 18%))` layered so underline/frequency remain visible — asserted via computed style, not just class presence.
+- Accessibility: `#Tihoka-token-selection-announcer` (`role=status`, `aria-live=polite`, visually hidden) announces localized count/cleared via `tokenize.selection.count` / `tokenize.selection.cleared` (en+vi).
 
 ## Split-view AC re-verification
 

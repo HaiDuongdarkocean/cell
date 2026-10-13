@@ -18,10 +18,10 @@ Spec matches the intent well overall: needs N1–N8 are covered, scope/non-goals
    **Fix required:** `e.stopPropagation()` on example-row handlers + AC.
 
 2. **[REQ-1 / NFR-3 / AC-14] [BA/TL] — "full-row tap toggles" conflicts with nested dictionary lookup.**
-   The definitions section has `data-allow-lookup`; def rows exclude `.cellDefText` from toggling.
+   The definitions section has `data-allow-lookup`; def rows exclude `.TihokaDefText` from toggling.
    **Fix required:** explicit toggle zone (gutter/row, not text).
 
-3. **[REQ-1 / NFR-1 / CSS contract] [TL/a11y] — Nested `role="checkbox"` plus `.cellDefItem` descendant selectors create broken interaction boundaries.**
+3. **[REQ-1 / NFR-1 / CSS contract] [TL/a11y] — Nested `role="checkbox"` plus `.TihokaDefItem` descendant selectors create broken interaction boundaries.**
    **Fix required:** sibling-row structure or scoped example-row host; per-row reveal semantics.
 
 4. **[REQ-4 / AC-13] [PO/TL] — Ocean SRS mapping can drop selected definitions.**
@@ -56,8 +56,8 @@ All eight action items were applied to `docs/specs/dict-example-selection.md` (s
 
 1. **Field renamed** `definitions[].examples` → `definitions[].selectedExamples`; REQ-4 rules now state the collision rationale explicitly and AC-9 requires byte-identical output for entries without `selectedExamples` (covers `dictionaryGenerate`, `CardCreatorPanel`, subtitle-queue paths).
 2. **Keyboard isolation**: REQ-1 rules + NFR-2 + AC-2 now require `e.stopPropagation()` on example-row `onClick`/`onKeyDown`; parent def can only change via cascade-up.
-3. **Toggle zone defined**: `cellDefExampleText` exclusion mirrors `cellDefText`; example text clicks reach nested lookup/selection (AC-14, NFR-3).
-4. **Sibling structure**: example rows are siblings of `cellDefItem` inside a neutral wrapper via new `cellDefExampleItem` host class in `DictionaryCheckable.module.css` — no nested `role="checkbox"`; per-row reveal; AC-1 asserts "no `role="checkbox"` ancestor".
+3. **Toggle zone defined**: `TihokaDefExampleText` exclusion mirrors `TihokaDefText`; example text clicks reach nested lookup/selection (AC-14, NFR-3).
+4. **Sibling structure**: example rows are siblings of `TihokaDefItem` inside a neutral wrapper via new `TihokaDefExampleItem` host class in `DictionaryCheckable.module.css` — no nested `role="checkbox"`; per-row reveal; AC-1 asserts "no `role="checkbox"` ancestor".
 5. **SRS mapping**: `fields['examples']` = `[...def texts, ...selected example sentences]` — defs never dropped (AC-13).
 6. **Snapshot semantics**: REQ-4 rules pin verbatim `selectedExampleIds` init (never re-derived from setting), orphan-id drop, `[]` = explicit zero vs absent = no snapshot; NFR-4 pins iteration order from `result.definitions`.
 7. **Traceability + state machine**: added `--check example j→ S∪{j}`; AC-13→N6, AC-14→N1, AC-12→N7.

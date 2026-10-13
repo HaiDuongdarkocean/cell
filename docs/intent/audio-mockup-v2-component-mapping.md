@@ -1,6 +1,6 @@
 # Audio — Mockup v2 Component Mapping
 
-> Mapping the chosen v2 concept (D/E/F) to the existing Cell design system.
+> Mapping the chosen v2 concept (D/E/F) to the existing Tihoka design system.
 
 ## Shared mock pieces (reused by all v2 concepts)
 

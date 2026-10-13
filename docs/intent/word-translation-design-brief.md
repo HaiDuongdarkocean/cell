@@ -69,7 +69,7 @@ Baseline: `DESIGN_VARIANCE: 3` (mirror IPA cap — vốn đã là grammar của 
 - **Typography treatment:** gloss `0.62em` medium weight, `var(--color-overlay-text)` opacity 0.85, centered, nowrap + ellipsis
 - **Motion signature:** không có — gloss xuất hiện cùng cue
 - **UX flow:** journey 1→3 thẳng: bật → thấy → đọc
-- **UI structure:** `data-gloss` trên `.js-cell-token-word`, `::after` top:100%, bottom headroom `margin-bottom` trên token
+- **UI structure:** `data-gloss` trên `.js-Tihoka-token-word`, `::after` top:100%, bottom headroom `margin-bottom` trên token
 - **3 dials:** DESIGN_VARIANCE: 3, MOTION_INTENSITY: 1, VISUAL_DENSITY: 8
 - **States:** loaded / loading (từ trống, không placeholder) / missing (không gloss → không ::after) / gloss-off (headroom released) / wrapped (headroom giữ khoảng cách dòng)
 - **Why it fits:** đúng spec đã approve (`data-gloss` ::after, pseudo-element, copy-sạch miễn phí); mirror IPA → user học 1 grammar đọc 2 lớp

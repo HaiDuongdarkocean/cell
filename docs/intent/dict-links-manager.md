@@ -19,7 +19,7 @@
 
 | Group | Who | Their need re: this change | Capability/constraint |
 |---|---|---|---|
-| Team | Cell maintainers | Small diff: schema field + defaults already exist; work = settings UI + one wiring line | Component/token system available; precedent for list management exists (custom cleanup rules) |
+| Team | Tihoka maintainers | Small diff: schema field + defaults already exist; work = settings UI + one wiring line | Component/token system available; precedent for list management exists (custom cleanup rules) |
 | Customer | Popup users on desktop/tablet/android | Add their dictionary, remove ones they never use, order by preference | Must be discoverable without reading docs → placeholder hint required by user |
 | Supplier/Dependency | External dictionary sites | URL templates with `{term}`/`{lang}` placeholders | none — links open via `target=_blank`, no API contract |
 | Organization | Future contributors | SSOT: one source for templates, order = display order | `mergeDictionaryPopupWithDefaults` already merges the field per profile |

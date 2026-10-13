@@ -14,7 +14,7 @@
   4. Layout by **proximity** — nothing clipped inside nested scroll areas, nothing hidden off-screen.
   5. v2: even more minimal, **inspired by the dictionary tab** (`PronunciationAudioPanel` + `DictionaryCheckable` rows).
 - **Existing logic to reuse:** `getTtsVoiceRows(savedVoices, allVoices, langCode)` in `ttsEngineService.ts` already implements lang-prefix auto-detect; `tts.voices` (3 priority slot names) is the only persisted field the new UI needs to write.
-- **Visual source:** the dictionary popup's checkable row — `cellAudioItem` (round primary ▶ | two-line label | reserved check slot with idle dot → checked morph) from `DictionaryCheckable.module.css` + `PronunciationAudioPanel`.
+- **Visual source:** the dictionary popup's checkable row — `TihokaAudioItem` (round primary ▶ | two-line label | reserved check slot with idle dot → checked morph) from `DictionaryCheckable.module.css` + `PronunciationAudioPanel`.
 - **Mockup:** `src/entrypoints/mockup-browser-voice/` — live `speechSynthesis` voices, target-language switcher to prove auto-filtering.
 
 ## 1. Primary job
@@ -66,7 +66,7 @@ All three reuse the popup dictionary's checkable-row atom: round primary ▶ | t
 
 ## 5. States
 
-- **Idle check slot** — small dot (dictionary `cellDefCheck` idiom); hover reveals ring.
+- **Idle check slot** — small dot (dictionary `TihokaDefCheck` idiom); hover reveals ring.
 - **In use** — numbered badge ①②③ on the row + primary-subtle row tint.
 - **Armed (B)** — button ring + `pick ↓` caption.
 - **Open (C)** — row expands; chevron flips; picker slides under.

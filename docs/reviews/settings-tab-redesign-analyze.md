@@ -13,7 +13,7 @@
 9. **Scope — COHERENT.** In/Out/Non-goals correctly carve out the shipped items: `up-settings-subnav` (`pipeline-state.json:3340` shipped; its own Out at `up-settings-subnav.md:44` deferred "settings section content redesign" to this item) and `up-visual-system-convergence` (`pipeline-state.json:3447` shipped; non-goal "designing new visual language" at `up-visual-system-convergence.md:51` — accurately quoted). No contradictions; subnav polish permitted (N7) vs. labeling contract excluded (Out) is consistent.
 10. **ui_surface=yes — CORRECT.** Confirmed at `pipeline-state.json:5658`; pure visual redesign of a user-facing surface.
 11. **Risks — REAL, honest.** 7 risks, plausible types, one "Medium" ability (embedded-panel clash) and one explicitly "Accepted" (mode-all ships aesthetic unreviewed) — honest, not rubber-stamped. `check-design-brief.mjs` exists (`scripts/check-design-brief.mjs`) supporting the brief-lint mitigation. Risk types defensible; "hidden" for embedded-panel clash is arguably "internal" (discoverable by reading code) — trivial.
-12. **Confidence tags — HONEST.** Code-verified cells tagged `high` legitimately; Change/Solution/Value `medium` (aesthetic direction unreviewed); header `confidence: medium` consistent. Only caveat: N4's `high` partly rests on the stale icebox citation (finding 4), and N3's `high` rests on the inverted hover claim (finding 3) — both should drop to medium until reworded.
+12. **Confidence tags — HONEST.** Code-verified Tihokas tagged `high` legitimately; Change/Solution/Value `medium` (aesthetic direction unreviewed); header `confidence: medium` consistent. Only caveat: N4's `high` partly rests on the stale icebox citation (finding 4), and N3's `high` rests on the inverted hover claim (finding 3) — both should drop to medium until reworded.
 13. **Decision `go` — SUPPORTED.** User-requested, bounded markup/CSS scope inside one feature boundary, predecessors shipped, token-only constraint enforced, accepted risks named. Findings 3–5 are precision defects, not grounds to block.
 
 ## Verdict
@@ -25,7 +25,7 @@ VERDICT: APPROVE_WITH_CHANGES
 Applied to `docs/intent/settings-tab-redesign.md` after review:
 
 - Finding 2: Scope wording now notes `DictLinksManager` is nested inside `DictionaryPopupSettingsPanel`, not a direct card child.
-- Finding 3: Need cell, N3, AS-IS step 2, and draft AC reworded — hint mechanism corrected to click/tap-activated popover (`HintIcon.tsx:136`); the surviving need is "primary info behind an interaction", not "hover-only".
+- Finding 3: Need Tihoka, N3, AS-IS step 2, and draft AC reworded — hint mechanism corrected to click/tap-activated popover (`HintIcon.tsx:136`); the surviving need is "primary info behind an interaction", not "hover-only".
 - Finding 4: N4 now cites `up-token-atom-debt` as shipped; residual literals correctly located in embedded panels (`WordBadgeSettingsPanel.tsx:42-44`, `LanguageProfilePanel.module.css:171-182`).
 - Finding 5: Business-case Need corrected — 11/13 cards share `cardHeader`/`cardBody`; Download (`downloadCardBody`) and Sync (no `cardBody`) named as the deviations.
 - Finding 6: `SIDEBAR_LABEL_MIN_WIDTH` cited at definition (`:56`); Shortcuts grid attributed to `VStack columns={2}` (`:643,750`) not the CSS range.

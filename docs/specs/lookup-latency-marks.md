@@ -5,7 +5,7 @@ Review: spec-reviewer round 1 → REJECT (implementability gaps); all findings a
 
 ## Goal
 
-Dev-only User Timing instrumentation on the two persona-critical hot paths — lookup dispatch→popup render and audio-tab-click→rows committed — so the <3s contract is measurable and regressions are visible in DevTools. Zero production cost: everything behind `isDevMode || isCellDebug()`.
+Dev-only User Timing instrumentation on the two persona-critical hot paths — lookup dispatch→popup render and audio-tab-click→rows committed — so the <3s contract is measurable and regressions are visible in DevTools. Zero production cost: everything behind `isDevMode || isTihokaDebug()`.
 
 ## Non-goals
 
@@ -21,10 +21,10 @@ Dev-only User Timing instrumentation on the two persona-critical hot paths — l
 
 New `src/shared/lib/dev/perfMarks.ts`:
 
-- `markLookup(point: string, requestId: string)` → emits `cell:lookup:<point>:<requestId>`.
-- `markAudio(point: string, term: string)` → emits `cell:audio:<point>:<term>`.
+- `markLookup(point: string, requestId: string)` → emits `Tihoka:lookup:<point>:<requestId>`.
+- `markAudio(point: string, term: string)` → emits `Tihoka:audio:<point>:<term>`.
 - `measure(name, startMark, endMark)` → `performance.measure`, `console.debug(\`${name}: ${duration}ms\`)`, then `clearMarks(startMark, endMark)`.
-- Every entry point no-ops unless `isDevMode || isCellDebug()` — callers invoke unconditionally; `isCellDebug()` (`src/shared/lib/cellDebug.ts`, `__CELL_DEBUG__` define) exists specifically so **E2E builds (`CELL_E2E=1`) keep marks while production stays clean**.
+- Every entry point no-ops unless `isDevMode || isTihokaDebug()` — callers invoke unconditionally; `isTihokaDebug()` (`src/shared/lib/TihokaDebug.ts`, `__Tihoka_DEBUG__` define) exists specifically so **E2E builds (`Tihoka_E2E=1`) keep marks while production stays clean**.
 - Marks are disposable once measured; **measures are kept** — they are what `getEntriesByType('measure')` and the DevTools User Timing lane expose (buffer ~150 entries, oldest dropped — accepted ceiling for a dev tool; optional `clearMeasures` per dispatch is allowed but not required).
 
 ### REQ-2 — Lookup path marks (pinned positions)
@@ -33,7 +33,7 @@ New `src/shared/lib/dev/perfMarks.ts`:
 2. `response:<id>` — inside the response `.then`, **after** the `owner` lookup resolves (a superseded request's dropped response gets no measure).
 3. `render:<id>` — **no requestId plumbing through mount options** (that channel doesn't exist); instead `popupLifecycle` schedules `requestAnimationFrame` immediately after applying results to the level (`setResult` — the state lands this frame, rAF callback ≈ commit). Mark from `popupLifecycle` itself using the **`requestId` captured in the response closure** — `level.requestId` is nulled at :512 before result application, so it must not be re-read.
 
-Measures: `cell:lookup:dispatch→response:<id>`, `cell:lookup:dispatch→render:<id>`.
+Measures: `Tihoka:lookup:dispatch→response:<id>`, `Tihoka:lookup:dispatch→render:<id>`.
 
 ### REQ-3 — Audio path marks
 
@@ -41,7 +41,7 @@ Measures: `cell:lookup:dispatch→response:<id>`, `cell:lookup:dispatch→render
 2. `applied:<term>` — immediately after `setAudioItems(wordItems)` (~:252) — word-audio data ready; sentence TTS remains a separate later item.
 3. `render:<term>` — in `PronunciationAudioPanel`: effect keyed on `items.length > 0 && !loading`, then `requestAnimationFrame` → mark. `loading` stays true until `fetchAudio`'s `finally`, so this commit reflects rows-visible — not the skeleton flash.
 
-Measures: `cell:audio:start→applied:<term>`, `cell:audio:applied→render:<term>` (must be measured **before** `clearMarks` removes the `applied` mark — order the clears accordingly), `cell:audio:start→render:<term>`.
+Measures: `Tihoka:audio:start→applied:<term>`, `Tihoka:audio:applied→render:<term>` (must be measured **before** `clearMarks` removes the `applied` mark — order the clears accordingly), `Tihoka:audio:start→render:<term>`.
 
 Term-keyed marks can collide if the same term is open in two surfaces (popup + integrated panel share `useDictionaryToolbar`) — accepted; each measure still reports a duration, just possibly cross-wired when identical terms overlap.
 
@@ -57,9 +57,9 @@ Term-keyed marks can collide if the same term is open in two surfaces (popup + i
 
 ### REQ-6 — Real-Chromium verify (E2E build, not production)
 
-The extension fixture loads `dist/` — production `isDevMode` is false. The spec relies on `__CELL_DEBUG__` being compiled in for e2e (`build-e2e.mjs` sets `CELL_E2E=1`); e2e must run against that build (`npm run test:e2e:build`).
+The extension fixture loads `dist/` — production `isDevMode` is false. The spec relies on `__Tihoka_DEBUG__` being compiled in for e2e (`build-e2e.mjs` sets `Tihoka_E2E=1`); e2e must run against that build (`npm run test:e2e:build`).
 
-`e2e/extension-latency-marks.spec.ts`: trigger a lookup on the mock stream page, then `page.evaluate(() => performance.getEntriesByType('measure').filter(e => e.name.startsWith('cell:lookup:')))` — assert ≥1 measure, `duration >= 0`. Same for `cell:audio:*` after the audio tab fetch runs.
+`e2e/extension-latency-marks.spec.ts`: trigger a lookup on the mock stream page, then `page.evaluate(() => performance.getEntriesByType('measure').filter(e => e.name.startsWith('Tihoka:lookup:')))` — assert ≥1 measure, `duration >= 0`. Same for `Tihoka:audio:*` after the audio tab fetch runs.
 
 ## Interfaces touched
 
@@ -80,6 +80,6 @@ The extension fixture loads `dist/` — production `isDevMode` is false. The spe
 
 ## Success criteria (measurable)
 
-- Real Chromium (E2E build): a lookup produces `cell:lookup:*` measures; audio tab produces `cell:audio:*` measures; durations ≥0 and sane (<3s target).
-- Production emits zero `cell:` marks on these paths — runtime spy proves no `performance.mark` call when gated off; dist string-grep is best-effort only (if the helper isn't inlined by DCE, literals may survive harmlessly).
+- Real Chromium (E2E build): a lookup produces `Tihoka:lookup:*` measures; audio tab produces `Tihoka:audio:*` measures; durations ≥0 and sane (<3s target).
+- Production emits zero `Tihoka:` marks on these paths — runtime spy proves no `performance.mark` call when gated off; dist string-grep is best-effort only (if the helper isn't inlined by DCE, literals may survive harmlessly).
 - All gates: typecheck, lint, `test:unit`, build, feature-cycles/deep-imports clean.

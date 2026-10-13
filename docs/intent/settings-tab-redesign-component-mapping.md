@@ -55,7 +55,7 @@
 |---|---|---|---|---|
 | Hint strings → inline descriptions | `SettingsRow` | reuse — same `settings.*.hint` message ids rendered as `description` | — | — |
 | `data-section` anchors + `sectionRefs` | `SettingsSection` | extend target — forwarded `data-*` attrs + `ref` | — | — |
-| `data-cell-id` on controls | — | reuse — every value preserved verbatim | — | — |
+| `data-tihoka-id` on controls | — | reuse — every value preserved verbatim | — | — |
 
 ## Notes
 

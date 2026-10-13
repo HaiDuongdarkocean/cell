@@ -8,12 +8,12 @@ changes scope to `PrimerTab.tsx`/`PrimerTab.module.css` (Words tab), `SubtitlePa
 
 | Slot | Component | Notes |
 |---|---|---|
-| Play button | `Button` (`src/shared/ui/Button`) | `variant="transparent"`, `shape="circle"`, keeps `data-cell-id="primer-seek"` |
+| Play button | `Button` (`src/shared/ui/Button`) | `variant="transparent"`, `shape="circle"`, keeps `data-tihoka-id="primer-seek"` |
 | Play glyph | `Icon` | `name="navPlay"` (play-circle, phosphor) per spec |
 | Repeat glyph (B only) | `Icon` | `name="repeat"`, `size="xs"` |
-| Panel shell | existing | `data-cell-id="primer-tab"`, header, list — structure kept |
+| Panel shell | existing | `data-tihoka-id="primer-tab"`, header, list — structure kept |
 | Tab strip | `Tabs` (`src/shared/ui/Tabs`) | reuse — REQ-5 only changes *when* `Tabs.List` renders, not how |
-| Sync pill | `Button` (`src/shared/ui/Button`) | `variant="overlay"`, `shape="pill"`, `size="sm"`, `elevation="med"`, `data-cell-id="cue-list-sync"` |
+| Sync pill | `Button` (`src/shared/ui/Button`) | `variant="overlay"`, `shape="pill"`, `size="sm"`, `elevation="med"`, `data-tihoka-id="cue-list-sync"` |
 | Sync glyph | `Icon` | Icon: `crosshair` — new ICON_CATALOG entry (lucide `Crosshair`), added with this feature |
 
 ## Status/word text
@@ -43,7 +43,7 @@ changes scope to `PrimerTab.tsx`/`PrimerTab.module.css` (Words tab), `SubtitlePa
 
 ## Neutralized shared styles (per spec SC)
 
-`js-cell-token` underline + `status-*` modifier tint effects from `tokenSpanCss.ts`
+`js-Tihoka-token` underline + `status-*` modifier tint effects from `tokenSpanCss.ts`
 are neutralized **inside `PrimerTab.module.css`** via module-scoped `!important` overrides —
 the classes remain as lookup hooks but the term renders as plain panel text. `tokenSpanCss.ts`
 itself is untouched.
@@ -65,8 +65,8 @@ itself is untouched.
 
 ## Attributes that must survive the rework
 
-`data-cell-id`: `primer-tab`, `primer-header`, `primer-list`, `primer-row`, `primer-seek`.
-On term: `js-cell-token`, its `status-*` modifiers, `data-cell-term`, `data-cell-start`.
+`data-tihoka-id`: `primer-tab`, `primer-header`, `primer-list`, `primer-row`, `primer-seek`.
+On term: `js-Tihoka-token`, its `status-*` modifiers, `data-tihoka-term`, `data-tihoka-start`.
 On row: `data-cue-start`, `data-cue-end`.
 Cue list: `cue-list-scroll` stays on the scroller (new sibling wrapper is plain div);
 new: `cue-list-sync` on the pill. `subtitle-panel-tab-*` hooks render iff the strip does.

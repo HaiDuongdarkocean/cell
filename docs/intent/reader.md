@@ -1,13 +1,13 @@
-# Intent: Cell Reader
+# Intent: Tihoka Reader
 
 ## Outcome
-Tính năng Reader trong Cell MV3 để người học ngoại ngữ import và đọc sách EPUB/PDF/TXT/HTML, tokenize, tra từ điển popup có sẵn, nghe TTS theo câu với điều khiển prev/pause/play/next/repeat, lưu từ vựng vào Anki qua card creator có sẵn, theo dõi % và thời gian đọc, resume vị trí cũ.
+Tính năng Reader trong Tihoka MV3 để người học ngoại ngữ import và đọc sách EPUB/PDF/TXT/HTML, tokenize, tra từ điển popup có sẵn, nghe TTS theo câu với điều khiển prev/pause/play/next/repeat, lưu từ vựng vào Anki qua card creator có sẵn, theo dõi % và thời gian đọc, resume vị trí cũ.
 
 ## User
-Người dùng Cell từ 10–25 tuổi học ngoại ngữ trên desktop/tablet/mobile.
+Người dùng Tihoka từ 10–25 tuổi học ngoại ngữ trên desktop/tablet/mobile.
 
 ## Why now
-Mở rộng Cell từ video+subtitle sang đọc sách, tái sử dụng tokenizer, dictionary popup, TTS queue, card creator, storage đã có trong hệ thống.
+Mở rộng Tihoka từ video+subtitle sang đọc sách, tái sử dụng tokenizer, dictionary popup, TTS queue, card creator, storage đã có trong hệ thống.
 
 ## Success
 - Mở Reader từ Universal Panel.

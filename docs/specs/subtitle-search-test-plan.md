@@ -7,7 +7,7 @@
 ## Prerequisites
 
 1. **Build extension:** `npm run build` (production) hoặc `npx vite build --mode development`
-2. **Pack + clone profile:** `python .agents/skills/testing-extension-browser/script/setup-cell-profile.py --rebuild` → `CLONE_PATH=...`
+2. **Pack + clone profile:** `python .agents/skills/testing-extension-browser/script/setup-Tihoka-profile.py --rebuild` → `CLONE_PATH=...`
 3. **Playwright connect:** `const context = await chromium.launchPersistentContext(CLONE_PATH, { headless: false, executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' });`
 4. **Test URLs:**
    - Movie: `https://themoviebox.xyz/movies/oh-boy-was-i-wrong-about-her-KZp0CGxDxI2?id=2281575019673174328&type=/movie/detail&detailSe=&detailEp=&lang=en`
@@ -23,7 +23,7 @@
 - **AC:** #4 — Settings dialog có ApiKeyManager section
 - **Steps:**
   1. Navigate đến `https://themoviebox.xyz/movies/...`
-  2. Mở Cell popup → click Settings icon
+  2. Mở Tihoka popup → click Settings icon
   3. Scroll sidebar, tìm "Subtitle search keys"
   4. Click vào section đó
 - **Expected:** Section "Subtitle search keys" hiển thị, có 2 provider groups (SubDL / OpenSubtitles), mỗi group có form add key
@@ -104,7 +104,7 @@
 - **Pre:** Xóa tất cả keys trong Settings trước
 - **Steps:**
   1. Navigate đến `https://themoviebox.xyz/movies/...`
-  2. Mở Cell floating panel (SubtitleManagerPanel)
+  2. Mở Tihoka floating panel (SubtitleManagerPanel)
   3. Quan sát section search ở trên cùng
 - **Expected:** Search section collapsed, hiển thị hint "Add API key in Settings to search subtitles" + button/link mở Settings
 - **Pass:** Hint text + Settings link visible, không có search input

@@ -1,6 +1,6 @@
 # Spec: Solid/Liquid Button Material
 
-> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Cell. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
+> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Tihoka. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
 
 > Intent: `docs/intent/solid-liquid-button-material.md`  
 > Status: Draft for approval  
@@ -12,8 +12,8 @@ Introduce a second `solid` material family for the shared `Button` without dupli
 
 ### User stories
 
-1. **As a** Cell user, **I want** a `solid` button option **so that** I can clearly see and tap actions on light or white backgrounds where glass is too subtle.
-2. **As a** Cell developer, **I want** to switch a `Button` between `liquid` (default) and `solid` with a single `variant` prop **so that** I don't have to learn a new component or prop surface.
+1. **As a** Tihoka user, **I want** a `solid` button option **so that** I can clearly see and tap actions on light or white backgrounds where glass is too subtle.
+2. **As a** Tihoka developer, **I want** to switch a `Button` between `liquid` (default) and `solid` with a single `variant` prop **so that** I don't have to learn a new component or prop surface.
 3. **As a** maintainer, **I want** `solid` to reuse existing color tokens **so that** adding a new material does not duplicate or fork the color system.
 
 ## Design contract

@@ -14,7 +14,7 @@
 
 ## Objective
 
-Xây dựng **Ocean Pronunciation Engine** cho Cell — một lớp pronunciation abstraction độc lập với UI, cho phép:
+Xây dựng **Ocean Pronunciation Engine** cho Tihoka — một lớp pronunciation abstraction độc lập với UI, cho phép:
 
 - Chuyển text tiếng Anh thành **IPA string + phoneme sequence**.
 - Cung cấp **PronunciationResult** có cấu trúc (`text`, `language`, `ipa`, `phonemes[{ipa, startMs, endMs, type}]`, `audio`, `metadata`).

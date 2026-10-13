@@ -31,7 +31,7 @@ The shell is well tokenized and the sidebar/bottom-nav skeleton is sound. The de
 | ID | Finding |
 |---|---|
 | F-4 / M-9 | 28–34px control cluster: profile flag 34px, vocab statusBadge 20px, xs/sm circle buttons 28/32px (kebab, trash, dictionary toolbar forced 32px) — `--iconbutton-size-*` never reaches 44px coarse |
-| F-5 | Tab gutters differ ~2× (playlist/recap 28–32px vs 12–16px) via fragile `data-cell-id` padding carve-out list; recap mounts without `.tabPane` — 3 mounting patterns for 1 job |
+| F-5 | Tab gutters differ ~2× (playlist/recap 28–32px vs 12–16px) via fragile `data-tihoka-id` padding carve-out list; recap mounts without `.tabPane` — 3 mounting patterns for 1 job |
 | F-6 | Token-name typos silently break styles ~8 sites: `--borderWidth-hairline`×5, `--font-sizes-xs` (no fallback → wrong timestamp size), `--font-weights-semibold`, `--motion-duration-fast`, `var(--error/--success)` dead aliases |
 | F-7 / M-1 | Mobile bottom nav = 7 items; labels clip mid-word at ≤390px ("Dicti…/Voca…"), collapse to fragments at 320px; ≤359px font drops to 10px (below 12px floor) |
 | V-2 | Floating select/listbox surfaces translucent — page text bleeds through listbox rows (§5.1: floating = `surface-elevated`/`field-solid`, never alpha washes) |

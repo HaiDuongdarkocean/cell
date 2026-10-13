@@ -1,6 +1,6 @@
 # Audio Screen — Feature Directory Map
 
-> Sơ đồ thư mục tính năng của màn hình **Audio** trong Cell Settings.
+> Sơ đồ thư mục tính năng của màn hình **Audio** trong Tihoka Settings.
 > Nguồn sự thật: screenshot `chrome_DN3MZkQg73.png`, production panels, `docs/intent/audio-design-brief.md`.
 
 ---
@@ -75,7 +75,7 @@ Audio (Settings section)
 ## 2. Physical directory map (repo)
 
 ```
-cell/
+Tihoka/
 ├── docs/intent/
 │   ├── audio-design-brief.md          # 3 concept directions + design decisions
 │   ├── audio-text-audit.md            # i18n/copy audit for all audio strings

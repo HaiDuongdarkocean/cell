@@ -1,7 +1,7 @@
 # Technical Debt Audit — src/features + src/entrypoints + src/shared
 
 > Date: 2026-09-30 · Delta audit vs `20260916_src-features-entrypoints-shared.md`
-> Audited tree: worktree `cell-worktrees/debt-audit` @ `bf3fa721` (clean committed HEAD; main tree dirty with foreign in-flight `anki-import` work was intentionally excluded)
+> Audited tree: worktree `Tihoka-worktrees/debt-audit` @ `bf3fa721` (clean committed HEAD; main tree dirty with foreign in-flight `anki-import` work was intentionally excluded)
 > Scope line: *Audit `src/features`, `src/entrypoints`, `src/shared` to find debt blocking velocity of the next 3 features.*
 > Scope selection: top-3 code directories by 90-day churn (`git log --numstat`): `src/entrypoints` 178k, `src/features` hotspots (`dictionaryPopup` 97k, `subtitle` 76k, `sync` 27k, `cardCreator` 25k), `src/shared` 67k. `docs/`, `tests/`, `.agents/` churn excluded as non-code.
 > Method: `audit-technical-debt` pipeline — automatic + human-inferred signals, spot-check subagent (15 findings), adversarial review subagent (12 flags: 5 refuted, 3 corrected, rest confirmed). Weighted scoring `0.30V + 0.35R + 0.20Reach + 0.15×(6−Cost)`.
@@ -12,7 +12,7 @@
 |---|---|
 | 1. God files (4.00) | **Fixed on the named files** — `webTextDictionaryController` 1816→318, `useCardCreatorState` 1425→210, `content-script.ts` 1409→130, `local-player/main.tsx` 1134→264, `downloader.ts` 1221→450. **But the pattern regrew elsewhere** → item 4. |
 | 2. Layer boundaries (3.90) | **Partially fixed** — `src/stores/` gone; features→entrypoints import claim re-verified as false-positive (all 3 candidates were comments/`getURL` strings/Vite worker specifiers). **Deep-import bypass persists** → item 3. |
-| 3. Debug seams (3.70) | **Fixed** — re-verified: every `dataset.ocr*`/`__CELL_*`/`data-cell-debug-autoload-arr` write sits inside `cellDebug()`/`isCellDebug()` gates, compile-time stripped by `__CELL_DEBUG__` define. Tests cover the non-write path. |
+| 3. Debug seams (3.70) | **Fixed** — re-verified: every `dataset.ocr*`/`__Tihoka_*`/`data-tihoka-debug-autoload-arr` write sits inside `TihokaDebug()`/`isTihokaDebug()` gates, compile-time stripped by `__Tihoka_DEBUG__` define. Tests cover the non-write path. |
 | 4. Lint red (3.50) | **Regressed and worsened** — lint red again (2 errors) *and* typecheck red (2 errors) *and* a machine-dependent test; all on committed HEAD. `d5171098` (post-audit) cleared 2 of 4 sub-items but HEAD `68a7b746` still fails typecheck → item 1. |
 | 5. downloadQueue pause bug (3.45) | **Fixed** — queue rewritten: AbortController per item, single-decrement settle, `restore()`→`processNext`. |
 | 6. SW-state residual (3.35) | **Fixed** — `durable-job-registry` shipped; SW state now persisted/reconciled. |
@@ -25,7 +25,7 @@
 | 13. Observability (2.55) | **Open** — 142 `console.*` calls in prod src (was ~160), no logger abstraction → folded into item 9 as test/log hygiene. |
 | 14. Unbounded caches (2.50) | **Watch** — not re-verified this round; `pendingSubsRef`/`videoFileCacheRef` moved into `useFileCaches` hook. |
 | 15. State fragmentation (2.35) | **Fixed** — `src/stores/` deleted. |
-| 16. Fixture-gated silent skips (2.30) | **Reclassified** — skips are `CELL_FIXTURE_FULL`-gated *and* `console.warn`; default CI runs use committed fixtures. Residual: `tmpLdoce.test.ts` is the opposite failure mode (ungated absolute path) → item 1. |
+| 16. Fixture-gated silent skips (2.30) | **Reclassified** — skips are `Tihoka_FIXTURE_FULL`-gated *and* `console.warn`; default CI runs use committed fixtures. Residual: `tmpLdoce.test.ts` is the opposite failure mode (ungated absolute path) → item 1. |
 
 ## Evidence base
 
@@ -64,7 +64,7 @@
 
 ### Rejected / corrected during adversarial review
 
-- ~~Ungated `data-cell-debug-autoload-arr` DOM writes leak subtitle URLs~~ — **refuted**: all writes sit inside `cellDebug()`/`isCellDebug()` gates; `__CELL_DEBUG__` compiles to literal `"false"` in prod builds; non-write path has test coverage.
+- ~~Ungated `data-tihoka-debug-autoload-arr` DOM writes leak subtitle URLs~~ — **refuted**: all writes sit inside `TihokaDebug()`/`isTihokaDebug()` gates; `__Tihoka_DEBUG__` compiles to literal `"false"` in prod builds; non-write path has test coverage.
 - ~~features→entrypoints imports (`settings/index`, `workerFactory`, `localPlayerLink`)~~ — **refuted**: doc comment, `chrome.runtime.getURL` string, Vite worker specifier respectively. No lint rule should fire on these.
 - ~~OCR→dictionaryPopup hidden coupling~~ — **refuted**: `featureInit.ts` composition-root DI; `OcrLookupTrigger` is a structural port. Correct pattern.
 - ~~`entities/message/types.ts` god file~~ — type-only catalog; splitting is cosmetic.
@@ -82,7 +82,7 @@
 ## Recommended roadmap
 
 ### Quick wins — this sprint (score ≥3.5, cost ≤2), owner TBD
-1. **Un-red all gates on HEAD** (item 1): ✅ `d5171098` already cleared `prev?.kind` + the `SrsReviewCardBack` ternaries; **remaining:** add `studyModes.builder.previewFallback` to en+vi or remove the call, and gate `tmpLdoce.test.ts` behind the existing `CELL_FIXTURE_FULL` pattern or delete it. **Plus process fix:** run gates on a clean `git stash`-verified tree (or CI) so "pass" can't be recorded over uncommitted fixes. <1 day.
+1. **Un-red all gates on HEAD** (item 1): ✅ `d5171098` already cleared `prev?.kind` + the `SrsReviewCardBack` ternaries; **remaining:** add `studyModes.builder.previewFallback` to en+vi or remove the call, and gate `tmpLdoce.test.ts` behind the existing `Tihoka_FIXTURE_FULL` pattern or delete it. **Plus process fix:** run gates on a clean `git stash`-verified tree (or CI) so "pass" can't be recorded over uncommitted fixes. <1 day.
 2. **Sync → cache invalidation** (item 2 + item 13): call `clearDictionaryProbeCache()` + drop the per-resource `phraseIndexCache` entry from `syncRuntime`'s applied path when `appliedDataClasses` includes `dictResource`; surface the `!blob` skip as a retryable status instead of `continue`. ~1 day incl. test.
 
 ### Pay-down — schedule across next 2–3 sprints (score ≥3.3, cost ≥3)

@@ -11,7 +11,7 @@ User có thể search subtitle từ nguồn bên ngoài (SubDL primary, OpenSubt
 
 1. **No subtitle:** Video không có subtitle → user mở Manager → gõ tên phim → chọn ngôn ngữ → nhận list → chọn role → click → subtitle load vào role đó.
 2. **Replace subtitle:** Video có subtitle nhưng user muốn subtitle khác (bản dịch tốt hơn, ngôn ngữ khác) → user mở Manager → gõ tên → chọn → chọn role (Target hoặc Native) → load thay thế track hiện tại của role đó.
-3. **Multi-key free tier:** User đăng ký nhiều free account (SubDL + OpenSubtitles) → nhập nhiều key vào Settings → Cell round-robin key **lúc download** (không phải lúc search) để max quota download free (SubDL: cần verify exact free quota × N keys + OpenSubtitles **100/key/ngày** × M keys, verified 2026-08-13).
+3. **Multi-key free tier:** User đăng ký nhiều free account (SubDL + OpenSubtitles) → nhập nhiều key vào Settings → Tihoka round-robin key **lúc download** (không phải lúc search) để max quota download free (SubDL: cần verify exact free quota × N keys + OpenSubtitles **100/key/ngày** × M keys, verified 2026-08-13).
 4. **Key management:** User thêm/sửa/xóa API key trong Settings, xem danh sách key chia theo provider (SubDL / OpenSubtitles), xem trạng thái mỗi key (active / rate-limited / invalid / unverified) + remaining downloads hôm nay.
 5. **TV/series:** User xem drama/series → gõ tên + season + episode → nhận subtitle đúng tập, không phải season zip.
 
@@ -91,7 +91,7 @@ export interface SubtitleSearchProvider {
 
 ## Tech Stack
 
-- React + TypeScript (existing Cell stack)
+- React + TypeScript (existing Tihoka stack)
 - **SubDL REST API** — base URL `https://api.subdl.com`. **Verified với real key 2026-08-13.**
   - Auth: `Authorization: Bearer $KEY` header (or `X-API-Key`; legacy `?api_key=` accepted cho download URL).
   - Search: `GET /api/v2/subtitles/search` — params: `film_name|sd_id|imdb_id|tmdb_id`, `type` (movie/tv, required khi dùng tmdb_id), `languages` (comma-separated), `season`, `episode`, `full_season=1`, `unpack=1` (expand archive → single-file URLs).
@@ -105,7 +105,7 @@ export interface SubtitleSearchProvider {
   - Source: https://subdl.com/developers (official docs)
 - **OpenSubtitles REST API** — base URL `https://api.opensubtitles.com/api/v1`. **Verified với real key 2026-08-13.**
   - Auth: `Api-Key` header (required, sufficient — **không cần JWT/login** cho search + download).
-  - **Required header: `User-Agent: Cell v<version>`** — ToS yêu cầu per-app UA. `fetch()` không set được UA (forbidden header) → DNR `modifyHeaders` rule.
+  - **Required header: `User-Agent: Tihoka v<version>`** — ToS yêu cầu per-app UA. `fetch()` không set được UA (forbidden header) → DNR `modifyHeaders` rule.
   - Search: `GET /subtitles` — params: `query`, `imdb_id`, `tmdb_id`, `languages` (comma-separated, code từ `/infos/languages`: `en`, `vi`, `zh-cn`, `pt-br`, `pt-pt`…), `type` (movie/episode), `season_number`, `episode_number`, `hearing_impaired`, `order_by`, `moviehash`. **Cần `-L` (follow redirect) — API 301 redirect.**
   - Response shape (verified): `{total_pages, total_count, per_page, page, data: [{id, type: "subtitle", attributes: {language, download_count, hearing_impaired, hd, fps, ratings, release, files: [{file_id, file_name}], feature_details: {title, imdb_id, tmdb_id, feature_type}}}]}`
   - Download: **2-step handshake** (verified):
@@ -191,11 +191,11 @@ docs/
 
 ## Code Style
 
-Follow existing Cell conventions:
+Follow existing Tihoka conventions:
 - Named exports, no default export
 - Function components + hooks, no class components
 - **Pure logic functions in `logic/`** — nhận input, trả output, không `fetch`, không `chrome.storage`. Side effects (network, storage) sống ở background handlers.
-- `data-cell-id` attributes for test selectors
+- `data-tihoka-id` attributes for test selectors
 - Design tokens from `tokens.css` via CSS modules — đọc `src/shared/styles/README.md` trước
 - `import { Button, Icon, IconButton } from '@/shared/ui'`
 - No `any` — strict TypeScript
@@ -419,7 +419,7 @@ Source: https://ai.opensubtitles.com/docs + real API test 2026-08-13
 | `order_by` | no | e.g. `download_count` |
 | `moviehash` | no | Video file hash (highest accuracy) |
 
-Auth: `Api-Key: $KEY` header. **Required: `User-Agent: Cell v<version>`** (ToS). **Không cần JWT/login** — API key alone sufficient.
+Auth: `Api-Key: $KEY` header. **Required: `User-Agent: Tihoka v<version>`** (ToS). **Không cần JWT/login** — API key alone sufficient.
 
 Response shape (verified):
 ```json
@@ -469,11 +469,11 @@ Response shape (verified):
 
 **Step 1:** `POST /download?file_id={id}` — **query params, NOT JSON body** (JSON body trả 400!)
 
-Headers: `Api-Key`, `User-Agent: Cell v<version>`, `Accept: application/json`
+Headers: `Api-Key`, `User-Agent: Tihoka v<version>`, `Accept: application/json`
 
 ```bash
 curl -X POST "https://api.opensubtitles.com/api/v1/download?file_id=10813639" \
-  -H "Api-Key: $KEY" -H "User-Agent: Cell v0.1-test" -H "Accept: application/json"
+  -H "Api-Key: $KEY" -H "User-Agent: Tihoka v0.1-test" -H "Accept: application/json"
 ```
 
 Response (verified):
@@ -508,7 +508,7 @@ Response (verified):
 
 #### Language code mapping (verified từ `/infos/languages`)
 
-| Cell (ISO 639-1) | OpenSubtitles | SubDL (`language` field) |
+| Tihoka (ISO 639-1) | OpenSubtitles | SubDL (`language` field) |
 |-------------------|---------------|-------|
 | `en` | `en` | `EN` |
 | `vi` | `vi` | (chưa test) |
@@ -517,7 +517,7 @@ Response (verified):
 | `ja` | `ja` | (chưa test) |
 | `ko` | `ko` | (chưa test) |
 
-OpenSubtitles dùng codes từ `/infos/languages` endpoint (verified full list: 95 languages). SubDL `language` field = uppercase 2-letter. SubDL `lang` field = tên language (inconsistent case). **Map qua `languageRegistry` trong Cell.**
+OpenSubtitles dùng codes từ `/infos/languages` endpoint (verified full list: 95 languages). SubDL `language` field = uppercase 2-letter. SubDL `lang` field = tên language (inconsistent case). **Map qua `languageRegistry` trong Tihoka.**
 
 ### Example — failure taxonomy (fallback chain)
 
@@ -700,7 +700,7 @@ export const CURRENT_SCHEMA_VERSION = 21;
 | Role assignment | User chọn role (Target/Native) sau khi click result. Không auto-guess. |
 | Replace semantics | Load vào role thay thế track hiện tại của role đó (giống import). |
 | Persistence | Parsed text cached trong content-script memory (Map by result.id). Reload page → re-download (nhưng key đã active, không brick). |
-| OpenSubtitles User-Agent | DNR `modifyHeaders` rule (pattern đã có `setRefererRule`). Verified: API chấp nhận `User-Agent: Cell v0.1-test`. |
+| OpenSubtitles User-Agent | DNR `modifyHeaders` rule (pattern đã có `setRefererRule`). Verified: API chấp nhận `User-Agent: Tihoka v0.1-test`. |
 | OpenSubtitles JWT login | **Không cần** — API key alone sufficient (verified). Login chỉ cho quota cao hơn nếu có account VIP. |
 | OpenSubtitles download format | **POST query params** `?file_id={id}`, NOT JSON body (verified — JSON body trả 400). |
 | SubDL download URL | `https://api.subdl.com` + `unpack_files[].url` (relative path, verified). |

@@ -1,6 +1,6 @@
 # ADR-087: Shape & Elevation for "Quiet Confidence" Foundation
 
-> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Cell. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
+> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Tihoka. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
 
 ## Status
 
@@ -8,7 +8,7 @@ Accepted — build verification passed; foundation tokens shipped in tokens.css.
 
 ## Context
 
-Shape (border radius) và elevation (shadow) giúp phân biệt component và thể hiện depth. Cell hiện có scale: `xs: 2px`, `sm: 6px`, `md: 8px`, `card: 10px`, `dialog: 16px`, `pill: 9999px`. Nhưng `radius` hiện chưa ứng với role rõ ràng, và shadow hầu hết là `none`.
+Shape (border radius) và elevation (shadow) giúp phân biệt component và thể hiện depth. Tihoka hiện có scale: `xs: 2px`, `sm: 6px`, `md: 8px`, `card: 10px`, `dialog: 16px`, `pill: 9999px`. Nhưng `radius` hiện chưa ứng với role rõ ràng, và shadow hầu hết là `none`.
 
 Với bản sắc **"quiet confidence"**, shape cần "đơn giản, thanh lịch" — không playful quá (radius lớn) cũng không cứng nhắc (radius nhỏ/quá vuông). Elevation cần kín đáo — dùng surface lift và border hơn là drop shadow nặng.
 
@@ -42,7 +42,7 @@ Với bản sắc **"quiet confidence"**, shape cần "đơn giản, thanh lịc
 Linear dùng 4-step surface ladder thay vì drop shadow ([nguồn](https://www.shadcn.io/design/linear)):
 > "Four-step surface ladder carries hierarchy without drop shadows."
 
-Quyết định cho Cell:
+Quyết định cho Tihoka:
 - **Elevation 0 (ground)**: page background.
 - **Elevation 1**: cards, panels — border `1px` + background surface.
 - **Elevation 2**: popovers, dropdowns, tooltips — background surface-elevated + border.

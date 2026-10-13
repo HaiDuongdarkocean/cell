@@ -6,7 +6,7 @@
 ## 8-field frame (autonomous — inferred from codebase, zero questions)
 
 1. **Problem**: Local-player library has videos but no signal about which one is the best next watch. Comprehension score exists only for the *currently loaded* media (`mediaScoreSource`); the library list sorts by recent/title/added — nothing about learnability.
-2. **User**: Immersion learner with a local video + subtitle collection in Cell's local player (`orca-local-player` IDB), wordStatus vocabulary built up over time.
+2. **User**: Immersion learner with a local video + subtitle collection in Tihoka's local player (`orca-local-player` IDB), wordStatus vocabulary built up over time.
 3. **Current workflow**: Open local player → scan titles → guess which video is "vừa sức" → maybe watch and check the live comprehension chip → back out and try another. LingQ's equivalent pain: %known exists per lesson but sorting requires manual inspection.
 4. **Pain**: Scores are computed but thrown away per-session; picking the next video is mò — i+1 content (stretch band, ~90–95% coverage) is the most valuable watch but indistinguishable in the list.
 5. **Evidence**: `computeStats(tokens,'media')` already yields `coverage` + `band` (comfortable ≥95 / stretch 90–95 / hard <90); `matchSubtitlesForVideo` + `parseSubtitleFile` resolve each video's target subtitle; `fetchTermStatuses` batches status lookups ≤1000 terms; `ComprehensionBadge` renders coverage+band; `sortLibrary`/`SortBy` is an open comparator registry.

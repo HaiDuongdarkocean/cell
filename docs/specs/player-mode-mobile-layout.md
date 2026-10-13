@@ -5,7 +5,7 @@
 
 ## Objective
 
-Trên viewport <600px, Player Mode hiện nhồi ~14 nút vào dock đáy + 3 surface nổi rời → subtitle/cuelist không còn không gian. Spec này định nghĩa layout mobile-first cho PM <600px theo mockup: video top → cueRegion middle (card-style, 2 display modes) → anchorRow (CC + pill + track caption) → bottomBar transport với ⋯ overflow; action rail dọc mép phải cueRegion. Desktop ≥600px, overlay thường, split-view không đổi; handler + `data-cell-id` contract giữ.
+Trên viewport <600px, Player Mode hiện nhồi ~14 nút vào dock đáy + 3 surface nổi rời → subtitle/cuelist không còn không gian. Spec này định nghĩa layout mobile-first cho PM <600px theo mockup: video top → cueRegion middle (card-style, 2 display modes) → anchorRow (CC + pill + track caption) → bottomBar transport với ⋯ overflow; action rail dọc mép phải cueRegion. Desktop ≥600px, overlay thường, split-view không đổi; handler + `data-tihoka-id` contract giữ.
 
 ## Actor ↔ System Boundary
 
@@ -43,7 +43,7 @@ REQ-2: Bottom transport bar
   3. state reflect: `repeatActive`, play/pause icon theo `isPlaying`
 - Alt flow: `cues.length===0` → prev/next swap thành [`nav-rewind`/`nav-forward`] gọi `onRewind`/`onForward`; cues load → swap về.
 - Exception: handler vắng (vd `onRepeat` không truyền) → nút đó không render, bar reflow.
-- Rules: **Button subtle-family** (mở rộng `shared/ui/Button` — đúng cặp `comprehension-pill`: `*-subtle` nền + gốc thuần fg): prev/repeat/next + quick-add = `variant="primarySubtle"`; hero = `variant="warningSubtle"`; edit-card = `variant="errorSubtle"`; filter/generate/CC = `variant="neutralSubtle"`; X/⋯ = `variant="ghost"` (icon trần theo mẫu); icon glyphs bare theo REQ-11 (prev=`chevronLeft`, hero=`play`/`pause`, next=`chevronRight`), size theo REQ-10; hover/press = overlay chuẩn của Button (`::after`), toggle = `active` prop; thứ tự cố định; transport group giữ `data-cell-id="nav-cluster"` trên wrapper; Esc giữ semantics: menu open → đóng menu (escapeLayer) → cueListOpen=false → exit PM.
+- Rules: **Button subtle-family** (mở rộng `shared/ui/Button` — đúng cặp `comprehension-pill`: `*-subtle` nền + gốc thuần fg): prev/repeat/next + quick-add = `variant="primarySubtle"`; hero = `variant="warningSubtle"`; edit-card = `variant="errorSubtle"`; filter/generate/CC = `variant="neutralSubtle"`; X/⋯ = `variant="ghost"` (icon trần theo mẫu); icon glyphs bare theo REQ-11 (prev=`chevronLeft`, hero=`play`/`pause`, next=`chevronRight`), size theo REQ-10; hover/press = overlay chuẩn của Button (`::after`), toggle = `active` prop; thứ tự cố định; transport group giữ `data-tihoka-id="nav-cluster"` trên wrapper; Esc giữ semantics: menu open → đóng menu (escapeLayer) → cueListOpen=false → exit PM.
 - Postcondition: parity desktop.
 - NFR refs: NFR-1, NFR-2, NFR-5
 
@@ -52,8 +52,8 @@ REQ-3: Card rail + band rail pair
 - Goal: contextual actions 1 chạm, đúng vị trí mockup
 - Preconditions: PM mobile mounted
 - Basic flow:
-  1. **Card rail** (`data-cell-id="pm-card-actions"`): quick-add + edit-card gắn **bên trong** active cue card, absolute top-right trong bounds card, kích thước compact (40px — nhỏ hơn FAB chuẩn), scroll theo card
-  2. **Band rail** (`data-cell-id="player-mode-actions"` — reuse C5 id): cue-filter-fab + generate-native xếp **dọc** ở mép phải band — filter nổi trên mép card peek phía trên, generate nằm ngang hàng với CC+pill; đối xứng cân đối với `manager-toggle-btn` trái (vùng 5,6)
+  1. **Card rail** (`data-tihoka-id="pm-card-actions"`): quick-add + edit-card gắn **bên trong** active cue card, absolute top-right trong bounds card, kích thước compact (40px — nhỏ hơn FAB chuẩn), scroll theo card
+  2. **Band rail** (`data-tihoka-id="player-mode-actions"` — reuse C5 id): cue-filter-fab + generate-native xếp **dọc** ở mép phải band — filter nổi trên mép card peek phía trên, generate nằm ngang hàng với CC+pill; đối xứng cân đối với `manager-toggle-btn` trái (vùng 5,6)
   3. actor tap → `onQuickAdd`/`onEditCard`/`onGenerateNative`
 - Alt flow: `cue-filter-fab` portal vào slot trong band rail: PM overlay tạo slot `div`, truyền xuống SubtitlePanel qua prop (`fabPortalTarget`); SubtitlePanel `createPortal(cueFilterFab, slot)` — state giữ nguyên trong panel. Fab không render (disabled/không tokenize/active-mode) → slot collapse.
 - Exception: handler vắng → nút skip; rail co. Active card vắng → card rail không render.
@@ -67,7 +67,7 @@ REQ-4: Floating anchor band + pill reposition
 - Preconditions: PM mobile mounted
 - Basic flow:
   1. system render `pm-anchor-band` **absolute đè đáy `pm-cue-wrap`** (sibling của `pm-cue-region`, **trong suốt hoàn toàn**; `pm-cue-region` scroll có `mask-image` fade đáy — card tan dần khi vào vùng band): row [CC `manager-toggle-btn` trái | **pill căn giữa tuyệt đối** (`left:50%`) | rail pair phải (REQ-3)]. Không còn caption `Subtitles: <label>` (AC-20) — band chỉ còn một hàng nút, tiết kiệm chiều cao
-  2. **Pill mechanism (decided)**: PM mobile set `data-cell-player-mode-mobile="true"` trên `document.documentElement` khi mount (cleanup remove). `ComprehensionPill.module.css` thêm `:host-context([data-cell-player-mode-mobile]) .pill { top:auto; bottom: calc(var(--pm-anchor-bottom, <bottombar+caption px>)); }` — pure CSS: remount-safe (không inline style), tự restore khi attr gỡ, không đụng `mountComprehensionPill` internals. PM set `--pm-anchor-bottom` trên documentElement theo chiều cao bottomBar+caption+band thực tế.
+  2. **Pill mechanism (decided)**: PM mobile set `data-tihoka-player-mode-mobile="true"` trên `document.documentElement` khi mount (cleanup remove). `ComprehensionPill.module.css` thêm `:host-context([data-tihoka-player-mode-mobile]) .pill { top:auto; bottom: calc(var(--pm-anchor-bottom, <bottombar+caption px>)); }` — pure CSS: remount-safe (không inline style), tự restore khi attr gỡ, không đụng `mountComprehensionPill` internals. PM set `--pm-anchor-bottom` trên documentElement theo chiều cao bottomBar+caption+band thực tế.
 - Alt flow: pill không data → pill host tự unmount (existing store logic), band vẫn giữ CC + rail.
 - Exception: PM enter khi pill chưa mount → CSS vẫn đúng khi pill mount sau (host-context match lúc render).
 - Rules: cueRegion **không scroll** (REQ-10 — không scrollbar, không user scroll; vị trí card do system điều khiển theo active cue); band `pointer-events:none`, chỉ CC/pill/nút rail `auto` (không nuốt tap card bên dưới); z dưới ⋯ menu/sheets.
@@ -79,8 +79,8 @@ REQ-5: ⋯ overflow menu
 - Goal: mọi PM action còn lại reachable
 - Preconditions: PM mobile mounted
 - Basic flow:
-  1. actor tap `pm-more-btn` → **`Sheet`** (SSOT bottom sheet, `data-cell-id="pm-more-menu"`) mở — không còn popup `Menu` (AC-22); bottom bar không có speed chip riêng (AC-23)
-  2. items (có icon + label i18n, `data-cell-id` reuse khi có):
+  1. actor tap `pm-more-btn` → **`Sheet`** (SSOT bottom sheet, `data-tihoka-id="pm-more-menu"`) mở — không còn popup `Menu` (AC-22); bottom bar không có speed chip riêng (AC-23)
+  2. items (có icon + label i18n, `data-tihoka-id` reuse khi có):
      - `panel-toggle-btn` behavior: "Ẩn/hiện danh sách cue" (tương đương `t` — session toggle)
      - `ocr-toggle-btn` (MenuItem selected state khi `ocrEnabled`)
      - study modes: MenuItem radio per mode (active mode checked) — vì mobile cueRegion không render StudyModeActionBar (REQ-7)
@@ -113,7 +113,7 @@ REQ-7: Cue card visual + cueRegion chrome (mobile PM)
 - Basic flow: system render cue item card-style: `radius-2xl` + `surface`, `padding space-5/space-4`, target text prominent (`font-size-xl`/`semibold` active, `font-size-lg`/`medium` muted), native `font-size-base` secondary, footer **chỉ còn timestamp** `font-size-xs` (icons pin/layers trang trí đã xoá — AC-21); current cue emphasized **trong bounds** (AC-19): border giữ `hairline` + `--shadow-inset-selected` (vòng primary inset) + `surface-elevated` + `shadow-floating` — outer box không đổi; card kế sau peek nguyên opacity (fade chỉ do `mask-image` đáy scroll region). Video stage inset `space-3` + `radius-2xl` (mockup bo góc, không full-bleed).
 - Alt flow: tokenize → token spans trong card giữ status colors.
 - Exception: cue dài wrap, không clip.
-- Rules: scoped variant (vd `SubtitlePanel` prop `barebones`/`data-cell-pm-mobile` trên `.panel`): mobile PM **không render** panel header (`subtitle-panel-header`) và `StudyModeActionBar`/`PracticeOptions` — chức năng chuyển vào ⋯ (REQ-5); split-view/desktop giữ chrome. Kích thước/cỡ chữ/radius bám mockup bằng tokens. Cue region **không scroll** (REQ-10).
+- Rules: scoped variant (vd `SubtitlePanel` prop `barebones`/`data-tihoka-pm-mobile` trên `.panel`): mobile PM **không render** panel header (`subtitle-panel-header`) và `StudyModeActionBar`/`PracticeOptions` — chức năng chuyển vào ⋯ (REQ-5); split-view/desktop giữ chrome. Kích thước/cỡ chữ/radius bám mockup bằng tokens. Cue region **không scroll** (REQ-10).
 - Postcondition: visual khớp `docs/mockups/player-mode-mobile-layout.png`.
 - NFR refs: NFR-1, NFR-3
 
@@ -158,7 +158,7 @@ REQ-11: Transport/manager icon glyphs — bare forms (user-approved cross-screen
 - Rules: đổi **icon name tại call site**, không đổi `ICON_CATALOG` entry; user approved phạm vi cross-screen — screens khác dùng chung icon được phép đổi theo (deliver quyết định swap global hay chỉ PM call sites).
 - Postcondition: mọi glyph bare, tỷ lệ theo REQ-10.
 
-### data-cell-id contract (C5 branch-scoped)
+### data-tihoka-id contract (C5 branch-scoped)
 
 | id | ≥600px PM | <600px PM |
 |---|---|---|

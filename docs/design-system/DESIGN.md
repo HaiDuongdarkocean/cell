@@ -1,7 +1,7 @@
-# Cell DESIGN.md
+# Tihoka DESIGN.md
 
-> Agent-facing source of truth for UI implementation in Cell.
-> Cell KHÔNG dùng Liquid Glass (đã loại 2026-09-08). Nền tảng quyết định thiết kế: `docs/design-system/DESIGN_RATIONALE.md` (cơ sở lý thuyết — vì sao token/component tồn tại và khi nào dùng).
+> Agent-facing source of truth for UI implementation in Tihoka.
+> Tihoka KHÔNG dùng Liquid Glass (đã loại 2026-09-08). Nền tảng quyết định thiết kế: `docs/design-system/DESIGN_RATIONALE.md` (cơ sở lý thuyết — vì sao token/component tồn tại và khi nào dùng).
 > Reference `src/shared/styles/STANDARD.md` for full design-system theory and `src/shared/styles/tokens.json` for canonical token values.
 > This document is the practical checklist agents must follow before declaring any UI task done.
 
@@ -26,7 +26,7 @@
 
 ### 2.1 Color tokens (use these, not M3)
 
-| M3 token (FORBIDDEN) | Cell token to use | Usage |
+| M3 token (FORBIDDEN) | Tihoka token to use | Usage |
 |---|---|---|
 | `var(--md-sys-color-surface)` | `var(--color-surface)` | Card/panel background |
 | `var(--md-sys-color-surface-container)` | `var(--color-background)` or `var(--color-surface)` | Page/section background |
@@ -203,7 +203,7 @@ grep -rn 'z-index:' src/ --include="*.css" --include="*.module.css" | grep -v 'v
 
 ---
 
-## 9. M3 → Cell Migration Cheatsheet
+## 9. M3 → Tihoka Migration Cheatsheet
 
 For the current `ClipboardPage` prototype, replace these tokens immediately:
 

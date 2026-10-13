@@ -43,7 +43,7 @@ REQ-2: Unified row anatomy
   3. actor reads purpose and operates the control in the same place in every row
 - Alt flow: composite rows (Download's grouped selects, Shortcuts grid fields, child fields like `workers-select`) use the same anatomy's group variant rather than bespoke wrappers
 - Exception: none — a row that cannot fit the anatomy is a design-brief finding, not an exception
-- Rules: control behavior and `data-cell-id` hooks unchanged; `HintIcon` remains available for secondary explanation
+- Rules: control behavior and `data-tihoka-id` hooks unchanged; `HintIcon` remains available for secondary explanation
 - Postcondition: one row recipe per variant, applied across all sections
 - NFR refs: NFR-1, NFR-3, NFR-4
 
@@ -113,7 +113,7 @@ REQ-7: Settings function preservation
   3. actor's setting persists; external storage changes still propagate into the open tab
 - Alt flow: first-render focus-into behavior (`SettingsTab.tsx:50-61`) preserved; Escape/dialog-dismissal handling unchanged in both surfaces
 - Exception: none new
-- Rules: no storage schema change; no i18n key removal; every existing `data-cell-id` value preserved — they live on controls, not anatomy, so zero-cost; any exception is a spec-visible change named in the verify report; no reduction of existing hit-target sizes (row density may not shrink targets below current measurements); aria semantics, focus order, and reduced-motion handling preserved
+- Rules: no storage schema change; no i18n key removal; every existing `data-tihoka-id` value preserved — they live on controls, not anatomy, so zero-cost; any exception is a spec-visible change named in the verify report; no reduction of existing hit-target sizes (row density may not shrink targets below current measurements); aria semantics, focus order, and reduced-motion handling preserved
 - Postcondition: functional parity — every existing SettingsTab/SettingsDialogContent test still meaningful (updated only for intentional anatomy changes)
 - NFR refs: NFR-2
 

@@ -33,7 +33,7 @@ All screenshots are in `docs/audits/screenshots/`.
 
 | # | Finding | Severity | Status | Notes |
 |---|---|---|---|---|
-| 1 | **Content-script/WebTrigger lookup fires on nav-item clicks inside the panel** — opens `PopupDictionary` overlay for the clicked label text | **P0** | ✅ **FIXED** | `.js-cell-universal-panel` hook added to panel root; `CELL_UI_HOST_SELECTORS` is now SSOT shared across `webTriggerController.ts`, `tokenizeBlock.ts`, `subtitleShortcuts.ts`. |
+| 1 | **Content-script/WebTrigger lookup fires on nav-item clicks inside the panel** — opens `PopupDictionary` overlay for the clicked label text | **P0** | ✅ **FIXED** | `.js-Tihoka-universal-panel` hook added to panel root; `Tihoka_UI_HOST_SELECTORS` is now SSOT shared across `webTriggerController.ts`, `tokenizeBlock.ts`, `subtitleShortcuts.ts`. |
 | 2 | **Settings `ThemePanel` overwrites global `data-theme`** via `applyTheme()` to `document.documentElement` | **P0** | ✅ **FIXED** | Deleted the redundant `applyTheme` effect in `ThemePanel` — all real mounts already have `ThemeProvider`/`ShadowThemeProvider` re-applying on store change. Standalone showcase wrapped in `ThemeProvider`. |
 | 3 | **Duplicate "Settings" header** — sidebar header + content header | **P1** | ✅ **FIXED** | `SettingsDialogContent` gained `showSidebarHeader` prop; `SettingsTab` passes `false`. |
 | 4 | **Study Modes tab is only a placeholder** in the showcase | **P1** | ✅ **FIXED** | Showcase now renders real `StudyModesTab` (loads defaults via `getStorage` fallback when chrome API absent). |
@@ -54,17 +54,17 @@ All screenshots are in `docs/audits/screenshots/`.
 - `universal-panel-study-modes-light.png` — after clicking "Study Modes", a dark `PopupDictionary` overlay appears for the term "modes".
 - `universal-panel-settings-tts-dark.png` — after clicking "TTS Voices" in the Settings sidebar, the same overlay appears for the term "voices".
 - Snapshot `settings-tts-overlay-snapshot.yml` confirms the overlay is a `dialog "Dictionary popup"` with heading "voices".
-- `src/features/dictionaryPopup/trigger/webTriggerController.ts:36-48` defines `UI_HOST_SELECTORS` including `#cell-universal-panel-host`, and `ALLOW_LOOKUP_SELECTOR = '[data-allow-lookup]'`.
-- `src/features/universalPanel/UniversalPanel.tsx:175` only sets `data-cell-id="universal-panel"`, **not** an id or class matching `UI_HOST_SELECTORS`.
+- `src/features/dictionaryPopup/trigger/webTriggerController.ts:36-48` defines `UI_HOST_SELECTORS` including `#Tihoka-universal-panel-host`, and `ALLOW_LOOKUP_SELECTOR = '[data-allow-lookup]'`.
+- `src/features/universalPanel/UniversalPanel.tsx:175` only sets `data-tihoka-id="universal-panel"`, **not** an id or class matching `UI_HOST_SELECTORS`.
 - `src/entrypoints/design-system-showcase/pages/UniversalPanelPage.showcase.tsx:99` uses the `UniversalPanel` component directly (inline), not `mountUniversalPanel`, so the host is never created.
 
 **Why it happens:**
-The content script's `WebTriggerController` attaches `document` level `mouseup`/`selectionchange` listeners. In the real extension the panel is mounted into `#cell-universal-panel-host`, which `isInsideBlockedHostForLookup` catches. In any other context (showcase, unit tests, third-party integrations), the component itself has no host selector, so clicks on nav text are treated as page-text lookups.
+The content script's `WebTriggerController` attaches `document` level `mouseup`/`selectionchange` listeners. In the real extension the panel is mounted into `#Tihoka-universal-panel-host`, which `isInsideBlockedHostForLookup` catches. In any other context (showcase, unit tests, third-party integrations), the component itself has no host selector, so clicks on nav text are treated as page-text lookups.
 
 **Fix direction:**
-- Add a stable host class/attribute to `UniversalPanel` (e.g. `data-cell-id="universal-panel-host"` and add `.js-cell-universal-panel-host` to `UI_HOST_SELECTORS`).
+- Add a stable host class/attribute to `UniversalPanel` (e.g. `data-tihoka-id="universal-panel-host"` and add `.js-Tihoka-universal-panel-host` to `UI_HOST_SELECTORS`).
 - OR add `data-no-lookup` to the panel root and to `NavItem`/`Navigation` text nodes.
-- OR change `webTriggerController.ts` to also block by `data-cell-id="universal-panel"`.
+- OR change `webTriggerController.ts` to also block by `data-tihoka-id="universal-panel"`.
 - The showcase should use `mountUniversalPanel` or a mock host wrapper if it wants real content-script isolation.
 
 ### 3.2 P0 — Settings `ThemePanel` overwrites the whole document theme
@@ -98,7 +98,7 @@ The content script's `WebTriggerController` attaches `document` level `mouseup`/
 **Evidence:**
 - `UniversalPanelPage.showcase.tsx:99`:
   ```tsx
-  studyModesPanel={<div data-cell-id="study-modes-panel">Study Modes</div>}
+  studyModesPanel={<div data-tihoka-id="study-modes-panel">Study Modes</div>}
   ```
 - Direct URL `&tab=studyModes` shows only a white panel with the text "Study Modes" (`universal-panel-study-modes-light-direct.png`).
 

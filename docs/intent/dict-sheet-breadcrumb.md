@@ -19,7 +19,7 @@
 
 | Group | Who | Their need re: this change | Capability/constraint |
 |---|---|---|---|
-| Team | Cell maintainers | Reuse stack machinery thay vì viết history riêng; diff nhỏ, testable | `closeFromLevel`, escape stack, stack tests đã tồn tại |
+| Team | Tihoka maintainers | Reuse stack machinery thay vì viết history riêng; diff nhỏ, testable | `closeFromLevel`, escape stack, stack tests đã tồn tại |
 | Customer | Người học tra từ trên mobile | Thấy chuỗi lookup, quay lại level bất kỳ, vuốt ngang/scroll | Touch ≥44px, shadow-DOM boundary rules |
 | Supplier/Dependency | `Sheet` atom, `Breadcrumb` atom, popupStack controller | Sheet cần slot header cố định; Breadcrumb cần labels clickable | `Sheet.tsx`, `Breadcrumb.tsx` trong `src/shared/ui/` |
 | Organization | none — feature nội bộ extension | | |

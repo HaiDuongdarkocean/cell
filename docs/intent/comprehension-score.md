@@ -32,7 +32,7 @@
 | Krashen (1985, 2020) | theory | i+1: input hiểu được phần lớn + chút vượt level; "optimal input" = comprehensible + compelling |
 | Migaku | product precedent | Comprehension score = difficulty vs known words; 5 statuses unknown/learning/known/tracking/ignored; toolbar trên text sites hiển thị độ khó page |
 
-**Mapping → Cell statuses** (`'unknown' | 'known' | 'tracking' | 'ignore'`):
+**Mapping → Tihoka statuses** (`'unknown' | 'known' | 'tracking' | 'ignore'`):
 `known`/`ignore` = biết (1.0) · `tracking` = đang học, biết một phần (0.5 — theo Schmitt 2011 linear, partial knowledge giúp comprehension) · `unknown` = 0.
 
 **Formula**: `score = (known + ignore + 0.5·tracking) / totalNonSeparatorTokens × 100` — running-token coverage, đúng định nghĩa research.
@@ -48,7 +48,7 @@
 ## Confirmed 8-field frame
 
 1. **Problem**: Không biết media/text này "vừa sức" hay quá khó trước khi consume — hiện phải xem thử vài phút rồi đoán.
-2. **User**: Language learner (persona 5–80, core 10–25) dùng Cell immersion trên streaming + reader + local player.
+2. **User**: Language learner (persona 5–80, core 10–25) dùng Tihoka immersion trên streaming + reader + local player.
 3. **Current workflow**: Xem thử → cảm giác quá khó/dễ → đổi content.
 4. **Pain point**: Mất vài phút mới nhận ra sai level; không có metric khách quan; từ đã mark không quay lại phục vụ quyết định chọn content.
 5. **Evidence**: Backlog audit (asbplayer/Migaku đều có difficulty/comprehension score); research coverage thresholds có sẵn data `wordStatus` × `frequency` trong pipeline tokenize.

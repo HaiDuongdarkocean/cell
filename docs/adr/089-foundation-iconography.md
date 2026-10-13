@@ -6,7 +6,7 @@ Accepted — build verification passed; foundation tokens shipped in tokens.css.
 
 ## Context
 
-Icon là ngôn ngữ thị giác. Cell đã có `ICON_CATALOG` với convention: 24×24 canvas, 1.5px stroke, round caps, round joins, currentColor, fill none. Đây là nền tảng tốt, nhưng cần củng cố thành quyết định design có lý do.
+Icon là ngôn ngữ thị giác. Tihoka đã có `ICON_CATALOG` với convention: 24×24 canvas, 1.5px stroke, round caps, round joins, currentColor, fill none. Đây là nền tảng tốt, nhưng cần củng cố thành quyết định design có lý do.
 
 ## Decision
 

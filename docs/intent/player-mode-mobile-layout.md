@@ -13,7 +13,7 @@
 | Solution | Responsive variant của PlayerModeOverlay cho <600px: giữ cấu trúc videoStage/contentOther, thay dock bằng bottom bar + right-edge action rail + anchored pill/CC; nút thừa gom vào ⋯ menu (`shared/ui/Menu`); màu theo token system, contrast planned. | user statement (đánh số 1-14 + "orbital nổi"), `subtitlePanelsShared.module.css` | high |
 | Value | Người học trên phone/tablet nhỏ đọc được subtitle và điều khiển cue bằng 1 tay — parity với mobile apps học qua video (Language-Reactor-style) mà user expect; gỡ pain "quá nhiều nút ở dưới". | user statement | high |
 | Stakeholder | Người học trên màn hình <600px (persona 5–80, thiết bị touch, RAM ≥1GB) — primary; Anh (product owner) duyệt layout; future maintainers đọc PM code. | AGENTS.md persona, user statement | high |
-| Context | PM hiện đã phân nhánh <600px = column (video top + panel bottom + dock). data-cell-id contract C5 (`subtitle-panels-atom-decomposition.md:46`) phải giữ — e2e + tests bám selectors. Split-view AC (`subtitle-split-view-ac.md`) AC-6.3/6.4 phải re-verify. Orbital badge là mount riêng (`orbitalBadgeSync.ts`) ngoài shadow PM. | `subtitleSplitView.ts`, AC doc, `orbitalBadgeSync.ts:85-122` | high |
+| Context | PM hiện đã phân nhánh <600px = column (video top + panel bottom + dock). data-tihoka-id contract C5 (`subtitle-panels-atom-decomposition.md:46`) phải giữ — e2e + tests bám selectors. Split-view AC (`subtitle-split-view-ac.md`) AC-6.3/6.4 phải re-verify. Orbital badge là mount riêng (`orbitalBadgeSync.ts`) ngoài shadow PM. | `subtitleSplitView.ts`, AC doc, `orbitalBadgeSync.ts:85-122` | high |
 
 ## Stakeholders
 
@@ -22,7 +22,7 @@
 | Team | Devin agents + Anh review | Build được trong `src/features/subtitle/ui/` hiện có; không đụng files agent khác đang in-flight | PM overlay đã isolate trong 1 component + CSS module — blast radius nhỏ |
 | Customer | Mobile learner (<600px, touch) | Đọc subtitle + prev/repeat/play/next 1 tay; nút phụ vẫn reachable nhưng không chiếm chỗ | Touch target ≥44px (`--touch-target-mobile`), safe-area insets |
 | Supplier/Dependency | Shadow-DOM mounts ngoài PM: ComprehensionPill (`mountComprehensionPill.ts`), OrbitalBadge (`mountOrbitalBadge.ts`), CueRecommendFab (trong SubtitlePanel) | Phải position tương thích với layout mới — không tự ý đặt chỗ | Pill/fab mount độc lập → cần coordinate position hoặc PM-owned anchor |
-| Organization | Repo maintainers | Layout <600px tách rõ khỏi desktop; selectors giữ contract C5 | Không phá `data-cell-id` hiện có |
+| Organization | Repo maintainers | Layout <600px tách rõ khỏi desktop; selectors giữ contract C5 | Không phá `data-tihoka-id` hiện có |
 | Regulator | Chrome Web Store policy | none — UI-only change, không permission mới | — |
 
 ## Needs
@@ -39,14 +39,14 @@
 | N6c | Cuelist có 2 chế độ hiển thị — full list | chỉ active cue — chọn trong Subtitle Manager (persist setting) | F | user gate: "cue list ... hai chế độ ... ở trong subtitle manager" | medium (điểm đặt toggle exact sẽ chốt ở design) |
 | N7 | Layout bám mockup về kích thước/cỡ chữ; màu theo design tokens, contrast đủ trên nền video/surface | U | user rule "giống hoàn toàn cả kích thước, cỡ chữ"; tokens.css | high |
 | N8 | Desktop ≥600px và non-PM UI không đổi; `t`/Esc/shortcuts behavior giữ nguyên | R | scope statement | high |
-| N9 | data-cell-id selectors hiện có không đổi (e2e + unit tests bám); id mới cho surface mới | S | `subtitle-panels-atom-decomposition.md:46` C5 | high |
+| N9 | data-tihoka-id selectors hiện có không đổi (e2e + unit tests bám); id mới cho surface mới | S | `subtitle-panels-atom-decomposition.md:46` C5 | high |
 | N10 | Performance: không thêm reflow nặng; O(1)/O(n) theo convention; resize rAF hiện có reuse | P | AGENTS.md algorithm rule | medium |
 
 ## Scope
 
 - **In:** PlayerModeOverlay layout branch <600px — bottom bar (adaptive prev/next ↔ rewind/forward), right rail, anchored pill/CC, ⋯ menu gom mọi action còn lại, cuelist visual (card/radius/typography match mockup) + 2 chế độ (full | active-only, setting trong Subtitle Manager), bỏ dock SubtitleBlock, orbital coexistence, i18n labels mới, a11y (aria/roles/focus), safe-area.
 - **Out:** ≥600px PM layout; normal overlay mode; split-view `t` panel; ComprehensionPill/OrbitalBadge internal logic (chỉ reposition/anchor nếu cần); desktop dock.
-- **Non-goals:** thay đổi hành vi PM enter/exit, fullscreen flow, iframe bridge; redesign CueList logic (chỉ visual); đổi contract `data-cell-id`.
+- **Non-goals:** thay đổi hành vi PM enter/exit, fullscreen flow, iframe bridge; redesign CueList logic (chỉ visual); đổi contract `data-tihoka-id`.
 
 ## Workflow
 
@@ -77,7 +77,7 @@ Người học mở video trên phone (viewport <600px) → bấm `g` hoặc pla
 - S4: As a mobile learner, I want remaining PM actions inside the ⋯ menu so that nothing is lost — done when every action available in today's PM mobile dock is reachable in the new layout.
 - S4b: As a mobile learner without loaded subtitles, I want prev/next to become rewind/forward so that transport vẫn có nghĩa — done when bottom bar swaps the pair khi `cues.length === 0`.
 - S4c: As a mobile learner, I want to pick full-list vs active-cue-only từ Subtitle Manager so that cuelist phù hợp thói quen đọc — done when setting persist và PM mobile render đúng mode.
-- S5: As a maintainer, I want all existing `data-cell-id` selectors preserved so that tests/e2e keep passing — done when C5 list unchanged.
+- S5: As a maintainer, I want all existing `data-tihoka-id` selectors preserved so that tests/e2e keep passing — done when C5 list unchanged.
 
 ## Risks
 
@@ -99,7 +99,7 @@ go — pain rõ trên screenshot, scope chặt (<600px PM), reuse tối đa (com
 - [ ] <600px PM render: video top → cuelist middle → right rail (4 actions) → pill/CC row → bottom bar (X, prev, repeat, play, next, ⋯) đúng thứ tự mockup; không có subtitle → prev/next = rewind/forward; cuelist tôn trọng display-mode setting (full | active-only)
 - [ ] ≥600px PM pixel-identical hiện tại; normal overlay/split-view không đổi
 - [ ] Mọi PM action hiện có reachable (⋯ menu hoặc rail) — không mất handler
-- [ ] `data-cell-id` C5 list intact; e2e selectors không đổi
+- [ ] `data-tihoka-id` C5 list intact; e2e selectors không đổi
 - [ ] AC-6.3/6.4 re-verify pass; Esc/`t` behavior giữ
 - [ ] Orbital badge hiển thị + interactive trong PM mobile
 - [ ] Contrast AA trên surface/overlay backgrounds; touch targets ≥44px; safe-area insets

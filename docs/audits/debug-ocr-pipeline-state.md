@@ -9,7 +9,7 @@ Then: OCR pipeline runs → subtitle blocks detected → overlay rendered on vid
 
 ## Pipeline flow (theoretical)
 ```
-1. ocrContentScript.ts — receives __CELL_OCR_DEBUG_INIT
+1. ocrContentScript.ts — receives __Tihoka_OCR_DEBUG_INIT
 2. ocrController.ts — sends OCR_INIT to background
 3. background/handlers/ocr.ts — ensureOffscreenReady → forward OCR_INIT to offscreen
 4. offscreen/ocrRunner.ts — handleOcrInit → engine.initialize()
@@ -44,7 +44,7 @@ Then: OCR pipeline runs → subtitle blocks detected → overlay rendered on vid
 - [ ] Extension loaded: met (ocrInitCalled=true)
 - [ ] Mock hardsub page open: met (title="HardSub Test — OCR Mock Player")
 - [ ] Video playing: met (v.play() called)
-- [ ] OCR triggered: met (__CELL_OCR_DEBUG_INIT sent)
+- [ ] OCR triggered: met (__Tihoka_OCR_DEBUG_INIT sent)
 
 ## Debug steps taken
 

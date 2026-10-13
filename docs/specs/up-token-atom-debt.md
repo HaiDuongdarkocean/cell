@@ -62,7 +62,7 @@ REQ-2: Literal→token swaps — byte-equivalent only (F-22)
   | `SettingsDialog.module.css:171` | `var(--radius-full)` | `var(--radius-pill)` | alias |
   | `RecapTab.module.css:101` | `var(--radius-full, 999px)` | `var(--radius-pill)` | alias; fallback was dead code |
   | `FieldRow.module.css:177,197` | `var(--radius-full)` | `var(--radius-pill)` | alias (file already touched by REQ-4; same rule, found in SPECIFY) |
-  | `CandidateView.module.css:149,237` | `var(--radius-full)` | `var(--radius-pill)` | alias (found in REVIEW; sibling `.cellDefCheck*` styling verified by REQ-4) |
+  | `CandidateView.module.css:149,237` | `var(--radius-full)` | `var(--radius-pill)` | alias (found in REVIEW; sibling `.TihokaDefCheck*` styling verified by REQ-4) |
   | `DictionaryCheckable.module.css:93` | `var(--radius-full)` | `var(--radius-pill)` | alias (found in REVIEW; REQ-4 verifies this file's contract) |
 
 - **`--radius-full` converged file set (complete)**: `NavItem.module.css`, `VocabularyTab.module.css`, `SettingsDialog.module.css`, `RecapTab.module.css`, `FieldRow.module.css`, `CandidateView.module.css`, `DictionaryCheckable.module.css` — 7 files.
@@ -100,32 +100,32 @@ REQ-3: Single tab registry `panelTabs.ts` (F-20)
   3. `UniversalPanel.tsx` consumes `PANEL_TABS` → `CollapsibleSidebar` items (`label`); `UniversalPanelBottomNav.tsx` consumes `PANEL_TABS` → nav `Button`s (`shortLabel`). Both local `TABS` arrays deleted.
 - Alt flow: future tab add → one entry; both surfaces update.
 - Exception: a `…Short` key missing in `en.json`/`vi.json` → typecheck fails (keys typed via `MessageKey`); all six pairs verified present.
-- Rules: registry order = current sidebar order; `data-cell-id` attributes (`universal-panel-tab-<key>`, `universal-panel-mobile-tab-<key>`) generated from `tab.key`, unchanged; `TOOLS` stays in `UniversalPanel.tsx` (not part of this registry).
+- Rules: registry order = current sidebar order; `data-tihoka-id` attributes (`universal-panel-tab-<key>`, `universal-panel-mobile-tab-<key>`) generated from `tab.key`, unchanged; `TOOLS` stays in `UniversalPanel.tsx` (not part of this registry).
 - Postcondition: one source of truth; every current label (full + `…Short`) still resolves.
 - NFR refs: NFR-4
 
 REQ-4: Native controls → shared atoms (F-21)
 - Actor: Maintainer
 - Goal: No native `<button>`/`<input>`/`<textarea>` remains in `FieldRow.tsx`/`CandidateView.tsx`; `VocabularyTab.tsx` uses the public `Icon` barrel; visuals and behavior byte-stable.
-- Preconditions: atoms exist but impose their own chrome (`Button` forces `min-height: var(--touch-target)` + fixed height + padding/border; `Input` wraps in `.root`/`.wrapper` divs; `Textarea` paints `.textarea` border/radius/bg/`resize`) — consumer classes (`cellAccentLabel`, `cellEmptyLink`, `defLineReveal`, `fieldInput__control`, `tagInput__field`) were written to style a bare element, so a naive swap drifts visually.
+- Preconditions: atoms exist but impose their own chrome (`Button` forces `min-height: var(--touch-target)` + fixed height + padding/border; `Input` wraps in `.root`/`.wrapper` divs; `Textarea` paints `.textarea` border/radius/bg/`resize`) — consumer classes (`TihokaAccentLabel`, `TihokaEmptyLink`, `defLineReveal`, `fieldInput__control`, `tagInput__field`) were written to style a bare element, so a naive swap drifts visually.
 - Basic flow:
-  1. actor adds a minimal **`variant="unstyled"`** to `Button`, `Input`, `Textarea`: renders the bare element with only consumer `className` + a11y wiring (`aria-invalid`/`aria-busy`, `disabled||loading`) — no chrome classes, no wrapper divs (Input), no auto-ripple (Button). For `Button`, `unstyled` renders `{children}` **unwrapped** — no `.label` span (`Button.tsx:143`), no `data-cell-ripple-self` (`:137`), no icon-slot spans — so `.defLineReveal > span` keeps matching the `Icon`'s own `<span>` as a direct child. `Textarea` also gains `ref?: Ref<HTMLTextAreaElement>` (React 19 ref-as-prop). Additive, default-preserving — the one flagged API addition; the alternative (consumer CSS overriding every conflicting atom property) is larger and order-fragile.
+  1. actor adds a minimal **`variant="unstyled"`** to `Button`, `Input`, `Textarea`: renders the bare element with only consumer `className` + a11y wiring (`aria-invalid`/`aria-busy`, `disabled||loading`) — no chrome classes, no wrapper divs (Input), no auto-ripple (Button). For `Button`, `unstyled` renders `{children}` **unwrapped** — no `.label` span (`Button.tsx:143`), no `data-tihoka-ripple-self` (`:137`), no icon-slot spans — so `.defLineReveal > span` keeps matching the `Icon`'s own `<span>` as a direct child. `Textarea` also gains `ref?: Ref<HTMLTextAreaElement>` (React 19 ref-as-prop). Additive, default-preserving — the one flagged API addition; the alternative (consumer CSS overriding every conflicting atom property) is larger and order-fragile.
   2. actor applies the element map:
 
   | Site | Native element | Maps to |
   |---|---|---|
   | `FieldRow.tsx:148` | `<textarea>` (FieldAutoGrowInput) | `<Textarea variant="unstyled" className={controlClass} rows={lineCount} ref={controlRef} value onChange={handleChange} {...rest}>` — `field-sizing: content` + `rows={lineCount}` fallback growth preserved verbatim |
   | `FieldRow.tsx:264` | `<input>` (TagInput field) | `<Input variant="unstyled" className={styles.tagInput__field}>` — same value/onChange/onKeyDown/onBlur/placeholder/aria-label props |
-  | `CandidateView.tsx:253` | `<button>` accent toggle | `<Button variant="unstyled" className={styles.cellAccentLabel}>` — same disabled/title/onClick |
-  | `CandidateView.tsx:383` | `<button>` empty-state link | `<Button variant="unstyled" className={styles.cellEmptyLink}>` |
+  | `CandidateView.tsx:253` | `<button>` accent toggle | `<Button variant="unstyled" className={styles.TihokaAccentLabel}>` — same disabled/title/onClick |
+  | `CandidateView.tsx:383` | `<button>` empty-state link | `<Button variant="unstyled" className={styles.TihokaEmptyLink}>` |
   | `CandidateView.tsx:530` | `<button>` translation reveal | `<Button variant="unstyled" className={styles.defLineReveal}>` — `Icon` stays a direct child so `.defLineReveal > span` still matches; aria-expanded/label/title preserved |
-  | `CandidateView.tsx:606,708,791` | decorative `<input type="checkbox">` inside `.cellDefCheck` label | **Delete** — input is `opacity:0/pointer-events:none/tabIndex=-1/aria-hidden`; semantics live on the `role="checkbox"` row. `<label>` becomes `<span className={checkStyles.cellDefCheck(+--checked)}>` and its `onClick={e.stopPropagation()}` (`:604,706,789`) is dropped with it — kept, it would stop marker clicks bubbling to the row's `onClick` and kill the toggle; with it gone, marker clicks bubble to the row's existing `onClick` (identical single-toggle path previously via label→input `onChange`); `.cellDefCheckBox` span + check `Icon` unchanged. `Checkbox` atom does NOT fit — its `.root` forces 44px touch target + always-visible box vs the idle-dot→reveal morph = visual drift |
+  | `CandidateView.tsx:606,708,791` | decorative `<input type="checkbox">` inside `.TihokaDefCheck` label | **Delete** — input is `opacity:0/pointer-events:none/tabIndex=-1/aria-hidden`; semantics live on the `role="checkbox"` row. `<label>` becomes `<span className={checkStyles.TihokaDefCheck(+--checked)}>` and its `onClick={e.stopPropagation()}` (`:604,706,789`) is dropped with it — kept, it would stop marker clicks bubbling to the row's `onClick` and kill the toggle; with it gone, marker clicks bubble to the row's existing `onClick` (identical single-toggle path previously via label→input `onChange`); `.TihokaDefCheckBox` span + check `Icon` unchanged. `Checkbox` atom does NOT fit — its `.root` forces 44px touch target + always-visible box vs the idle-dot→reveal morph = visual drift |
 
   3. `VocabularyTab.tsx:14` → `import { Icon } from '@/shared/ui/Icon'`; sizes map `size={16}`→`size="xs"`, `size={14}` stays numeric, bare usages keep default `md` (=24px, same as catalog default); all call sites sit inside `Button` children so the atom's `inline-flex` wrapper span is layout-neutral.
   4. TagInput `handleKeyDown` gains `if (e.nativeEvent.isComposing) return;` before the Enter/Space/`,` commit — **accepted behavioral delta D3**: today a composition keypress mid-IME commits raw text (CJK data-loss path for the exact user persona); the guard is required, not optional.
 - Alt flow: none — table is exhaustive for the two files.
-- Exception: a native element that cannot map without losing behavior → stop and flag (none expected; the decorative-input case resolves via deletion, verified against `DictionaryCheckable.module.css` contract — `.cellDefCheck*` classes stay in that file, still used by `DictionaryPanelView`/`ImagePanel`/`PronunciationAudioPanel`/`TranslatePanel` which are out of the native-element sweep).
-- Rules: zero visual drift on every migrated control; handlers migrate verbatim except D3; `data-cell-id` attributes preserved.
+- Exception: a native element that cannot map without losing behavior → stop and flag (none expected; the decorative-input case resolves via deletion, verified against `DictionaryCheckable.module.css` contract — `.TihokaDefCheck*` classes stay in that file, still used by `DictionaryPanelView`/`ImagePanel`/`PronunciationAudioPanel`/`TranslatePanel` which are out of the native-element sweep).
+- Rules: zero visual drift on every migrated control; handlers migrate verbatim except D3; `data-tihoka-id` attributes preserved.
 - Postcondition: grep `<(button|input|textarea)` on both files → 0 matches (excluding comments); IME + autosize parity verified on real Chromium in BOTH mounts (universal panel dictionary tab + dictionary popup).
 - NFR refs: NFR-1, NFR-3
 
@@ -183,7 +183,7 @@ REQ-6: Shell-craft corrections (F-24b)
   4. `UniversalPanel.tsx:167-170` — render-phase `setVisitedTabs` moved out: keep `useState` set, add `useEffect(() => { setVisitedTabs(prev => prev.has(activeTab) ? prev : new Set(prev).add(activeTab)); }, [activeTab])`, and gate the five `.tabPane`-wrapped panes on `visitedTabs.has(tab) || tab === activeTab` — the active pane must mount in the same commit (an effect-only version flashes one empty frame). **Recap keeps `activeTab`-only gating**: `{activeTab === 'recap' && recapPanel}` (`:287`) stays verbatim — it is deliberately not visited-gated today (unmounts → recomputes per visit), and gating it on `visitedTabs` would additionally render `recapPanel` unwrapped outside `.tabPane` whenever inactive — a real persistence + layout delta we are not taking. `'recap'` still enters the visited set via the uniform effect; nothing reads it for the recap pane.
 - Alt flow: none — the four edits are independent and unordered.
 - Exception: none.
-- Rules: no behavioral change; `data-cell-id="universal-panel-backdrop"` and the click-to-dismiss handler stay.
+- Rules: no behavioral change; `data-tihoka-id="universal-panel-backdrop"` and the click-to-dismiss handler stay.
 - NFR refs: NFR-1
 
 REQ-7: Checker covers feature dirs (N7)
@@ -283,7 +283,7 @@ No runtime state, storage, or messages touched.
 
 ## Boundaries
 
-- Always: byte-equivalent swaps only; run `npm run typecheck && npm run lint && npm run test:unit && npm run build` before commit; before/after captures on touched surfaces; keep `data-cell-id` values stable; preserve `rows={lineCount}` growth + `field-sizing: content`; registry/atoms stay dependency-free.
+- Always: byte-equivalent swaps only; run `npm run typecheck && npm run lint && npm run test:unit && npm run build` before commit; before/after captures on touched surfaces; keep `data-tihoka-id` values stable; preserve `rows={lineCount}` growth + `field-sizing: content`; registry/atoms stay dependency-free.
 - Ask first: any visual delta beyond D1/D2; any behavioral delta beyond D3; widening the checker scope beyond the seven dirs; deleting `--radius-full` from `tokens.json`; touching files owned by items 28/30/31 beyond the listed hunks.
 - Never: edit `tokens.json` or generated `tokens.css`; add tokens; invent a token for `94%`/`0.04em`/`ease-in-out`; add dependencies; change layout/hit-areas/menus (items 28/30/33 territory); widen `shouldExclude` to hide a finding; leave the gate green-on-empty.
 
@@ -291,7 +291,7 @@ No runtime state, storage, or messages touched.
 
 - [ ] **AC-1** — `npm run check-design-system-css:features` exits 0 and reports `0 violations` over the seven feature dirs; the default `npm run check-design-system-css` is byte-identical in behavior to HEAD (amended at VERIFY: its exit status at HEAD is already 1 — 6 pre-existing `undefined-token` findings on runtime-injected props in `src/shared/ui` (`--radio-border`, `--mobile-sheet-peek-height`, `--mobile-sheet-drag-height`, `--ink-x`, `--ink-w`, `--breadcrumb-separator`); a runtime-prop whitelist is a separate follow-up, out of scope here).
 - [ ] **AC-2** — `.when` and `.statusChip` in `RecapTab.module.css` resolve `--font-size-xs` (computed 12px on real Chromium — the only two accepted visual deltas).
-- [ ] **AC-3** — `src/features/universalPanel/panelTabs.ts` exports `PANEL_TABS` of `{key, icon, label, shortLabel}`; both `UniversalPanel.tsx` (sidebar, `label`) and `UniversalPanelBottomNav.tsx` (nav, `shortLabel`) consume it; both local `TABS` arrays deleted; all full + `…Short` labels resolve; `data-cell-id` outputs unchanged.
+- [ ] **AC-3** — `src/features/universalPanel/panelTabs.ts` exports `PANEL_TABS` of `{key, icon, label, shortLabel}`; both `UniversalPanel.tsx` (sidebar, `label`) and `UniversalPanelBottomNav.tsx` (nav, `shortLabel`) consume it; both local `TABS` arrays deleted; all full + `…Short` labels resolve; `data-tihoka-id` outputs unchanged.
 - [ ] **AC-4** — Grep `</?(button|input|textarea)[ />]` in `FieldRow.tsx` and `CandidateView.tsx` → 0 element matches; `FieldAutoGrowInput` still grows via `field-sizing` + `rows={lineCount}` fallback on real Chromium in both mounts.
 - [ ] **AC-5** — `VocabularyTab.tsx` imports `Icon` from `@/shared/ui/Icon`; tag input commits tags and does not commit mid-IME-composition (`isComposing` guard, delta D3).
 - [ ] **AC-6** — Every REQ-2 swap applied; `grep -n "radius-full"` on the converged file set (`NavItem`, `VocabularyTab`, `SettingsDialog`, `RecapTab`, `FieldRow`, `CandidateView`, `DictionaryCheckable` `.module.css`) → 0; the REQ-2 "Out" list is unchanged; `94%`, `0.04em`, `ease-in-out` remain literal.

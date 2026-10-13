@@ -101,7 +101,7 @@ Two candidate arms existed — grow the `.toggle` label and re-constrain `.input
 
 ### D9 — Dict-link name button & grip: real-box growth inside the row
 
-`.nameButton` `min-height: touch-target` + `width: 100%` (it owns the name cell — no lateral interactive neighbor until the action circles, which sit in their own flex siblings and can't be overlapped by in-box growth). Grip (`DragHandle` sm) grows via padding inside its `gripWrap` slot to reach the floor; edit/delete md circles get `min-*` (D7).
+`.nameButton` `min-height: touch-target` + `width: 100%` (it owns the name Tihoka — no lateral interactive neighbor until the action circles, which sit in their own flex siblings and can't be overlapped by in-box growth). Grip (`DragHandle` sm) grows via padding inside its `gripWrap` slot to reach the floor; edit/delete md circles get `min-*` (D7).
 
 ### D10 — Semantics layout (invisible to the eye, drawn here for completeness)
 

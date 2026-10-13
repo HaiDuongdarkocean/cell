@@ -72,7 +72,7 @@ Edge cases: confidence thấp → `flagged:` không stall; user reject design �
 
 ## 8-field frame
 
-1. **Who**: Anh yêu — PO duy nhất vận hành pipeline qua agent; end-user Cell (5–80 tuổi) là stakeholder của output cuối.
+1. **Who**: Anh yêu — PO duy nhất vận hành pipeline qua agent; end-user Tihoka (5–80 tuổi) là stakeholder của output cuối.
 2. **Problem**: Pipeline đầu tư sai chỗ — downstream chồng gate review chậm, trong khi hai đầu quyết định chất lượng thì mỏng: (a) BA/needs analysis yếu — câu hỏi generic, không khung IIBA → intent sai/thiếu, scope không khoanh vùng; (b) không có UI/UX design stage — agent tự quyết UI lúc build → output sai phải sửa tay; (c) enforcement mềm — agent tự nhớ route.
 3. **Current workflow**: `idea-pick-off` → `elicitation` (8-field generic / `all` mode infer) → spec → `spec-review-stakeholder` (BA/PO/TL checklist) → `planning-and-task-breakdown` → `autonomous-pipeline` lanes → verify → ship. UI quyết ở build; `design-system-guardian` audit sau; `idea-to-interface` orphaned (chỉ là fallback trong interview-me elicitation mode).
 4. **Trigger**: sau 6 lượt pick-off, pattern rework lặp lại — spec-review chỉ bắt defect ở verify stage (immersion-clock schema float), UI phải sửa tay (FAB), audit §10 kết luận "gap là enforcement không phải skill".

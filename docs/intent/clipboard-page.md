@@ -5,7 +5,7 @@
 
 ## Problem
 
-Người dùng dùng native app (game, app ngoài browser) và cần tra từ + xem tokenize trên text copy — nhưng Cell hiện chỉ hoạt động trong browser, không có bridge từ system clipboard.
+Người dùng dùng native app (game, app ngoài browser) và cần tra từ + xem tokenize trên text copy — nhưng Tihoka hiện chỉ hoạt động trong browser, không có bridge từ system clipboard.
 
 ## User
 
@@ -22,13 +22,13 @@ Người dùng dùng native app (game, app ngoài browser) và cần tra từ + 
 
 ## Pain point
 
-- Không có bridge native → Cell
+- Không có bridge native → Tihoka
 - Text copy không kết nối được tokenize + dictionary có sẵn
 - Đọc text dài không tách đoạn → rối mắt
 
 ## Evidence
 
-User explicitly stated use case (game + native app ngoài browser). Cell đã có tokenize + dictionary nhưng không có entry point từ system clipboard.
+User explicitly stated use case (game + native app ngoài browser). Tihoka đã có tokenize + dictionary nhưng không có entry point từ system clipboard.
 
 ## Desired outcome
 
@@ -61,7 +61,7 @@ Clipboard page full page — đọc system clipboard, hiển thị multi-item hi
 **Out of scope:**
 - Toggle tokenize (universal panel đã có)
 - Dark/light toggle (theme system lo)
-- 2-way bridge (Cell → native)
+- 2-way bridge (Tihoka → native)
 - Clipboard write back to system
 - Sync across devices
 
@@ -82,7 +82,7 @@ Clipboard page full page — đọc system clipboard, hiển thị multi-item hi
 ### Round 1 — 2025-08-25
 
 **Feedback v1→v2 (11 items):**
-1. Dark/light: bỏ toggle — Cell đã có theme system, dùng token đúng tự hỗ trợ
+1. Dark/light: bỏ toggle — Tihoka đã có theme system, dùng token đúng tự hỗ trợ
 2. Tokenize: bỏ khỏi clipboard page — universal panel đã có
 3. Clipboard history = tab trong universal panel, không phải standalone page
 4. CRUD history + tự đặt tên cho mỗi entry

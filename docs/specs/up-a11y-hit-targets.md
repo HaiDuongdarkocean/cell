@@ -26,7 +26,7 @@ System-internal processing never includes human behavior. "User decides" never a
 REQ-1: Hit-target floor — every panel control bound to `--touch-target`
 
 - Actor: Touch / low-dexterity user (beneficiary); Maintainer (implements)
-- Goal: Every interactive element inside `[data-cell-id="universal-panel"]` (and sheets/dialogs it opens: tools BottomSheet, profile Dialog, MobileSheet, dictionary toolbar) presents a pointer target ≥ `var(--touch-target)` — 44px under `@media (pointer: coarse)`, 40px fine — in **both** width and height.
+- Goal: Every interactive element inside `[data-tihoka-id="universal-panel"]` (and sheets/dialogs it opens: tools BottomSheet, profile Dialog, MobileSheet, dictionary toolbar) presents a pointer target ≥ `var(--touch-target)` — 44px under `@media (pointer: coarse)`, 40px fine — in **both** width and height.
 - Preconditions: `--touch-target` is already pointer-adaptive (`themeTokens.ts:59-61`); `Button`/`NavItem` already consume it; the debt is components that never bind it.
 - Basic flow:
   1. actor binds each enumerated sub-floor site to `--touch-target` per the mechanism column
@@ -38,7 +38,7 @@ REQ-1: Hit-target floor — every panel control bound to `--touch-target`
   |---|---|---|---|
   | `Toggle` xs track (9× settings + Advanced) | `Toggle.module.css:18-25` (`--toggle-h: var(--space-5)` = 20px) | 20px | `min-height`/`min-width` on the `.toggle` label inside its row — settings rows already exceed the floor via text+padding, so the label grows invisibly within existing row height; the `.input` track is `width/height: 100%` of the label (`Toggle.module.css:46-47`), so label growth grows the track too — keeping the 20px visual requires separately constraining `.input`, not just the label (DESIGN calls visual policy) |
   | `Toggle` sm | `Toggle.module.css:23-26` | 32px | same |
-  | Dict-link name button (inline rename) | `DictLinksManager.tsx:179-191` `.nameButton` | 18.7px | `min-height: var(--touch-target)` + block padding; button fills its column, no neighbor above/below in the row's name cell |
+  | Dict-link name button (inline rename) | `DictLinksManager.tsx:179-191` `.nameButton` | 18.7px | `min-height: var(--touch-target)` + block padding; button fills its column, no neighbor above/below in the row's name Tihoka |
   | Dict-link drag grip / edit / delete circles | `DictLinksManager.tsx:143,197-217` (md circle = `--iconbutton-size-md` 40px → fails coarse) | 40px | bind circle buttons to `min-width`/`min-height: var(--touch-target)`; grip: padding growth inside its slot |
   | HintIcon "show hint" buttons | `HintIcon.module.css:11-16` (Button sm iconOnly) | 32px | min-size binding on `.hintBtn` (form-row context, no tight neighbor) |
   | xs/sm circle `IconButton`/`Button` uses: mode-card kebab, vocab row actions, dictionary toolbar buttons | `tokens.json:733-734` (xs 28 / sm 32); `StudyModesTab.tsx:259-275`; `VocabularyTab.module.css:101-108` (`.actionSlot` already `--touch-target`-sized); `DictionaryToolbar.tsx` | 28/32px | where a `--touch-target` slot already exists (vocab `.actionSlot`): button fills the slot (`width/height: 100%` or min-*). Where the button is overlaid/floating (mode-card kebab): min-* growth if the card corner has room, else `::before` bleed — vertical-only in row contexts, no bleed into a sibling control's rect |
@@ -56,7 +56,7 @@ REQ-1: Hit-target floor — every panel control bound to `--touch-target`
   - Bind the **token**, never a literal px — the same CSS must resolve 44 coarse / 40 fine.
   - Visual restyle is out (N2): glyphs, pill shapes, and row metrics stay unless the site's mechanism column says otherwise; no color/typography/border changes.
   - Shared atoms (`Toggle`, `IconButton`, `HintIcon`, `BottomSheet`, `MobileSheet`) may be edited only insofar as the binding reaches panel usage — do not bump `tokens.json` size values globally (e.g. raising `element-md` or `iconbutton-size-*` values changes every surface; that's an ask-first boundary, not a default).
-  - Keep all `data-cell-id` attributes — the audit spec locates controls by them.
+  - Keep all `data-tihoka-id` attributes — the audit spec locates controls by them.
 - Postcondition: zero interactive elements inside the panel measure below the active pointer's floor; no two interactive hit boxes intersect.
 - NFR refs: NFR-1, NFR-2, NFR-3
 
@@ -72,7 +72,7 @@ REQ-2: Focus trap lands on a visible element inside the `aria-modal` dialog
 - Alt flow: Dictionary tab — the 250ms deferred self-focus (`DictionaryPanelView.tsx:216-233`) fires after the trap pick and refines focus onto the search input; it already guards `isOpen` and targets a visible in-dialog element. Rule for any deferred/self-focus in panel tabs: the target must be inside the dialog and visible at fire time — never a hidden pane's control.
 - Exception: no visible focusable found (empty pane state) → focus the dialog container itself if it carries `tabindex`, else leave focus where it is and keep the cycle guard — never pick a hidden element.
 - Rules: all focus reads/writes pierce the shadow boundary via `getRootNode()` (`AGENTS.md` shadow-DOM rule); the trap must not race a tab switch — panes mount/unmount on tab change (`visitedTabs` gating, `UniversalPanel.tsx:275-290`), the initial pick runs once per open.
-- Postcondition: after open settles (trap pick + any deferred self-focus, ≤300ms), `root.activeElement` is a visible element inside `[data-cell-id="universal-panel"]` on every tab; no `display:none` element ever receives focus.
+- Postcondition: after open settles (trap pick + any deferred self-focus, ≤300ms), `root.activeElement` is a visible element inside `[data-tihoka-id="universal-panel"]` on every tab; no `display:none` element ever receives focus.
 - NFR refs: NFR-4, NFR-5
 
 REQ-3: BottomNav DOM order matches visual order (DOM move + `column-reverse` removal — atomic pair)
@@ -87,7 +87,7 @@ REQ-3: BottomNav DOM order matches visual order (DOM move + `column-reverse` rem
 - **The two steps are one atomic change.** DOM-last + `column-reverse` would put the nav visually on top; DOM-first + `column` leaves the defect in place. Neither half ships alone.
 - Alt flow: desktop ≥840px — BottomNav stays `display:none`; DOM move is inert except focus-trap initial pick now lands on sidebar/header instead of a hidden node (REQ-2 synergy).
 - Exception: visual regression (nav renders on top or collapses) → revert the pair, do not patch one side; verified by mobile screenshot + e2e tab-order check before ship.
-- Rules: profile `Dialog` and tools `BottomSheet` (declared between sidebar and `.body` today at `:246-262` / inside `UniversalPanelBottomNav`) keep their positions — overlays portal/stack above regardless of DOM position; `data-cell-id`s unchanged.
+- Rules: profile `Dialog` and tools `BottomSheet` (declared between sidebar and `.body` today at `:246-262` / inside `UniversalPanelBottomNav`) keep their positions — overlays portal/stack above regardless of DOM position; `data-tihoka-id`s unchanged.
 - Postcondition: DOM order = sidebar, body, bottomNav; visual order unchanged on both sides of the 839px breakpoint; Tab sequence ends at the bottom nav's last item on mobile.
 - NFR refs: NFR-4, NFR-5
 
@@ -127,7 +127,7 @@ REQ-6: Advanced disclosure announces its controlled region (switch keeps its rol
 - Actor: Screen-reader user
 - Goal: The Advanced control announces that toggling reveals a section, and names that section — without relying on `aria-expanded` on `role="switch"` (legal — ARIA 1.2 `switch` inherits `checkbox`, which supports `aria-expanded` — but AT-inconsistent and absent from the APG pattern; the intent's accepted-risk conservative option).
 - Decision (recorded): keep `role="switch"` — it persists visibility like a setting (`advancedOpen` persisted state; mental model = settings switch that happens to reveal a section) — and add `aria-controls` + `aria-describedby`. Rejected alternative: Accordion/`aria-expanded` swap — changes the control's announced contract; deferred to DESIGN only if review shows the switch pattern reads worse in real AT.
-- Preconditions: `Toggle` at `StudyModesTab.tsx:329-337` gates `data-cell-id="advanced-settings"` (`:336-338`) with no disclosure semantics.
+- Preconditions: `Toggle` at `StudyModesTab.tsx:329-337` gates `data-tihoka-id="advanced-settings"` (`:336-338`) with no disclosure semantics.
 - Basic flow:
   1. actor gives the revealed `VStack` a stable `id` (e.g. `advanced-settings-region`) + `role="region"` + `aria-label`/`aria-labelledby` naming it ("Advanced settings")
   2. actor extends `Toggle` (shared atom) with optional `ariaControls`/`ariaDescribedby` passthrough props — additive, default-preserving; sets `aria-controls="advanced-settings-region"` on the Advanced instance and `aria-describedby` to a localized hint (e.g. "Shows or hides advanced settings below")
@@ -254,7 +254,7 @@ No new persisted entities.
 
 ## Boundaries
 
-- Always: bind `--touch-target` (token, never a px literal); prefer `min-*`/padding inside the element's own box; `::before` bleed only where the grown direction has no interactive neighbor and never horizontally inside action clusters; keep `data-cell-id`s; new announced strings via `t()` en+vi; verify on real Chrome before commit; `npm run typecheck && npm run test:unit && npm run build` green.
+- Always: bind `--touch-target` (token, never a px literal); prefer `min-*`/padding inside the element's own box; `::before` bleed only where the grown direction has no interactive neighbor and never horizontally inside action clusters; keep `data-tihoka-id`s; new announced strings via `t()` en+vi; verify on real Chrome before commit; `npm run typecheck && npm run test:unit && npm run build` green.
 - Ask first: any `tokens.json` value change (e.g. raising `element-md`, `iconbutton-size-*`, `profile-flag-size` globally — cross-surface blast radius); new dependency; `manifest.json` touch; edits reaching subtitle split-view/panel files (`subtitleSplitView.ts`, `mountSubtitle.tsx`, `SubtitlePanel*.tsx` — would trigger the `docs/specs/subtitle-split-view-ac.md` re-verify clause); a visual restyle that creeps into item 33's scope.
 - Never: edit generated `tokens.css`/`tokens.ts`; add `aria-expanded` to `role="switch"`; remove `aria-modal`/`role="dialog"`; keep `column-reverse` after the DOM move (atomic pair, REQ-3); grow a hit box into a sibling interactive's rect; hardcode English in aria-labels/status text.
 
@@ -264,7 +264,7 @@ No new persisted entities.
 - [ ] **AC-2** Under fine pointer (existing desktop viewports), `touchTargetViolations` is empty at the 40px floor.
 - [ ] **AC-3** Every enumerated REQ-1 site measures ≥ the active floor: Toggle xs/sm, dict-link name/edit/delete/drag, HintIcon, xs/sm circle buttons (kebab, vocab actions, dict toolbar), profile flag, `.statusBadge`, MobileSheet `.handle`, BottomSheet close, dict-popup tabs, audio-tester, inputs/selects — while each control's visual stays compact per its site's mechanism.
 - [ ] **AC-4** No grown hit box intersects another interactive element's rect (rect-intersection check recorded in the verification pass).
-- [ ] **AC-5** Opening the panel on each of the six tabs moves focus to a visible element inside `[data-cell-id="universal-panel"]`; no `display:none` element receives focus; Tab/Shift+Tab cycle within the dialog; close restores focus to the pre-open element.
+- [ ] **AC-5** Opening the panel on each of the six tabs moves focus to a visible element inside `[data-tihoka-id="universal-panel"]`; no `display:none` element receives focus; Tab/Shift+Tab cycle within the dialog; close restores focus to the pre-open element.
 - [ ] **AC-6** At ≤839px the bottom nav is the last focusable element and still renders at the bottom (visual parity screenshot); DOM order = sidebar → body → bottomNav.
 - [ ] **AC-7** Both nav surfaces are labelled navigation landmarks; the active item carries `aria-current="page"`; every pane (including recap) is a named region; the nav-rail-over-tablist decision is recorded (this spec).
 - [ ] **AC-8** Custom mode cards sit inside `role="radiogroup"` with the group's label; no `role="radio"` exists outside a `radiogroup` in StudyModesTab.

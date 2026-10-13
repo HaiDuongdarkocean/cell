@@ -1,6 +1,6 @@
-# Spec: Cell Reader
+# Spec: Tihoka Reader
 
-> Source of truth cho tính năng Reader trong Cell MV3. Tổng hợp từ `docs/intent/reader.md`, `docs/specs/reader-requirements.md`, `docs/research/reader-technical.md` và mockup UI.  
+> Source of truth cho tính năng Reader trong Tihoka MV3. Tổng hợp từ `docs/intent/reader.md`, `docs/specs/reader-requirements.md`, `docs/research/reader-technical.md` và mockup UI.  
 > **Revised after adversarial reviews** (`docs/reviews/reader-adversarial-1.md`, `docs/reviews/reader-adversarial-2.md`). Day-1 scope thu gọn để ship được.
 
 ## 0. Day-1 Shipable Scope
@@ -9,7 +9,7 @@
 - **Tokenizer** dùng `tokenizeTextBlock` với `en`/`zh` + fallback whitespace cho ngôn ngữ khác.
 - **TTS** dùng `createTtsEngine` (`chrome.tts` → Web Speech fallback): play/stop/prev/next/repeat. Không có pause/resume thật sự (chrome.tts không hỗ trợ) và không có progress bar audio.
 - **Dictionary** dùng `DictionaryPanelView` với `term` được truyền từ token click; context sentence từ `getSentenceText`.
-- **Progress/resume** bằng IndexedDB `cell-reader` + `beforeunload` + visibilitychange.
+- **Progress/resume** bằng IndexedDB `Tihoka-reader` + `beforeunload` + visibilitychange.
 - Không WAR cho reader; `chrome.tabs.create({ url: chrome.runtime.getURL('src/entrypoints/reader/index.html') })` đủ.
 - Vite multi-page: thêm `reader` vào `vite.config.ts` `rollupOptions.input`.
 
@@ -17,7 +17,7 @@
 
 ## 1. Objective
 
-Cell Reader cho phép người học ngoại ngữ (10–25 tuổi) import và đọc sách ở định dạng EPUB/PDF/TXT/HTML, tận dụng các thành phần sẵn có của Cell: tokenizer, dictionary popup, TTS engine, card creator, storage.
+Tihoka Reader cho phép người học ngoại ngữ (10–25 tuổi) import và đọc sách ở định dạng EPUB/PDF/TXT/HTML, tận dụng các thành phần sẵn có của Tihoka: tokenizer, dictionary popup, TTS engine, card creator, storage.
 
 Thành công khi:
 - Người dùng mở Reader từ Universal Panel, import sách, đọc, click từ để tra nghĩa, nghe TTS theo câu, lưu Anki, và resume vị trí đọc.
@@ -29,7 +29,7 @@ Thành công khi:
 
 | Layer | Lựa chọn | Lý do |
 |---|---|---|
-| Framework | React 19 + Vite + TypeScript | Cùng stack với toàn bộ Cell. |
+| Framework | React 19 + Vite + TypeScript | Cùng stack với toàn bộ Tihoka. |
 | EPUB parser | `@abfcode/spine@0.15.0` | 1 runtime dep `fflate` (đã có), typed, TTS/reader-oriented. |
 | PDF parser | `pdfjs-dist@6.2.108` | Chuẩn Mozilla, text extraction `getTextContent`, không render. |
 | TXT/HTML | `FileReader` + `DOMParser` | Native, không thêm dependency. |
@@ -38,7 +38,7 @@ Thành công khi:
 | TTS | `createTtsEngine` từ `ttsEngineService.ts` | `chrome.tts`/Web Speech fallback, sẵn queue. |
 | Anki | `CardCreatorDialogContent` + `useCardCreatorState` | Sẵn có. |
 | State | Zustand (`readerStore`) | Local page state, đồng bộ với storage. |
-| Storage | OPFS (binary/text), IndexedDB `cell-reader` (metadata/progress/words), `chrome.storage.local` (settings) | Đúng MV3, tránh `storage.local` 5MB. |
+| Storage | OPFS (binary/text), IndexedDB `Tihoka-reader` (metadata/progress/words), `chrome.storage.local` (settings) | Đúng MV3, tránh `storage.local` 5MB. |
 
 ---
 
@@ -82,7 +82,7 @@ src/
 │       │   ├── textHtmlParser.ts    # TXT/HTML
 │       │   ├── epubParser.ts        # EPUB
 │       │   ├── pdfParser.ts         # PDF
-│       │   ├── readerDb.ts          # IndexedDB `cell-reader`
+│       │   ├── readerDb.ts          # IndexedDB `Tihoka-reader`
 │       │   └── readerOpfs.ts        # OPFS helpers
 │       ├── ui/
 │       │   ├── ReaderApp.tsx

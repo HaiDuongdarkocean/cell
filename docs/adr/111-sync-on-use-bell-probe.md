@@ -58,7 +58,7 @@ pull in opposite directions:
    pushes skip chain-health and compaction listings.
 7. **Fan-out**: `SYNC_DATA_APPLIED` keeps the runtime broadcast and additionally
    reaches every frame of every tab (`queryTabs({})` +
-   `sendMessageToAllFramesInTab`, `allSettled` + swallowed errors) so open Cell
+   `sendMessageToAllFramesInTab`, `allSettled` + swallowed errors) so open Tihoka
    surfaces update without a reload.
 8. **15-minute alarm backstop**: the periodic full cycle remains as the
    correctness floor — passes are idempotent, so the faster paths are pure
@@ -70,7 +70,7 @@ pull in opposite directions:
   is polling, which scales request count with idle time — the opposite of the
   quota goal.
 - **A push server (FCM/WebSocket)**: new infrastructure, credentials, and a
-  background keep-alive problem in MV3; the user is already on a Cell surface
+  background keep-alive problem in MV3; the user is already on a Tihoka surface
   when a check is useful, so activity-triggered probes cover the same cases.
 - **Drive Changes feed**: requires a start-page-token handshake per account,
   extra quota, and still needs a poll loop — strictly more complexity than a

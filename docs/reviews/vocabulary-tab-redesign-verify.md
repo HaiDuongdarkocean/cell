@@ -45,5 +45,5 @@ Screenshot sweep (`tmp/vocab-redesign-verify/`, panel host element):
 - Trash: dedicated filter-menu view, restore, delete forever, retention countdown
 - Search on its own row; filter/sort compact menus; Edit separate from destructive controls
 - Fixed action slot — Edit toggle causes no layout shift
-- Pastel chip styling matches dictionary popup `cellHeaderStatus` (`--chip-status-*` tokens)
-- i18n keys complete en+vi; a11y roles (`menu`, `menuitemradio`, `aria-checked`, `aria-expanded`, `aria-haspopup`) + stable `data-cell-id` hooks
+- Pastel chip styling matches dictionary popup `TihokaHeaderStatus` (`--chip-status-*` tokens)
+- i18n keys complete en+vi; a11y roles (`menu`, `menuitemradio`, `aria-checked`, `aria-expanded`, `aria-haspopup`) + stable `data-tihoka-id` hooks

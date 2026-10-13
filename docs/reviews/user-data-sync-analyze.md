@@ -36,11 +36,11 @@
 ## Loop 1 amendments (after spec review REJECT, owner answers 2026-09-27)
 
 - N3 amended: `activeProfileId` is device-local (owner: "Riêng từng máy").
-- N20: Reader data (`cell-reader` books + progress) is synced (owner: "Sync luôn").
+- N20: Reader data (`Tihoka-reader` books + progress) is synced (owner: "Sync luôn").
 - N21: disconnect is SSOT — disconnecting an account on one device stops it on every device.
 - N22: after switching a profile to local-only or another account, ask whether to delete the old remote copy (default keep).
 - N23: minimal conflict log restored from the intent risk register.
-- Out-of-scope list made explicit: `orca-local-player` library/history (+ immersion stats derived from it), `cell-local-audio-index`, UI layout prefs.
+- Out-of-scope list made explicit: `orca-local-player` library/history (+ immersion stats derived from it), `Tihoka-local-audio-index`, UI layout prefs.
 
 Owner approval: "trước hết là cứ test đi đã rồi về sau sẽ làm in product sau" — proceed, production publishing deferred.
 

@@ -60,7 +60,7 @@ Per cue: `heat = cueDifficulty?.get(cue.index)`. When `heat !== undefined`, the 
 ```tsx
 <span
   className={`${styles.heat} ${styles[`heat_${band}`]}`}
-  data-cell-id="cue-heat"
+  data-tihoka-id="cue-heat"
   title={t(`cueHeat.tooltip.${band}`, [heat.strange])}
   aria-hidden="true"
 />
@@ -144,7 +144,7 @@ Live word-status changes already flow through `onTokensResolved` → `difficulti
 - `cueDifficulty.test.ts`: band boundaries (0/1/2/3/10 → easy/i1/i1/dense/dense).
 - `tests/unit/entrypoints/sidepanel/CueList.test.tsx`: `data-heat` presence per band on the cue item, missing-entry honesty, `aria-hidden` bar, sr text, tooltip title, `aria-describedby` wiring.
 - `src/features/subtitle/ui/SubtitlePanel.cueFilter.test.tsx`: extend — `data-heat` present when eligible, absent under each gate-off condition, re-bands after `emitWordStatusChanged`.
-- Real-Chrome smoke via the `testing-extension-browser` workflow (fresh script under `tmp/cue-difficulty-map/`): bars render in Split View, `[data-cell-id="cue-item"][data-heat="dense"]` count matches the FAB's dense menu count, live status change re-bands a cue, filter + heat coexist.
+- Real-Chrome smoke via the `testing-extension-browser` workflow (fresh script under `tmp/cue-difficulty-map/`): bars render in Split View, `[data-tihoka-id="cue-item"][data-heat="dense"]` count matches the FAB's dense menu count, live status change re-bands a cue, filter + heat coexist.
 - **DoD**: `docs/2-architechture-system.md` + `docs/0-wiki.md` updated; gates green (`typecheck`, `lint`, `test:unit`, `build`).
 
 ## 8. Non-goals

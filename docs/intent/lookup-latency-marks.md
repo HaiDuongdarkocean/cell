@@ -30,7 +30,7 @@ Persona contract là "phản hồi <3s" nhưng repo không đo hover→popup hay
 
 In:
 - `performance.mark` + `performance.measure` pairs tại: lookup dispatch (`popupLifecycle`/`lookupCache`), LOOKUP_REQUEST response, popup first-content render (popup mount + `requestAnimationFrame` commit), `fetchAudio` start, `setAudioItems` applied + audio row render commit.
-- Naming convention `cell:lookup:*` / `cell:audio:*` + `requestId` suffix; dev console summary (`console.debug` hoặc `console.table` khi isDevMode).
+- Naming convention `Tihoka:lookup:*` / `Tihoka:audio:*` + `requestId` suffix; dev console summary (`console.debug` hoặc `console.table` khi isDevMode).
 - Unit test cho helper mark/measure (jsdom `performance` API) + verify marks gated khi không dev.
 
 Out:
@@ -52,14 +52,14 @@ Out:
 3. Regression latency trôi qua CI mà không ai biết.
 
 ### TO-BE
-1. Dev mở DevTools → Performance/User Timing thấy `cell:lookup:pointer→request`, `request→response`, `dispatch→render`, `cell:audio:click→items` cho mỗi interaction.
+1. Dev mở DevTools → Performance/User Timing thấy `Tihoka:lookup:pointer→request`, `request→response`, `dispatch→render`, `Tihoka:audio:click→items` cho mỗi interaction.
 2. `console.debug` in ra breakdown ms ngay khi lookup xong (dev only).
 3. Agent so sánh numbers trước/sau khi optimize tiếp.
 
 ## Stories
 
 - S1: As a maintainer, I want per-lookup timing breakdown in DevTools so that tôi chứng minh được persona <3s — done when một hover lookup tạo đủ marks + measure có duration ms.
-- S2: As a maintainer, I want audio-tab latency measured so that tab→audio <3s kiểm chứng được — done when click audio tab tạo `cell:audio:*` measures.
+- S2: As a maintainer, I want audio-tab latency measured so that tab→audio <3s kiểm chứng được — done when click audio tab tạo `Tihoka:audio:*` measures.
 - S3: As a maintainer, I want zero production overhead so that users không trả cost — done when production build không gọi performance.mark (isDevMode gate + tree-shake verified by grep/unit).
 
 ## Risks
@@ -77,8 +77,8 @@ go — observability thuần, claim verified (zero timing instrumentation), prec
 
 ## Draft Acceptance Criteria
 
-- AC1: Một lookup thật (hover/click) tạo đủ measures `cell:lookup:*` với duration ≥0 — kiểm được qua `performance.getEntriesByType('measure')` trong cùng context.
-- AC2: Audio tab fetch tạo `cell:audio:*` measures (click→applied, applied→render).
+- AC1: Một lookup thật (hover/click) tạo đủ measures `Tihoka:lookup:*` với duration ≥0 — kiểm được qua `performance.getEntriesByType('measure')` trong cùng context.
+- AC2: Audio tab fetch tạo `Tihoka:audio:*` measures (click→applied, applied→render).
 - AC3: Production code path không gọi `performance.mark` — tất cả instrumentation sau `isDevMode` gate (unit test spy + grep).
 - AC4: Marks/measures cleanup sau khi đo (buffer không tích lũy).
 - AC5: Gates: typecheck + lint + unit + build + cycles clean; real-Chromium verify marks tồn tại trong performance timeline.

@@ -1,8 +1,8 @@
-# Cell Reader — HTML Mockup Notes
+# Tihoka Reader — HTML Mockup Notes
 
 ## Mục đích
 
-Tệp `reader.html` là mockup tĩnh (static HTML) minh họa UI/UX cho tính năng **Reader** trong Cell. Không chỉnh sửa mã nguồn chính (`src/`), chỉ dùng để review flow và design token trước khi implement.
+Tệp `reader.html` là mockup tĩnh (static HTML) minh họa UI/UX cho tính năng **Reader** trong Tihoka. Không chỉnh sửa mã nguồn chính (`src/`), chỉ dùng để review flow và design token trước khi implement.
 
 ## User journey
 
@@ -88,7 +88,7 @@ Mở file trực tiếp trong trình duyệt:
 <repo-root>\docs\mockup\reader.html
 ```
 
-Hoặc phục vụ qua http local (từ thư mục `cell`):
+Hoặc phục vụ qua http local (từ thư mục `Tihoka`):
 
 ```bash
 cd "<repo-root>"

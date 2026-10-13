@@ -20,7 +20,7 @@ Di chuyển toàn bộ subtitle appearance customization (Target style, Native s
 
 ## Assumptions
 
-1. **Shadow DOM**: Manager panel render trong shadow DOM (`#cell-subtitle-root` shadow root). Shared UI components (Button, Slider, Toggle) CSS phải được inject vào shadow root.
+1. **Shadow DOM**: Manager panel render trong shadow DOM (`#Tihoka-subtitle-root` shadow root). Shared UI components (Button, Slider, Toggle) CSS phải được inject vào shadow root.
 2. **Realtime apply**: Appearance changes persist qua `chrome.storage.local` → `storage.onChanged` listener trong `contentScriptController.ts` → `blockController.updateSettings()`. Flow này đã hoạt động cho Settings, reuse nguyên vẹn.
 3. **Component ownership** `[REVIEW FIX]`: `SubtitleStylePanel`, `SubtitlePreview`, `SubtitleBlockSettingsPanel`, `NavClusterSettingsPanel` hiện sống trong `src/features/settings/ui/` nhưng là subtitle-appearance components. **Di chuyển 4 component này sang `src/features/subtitle/ui/appearance/`** — cả Settings và Manager import từ đó. Tránh cross-feature coupling `subtitle → settings`.
 4. **Settings cleanup**: Sau khi move, Settings Dialog chỉ còn "Block" section cho behavior (auto-load, languages, auto-translate). Target/Native appearance sections + Block position/scale/opacity + Cluster appearance bị xóa. **Sidebar items `target`, `native`, `cluster` cũng bị xóa**. Orphaned code (`updateOverlayStyle`, `resetOverlayStyle`, `updateBlock`, `updateNavCluster`) được cleanup.

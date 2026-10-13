@@ -1,6 +1,6 @@
-# Cell DESIGN RATIONALE — Cơ sở cảm hứng & lý thuyết quyết định
+# Tihoka DESIGN RATIONALE — Cơ sở cảm hứng & lý thuyết quyết định
 
-> **Vai trò của tài liệu này:** trả lời câu hỏi **"VÌ SAO"** đằng sau mọi token, component và quyết định UI của Cell.
+> **Vai trò của tài liệu này:** trả lời câu hỏi **"VÌ SAO"** đằng sau mọi token, component và quyết định UI của Tihoka.
 > Một token hay component chỉ được phép tồn tại khi có thể trỏ vào một dòng trong tài liệu này.
 >
 > **Tháp tài liệu design system:**
@@ -22,9 +22,9 @@
 
 ### 1.1 Câu chuyện gốc
 
-Cell được sinh ra từ câu chuyện của tác giả (Dương — Hải Dương, Thái Dương): tình yêu thiên nhiên — những tán lá đung đưa theo gió, dòng nước yên bình nhưng mọi thứ đều cần nước để tồn tại, nước phản ánh bản tâm và thế giới; những viên sỏi nằm im nhưng chứng tỏ giá trị của sự nằm im; bầu trời xanh nhẹ nhàng. (Nguồn: `docs/design-system/ROADMAP.md` §2.1.)
+Tihoka được sinh ra từ câu chuyện của tác giả (Dương — Hải Dương, Thái Dương): tình yêu thiên nhiên — những tán lá đung đưa theo gió, dòng nước yên bình nhưng mọi thứ đều cần nước để tồn tại, nước phản ánh bản tâm và thế giới; những viên sỏi nằm im nhưng chứng tỏ giá trị của sự nằm im; bầu trời xanh nhẹ nhàng. (Nguồn: `docs/design-system/ROADMAP.md` §2.1.)
 
-**Hệ quả thẩm mỹ trực tiếp:** palette của Cell lấy từ thiên nhiên:
+**Hệ quả thẩm mỹ trực tiếp:** palette của Tihoka lấy từ thiên nhiên:
 
 | Hình tượng | Vai trò trong hệ | Cơ sở lý thuyết (Phần II) |
 |---|---|---|
@@ -38,21 +38,21 @@ Cell được sinh ra từ câu chuyện của tác giả (Dương — Hải Dư
 
 ### 1.2 Quiet confidence — bản sắc vận hành
 
-Cell hướng đến **quiet confidence**: điềm đạm, tập trung, dễ học, thanh lịch, có hứng thú. Sáu nguyên tắc gốc (giữ nguyên từ `STANDARD.md`, nay kèm cơ sở lý thuyết):
+Tihoka hướng đến **quiet confidence**: điềm đạm, tập trung, dễ học, thanh lịch, có hứng thú. Sáu nguyên tắc gốc (giữ nguyên từ `STANDARD.md`, nay kèm cơ sở lý thuyết):
 
 | # | Nguyên tắc | Vì sao (cơ sở) |
 |---|---|---|
 | Q1 | **Neutral-first, single accent as punctuation** | Processing fluency cần figure-ground rõ (T1); accent hiếm mới nổi (T2) |
 | Q2 | **Surface lift tạo hierarchy** | Độ sáng/phân tầng quan trọng hơn màu sắc cho cảm giác order (T6) |
-| Q3 | **Content-first** | Cell sống trên video/phụ đề của người khác — chú ý thuộc về nội dung, không phải chrome của mình (fluency: giảm nhiễu cạnh tranh) |
+| Q3 | **Content-first** | Tihoka sống trên video/phụ đề của người khác — chú ý thuộc về nội dung, không phải chrome của mình (fluency: giảm nhiễu cạnh tranh) |
 | Q4 | **Clarity through restraint** | Ít variant hơn = ít quyết định phải xử lý hơn = fluent hơn; đồng thời giảm alarm fatigue ở cấp status (T7) |
-| Q5 | **Accessible by default (WCAG 2.2 AA)** | Cell phục vụ người học 5–80 tuổi, thiết bị low-spec, nền host bất kỳ |
+| Q5 | **Accessible by default (WCAG 2.2 AA)** | Tihoka phục vụ người học 5–80 tuổi, thiết bị low-spec, nền host bất kỳ |
 | Q6 | **Responsive, không re-layout** | Layout đổi khi resize = thay đổi schema = mất fluency đã học được |
 
 ### 1.3 Ngữ cảnh người dùng — điều khác biệt so với app thường
 
 1. **Người học 5–80 tuổi** → non-negotiable: target touch ≥40/44px, text dễ đọc, không ẩn ý nghĩa trong màu (thêm icon/text — T8).
-2. **UI nằm trên host bất kỳ** (YouTube, Netflix, các trang stream) → Cell không kiểm soát nền → mọi surface Cell phải **tự đủ contrast** và có viền/bóng giám định, không vay mượn nền host.
+2. **UI nằm trên host bất kỳ** (YouTube, Netflix, các trang stream) → Tihoka không kiểm soát nền → mọi surface Tihoka phải **tự đủ contrast** và có viền/bóng giám định, không vay mượn nền host.
 3. **Thiết bị low-spec (RAM ≥1GB)** → cấm hiệu ứng tốn GPU làm xấu trải nghiệm đọc. Đây là lý do thực tế cuối cùng để loại glass/blur.
 4. **Ngữ cảnh học ngôn ngữ qua việc xem** → phụ đề và từ vựng là figure; mọi thứ khác là ground. Quy tắc này ra đời trước và sẽ ra đời sau mọi đợt redesign.
 
@@ -68,7 +68,7 @@ Mỗi viên gạch: phát biểu → nguồn → hệ quả thiết kế trực 
 
 **Phát biểu:** Não người chấm "đẹp" không phải theo thuộc tính của đối tượng mà theo **trải nghiệm xử lý** nó: càng dễ xử lý thị giác → phản ứng thẩm mỹ càng tích cực. Các biến tăng fluency: figure-ground contrast cao, symmetry, figural goodness, prototypicality (giống cái đã quen), ít nhiễu.
 
-**Hệ quả cho Cell:**
+**Hệ quả cho Tihoka:**
 - Nền trung tính tối đa hóa figure-ground → **luật canvas trung tính (L-CANVAS, Phần III)**.
 - Mỗi surface "có màu" không cần thiết là một khoản thuế xử lý → restraint trong Q1/Q4 không phải khẩu vị, là giải phẫu.
 - Prototype quen thuộc (dark mode giống YouTube) = fluency miễn phí vì user đã thích ứng.
@@ -82,7 +82,7 @@ Mỗi viên gạch: phát biểu → nguồn → hệ quả thiết kế trực 
 2. **Pair preference** (có thích cả cặp không): phụ thuộc mạnh vào **lightness contrast** hơn là hue.
 3. **Figural preference** (màu của hình nổi trên nền): tăng theo **hue/giá trị contrast giữa figure và ground**.
 
-**Hệ quả cho Cell:**
+**Hệ quả cho Tihoka:**
 - Nền và accent *giống hue* thì "hài hòa" nhưng accent **không thể nổi** → đây chính xác là bệnh của dark mode cũ (canvas nhuộm accent = accent mất figural contrast). Audit 2026-09-08 xác nhận.
 - Hierarchy dựa vào **lightness ladder** (bậc sáng), không dựa vào hue → luật L-LADDER.
 - Accent muốn "pop" phải là **màu duy nhất của hue đó trên màn hình** → luật khan hiếm L-SCARCITY.
@@ -93,7 +93,7 @@ Mỗi viên gạch: phát biểu → nguồn → hệ quả thiết kế trực 
 
 **Phát biểu:** Con người thích/ngầm hiểu một màu theo những **vật thể họ từng gặp mang màu đó**. Ý nghĩa status trong UI vì thế không do "quy luật vũ trụ" mà do liên tưởng văn hóa–trải nghiệm được chia sẻ rộng:
 
-| Màu | Liên tưởng phổ cập | Binding trong Cell |
+| Màu | Liên tưởng phổ cập | Binding trong Tihoka |
 |---|---|---|
 | Đỏ | Máu, lửa, biển báo cấm, lỗi | `error` / `destructive` — chỉ gắn với nguy hiểm/rủi ro thật (L-STATUS) |
 | Xanh lá | Thực vật, đèn xanh, "được phép" | `success` — hoàn thành, an toàn, tích cực |
@@ -111,24 +111,24 @@ Mỗi viên gạch: phát biểu → nguồn → hệ quả thiết kế trực 
 2. Light text trên dark chịu **halation** (chữ bị lan sáng) → khó đọc đoạn dài hơn light mode; dark mode là lựa chọn cảm giác/thẩm mỹ, không phải lựa chọn đọc nhanh.
 3. Preference bị chi phối bởi **thói quen** — người dùng thích cái họ đã thích ứng.
 
-**Hệ quả cho Cell:**
-- Dark mode Cell tồn tại vì môi trường xem video vào ban đêm — nó là tính năng chăm sóc mắt, không phải sân khấu branding → **canvas dark phải trung tính, contrast cao, tối giản**.
-- Cell sống trên YouTube: user đã thích ứng fluently với palette dark của YouTube → **mirror host prototype** (L-HOST): `#0F0F0F / #212121 / #272727 / #303030 / #F1F1F1 / #AAAAAA`.
+**Hệ quả cho Tihoka:**
+- Dark mode Tihoka tồn tại vì môi trường xem video vào ban đêm — nó là tính năng chăm sóc mắt, không phải sân khấu branding → **canvas dark phải trung tính, contrast cao, tối giản**.
+- Tihoka sống trên YouTube: user đã thích ứng fluently với palette dark của YouTube → **mirror host prototype** (L-HOST): `#0F0F0F / #212121 / #272727 / #303030 / #F1F1F1 / #AAAAAA`.
 - Text dark mode không được gầy (hairline) — halation nuốt nét mỏng; dùng weight ≥400 cho body, 500 cho control.
 
 ### T5 — Context-color congruence — `authority: MEDIUM`
 
 > Colour psychology in UI/UX (2026), *The Design Journal*: hue lạnh (xanh/xanh lá) tạo trust/calm/comfort trong ngữ cảnh healthcare/finance/education; hue nóng (đỏ/cam) lệch ngữ cảnh gây tension/alarm.
 
-**Hệ quả cho Cell:**
-- Cell là công cụ học → accent họ lạnh (dawn/forest/ocean) là đúng ngữ cảnh; preset warmth là ngoại lệ **có kiểm soát**: chỉ ấm ở accent, canvas vẫn trung tính để không biến cả màn hình thành "cảnh báo".
+**Hệ quả cho Tihoka:**
+- Tihoka là công cụ học → accent họ lạnh (dawn/forest/ocean) là đúng ngữ cảnh; preset warmth là ngoại lệ **có kiểm soát**: chỉ ấm ở accent, canvas vẫn trung tính để không biến cả màn hình thành "cảnh báo".
 - Cũng là lý do không đặt warning/error làm màu chủ đạo dù một số app "nổi bật".
 
 ### T6 — Gestalt primitives — `authority: HIGH (established từ 1912+)`
 
 Proximity (khoảng cách), Similarity (giống nhau hình – màu), Common Region (khung bao), Figure/Ground, Continuity.
 
-**Hệ quả cho Cell:**
+**Hệ quả cho Tihoka:**
 - Grouping bằng **proximity + common region trước** (spacing, card), màu chỉ là công cụ thứ ba → spacing và container phải làm tốt trước khi ai đó "gắn màu cho tách nhóm".
 - Similarity bằng màu chỉ dành cho *cùng một loại thông tin* (ví dụ tất cả token tần suất dùng bộ `token-freq-*`); lạm dụng similarity-màu = tạo tín hiệu giả.
 
@@ -136,7 +136,7 @@ Proximity (khoảng cách), Similarity (giống nhau hình – màu), Common Reg
 
 > Khái niệm alarm fatigue đã được chứng minh trong y tế và hệ thống cảnh báo; tổng quát hóa vào UI: **mỗi lần tiêu tốn một tín hiệu cảnh báo cho việc không đáng, giá trị warning của cả hệ thống giảm.**
 
-**Hệ quả cho Cell:**
+**Hệ quả cho Tihoka:**
 - Cấm dùng `warning`/`error`/destructive để decorate hoặc "thu hút chú ý".
 - Hành động chỉnh-sửa thường không được mượn sự chú ý của đỏ. Đỏ phản ánh hệ quả vận hành thật: không thể hoàn tác, mất dữ liệu, nguy hiểm. (Xem L-SEVERITY, Phần IV — đây là lý do nút thùng rác phải đỏ.)
 
@@ -181,7 +181,7 @@ Mỗi nhóm token trình bày theo khung: **Tồn tại vì → Dùng khi → Kh
 
 ### L-BORDER — Viền là tín hiệu, không phải ranh giới mặc định — `thêm 2026-09-08`
 
-**Tồn tại vì:** hairline outline quanh mọi component là một lớp dữ liệu thị giác thừa — não phải xử lý ranh giới của từng khung (fluency tax, T1), và nó đánh cắp vai trò phân tầng của lightness ladder (L-CANVAS mục 4). M3 mặc định dùng **tonal difference** để tách surface; iOS inset-grouped list dùng canvas/cell fill, không outline. WCAG 1.4.11 yêu cầu control có boundary *nhận diện được* — **fill tương phản là boundary hợp lệ**, không bắt buộc stroke.
+**Tồn tại vì:** hairline outline quanh mọi component là một lớp dữ liệu thị giác thừa — não phải xử lý ranh giới của từng khung (fluency tax, T1), và nó đánh cắp vai trò phân tầng của lightness ladder (L-CANVAS mục 4). M3 mặc định dùng **tonal difference** để tách surface; iOS inset-grouped list dùng canvas/Tihoka fill, không outline. WCAG 1.4.11 yêu cầu control có boundary *nhận diện được* — **fill tương phản là boundary hợp lệ**, không bắt buộc stroke.
 
 **Luật:**
 1. Component mặc định **không viền**. Phân tầng bằng ladder `background → surface → field → hover → pressed`, spacing (T6 proximity), và shadow **chỉ cho floating** (popover/menu/dialog/drawer).
@@ -208,7 +208,7 @@ Mỗi nhóm token trình bày theo khung: **Tồn tại vì → Dùng khi → Kh
 1. Một màn hình có **tối đa một hành động sơ cấp** (primary fill). Mọi thứ khác phải là secondary/outline/ghost/link.
 2. `primary-subtle` chỉ cho selected/active state và nền rất nhỏ; không cho vùng lớn.
 3. Accent không bao giờ là canvas. (Vòng lặp với L-CANVAS.)
-4. Accent trên nền Cell phải tự đạt WCAG; không dựa vào nền host.
+4. Accent trên nền Tihoka phải tự đạt WCAG; không dựa vào nền host.
 5. Preset (dawn/forest/ocean/warmth) chỉ được quyền đổi **accent family + text hue**. Canvas không đổi.
 
 **Dùng khi:** primary action duy nhất của màn hình; link; focus ring; selected state; brand mark.
@@ -261,7 +261,7 @@ Mỗi nhóm token trình bày theo khung: **Tồn tại vì → Dùng khi → Kh
 
 ### L-DOMAIN — Token miền: `token-freq-*`, `token-status-*`, `data-categorical-*`, `syntax-*`
 
-**Tồn tại vì:** Cell là công cụ học ngôn ngữ; tần suất từ, trạng thái học, loại dữ liệu và mã nguồn là những hệ mã riêng có chính nghĩa trong domain.
+**Tồn tại vì:** Tihoka là công cụ học ngôn ngữ; tần suất từ, trạng thái học, loại dữ liệu và mã nguồn là những hệ mã riêng có chính nghĩa trong domain.
 
 **Luật:**
 1. Các token miền **không dùng lẫn** vào chrome/UI chung (ví dụ không dùng `token-freq-advanced-bg` cho badge UI vì nó "đẹp").
@@ -272,7 +272,7 @@ Mỗi nhóm token trình bày theo khung: **Tồn tại vì → Dùng khi → Kh
 
 ### L-HOST — Theme mode & host prototype
 
-**Tồn tại vì:** Cell sống **trong** video người khác, ban đêm, trên thiết bị low-spec. Dark mode là chế độ chăm sóc thị giác (T4), không phải phiên bản sáng ngược lại.
+**Tồn tại vì:** Tihoka sống **trong** video người khác, ban đêm, trên thiết bị low-spec. Dark mode là chế độ chăm sóc thị giác (T4), không phải phiên bản sáng ngược lại.
 
 **Luật:**
 1. Light và dark **đẳng cấu cấu trúc**: cùng luật canvas trung tính + accent khan hiếm. Chỉ đổi bước sáng và giá trị.

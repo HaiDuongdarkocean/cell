@@ -6,7 +6,7 @@
 
 ## Context
 
-Cell detects and loads subtitles from the current page (inbound discovery). Users watching content without subtitles — or wanting a better translation — have no outbound path. We need search + download from external subtitle providers (SubDL, OpenSubtitles) inside the Subtitle Manager Panel, with multi-key free-tier quota management.
+Tihoka detects and loads subtitles from the current page (inbound discovery). Users watching content without subtitles — or wanting a better translation — have no outbound path. We need search + download from external subtitle providers (SubDL, OpenSubtitles) inside the Subtitle Manager Panel, with multi-key free-tier quota management.
 
 Both providers offer free tiers with per-key daily download quotas. Users who register multiple free accounts can multiply their quota — but only if the extension rotates keys correctly and tracks remaining downloads per key.
 

@@ -111,7 +111,7 @@ REQ-4: Builtin spelling = dictation + persisted toggle
 
 REQ-5: Variant/preset domain + repositories
 - Actor: system (gọi nội bộ), learner qua REQ-8/9.
-- Goal: persist variants/presets trong `cell-srs-*` IndexedDB theo pattern `baseRepository`.
+- Goal: persist variants/presets trong `Tihoka-srs-*` IndexedDB theo pattern `baseRepository`.
 - Basic flow: `variantPresetRepository` (get/put/list by collection/delete) — preset chứa variants inline; bump `SRS_DB_SCHEMA_VERSION` + thêm `SRS_STORES.variantPresets` (create trong `onupgradeneeded`); `ensureFirstRun` seed thêm default preset vào collection mới; collection cũ thiếu preset → lazy-seed default preset khi load (`getEffectivePreset(deck)` fallback create+persist + gán `collection.defaultVariantPresetId`).
 - Exception: deck.reference preset bị xóa → fallback collection default.
 - Rules: preset delete đang được deck dùng → reassign decks đó về default (confirm ở UI); builtin ids immutable — xóa builtin khỏi preset = variant ẩn (component data giữ nguyên).
@@ -233,10 +233,10 @@ components[v] với v ∉ preset: giữ nguyên (orphan data, không schedule)
 
 | Entity | Key fields | Lives in | Retention |
 |---|---|---|---|
-| `SrsVariantPreset` | id, collectionId, variants[], isDefault | IndexedDB `cell-srs-*` table `variantPresets` | persistent |
+| `SrsVariantPreset` | id, collectionId, variants[], isDefault | IndexedDB `Tihoka-srs-*` table `variantPresets` | persistent |
 | `SrsDeck.variantPresetId` | preset ref (null→collection default) | deck record | persistent |
 | `SrsCollection.defaultVariantPresetId` | preset ref | collection record | persistent |
-| `SrsUiPrefs.variantToggles` | Record<variantId, {scope?, audio?}> | localStorage `cell.srs.uiPrefs` | persistent |
+| `SrsUiPrefs.variantToggles` | Record<variantId, {scope?, audio?}> | localStorage `Tihoka.srs.uiPrefs` | persistent |
 | `SrsCard.components/studyAgainDue` | Record<variantId,…> | card record | persistent — builtin ids ổn định |
 | `SrsReviewRecord` | componentType=variantId, +dictationMode | reviewEvents | append-only |
 

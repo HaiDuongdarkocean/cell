@@ -72,7 +72,7 @@
 - Slider track/thumb use primary blue — one of the few primary usages left for a non-action.
 
 ### 1.8 Audio
-- Output mode: pill **track** `#363636`, radius 9999, padding 2px, height 44; items 40px. Selected = `primary-subtle` (0.12 alpha) over the track → the selected cell is **darker** than its track, i.e. it reads “pressed/inset”, the opposite of the Theme tiles where selected is lighter.
+- Output mode: pill **track** `#363636`, radius 9999, padding 2px, height 44; items 40px. Selected = `primary-subtle` (0.12 alpha) over the track → the selected Tihoka is **darker** than its track, i.e. it reads “pressed/inset”, the opposite of the Theme tiles where selected is lighter.
 - Source order: 5 chips with an icon + an **unlabelled colored dot** (orange/green) + arrows between them. The dots carry status meaning with no legend; the arrows imply sequence for what is a priority list.
 - `Local audio files` = a **nested card** (radius 12, bg equal to the parent card) containing a divider and the page's only **filled primary button** (`Choose package folder…`) → the strongest emphasis on the page belongs to a secondary, rarely-used action.
 - `Try it`: input with **24px** text inside a 40px control (placeholder clipped visually), plus a 40px circular play button inside the field; helper text below.

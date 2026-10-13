@@ -2,14 +2,14 @@
 
 **Status:** Accepted  
 **Date:** 2026-09-10  
-**Author:** Cell team  
+**Author:** Tihoka team  
 
 ## Context
 
-The Cell Chrome MV3 extension repository had grown to include:
+The Tihoka Chrome MV3 extension repository had grown to include:
 
 - Untracked and tracked generated artifacts (`dist/`, `dist.zip`, `.crx`, `tokens.css`, design reports).
-- Local-only private signing keys (`cell-key.pem`) left in the working directory.
+- Local-only private signing keys (`Tihoka-key.pem`) left in the working directory.
 - Temporary/debug files and unrelated local documents (e.g. Devin CLI shortcut cheatsheet, `.commit-msg.txt` with `Generated with [Devin]`).
 - Large dictionary/media/model assets committed as normal Git blobs, producing a 265 MB+ pack and triggering GitHub LFS warnings.
 - AI/vendor attribution in public commit messages and files.
@@ -20,18 +20,18 @@ The goal was to make the repository safe and reasonable for other people to clon
 
 ### 1. Keep the private signing key local only
 
-- `cell-key.pem` is required by `scripts/ship-dist.ps1` to sign `.crx` builds.
+- `Tihoka-key.pem` is required by `scripts/ship-dist.ps1` to sign `.crx` builds.
 - It is **never** committed. `.gitignore` contains `*-key.pem` and `*.crx`.
-- The public extension ID is derived from the public key and remains stable as long as `cell-key.pem` is reused.
+- The public extension ID is derived from the public key and remains stable as long as `Tihoka-key.pem` is reused.
 
 ### 2. Rewrite history to remove generated files, unrelated artifacts, and AI attribution
 
 - `git-filter-repo` was used to remove from history:
-  - private key filenames (`cell-key.pem`, `ublock-key.pem`),
+  - private key filenames (`Tihoka-key.pem`, `ublock-key.pem`),
   - `.crx` files,
   - `dist.zip`/`dist.rar` archives,
   - design-system build assets,
-  - debug logs (`cell-debug-log.json`, `ocr-csp-debug.json`),
+  - debug logs (`Tihoka-debug-log.json`, `ocr-csp-debug.json`),
   - `loop/` and `.commit-msg.txt`,
   - `Generated with [Devin](https://devin.ai)` signatures in commit messages.
 - Public commit messages were also scanned; no remaining `Generated with [Devin]` messages exist.
@@ -45,7 +45,7 @@ The goal was to make the repository safe and reasonable for other people to clon
 
 ### 4. Add public README and clean agent tooling references
 
-- `README.md` explains install-from-release, build-from-source, the release pipeline, and the `cell-key.pem` policy.
+- `README.md` explains install-from-release, build-from-source, the release pipeline, and the `Tihoka-key.pem` policy.
 - `AGENTS.md` no longer names third-party assistants in the header.
 - `.commit-msg.txt`, Devin CLI shortcut cheatsheet, and `Generated with Devin` / `Author: Devin` lines in docs/audits/ADRs were removed or generalized.
 
@@ -63,22 +63,22 @@ The goal was to make the repository safe and reasonable for other people to clon
 
 ## Consequences
 
-- The public repository at `https://github.com/HaiDuongdarkocean/cell` no longer contains:
+- The public repository at `https://github.com/HaiDuongdarkocean/Tihoka` no longer contains:
   - private keys,
   - `Generated with [Devin]` attribution,
   - unrelated local files,
   - `dist/`, `node_modules/`, coverage, or test output.
-- `main` is force-pushed and the release tag `v0.1.1` is recreated with assets `cell.crx` and `updates.xml`.
+- `main` is force-pushed and the release tag `v0.1.1` is recreated with assets `Tihoka.crx` and `updates.xml`.
 - Extension ID remains `pmijadnofjnbndbgbnmpmdelgokgjjnn`.
-- Update manifest is reachable at `https://raw.githubusercontent.com/HaiDuongdarkocean/cell/main/updates.xml`.
-- The release `.crx` is reachable at `https://github.com/HaiDuongdarkocean/cell/releases/download/v0.1.1/cell.crx`.
+- Update manifest is reachable at `https://raw.githubusercontent.com/HaiDuongdarkocean/Tihoka/main/updates.xml`.
+- The release `.crx` is reachable at `https://github.com/HaiDuongdarkocean/Tihoka/releases/download/v0.1.1/Tihoka.crx`.
 
 ## Verification performed
 
 ```bash
 git status --short                  # clean
 git log --oneline --decorate -5     # main and v0.1.1 visible
-git remote -v                       # origin = https://github.com/HaiDuongdarkocean/cell
+git remote -v                       # origin = https://github.com/HaiDuongdarkocean/Tihoka
 git fsck --full --no-reflogs        # no dangling objects
 git count-objects -vH               # pack ~263 MB
 npm ci                              # installed clean
@@ -87,7 +87,7 @@ npm run lint                        # pass
 npm run build                       # pass
 npm run test:unit                   # 5,570 passed
 npm audit --json                    # 0 vulnerabilities
-node -e "..." cell-key.pem          # extension ID = pmijadnofjnbndbgbnmpmdelgokgjjnn
+node -e "..." Tihoka-key.pem          # extension ID = pmijadnofjnbndbgbnmpmdelgokgjjnn
 ```
 
 ## Notes

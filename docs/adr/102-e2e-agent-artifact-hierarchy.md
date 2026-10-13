@@ -8,7 +8,7 @@ Playwright E2E tests were writing runtime artifacts to scattered root-level dire
 - `playwright-report/`
 - `.mock-servers/`
 - `.test-pages/`
-- `.cell-profile-*`
+- `.Tihoka-profile-*`
 - `.extension-build-*`
 
 When multiple agents ran on the same machine, reports, screenshots, traces, ports, and browser profiles collided. Additionally, `globalSetup` deleted the entire `e2e-results/<agent>/staging` directory after the `webServer` had already started, which removed mock-page files while `http-server` was still serving them and caused `net::ERR_HTTP_RESPONSE_CODE_FAILURE` in stage2 tests.
@@ -25,7 +25,7 @@ e2e-results/<agent-name>/
     mock-servers/
     test-pages/
     .extension-build-...
-    .cell-profile-...
+    .Tihoka-profile-...
 ```
 
 - `agent-name` comes from `AGENT_ID` first, then `PW_OUTPUT_DIR`, falling back to `default`.

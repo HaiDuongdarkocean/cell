@@ -5,7 +5,7 @@
 ## Gate checklist
 
 - [x] `## Journey` has AS-IS + TO-BE with ≥3 steps each; TO-BE ends at the promised value (examples on the card).
-- [x] No need is secretly a solution — N1–N8 state outcomes; solution direction kept in BACCM `Solution` cell.
+- [x] No need is secretly a solution — N1–N8 state outcomes; solution direction kept in BACCM `Solution` Tihoka.
 - [x] `ui_surface: yes` consistent with journey (user-visible checkbox interaction).
 - [x] Decision `go` supported by risk register; backwards-compatible default (zero examples today = zero by default tomorrow).
 - [x] Confidence honest — N8 marked medium (`[assumption]`, symmetric with `selectedDefinitionIds`).

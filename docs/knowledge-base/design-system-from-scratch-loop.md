@@ -69,7 +69,7 @@
 
 **Luận điểm:** Nếu không hiểu context, mọi quyết định màu sắc, spacing, component sẽ trở thành guessing.
 
-**Ví dụ:** Với Cell — language-learning product, user 10–25 tuổi, cần tập trung vào nội dung học → UI phải minimal, ưu tiên readability, giảm configuration.
+**Ví dụ:** Với Tihoka — language-learning product, user 10–25 tuổi, cần tập trung vào nội dung học → UI phải minimal, ưu tiên readability, giảm configuration.
 
 ---
 
@@ -499,7 +499,7 @@ Hệ thống sống cần được sử dụng, quan sát, cải tiến liên t�
 7. **W3C Design Tokens Community Group — Design Tokens Format Module** — primitive / semantic / component token layers: https://www.w3.org/community/reports/design-tokens/CG-FINAL-format-20251028/
 8. **W3C Design System — Settings & Contrast** — token usage and WCAG contrast guidance: https://design-system.w3.org/settings/index.html
 9. **USWDS Accessibility** — accessibility built into design system foundation: https://designsystem.digital.gov/documentation/accessibility/
-10. **Cell Design System ADRs:**
+10. **Tihoka Design System ADRs:**
     - `docs/adr/084-foundation-color-system.md`
     - `docs/adr/085-foundation-typography.md`
     - `docs/adr/086-foundation-spacing.md`

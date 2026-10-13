@@ -4,7 +4,7 @@
 
 ## Design Read
 
-Một dòng: **bỏ câu hỏi "loại nào?" khỏi user — một ô thả duy nhất, Cell tự nhận diện, danh sách phẳng một thứ tự ưu tiên.**
+Một dòng: **bỏ câu hỏi "loại nào?" khỏi user — một ô thả duy nhất, Tihoka tự nhận diện, danh sách phẳng một thứ tự ưu tiên.**
 
 Đây là consolidation refactor của một surface đã tồn tại (ResourcesPanel hai section), không phải feature mới — dải variance hẹp là có chủ đích: user đã học panel này, điều thay đổi là mất đi một quyết định chứ không phải học lại layout.
 

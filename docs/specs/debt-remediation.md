@@ -1,8 +1,8 @@
-# Spec: Debt Remediation (Cell — post audit 2025-06-22)
+# Spec: Debt Remediation (Tihoka — post audit 2025-06-22)
 
 ## Objective
 
-Trả nợ kỹ thuật của `cell` theo thứ tự ưu tiên từ audit gần nhất. Mục tiêu là:
+Trả nợ kỹ thuật của `Tihoka` theo thứ tự ưu tiên từ audit gần nhất. Mục tiêu là:
 
 - Giảm rủi ro regression ở luồng subtitle (coverage thấp, controller khổng lồ).
 - Dọn build warnings và bundle bloat một cách an toàn.

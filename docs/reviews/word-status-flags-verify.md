@@ -46,7 +46,7 @@ The stored enum stays 5-valued (`popupTypes.ts:18`); `STATUS_CYCLE` shrinks to t
 | NFR-1 | i18n en+vi for new labels/tooltips | `en.json:147-149,163-164`, `vi.json:147-149,163-164`; keys used `StatusRow.tsx:43,67-68,79-80`, `CandidateView.tsx:205-206` | PASS |
 | NFR-2 | No IDB migration, zero data loss | Enum/stores unchanged; no version bump in diff; trashed/legacy rows preserved | PASS |
 | NFR-3 | O(1) status resolution; pure helpers | Helpers are pure sync functions `wordStatusSemantics.ts:7-33`; no new async on tokenize path | PASS |
-| NFR-4 | Gradient readable on light host pages; tokens pinned | Light-palette pinning kept (`--cell-token-status-*` → `--color-token-status-*` `tokenSpanCss.ts:26-27`); `!important` + `html body` specificity retained `:300-308` | PASS |
+| NFR-4 | Gradient readable on light host pages; tokens pinned | Light-palette pinning kept (`--Tihoka-token-status-*` → `--color-token-status-*` `tokenSpanCss.ts:26-27`); `!important` + `html body` specificity retained `:300-308` | PASS |
 | DoD | typecheck/lint/unit/build green; design-system check; browser verify; docs updated; i18n | Gates green (see header); i18n done; `2-architechture-system.md` updated (StatusRow entry added); **`0-wiki.md` not updated** — defect D3 | **PARTIAL** |
 
 ## Adversarial edge-case matrix

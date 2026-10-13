@@ -4,7 +4,7 @@ ui_surface: yes · mode: interactive · owner: devin-srs-redesign
 
 ## Need
 
-The SRS study screen (`src/entrypoints/srs-study/`) currently renders an ad-hoc card: a flat box with an inline "Show answer" button and text buttons for Study again / Reset / Reset card. Anh yêu supplied 4 reference screenshots (Migaku-style review UI) and directed: **clone the structure exactly; only the colors differ (keep Cell design tokens)**.
+The SRS study screen (`src/entrypoints/srs-study/`) currently renders an ad-hoc card: a flat box with an inline "Show answer" button and text buttons for Study again / Reset / Reset card. Anh yêu supplied 4 reference screenshots (Migaku-style review UI) and directed: **clone the structure exactly; only the colors differ (keep Tihoka design tokens)**.
 
 Reference structure (from supplied screenshots):
 
@@ -31,8 +31,8 @@ To-be:
 - Restyle `SrsReviewCard` front/back + `App` stage chrome to the reference structure using existing tokens/components/icons only.
 - New `SrsEditCardPanel` in the same entrypoint (replaces the pencil action target); editing writes through `putNote` (deck move supported), `deleteCardCascade` for delete, asset repositories for audio/image add/remove.
 - Provider additions: `endSession`, `updateCurrentNote`, `deleteCurrentCard`.
-- Non-goals: audio/image *search* services (reference has CREATE/SEARCH buttons backed by Migaku services — Cell has no equivalent; rows get a local file "+ Add" instead), undo stack, card template editing.
+- Non-goals: audio/image *search* services (reference has CREATE/SEARCH buttons backed by Migaku services — Tihoka has no equivalent; rows get a local file "+ Add" instead), undo stack, card template editing.
 
 ## Decision
 
-go — user-supplied reference screenshots are the approved design authority; interactive interview condensed to one scope question (answered: review + edit card, keep Cell tokens).
+go — user-supplied reference screenshots are the approved design authority; interactive interview condensed to one scope question (answered: review + edit card, keep Tihoka tokens).

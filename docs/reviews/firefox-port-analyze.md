@@ -17,7 +17,7 @@ User instruction "tiếp tục" = approval of the intent doc as written.
 ## Checklist
 
 - [x] `## Journey` has AS-IS (4 steps) + TO-BE (5 steps, ends at the promised decision value)
-- [x] Needs are needs, not solutions (N1–N7); value statement kept out of Need cell
+- [x] Needs are needs, not solutions (N1–N7); value statement kept out of Need Tihoka
 - [x] `ui_surface: no` consistent — no new UI, same pages in different host containers
 - [x] Decision `go — staged` supported by risk register (spike is the discovery mechanism for the hidden-risk row)
 - [x] Confidence tags honest — Value/N4 marked medium where evidence is thin

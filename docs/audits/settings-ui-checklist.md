@@ -92,7 +92,7 @@ Rubric for a fresh-context reviewer grading the Settings tab UI. Score each item
 | # | Criterion | How to check |
 |---|---|---|
 | I1 | No stale/dead CSS classes referenced in markup or orphaned in modules | grep class names both directions |
-| I2 | No `data-testid`/`data-cell-id` convention mixing without reason | grep in `src/features/settings/ui` |
+| I2 | No `data-testid`/`data-tihoka-id` convention mixing without reason | grep in `src/features/settings/ui` |
 | I3 | Error/validation copy is specific and actionable | trigger validation (empty profile name, bad dict-link URL) |
 | I4 | Light and dark themes both pass all visual checks — no hardcoded light-only colors | dark screenshots |
 

@@ -38,13 +38,13 @@ Round-2 gates: `typecheck` PASS · `lint` PASS · `test:unit` PASS — 622 suite
 | `npm run build` | PASS |
 | Real-Chrome verify | PASS — `tmp/durable-jobs/verify.mjs` 11/11 |
 
-Browser evidence (clone profile, `--load-extension`): `JOB_LIST` answers; dropzone import → `resource-import` job done + `cellJob:*` record persisted in `chrome.storage.session` + resource card rendered + registry `JobRow` inline; done row survives panel reopen; `JOB_DISMISS` removes it; delete → `resource-delete` done + card removed; same-signature re-import spawns no second active job.
+Browser evidence (clone profile, `--load-extension`): `JOB_LIST` answers; dropzone import → `resource-import` job done + `TihokaJob:*` record persisted in `chrome.storage.session` + resource card rendered + registry `JobRow` inline; done row survives panel reopen; `JOB_DISMISS` removes it; delete → `resource-delete` done + card removed; same-signature re-import spawns no second active job.
 
 ## Per-REQ review (fresh-context subagent)
 
 | REQ | Verdict | Evidence |
 |---|---|---|
-| REQ-1 durable registration | met | `JobRegistry.register` persists `cellJob:<id>` to `chrome.storage.session` before start; `{jobId}` returned immediately; executors detached |
+| REQ-1 durable registration | met | `JobRegistry.register` persists `TihokaJob:<id>` to `chrome.storage.session` before start; `{jobId}` returned immediately; executors detached |
 | REQ-2 progress/lifecycle | met | throttled persist (500ms) + immediate terminal/`resourceId` writes; `JOB_EVENT` broadcast per mutation |
 | REQ-3 list on mount | met | `JOB_LIST` returns non-dismissed jobs; verified live |
 | REQ-4 owner-side effects | met | `downloadedLanguages`/`localTtsLanguage`/`lastIndexedAt`/`installationFinished` written by background executors; no caller writes remain |

@@ -6,7 +6,7 @@
 
 ## Business Case
 
-BACCM inference — every cell cites evidence (`file:line`) or `[assumption]` + confidence.
+BACCM inference — every Tihoka cites evidence (`file:line`) or `[assumption]` + confidence.
 
 | Concept | Statement | Evidence | Confidence |
 |---|---|---|---|
@@ -21,7 +21,7 @@ BACCM inference — every cell cites evidence (`file:line`) or `[assumption]` + 
 
 | Group | Who | Their need re: this change | Capability/constraint |
 |---|---|---|---|
-| Team | Cell maintainers | Small diff inside existing selection + prefill pipeline; must stay inside `dictionaryPopup`/`cardCreator` DAG | checkbox CSS contract already exists (`DictionaryCheckable.module.css`) |
+| Team | Tihoka maintainers | Small diff inside existing selection + prefill pipeline; must stay inside `dictionaryPopup`/`cardCreator` DAG | checkbox CSS contract already exists (`DictionaryCheckable.module.css`) |
 | Customer | Anki learners | Pick which example sentences accompany a definition on the card | touch targets ≥ existing def rows |
 | Supplier/Dependency | chrome.storage settings schema | New persisted boolean under `dictionaryPopup` | none — additive field |
 | Organization | Future contributors | Selection semantics documented in one place (definitionSelection logic) | none — follow existing SSOT pattern |

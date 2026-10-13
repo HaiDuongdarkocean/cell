@@ -6,7 +6,7 @@ Draft for human review. No implementation is authorized until this spec, plan, a
 
 ## Objective
 
-Build a generic, extensible subtitle-discovery pipeline for Cell that accepts one streaming page/player
+Build a generic, extensible subtitle-discovery pipeline for Tihoka that accepts one streaming page/player
 observation and produces the complete subtitle inventory in the extension background and subtitle panel.
 The pipeline must support all nine audited player families without adding site-specific branches to the
 core `NetworkInterceptor`.
@@ -180,7 +180,7 @@ npm run test:unit
 ```
 
 For browser-facing changes, use `testing-extension-browser` Playwright persistent Chromium with
-`cell-profile` clone; verify extension inventory and panel counts.
+`Tihoka-profile` clone; verify extension inventory and panel counts.
 
 ## Project structure
 

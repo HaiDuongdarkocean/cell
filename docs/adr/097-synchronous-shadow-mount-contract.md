@@ -47,5 +47,5 @@ The trap is structural, not a one-off typo: any refactor that makes the initial 
 
 - `flushSync` forces a synchronous layout during overlay init — a one-time cost per video mount, acceptable.
 - The gotcha is documented inline at the `flushSync` call site in `mountSubtitle.tsx` (why-comment, per the documentation guideline).
-- Known subtlety: effects flushed by `flushSync` run **before** `host.id = 'cell-subtitle-root'` is assigned (that line executes after `mountReactShadow` returns). The manager portal effect therefore cannot rely on `getElementById` during mount and falls back to `rootRef.current.parentElement` inside the shadow root; the panel renders correctly there (verified e2e). Documented inline in `SubtitlePanels.tsx`.
+- Known subtlety: effects flushed by `flushSync` run **before** `host.id = 'Tihoka-subtitle-root'` is assigned (that line executes after `mountReactShadow` returns). The manager portal effect therefore cannot rely on `getElementById` during mount and falls back to `rootRef.current.parentElement` inside the shadow root; the panel renders correctly there (verified e2e). Documented inline in `SubtitlePanels.tsx`.
 - If the imperative-handle contract is ever changed (async mount, deferred ref), the e2e spec is the tripwire: it fails with "subtitle-manager-layer not found".

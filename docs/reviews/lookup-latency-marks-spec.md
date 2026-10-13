@@ -6,7 +6,7 @@ VERDICT: APPROVE_WITH_CHANGES
 
 Findings (all verified against source):
 
-1. **Blocker** — e2e fixture loads production `dist/` where `isDevMode=false`; marks would no-op → REQ-6 unverifiable. Fixed: gate = `isDevMode || isCellDebug()` (`__CELL_DEBUG__` compiled in for E2E builds via `build-e2e.mjs` CELL_E2E=1).
+1. **Blocker** — e2e fixture loads production `dist/` where `isDevMode=false`; marks would no-op → REQ-6 unverifiable. Fixed: gate = `isDevMode || isTihokaDebug()` (`__Tihoka_DEBUG__` compiled in for E2E builds via `build-e2e.mjs` Tihoka_E2E=1).
 2. requestId channel into popup component doesn't exist → render mark now fires from `popupLifecycle` via `requestAnimationFrame` after `setResult` (closure `requestId`).
 3. Audio render mark keyed on `items.length > 0 && !loading` — loading stays true until `fetchAudio` `finally`, so the mark reflects rows-visible, not skeleton.
 4. `markAudio(point, term)` signature aligned.

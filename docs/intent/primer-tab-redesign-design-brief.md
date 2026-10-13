@@ -100,7 +100,7 @@ DESYNCED  ──pill click / cue-timestamp seek / filterEpoch change──▶ FO
   being stomped by the next align — restored positions finally stick.
 - **Pill:** `Button` `variant="overlay"` `shape="pill"` `size="sm"` `elevation="med"`,
   `leadingIcon` = `Icon name="crosshair"`, label `t('cueList.syncToVideo')`
-  (en "Sync to video" / vi "Đồng bộ với video"), `data-cell-id="cue-list-sync"`,
+  (en "Sync to video" / vi "Đồng bộ với video"), `data-tihoka-id="cue-list-sync"`,
   z `static.zIndex.overlay-base` (under the blur overlay), list gains bottom padding while shown.
 
 ## Verified states
@@ -128,10 +128,10 @@ one line at 340px for all variants; the longest mock term
 
 ## Preserved contracts
 
-All `data-cell-id` attributes (`primer-tab`, `primer-header`, `primer-list`, `primer-row`,
-`primer-seek`), token hooks (`js-cell-token` + its `status-*` modifiers, `data-cell-term`,
-`data-cell-start`) and cue-range attributes (`data-cue-start`, `data-cue-end`) unchanged.
-`data-cell-id="cue-list-scroll"` stays on the scroller; new hooks: `cue-list-sync` (pill).
+All `data-tihoka-id` attributes (`primer-tab`, `primer-header`, `primer-list`, `primer-row`,
+`primer-seek`), token hooks (`js-Tihoka-token` + its `status-*` modifiers, `data-tihoka-term`,
+`data-tihoka-start`) and cue-range attributes (`data-cue-start`, `data-cue-end`) unchanged.
+`data-tihoka-id="cue-list-scroll"` stays on the scroller; new hooks: `cue-list-sync` (pill).
 `subtitle-panel-tab-*` hooks exist only while the strip renders (REQ-5).
 
 ## Decision record

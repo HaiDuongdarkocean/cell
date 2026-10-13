@@ -4,7 +4,7 @@ Date: 2026-09-17 · Stage: DESIGN gate (interactive) · Mockup: `src/entrypoints
 
 ## Presented
 
-Three divergent selected-state encodings for `.js-cell-token`, exercised live on the mockup (ctrl/cmd+click toggle, Esc clear, status×frequency matrix, mobile/desktop, light/dark):
+Three divergent selected-state encodings for `.js-Tihoka-token`, exercised live on the mockup (ctrl/cmd+click toggle, Esc clear, status×frequency matrix, mobile/desktop, light/dark):
 
 - **A — Tick mark**: 2px accent bar on the token's top edge (new edge grammar, mirror of the bottom status underline).
 - **B — Water wash**: ~18% primary `color-mix` fill via `background-image` (OS text-selection idiom).
@@ -23,7 +23,7 @@ User picked **Concept B — Water wash**: "chọn b như water wash" — selecte
 ## Follow-ups for DELIVER
 
 - Selected known/ignore tokens reveal their status underline while selected (same grammar as hover/`--popup-open`) — carried into spec behavior.
-- Wash var injected via `CELL_TOKEN_MAP` in `tokenSpanCss.ts` (host pages lack `tokens.css`); both builders get the rule.
+- Wash var injected via `Tihoka_TOKEN_MAP` in `tokenSpanCss.ts` (host pages lack `tokens.css`); both builders get the rule.
 - `aria-live` count region via `VisuallyHidden`, one per page.
 - Mockup directory is deleted at ship.
 

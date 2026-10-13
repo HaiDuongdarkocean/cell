@@ -30,7 +30,7 @@ Applied in one pass to `docs/specs/durable-job-registry.md` (2026-09-28):
 - New `## Alternatives considered` (extend downloadQueue / storage.local / IDB records / resumable uploads — all rejected with reasons) + explicit `## Non-goals`.
 - All 12 REQs backfilled (preconditions/alt/exception/NFR refs).
 - `resumable` → `retryable` everywhere; old-terminal-job disposition on retry stated; REQ-7 "non-terminal" wording.
-- Data section: per-job session keys (`cellJob:<id>`) + serialized per-job write queue; PendingImport TTL clarified (pre-completion buffering only, lazy reap replaced by stall timer).
+- Data section: per-job session keys (`TihokaJob:<id>`) + serialized per-job write queue; PendingImport TTL clarified (pre-completion buffering only, lazy reap replaced by stall timer).
 - REQ-4 requires fresh `loadSettings()` before each completion write; 0-entry index stamps `lastIndexedAt`.
 - Function↔feature map names per-kind surfaces; panel-local `ImportJob` statuses (`duplicate`/`skipped`/`file`/`signature`) stay panel-owned + registry-Job→ImportJob adapter named.
 - TTS progress correlates by `params.language` (payload has no jobId); `isVoicePackDownloaded()` signature note recorded.

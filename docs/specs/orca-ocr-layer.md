@@ -8,7 +8,7 @@
 
 ## Objective
 
-OCR layer cho Cell — biến text trong visual media (hard-sub video) thành interactive text có thể click → mở dictionary. User chủ động enable qua Manager Panel. Per-origin persistence. Mixed-language (CN+EN+JA) cốt lõi.
+OCR layer cho Tihoka — biến text trong visual media (hard-sub video) thành interactive text có thể click → mở dictionary. User chủ động enable qua Manager Panel. Per-origin persistence. Mixed-language (CN+EN+JA) cốt lõi.
 
 ### User stories
 
@@ -128,7 +128,7 @@ src/entrypoints/offscreen/ocr-worker.ts     # NEW — OCR Worker trong offscreen
 
 ## Code Style
 
-Theo AGENTS.md + existing Cell conventions:
+Theo AGENTS.md + existing Tihoka conventions:
 - Function component + hooks, named export (no default export)
 - No `any` (ESLint `no-explicit-any`)
 - Pure functions tách logic → dễ test
@@ -326,7 +326,7 @@ IDLE → OCR_TOGGLING_ON → OCR_INITIALIZING → READY → MONITORING
 ## Open Questions
 
 1. ~~WebGPU + WASM multithread trong offscreen~~ — **RESOLVED T0b**: WebGPU works in extension context. WASM multithread (SharedArrayBuffer/COOP/COEP) chưa test nhưng WASM single-thread đã đủ (3493ms cold, 263ms warm).
-2. **Japanese plugin**: Cell có `chinesePlugin` + `englishPlugin` nhưng chưa có `japanesePlugin`. OCR JA text → fallback single-char (phase 1), build `japanesePlugin` (FMM với JA dict) phase 2.
+2. **Japanese plugin**: Tihoka có `chinesePlugin` + `englishPlugin` nhưng chưa có `japanesePlugin`. OCR JA text → fallback single-char (phase 1), build `japanesePlugin` (FMM với JA dict) phase 2.
 3. ~~Model weights hosting~~ — **RESOLVED T0b**: Lazy-load từ CDN works (11147ms full download). IndexedDB cache cho subsequent runs (951ms cached).
 4. **Subtitle region dynamic**: bottom 15% default, nhưng top subtitles / two-line / unusual positions? Phase 1 = bottom % configurable, phase 2 = dynamic detection.
 5. **luma-diff threshold**: nền video chuyển động sau chữ làm nhiễu pixel-diff → false positive. Text-level dedup là fallback. **Test**: 100 frame sample, tune threshold.

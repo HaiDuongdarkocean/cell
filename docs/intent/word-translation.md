@@ -45,7 +45,7 @@
 
 ## Workflow
 
-Person↔device: learner plays a video with tokenize enabled and gloss toggle on → Cell tokenizes each cue → for each unique term not yet translated, Cell asks background TRANSLATE (chunked, like readings) → background calls Google unofficial (MyMemory on failure) → gloss lands in a term→gloss cache → tokens re-resolve → gloss paints under the word via a pseudo-element → learner reads meaning inline; click token → popup for full dictionary detail (unchanged). System↔system: content script ↔ background SW ↔ translate endpoints; on resource/lang change the cache invalidates like readings do.
+Person↔device: learner plays a video with tokenize enabled and gloss toggle on → Tihoka tokenizes each cue → for each unique term not yet translated, Tihoka asks background TRANSLATE (chunked, like readings) → background calls Google unofficial (MyMemory on failure) → gloss lands in a term→gloss cache → tokens re-resolve → gloss paints under the word via a pseudo-element → learner reads meaning inline; click token → popup for full dictionary detail (unchanged). System↔system: content script ↔ background SW ↔ translate endpoints; on resource/lang change the cache invalidates like readings do.
 
 ## Journey
 

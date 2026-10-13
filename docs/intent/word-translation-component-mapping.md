@@ -7,7 +7,7 @@ Chosen concept: **A — Interlinear** (user pick, 2026-10). Gloss is a text pseu
 
 | Element | Component | Decision | Token(s) | Icon |
 |---|---|---|---|---|
-| Per-word gloss under token | `.js-cell-token-word::after` reading `attr(data-gloss)` | extend — mirror of the shipped `::before` reading cap in `tokenSpanCss`; new attr `data-gloss` + `gloss-off` modifier class on the word token span | `--color-overlay-text` | — |
+| Per-word gloss under token | `.js-Tihoka-token-word::after` reading `attr(data-gloss)` | extend — mirror of the shipped `::before` reading cap in `tokenSpanCss`; new attr `data-gloss` + `gloss-off` modifier class on the word token span | `--color-overlay-text` | — |
 | Bottom headroom (wrap safety) | `margin-bottom` on the word token span when glosses on | extend — same technique as the top reading headroom | — | — |
 | Gloss width bound | `::after` box = token width + 0.8em bleed, `text-overflow: ellipsis` | extend — keeps spec REQ-3 "ellipsis not reflow" | — | — |
 | Settings row "Show word translations" | SettingsRow + Toggle + HintIcon | reuse — identical to the "Show readings" row above it (`SettingsDialogContent.tsx`) | `--color-text-primary`, `--color-text-muted` | — |

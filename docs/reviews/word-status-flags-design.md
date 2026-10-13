@@ -17,7 +17,7 @@ Inputs: `docs/intent/word-status-flags-design-brief.md`, `docs/intent/word-statu
 | Baseline mockup was a `.mk*` replica, not the real popup — invalid comparison | Rebuilt: `Real` mounts production `CandidateView`; concepts reuse extracted `StatusRow`/`StatusPill` + shared components; pipeline rule hardened in `pipeline-design` skill (no replicas — hard rule). |
 | Gradient must be continuous `flag → unknown` | Fixed in all concepts; verified on screenshots (tracking = orange→red, learning = green→red). |
 | Gradient rendered as one solid color | Root cause: production rules ship `html body … !important`; mockup overrides lacked specificity. Fixed with `html body` prefix + extra class — lesson recorded in design brief. |
-| Missing SRS icon button design | Added state-aware SRS button (ghost → create card / learning fill → view card / disabled when base ≠ unknown) in `cellHeaderActions` of every concept. |
+| Missing SRS icon button design | Added state-aware SRS button (ghost → create card / learning fill → view card / disabled when base ≠ unknown) in `TihokaHeaderActions` of every concept. |
 
 ## Approved decision
 

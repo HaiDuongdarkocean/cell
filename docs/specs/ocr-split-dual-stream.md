@@ -284,10 +284,10 @@ Split state is storage-driven (`OcrOriginState.splitEnabled`) — the toggle liv
 ```
 View mode, split ON:
   Region container
-    ├── .cell-ocr-region-rect          (parent region — dashed outline, non-interactive)
-    ├── .cell-ocr-split-top            (top half — tinted fill, pointer-events: none)
-    ├── .cell-ocr-split-bottom         (bottom half — tinted fill, pointer-events: none)
-    └── .cell-ocr-split-divider        (draggable horizontal bar, pointer-events: auto)
+    ├── .Tihoka-ocr-region-rect          (parent region — dashed outline, non-interactive)
+    ├── .Tihoka-ocr-split-top            (top half — tinted fill, pointer-events: none)
+    ├── .Tihoka-ocr-split-bottom         (bottom half — tinted fill, pointer-events: none)
+    └── .Tihoka-ocr-split-divider        (draggable horizontal bar, pointer-events: auto)
          ↕ drag → update splitRatio (UI real-time) → persist on mouseup
 ```
 

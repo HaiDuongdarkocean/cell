@@ -1,7 +1,7 @@
-# Atomic Design — Tổng hợp cho Cell
+# Atomic Design — Tổng hợp cho Tihoka
 
 > Tài liệu gốc: Brad Frost, *Atomic Design* (2013).  
-> Mục đích: giúp team Cell tra cứu nhanh cấp độ của component/tokens trong design-system showcase.
+> Mục đích: giúp team Tihoka tra cứu nhanh cấp độ của component/tokens trong design-system showcase.
 
 ---
 
@@ -15,7 +15,7 @@ Brad Frost nhấn mạnh nó là **mental model**, không phải quy trình tuy�
 
 ## 2. Năm cấp độ gốc
 
-| Cấp độ | Định nghĩa | Đặc điểm | Ví dụ trong Cell |
+| Cấp độ | Định nghĩa | Đặc điểm | Ví dụ trong Tihoka |
 |---|---|---|---|
 | **Atoms** | Đơn vị UI chức năng nhỏ nhất, không thể chia nhỏ hơn mà vẫn còn chức năng | Thường là HTML tag hoặc React component đơn giản, độc lập | `Button`, `Input`, `Heading`, `Text`, `Icon`, `Grid`, `Flex`, `Box`, `Separator`, `Transition` |
 | **Molecules** | Nhóm 2+ atoms hợp tác làm 1 việc cụ thể | Có ý nghĩa rõ ràng hơn atom riêng lẻ | `SearchField` (Icon + Input + Button), `Tabs`, `Dialog`, `Select`, `Pagination` |
@@ -78,7 +78,7 @@ Nguồn: https://bradfrost.com/blog/post/extending-atomic-design/
 
 Nguồn: https://cloudscape.design/foundation/visual-foundation/design-tokens/
 
-### 4.2. Các dimensions trong Cell
+### 4.2. Các dimensions trong Tihoka
 
 | Dimension | Vai trò | Ví dụ token |
 |---|---|---|

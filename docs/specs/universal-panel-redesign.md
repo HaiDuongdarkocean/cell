@@ -68,7 +68,7 @@ px)
 
 | Hiện tại | Mục tiêu | Ghi chú |
 |---|---|---|
-| `UniversalPanel.tsx` | Shell mới: desktop L-shape; mobile header+sheet | Giữ `data-cell-id` |
+| `UniversalPanel.tsx` | Shell mới: desktop L-shape; mobile header+sheet | Giữ `data-tihoka-id` |
 | `CollapsibleSidebar.tsx` (NEW) | Sidebar: profile + tabs + tools + collapse | Collapsible �180↔64 |
 | `UniversalPanelHeader.tsx` | Header desktop: tokenize stretch + close | Không profile |
 | `TokenizeControls.tsx` | Giữ logic, CSS pill `flex:1` | |
@@ -135,7 +135,7 @@ npm run test:e2e
 - **AC11**: Tab persistence qua `chrome.storage.session`.
 - **AC12**: 100% token style; `check-design-system-css` pass.
 - **AC13**: A11y: `aria-label`, keyboard, focus visible, axe 0 critical.
-- **AC14**: `data-cell-id` giữ hoặc cập nhật test.
+- **AC14**: `data-tihoka-id` giữ hoặc cập nhật test.
 - **AC15**: E2E spec pass.
 
 ---

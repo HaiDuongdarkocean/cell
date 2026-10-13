@@ -24,8 +24,8 @@
 
 ## How each risk spot was driven
 
-- **Panel/sheet/dialog**: badge click opens `#cell-universal-panel-host`; tools via `[data-cell-id="universal-panel-mobile-tools"]` at 390×844; profile dialog via `[data-cell-id="universal-panel-profile-button"]` (language profile seeded via `chrome.storage.local settings` — schemaVersion 35, `activeProfileId: 'p1'`).
-- **Popup over panel**: seeded `orca-dict-devmode0-en` (service-worker IndexedDB, mirror of `e2e/stage2/dictionary-nested-popup.spec.ts`); searched `silence` in the panel's integrated Dictionary, clicked `absence` in its `[data-allow-lookup]` definitions → `.js-cell-popup-host` mounted **above** the open panel (`isLookupFromUniversalPanel` → `abovePanel`), then `state` inside it → 2nd level. Focused a level-2 element via `el.focus()` so `composedPath` resolved the focused level.
+- **Panel/sheet/dialog**: badge click opens `#Tihoka-universal-panel-host`; tools via `[data-tihoka-id="universal-panel-mobile-tools"]` at 390×844; profile dialog via `[data-tihoka-id="universal-panel-profile-button"]` (language profile seeded via `chrome.storage.local settings` — schemaVersion 35, `activeProfileId: 'p1'`).
+- **Popup over panel**: seeded `orca-dict-devmode0-en` (service-worker IndexedDB, mirror of `e2e/stage2/dictionary-nested-popup.spec.ts`); searched `silence` in the panel's integrated Dictionary, clicked `absence` in its `[data-allow-lookup]` definitions → `.js-Tihoka-popup-host` mounted **above** the open panel (`isLookupFromUniversalPanel` → `abovePanel`), then `state` inside it → 2nd level. Focused a level-2 element via `el.focus()` so `composedPath` resolved the focused level.
 - **FieldRow**: card creator renders in the Dictionary tab's right pane unconditionally; drove `cc-target-word-input` textarea and `cc-tags-input` via React-safe native setters + synthetic `CompositionEvent`/`KeyboardEvent` (`isComposing` constructor flag — verified readable as `true`).
 - **Recap font deltas**: seeded `orca-local-player` (video + history record) + `langWordStatus` entry inside the session window → Recap hero rendered `.when` and derived `.statusChip`; computed styles read from the shadow root.
 

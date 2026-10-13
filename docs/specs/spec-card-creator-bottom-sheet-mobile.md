@@ -98,7 +98,7 @@ src/shared/ui/
 - CSS Modules only; no inline styles.
 - Use existing tokens (`--space-*`, `--radius-*`, `--color-*`, `--duration-*`).
 - Prefer existing shared UI components (`Button`, `Icon`, `BottomSheet`) over custom markup.
-- Keep `data-cell-id` attributes for testability.
+- Keep `data-tihoka-id` attributes for testability.
 - Mobile-first media queries; touch targets `>= 44px`.
 
 Example class naming:
@@ -140,7 +140,7 @@ Example class naming:
 
 ## Boundaries
 
-- **Always do**: update existing spec if scope changes; run `typecheck`, `lint`, `build`; preserve `data-cell-id`; keep mobile and desktop layouts behind the same `839px` breakpoint.
+- **Always do**: update existing spec if scope changes; run `typecheck`, `lint`, `build`; preserve `data-tihoka-id`; keep mobile and desktop layouts behind the same `839px` breakpoint.
 - **Ask first**: adding new dependencies; changing `UniversalPanelController` API; adding new `chrome` permissions; altering AnkiConnect payload.
 - **Never do**: commit secrets; hardcode hex colors outside `tokens.css`; remove failing tests; change `manifest.json` without justification.
 

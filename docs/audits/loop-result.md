@@ -1,6 +1,6 @@
 # Loop Result — Design-System Showcase Redesign
 
-> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Cell. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
+> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Tihoka. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
 
 > Bản ghi quá trình và hành động cải tiến `src/entrypoints/design-system-showcase/`.
 > Được giao toàn quyền quyết định, không hỏi người dùng.
@@ -48,7 +48,7 @@
 - [x] `MissingShowcasePlaceholder.tsx/.module.css` — placeholder for `src/shared/ui/` components without showcase.
 - [x] `vite.showcase.config.ts` — build outputs to `dist/design-system-showcase/design-system-showcase.html`, `showcaseOutputMover` plugin flattens output.
 - [x] `package.json` — `build:design-system` script.
-- [x] Run `npx vite build --config vite.showcase.config.ts` — passes; navigation to `http://127.0.0.1:8123/design-system-showcase.html` returns title `Cell Design System Showcase`.
+- [x] Run `npx vite build --config vite.showcase.config.ts` — passes; navigation to `http://127.0.0.1:8123/design-system-showcase.html` returns title `Tihoka Design System Showcase`.
 - [x] Update `docs/0-wiki.md` and `docs/2-architechture-system.md`.
 
 ## Verification

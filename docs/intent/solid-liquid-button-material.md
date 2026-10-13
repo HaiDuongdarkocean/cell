@@ -1,6 +1,6 @@
 # Intent — Solid/Liquid Button Material
 
-> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Cell. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
+> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Tihoka. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
 
 > Confirmed 8-field frame from elicitation.
 
@@ -10,7 +10,7 @@
 
 ## 2. User
 
-Dương — người duy trì design system của Cell.
+Dương — người duy trì design system của Tihoka.
 
 ## 3. Current workflow
 
@@ -22,7 +22,7 @@ Glass trên nền sáng/trắng quá nhạt, không phù hợp form/dialog/setti
 
 ## 5. Evidence
 
-Showcase hiện tại hiển thị liquid trên cả nền trắng/đen; anh yêu cầu solid dùng palette thiên nhiên Cell.
+Showcase hiện tại hiển thị liquid trên cả nền trắng/đen; anh yêu cầu solid dùng palette thiên nhiên Tihoka.
 
 ## 6. Desired outcome
 
@@ -60,7 +60,7 @@ Showcase hiện tại hiển thị liquid trên cả nền trắng/đen; anh yê
 | Q1 | 2 component hay 1 prop? → User: "có loại", material cấp design system, không chỉ button |
 | Q2 | prop hay token? → User: "cấp design system" |
 | Q3 | token trước hay component trước? → User: "định nghĩa trước" |
-| Q4 | solid là M3 filled hay flat opaque? → User: "flat/opaque không glass, dùng palette thiên nhiên Cell" |
+| Q4 | solid là M3 filled hay flat opaque? → User: "flat/opaque không glass, dùng palette thiên nhiên Tihoka" |
 | Q5 | nhóm token nào? → User: "tất cả" (surface, fg, border, shadow, hover, active, pressed, disabled, focus) |
 | Q6 | tokens.json hay file riêng? → User: "màu hiện tại không phân chia, don't overengineer, về sau chuyển dần" |
 | Q7 | variant hay class? → User: "dùng variant đi sẽ dễ hơn" |

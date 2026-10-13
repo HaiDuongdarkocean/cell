@@ -14,18 +14,18 @@ Spec: `docs/specs/lookup-latency-marks.md` (APPROVE_WITH_CHANGES round 2, all 4 
 | `npm run test:unit` | pass* | 662 suites; +8 new tests (4 perfMarks gate/clear/retain, 3 popupLifecycle ordering/stale/cache-skip, 1 toolbar guard placement). `DictionaryTab.test.tsx` failed once under full-suite timing (definitions still skeleton when assertion ran) — passes in isolation; diff does not touch the universal-panel search path |
 | `npm run build` | pass | vite build + postbuild CSP patch |
 | `check-feature-cycles` / `check-deep-imports` | pass | clean |
-| `npm run test:e2e:build` | pass | CELL_E2E=1 dist for the e2e spec |
+| `npm run test:e2e:build` | pass | Tihoka_E2E=1 dist for the e2e spec |
 
 ## Real-browser verification (Playwright + packed E2E `dist`, Chromium)
 
 `e2e/extension-latency-marks.spec.ts` — 1/1 pass. Clicked a seeded word on the mock stream page (real `LOOKUP_REQUEST` round-trip) and opened the Audio tab (fallback chain pinned to vendored eSpeak → real `PRONUNCIATION_ESPEAK_TTS` synthesis). Measures read from `performance.getEntriesByType('measure')` **in the page's own buffer**:
 
 ```
-cell:lookup:dispatch→response:dp-…-1 = 30.9ms
-cell:lookup:dispatch→render:dp-…-1   = 41.1ms
-cell:audio:start→applied:silence     = 282.3ms
-cell:audio:applied→render:silence    = 18.4ms
-cell:audio:start→render:silence      = 300.7ms
+Tihoka:lookup:dispatch→response:dp-…-1 = 30.9ms
+Tihoka:lookup:dispatch→render:dp-…-1   = 41.1ms
+Tihoka:audio:start→applied:silence     = 282.3ms
+Tihoka:audio:applied→render:silence    = 18.4ms
+Tihoka:audio:start→render:silence      = 300.7ms
 ```
 
 All durations non-negative; every number far under the <3s persona contract.
@@ -36,7 +36,7 @@ All durations non-negative; every number far under the <3s persona contract.
 
 ### Production gate
 
-Production `dist` still contains the `cell:lookup:*`/`cell:audio:*` literals (minifier does not strip gated calls — spec's softened criterion), but every helper call sits behind `isDevMode || isCellDebug()` which folds to `false` in the production artifact — zero runtime marks.
+Production `dist` still contains the `Tihoka:lookup:*`/`Tihoka:audio:*` literals (minifier does not strip gated calls — spec's softened criterion), but every helper call sits behind `isDevMode || isTihokaDebug()` which folds to `false` in the production artifact — zero runtime marks.
 
 ## Requirement traceability
 

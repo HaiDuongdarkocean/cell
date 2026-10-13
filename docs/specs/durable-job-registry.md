@@ -257,7 +257,7 @@ SW start → load jobs → for each queued|uploading|running job, and failed+pen
 
 | Entity | Key fields | Lives in | Retention |
 |---|---|---|---|
-| `Job` | `id`, `kind`, `label`, `status`, `progress:{done,total}`, `params` (ids only), `retryable`, `error` (reason code), `resourceId?`, `pendingEffect?`, `createdAt`, `updatedAt` | `chrome.storage.session` — one key per job (`cellJob:<id>`) + in-memory mirror | until `JOB_DISMISS` or session end (browser close) |
+| `Job` | `id`, `kind`, `label`, `status`, `progress:{done,total}`, `params` (ids only), `retryable`, `error` (reason code), `resourceId?`, `pendingEffect?`, `createdAt`, `updatedAt` | `chrome.storage.session` — one key per job (`TihokaJob:<id>`) + in-memory mirror | until `JOB_DISMISS` or session end (browser close) |
 | `PendingImport` (upload buffer) | `jobId`, `chunks[]`, `received`, `createdAt` | SW memory only | buffer TTL 10 min for pre-completion; stall-interrupt 30 s while tracked |
 | Job params per kind | import: `{langCode, resourceType, fileName, signature?, duplicateDecision}`; delete: `{langCode, resourceId}`; voice: `{language}`; index: `{dslFileHandleId}` | inside `Job.params` | with job |
 

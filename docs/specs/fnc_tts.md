@@ -12,7 +12,7 @@
 
 ## Objective
 
-Xây dựng branch `fnc_tts` cung cấp TTS local offline trong Cell MV3 bằng Supertonic v3, phục vụ:
+Xây dựng branch `fnc_tts` cung cấp TTS local offline trong Tihoka MV3 bằng Supertonic v3, phục vụ:
 
 - Phát âm **từ** và **câu** trong popup từ điển (Audio tab).
 - Nền tảng **queue / chunking / play / pause / resume / stop** để tương lai kết nối reader sách.

@@ -1,6 +1,6 @@
 # ADR-093: StreamFlix Mock Pages Redesign
 
-> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Cell. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
+> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Tihoka. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
 
 ## Status
 
@@ -22,7 +22,7 @@ The previous implementation had the following issues:
 - No light/dark mode, no URL parameters for quick testing, and no UI switcher.
 - The UI/UX looked unpolished: weak visual hierarchy, dense player controls, inconsistent cards.
 
-The Cell design system (see `docs/design-system/DESIGN.md`, `src/shared/styles/README.md`, `src/shared/styles/tokens.json`) defines a "liquid glass" aesthetic with a neutral-first palette, a single indigo accent, surface lift, content-first layout, and responsive design without re-layout.
+The Tihoka design system (see `docs/design-system/DESIGN.md`, `src/shared/styles/README.md`, `src/shared/styles/tokens.json`) defines a "liquid glass" aesthetic with a neutral-first palette, a single indigo accent, surface lift, content-first layout, and responsive design without re-layout.
 
 ## Decision
 
@@ -48,7 +48,7 @@ Instead of a top-level header switch, place the same-origin / cross-origin ifram
 - `Same-origin player`
 - `Cross-origin iframe`
 
-### 4. Apply the Cell design system: tokens + shared UI + liquid glass
+### 4. Apply the Tihoka design system: tokens + shared UI + liquid glass
 
 - Uses `tokens.css` for colors, spacing, radius, typography, and motion.
 - Uses `Button`, `Card`, `Badge`, `Tabs`, `Breadcrumb`, `Icon`, `IconButton`, `ListItem`, `Select`, `Heading`, `Text`, `Container`, `Flex`, `Avatar` from `src/shared/ui/`.
@@ -64,7 +64,7 @@ Reuse Vite, React, CSS modules, and the existing shared UI. No animation library
 **Positive:**
 
 - Reduced duplication and easier maintenance.
-- Consistent look and feel with the Cell design system.
+- Consistent look and feel with the Tihoka design system.
 - URL parameters support automated testing.
 - Cross-origin iframe test still works.
 

@@ -1,6 +1,6 @@
 # Spec Review — srs-daily-reminder
 
-Đã verify code claims trực tiếp trong repo: `by_timestamp`/`by_deck_due` indexes tồn tại (`srsDatabase.ts:126,143`), `wireAnkiStatusSyncScheduling` pattern đúng (`ankiStatusSync.ts:107-120`), `SRS_OPEN_STUDY_PAGE` hiện `tabs.create` unconditional (`srs.ts:98`), `CURRENT_SCHEMA_VERSION = 37` → v38 slice hợp lệ, `['srs']` trong syncedPaths với exclusions đúng, `srsUiPrefs` đọc `globalThis.localStorage` key `cell.srs.uiPrefs`, init ordering step 4 đúng (`index.ts:216-218`). Platform claims (gesture-required `permissions.request`, fixed-id replace, elapsed `when`, `notifications` hợp lệ trong `optional_permissions`) đều chính xác.
+Đã verify code claims trực tiếp trong repo: `by_timestamp`/`by_deck_due` indexes tồn tại (`srsDatabase.ts:126,143`), `wireAnkiStatusSyncScheduling` pattern đúng (`ankiStatusSync.ts:107-120`), `SRS_OPEN_STUDY_PAGE` hiện `tabs.create` unconditional (`srs.ts:98`), `CURRENT_SCHEMA_VERSION = 37` → v38 slice hợp lệ, `['srs']` trong syncedPaths với exclusions đúng, `srsUiPrefs` đọc `globalThis.localStorage` key `Tihoka.srs.uiPrefs`, init ordering step 4 đúng (`index.ts:216-218`). Platform claims (gesture-required `permissions.request`, fixed-id replace, elapsed `when`, `notifications` hợp lệ trong `optional_permissions`) đều chính xác.
 
 Blockers:
 1. —
@@ -14,7 +14,7 @@ Major:
 Minor:
 1. [Data] [BA]: `ReminderConfig` sync qua `['srs']` syncedPath mâu thuẫn intent Non-goals ("syncing reminder prefs across devices — device-local is accepted"). Spec đã document consequence ở Open Questions nhưng traceability line N8/Boundaries nên flag đây là deliberate deviation, không phải default đúng intent. Fix: reconcile — thêm `['srs','reminder']` vào excludedPaths hoặc annotate deviation.
 2. [Data table] [TL]: `snoozeUntil` field không REQ nào dùng (snooze state sống trong alarm `when`) — dead field. Fix: xóa hoặc wire vào REQ-3/REQ-4 re-assert.
-3. [REQ-7] [TL]: Mirror key `cell.srs.uiPrefs` trùng string với localStorage SSOT key — dễ nhầm khi debug. Fix: đổi tên vd `cell.srs.uiPrefsMirror`. Đồng thời "write once on load() in an extension context" là module-import side-effect bất ngờ — tốt hơn chỉ write trong `setSrsUiPrefs` + một lần khi settings row mount.
+3. [REQ-7] [TL]: Mirror key `Tihoka.srs.uiPrefs` trùng string với localStorage SSOT key — dễ nhầm khi debug. Fix: đổi tên vd `Tihoka.srs.uiPrefsMirror`. Đồng thời "write once on load() in an extension context" là module-import side-effect bất ngờ — tốt hơn chỉ write trong `setSrsUiPrefs` + một lần khi settings row mount.
 4. [REQ-2 step 4-5] [TL]: Mỗi fire chạy 3 range query chồng lấn (day-range cho gate, 364d trong `getStreakStats`, 28d trong REQ-5) — NFR-7 ok nhưng redundant I/O. Fix: gợi ý reuse một event read cho gate+learning.
 5. [REQ-6 Alt] [PO]: Chrome có thể auto-deny `permissions.request` sau khi user đã deny (không show UI lần 2). Fix: blocked-state copy nên có fallback hướng dẫn site/extension settings khi re-request trả false.
 6. [Spec-wide] [BA]: Spec không có section Scope/Non-goals riêng (dựa hoàn toàn vào intent) — chấp nhận được vì intent rõ, nhưng nên pointer explicit trong Boundaries.
@@ -44,7 +44,7 @@ Risks chấp nhận:
 2. REQ-2 Rules + Boundaries: reuse claim corrected — `dayStartMs`/`computeStreak` are module-local, DELIVER may export them; no parallel logic.
 3. REQ-5: added hysteresis — adopt candidate only when `mode - runner-up ≥ 2` or candidate == current learnedHour; else keep previous.
 4. REQ-2 steps 2/4: single 28d `by_timestamp` read feeds gate + learning; `collectionId` resolution specified (activeCollectionId → ensureFirstRun fallback, empty → silent); `dueNow`/`streakDays` via one `getSrsHomeStats` call gated behind the cheap gate.
-5. Data table: `snoozeUntil` removed; mirror key renamed `cell.srs.uiPrefsMirror`; write-through moved to `setSrsUiPrefs` + first row mount (no import side-effect); ReminderConfig annotated as deliberate sync deviation.
+5. Data table: `snoozeUntil` removed; mirror key renamed `Tihoka.srs.uiPrefsMirror`; write-through moved to `setSrsUiPrefs` + first row mount (no import side-effect); ReminderConfig annotated as deliberate sync deviation.
 6. REQ-6 Alt: fallback copy for auto-denied re-request; Boundaries gained explicit scope pointer to intent.
 
 VERDICT: APPROVE

@@ -1,6 +1,6 @@
 # Intent — Study Modes (Media Study Modes)
 
-> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Cell. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
+> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Tihoka. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
 
 > Confirmed statement of intent cho tab "Study Modes" trong Universal Panel.
 > Source of truth UI: `dist/study-modes-prototypes/variant-e2.html` (Liquid Glass, CRUD presets/custom).
@@ -91,7 +91,7 @@ File `dist/study-modes-prototypes/variant-e2.html` là SSOT cho giao diện. C�
 
 ### 8.1 Header
 
-- **Cell logo + "Study Modes"**.
+- **Tihoka logo + "Study Modes"**.
 - **Toggle theme** (icon button).
 - **Advanced** pill toggle — bật/tắt phần Advanced ở dưới.
 

@@ -11,7 +11,7 @@ VERDICT: APPROVE
 | Check | Kết quả |
 |---|---|
 | Mọi vùng mockup 1–14 map vào component/region | ✅ mapping table đầy đủ |
-| C5 `data-cell-id` contract giữ/đổi đúng bảng branch-scoped | ✅ `nav-cluster`, `nav-*`, `pm-*` mới rõ ràng |
+| C5 `data-tihoka-id` contract giữ/đổi đúng bảng branch-scoped | ✅ `nav-cluster`, `nav-*`, `pm-*` mới rõ ràng |
 | Không component shared mới không cần thiết | ✅ mọi region là CSS trong `PlayerModeOverlay.module.css`; nút = `Button`/`Menu`/`MenuItem` shared |
 | Tokens only, không hardcode | ✅ mapping leaf tokens; runtime var `--pm-anchor-bottom` là exception được justify (pill offset động) |
 | i18n/a11y | ✅ menu items có label i18n; touch ≥44px; `env(safe-area-inset-bottom)` |
@@ -23,7 +23,7 @@ VERDICT: APPROVE
 ## Quyết định design cần giữ khi implement
 
 1. **Detach không scroll**: `pm-cue-region` `overflow:hidden` + `mask-image` fade; system điều khiển vị trí card — KHÔNG user scroll.
-2. **Pill reposition thuần CSS**: `data-cell-player-mode-mobile` trên `documentElement` + `:host-context` — không sửa `mountComprehensionPill` internals.
+2. **Pill reposition thuần CSS**: `data-tihoka-player-mode-mobile` trên `documentElement` + `:host-context` — không sửa `mountComprehensionPill` internals.
 3. **Adaptive transport**: `cues===0` → prev/next swap thành rewind/forward; KHÔNG có rewind/forward trong ⋯ menu.
 4. **Button subtle-family**: `primarySubtle` transport+quick-add, `warningSubtle` hero, `errorSubtle` edit-card, `neutralSubtle` filter/generate/CC, `ghost` X/⋯.
 5. **Icon scale theo `iconbutton-icon-{xs..xl}`** = 16/18/20/24/28 (~50–57% container); glyphs bare (`chevronLeft`/`rotateCcw`/`play`/`pause`/`chevronRight`/`captions`).

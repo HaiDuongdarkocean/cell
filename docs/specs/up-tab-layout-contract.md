@@ -4,7 +4,7 @@
 
 ## Objective
 
-The Universal Panel ships six tabs under three divergent mounting patterns, a `data-cell-id`-keyed padding carve-out, two surface schemes, two tabs with no scroll region, and no deactivate lifecycle. The system must replace per-tab negotiation with one shell-declared contract: `.content` is a flush neutral host, every tab mounts identically through `.tabPane`/`visitedTabs`, every tab owns one scroll region via a shared `.scrollport` recipe, page gutters are declared per tab from a single token pair owned by the shell, the card-surface remap is hoisted once onto `.body`, a scroll-bottom inset clears the nav hairline, an `isActive` signal gives kept-alive panes a defined lifecycle (pause media on hide, revalidate stale data on activation), empty states fill the scrollport, and the dead `@container` rule is activated. This is defect repair + contract declaration — not visual redesign (items 30–33 own that).
+The Universal Panel ships six tabs under three divergent mounting patterns, a `data-tihoka-id`-keyed padding carve-out, two surface schemes, two tabs with no scroll region, and no deactivate lifecycle. The system must replace per-tab negotiation with one shell-declared contract: `.content` is a flush neutral host, every tab mounts identically through `.tabPane`/`visitedTabs`, every tab owns one scroll region via a shared `.scrollport` recipe, page gutters are declared per tab from a single token pair owned by the shell, the card-surface remap is hoisted once onto `.body`, a scroll-bottom inset clears the nav hairline, an `isActive` signal gives kept-alive panes a defined lifecycle (pause media on hide, revalidate stale data on activation), empty states fill the scrollport, and the dead `@container` rule is activated. This is defect repair + contract declaration — not visual redesign (items 30–33 own that).
 
 ## Actor ↔ System Boundary
 
@@ -32,7 +32,7 @@ REQ-1: Uniform tab-pane mounting for all six tabs
 - Exception: none new — pane render failure is contained by the mount-level `ErrorBoundary` wrappers (`mountUniversalPanel.ts:217-228`)
 - Rules:
   - Recap replaces its bare mount `UniversalPanel.tsx:287` (`{activeTab === 'recap' && recapPanel}`) with the same `.tabPane` + `visitedTabs` pattern — the diff is structural, not a third pattern
-  - `.content` keeps `data-cell-id={\`universal-panel-content-${activeTab}\`}` — it is the repo test-id attribute (`tests/setup.ts:6` `testIdAttribute: 'data-cell-id'`; e2e deps `e2e/stage2/universal-panel-ux-audit.spec.ts:107,120,147,236,288`, `e2e/extension-condensed-audio.spec.ts:198-263`, `mountUniversalPanel.test.tsx:116,186`). The attribute stays; **CSS must never key on it** (see REQ-3)
+  - `.content` keeps `data-tihoka-id={\`universal-panel-content-${activeTab}\`}` — it is the repo test-id attribute (`tests/setup.ts:6` `testIdAttribute: 'data-tihoka-id'`; e2e deps `e2e/stage2/universal-panel-ux-audit.spec.ts:107,120,147,236,288`, `e2e/extension-condensed-audio.spec.ts:198-263`, `mountUniversalPanel.test.tsx:116,186`). The attribute stays; **CSS must never key on it** (see REQ-3)
   - Existing test `UniversalPanel.test.tsx:101-119` ("still remounts the recap tab on each visit") asserts the defect — DELIVER flips it to assert same-node persistence across a round-trip
 - Postcondition: all six tabs lazily mount on first visit and persist for the panel's mounted lifetime
 - NFR refs: NFR-3 (memory bound), NFR-4
@@ -73,7 +73,7 @@ REQ-2: Shared `.scrollport` scroll contract — one scroll region per tab
 REQ-3: Gutter single-authority — `.content` flush, tabs own padding via shared tokens
 - Actor: maintainer (uniform gutters survive tab add/rename) · learner (consistent spacing)
 - Goal: exactly one padding declaration per tab, owned by the tab, fed by shell-owned token values — zero name-keyed selectors in the shell
-- Preconditions: `.content{padding:var(--space-4)}` + carve-out `:53-58` zeroes it for 4 named `data-cell-id`s; playlist/recap double-pad (`~28-32px` effective vs `12-16px` on siblings); `.content` media-query padding overrides `:99-103,:113-115`
+- Preconditions: `.content{padding:var(--space-4)}` + carve-out `:53-58` zeroes it for 4 named `data-tihoka-id`s; playlist/recap double-pad (`~28-32px` effective vs `12-16px` on siblings); `.content` media-query padding overrides `:99-103,:113-115`
 - Basic flow:
   1. System removes ALL padding from `.content` — the `:49` declaration, the entire `:53-58` attribute-keyed carve-out block, and the `.content` padding overrides in the `≤839px`/`<599px` media queries — `.content` becomes a pure flush flex host
   2. System declares the canonical gutter + inset as custom properties on `.body` (`UniversalPanel.module.css`), owned by the shell, consumed by tabs:
@@ -88,10 +88,10 @@ REQ-3: Gutter single-authority — `.content` flush, tabs own padding via shared
 - Alt flow: DESIGN may substitute the token values (e.g. a reduced inline gutter below a breakpoint) — values change in ONE place (`.body`); application sites never change
 - Exception: a new tab forgetting the padding declaration renders flush — a visible, greppable defect (`var(--universal-panel-tab-gutter)` in its CSS or not), not the silent double-padding/rename-orphan failure of the carve-out
 - Rules:
-  - The carve-out existed because `.content` is a single element whose `data-cell-id` tracks the *active* tab — per-tab padding at shell level is impossible without name-keying. Therefore: `UniversalPanel.module.css` MUST NOT contain any `[data-cell-id]` selector or per-tab padding ever again
+  - The carve-out existed because `.content` is a single element whose `data-tihoka-id` tracks the *active* tab — per-tab padding at shell level is impossible without name-keying. Therefore: `UniversalPanel.module.css` MUST NOT contain any `[data-tihoka-id]` selector or per-tab padding ever again
   - Canonical pair pinned at `var(--space-3) var(--space-4)` (12/16px — playlist/recap's existing self-padding): vocabulary inline gutter goes 12→16, studyModes block gutter 16→12 — intended deltas for DESIGN sign-off
   - Mobile gutter: spec pins one pair at all widths; if DESIGN wants a `≤599px` reduction it is declared once on `.body` under the media query, not per tab
-- Postcondition: effective page gutters are uniform across page-gutter tabs; renaming a `data-cell-id` or adding a seventh tab cannot silently break layout
+- Postcondition: effective page gutters are uniform across page-gutter tabs; renaming a `data-tihoka-id` or adding a seventh tab cannot silently break layout
 - NFR refs: NFR-4 (by-construction), NFR-5
 
 REQ-4: Scroll-bottom inset clears the nav hairline
@@ -207,7 +207,7 @@ REQ-10: Activate the dead playlist `@container`
 | NFR-1 | Reachability at every supported viewport + 200% zoom | U/a11y | Viewports 1440×900, 900×700, 768×1024, 390×844, 320×568; 200% zoom keeps all items scrollable-reachable (STANDARD §10.2) |
 | NFR-2 | Deterministic lifecycle | R | Zero audio/perceivable output from a `[hidden]` pane; teardown releases blob URLs; reactivation revalidates stale data without resetting UI state |
 | NFR-3 | Resource bound | P/resource | Keep-alive adds ≤1 DOM subtree (recap: one list, no media); revalidation = 1 `GET_SESSION_RECAP` per activation; ≥1GB RAM persona holds |
-| NFR-4 | Contract-by-construction | S/maintain | New tab inherits `.tabPane`+`visitedTabs`+`.scrollport`+gutter tokens without touching shell selectors; zero `[data-cell-id]`-keyed CSS in `UniversalPanel.module.css` |
+| NFR-4 | Contract-by-construction | S/maintain | New tab inherits `.tabPane`+`visitedTabs`+`.scrollport`+gutter tokens without touching shell selectors; zero `[data-tihoka-id]`-keyed CSS in `UniversalPanel.module.css` |
 | NFR-5 | Bounded visual delta | U | Pixel parity except declared deltas: scroll reachability, unified gutters (vocab 12→16 inline, studyModes 16→12 block, playlist/recap ~28-32→12/16), card shade on playlist/recap/dictionary, studyModes `--color-surface-card` newly remapped to surface-elevated (REQ-8 hoist — `StudyModesTab.module.css:8` only remapped `--card-background`), centered empty states, bottom inset, playlist row wrap ≤480px |
 
 ## Flows / States
@@ -282,9 +282,9 @@ Stories S1–S7 map: S1→REQ-2/4; S2→REQ-5/6; S3→REQ-1/7; S4→REQ-1/3/8; S
 
 ## Boundaries
 
-- Always: tokens/custom-props only for spacing+colors; `composes:` from `@/shared/ui/Scrollable.module.css` is the scrollbar/scrollport mechanism (repo precedent); `data-cell-id` kept as test hook but NEVER CSS-keyed; flip `UniversalPanel.test.tsx:101-119` and add coverage for recap keep-alive + isActive-driven teardown; pure prop derivation (`isActive`) at mount seam; update `docs/2-architechture-system.md` for the contract.
+- Always: tokens/custom-props only for spacing+colors; `composes:` from `@/shared/ui/Scrollable.module.css` is the scrollbar/scrollport mechanism (repo precedent); `data-tihoka-id` kept as test hook but NEVER CSS-keyed; flip `UniversalPanel.test.tsx:101-119` and add coverage for recap keep-alive + isActive-driven teardown; pure prop derivation (`isActive`) at mount seam; update `docs/2-architechture-system.md` for the contract.
 - Ask first: none anticipated — all mechanisms exist in-repo; if DELIVER finds `.mainCol`/dictionary scrollers non-conformant beyond a one-line fix, surface it rather than redesigning the tab (items 32/33 territory).
-- Never: touch nav chrome/order/badges (item 31), tab hit-targets/focus/tablist semantics (item 30), settings section subnav (item 32), selected-state recipes/typography/chips/playlist hand-rolled-EmptyState migration (item 33), token registry or native-atom dedup (item 29); no new dependencies; no CSS keyed on `data-cell-id`; no MutationObserver on `[hidden]`; do not "fix" `setVisitedTabs`-during-render (item 29, F-24).
+- Never: touch nav chrome/order/badges (item 31), tab hit-targets/focus/tablist semantics (item 30), settings section subnav (item 32), selected-state recipes/typography/chips/playlist hand-rolled-EmptyState migration (item 33), token registry or native-atom dedup (item 29); no new dependencies; no CSS keyed on `data-tihoka-id`; no MutationObserver on `[hidden]`; do not "fix" `setVisitedTabs`-during-render (item 29, F-24).
 
 ## Success Criteria
 
@@ -292,7 +292,7 @@ Stories S1–S7 map: S1→REQ-2/4; S2→REQ-5/6; S3→REQ-1/7; S4→REQ-1/3/8; S
 - [ ] AC-2 (N2, N10): With a playlist preview playing, switching to any other tab stops audio and clears the preview UI (object URL revoked — `previewUrlRef` null); closing the panel mid-preview cleans up as before; no audio is ever emitted from a `[hidden]` pane (real-Chromium verify — jsdom does not play audio).
 - [ ] AC-3 (N3): Recap mounts through `.tabPane` + `visitedTabs` identical to its siblings; a tab round-trip preserves the recap pane's DOM node identity (unit test — the `:101-119` test flipped); `{activeTab === 'recap' && recapPanel}` no longer exists in `UniversalPanel.tsx`.
 - [ ] AC-4 (N4): Recap `expandedId` and scroll position survive a tab round-trip; `GET_SESSION_RECAP` fires once per activation (first visit and every return); a failed refresh over displayed data keeps the stale list.
-- [ ] AC-5 (N5): `grep -n "data-cell-id" UniversalPanel.module.css` → zero hits; `.content` carries no padding at any breakpoint; effective page gutter is `12px block / 16px inline` (`--space-3 --space-4`) uniform on playlist, recap, vocabulary, studyModes at desktop and mobile breakpoints; dictionary/settings internal guttering verified consistent.
+- [ ] AC-5 (N5): `grep -n "data-tihoka-id" UniversalPanel.module.css` → zero hits; `.content` carries no padding at any breakpoint; effective page gutter is `12px block / 16px inline` (`--space-3 --space-4`) uniform on playlist, recap, vocabulary, studyModes at desktop and mobile breakpoints; dictionary/settings internal guttering verified consistent.
 - [ ] AC-6 (N6): `--card-background`/`--color-surface-card` remap declared exactly once, on `.body`; zero copies in tab CSS; computed card background is identical on all six tabs; `.modeCard`'s `var(--color-field)` override intentionally preserved; cards still read raised on the base surface in before/after captures.
 - [ ] AC-7 (N7): Fully-scrolled last row of every tab scrollport clears the bottom-nav hairline by ≥ `--space-3` at ≤839px (incl. safe-area where present); dictionary `leftPane` last row clears the collapsed `MobileSheet` peek — verified specifically.
 - [ ] AC-8 (N9): `EmptyState` optically centers within the scrollport on all six tabs at 768×1024 and 390×844 (top/bottom gap roughly symmetric — the 60–70% top-anchored void is gone); `bordered` variant and ≥3 non-panel consumers spot-checked unchanged.

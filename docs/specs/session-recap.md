@@ -72,7 +72,7 @@ REQ-3: Recap tab surface trong universal panel
   1. Learner mở universal panel → chọn tab Recap (bottom nav)
   2. System render phiên mới nhất nổi bật (card) + list các phiên trước
   3. Mỗi session hiển thị: nguồn (host hoặc tên video), thời điểm + thời lượng, số từ tra + chips, status changes theo loại + chips, coverage chip (khi có), badge `live`/`derived` khi áp dụng
-- Alt flow: không có session nào → empty state hướng dẫn (xem video với Cell subtitles để có recap)
+- Alt flow: không có session nào → empty state hướng dẫn (xem video với Tihoka subtitles để có recap)
 - Exception: request fail → error state với retry; field thiếu data → ẩn (không hiện "0" giả)
 - Rules:
   - Tab wiring đầy đủ: `UniversalPanelTab` union (`types.ts:5`); TABS trong `UniversalPanel.tsx:50` (sidebar) VÀ `UniversalPanelBottomNav.tsx:29` (bottom nav); `recapPanel` prop + conditional render (`UniversalPanel.tsx:265-271`); persisted-tab whitelists tại `UniversalPanelController.ts:56` + `mountUniversalPanel.ts:65` (thiếu = tab không restore); composition trong `mountUniversalPanel.ts`
@@ -173,7 +173,7 @@ Message surface: `GET_SESSION_RECAP` — payload `{}`, response `{sessions: Sess
 
 ## Success Criteria
 
-- [ ] AC-1: Xem video có Cell subtitles (stream hoặc local), tra ≥2 từ + mark ≥1 status → mở panel tab Recap → phiên xuất hiện với đúng thời lượng (±5%), nguồn, số lượt tra + chips từ, status changes đúng loại + chips.
+- [ ] AC-1: Xem video có Tihoka subtitles (stream hoặc local), tra ≥2 từ + mark ≥1 status → mở panel tab Recap → phiên xuất hiện với đúng thời lượng (±5%), nguồn, số lượt tra + chips từ, status changes đúng loại + chips.
 - [ ] AC-2: Tra từ lúc video PAUSE giữa phiên vẫn được tính vào session (grace window ±15m).
 - [ ] AC-3: Tab Recap có mặt trong universal panel trên một streaming site bất kỳ; cả phiên `watch-*` lẫn `stream-*` hiển thị chung một list, desc theo thời gian.
 - [ ] AC-4: Phiên ghi TRƯỚC khi feature ship (không có events) hiển thị status changes derive từ `wordStatusStore` (lọc `source:'user'`, in-window) kèm nhãn derived; lookups field không render (không phải "0"); phiên >30 ngày không derive.

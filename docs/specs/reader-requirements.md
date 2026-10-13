@@ -2,14 +2,14 @@
 
 ## 1. Objective
 
-Cell Reader là tính năng mở rộng của tiện ích Cell MV3, cho phép người học ngoại ngữ (10–25 tuổi) import và đọc sách ở định dạng EPUB/PDF/TXT/HTML trên desktop/tablet/mobile. Reader tận dụng lại các thành phần sẵn có của hệ thống (tokenizer, dictionary popup, TTS queue, card creator, storage) để cung cấp trải nghiệm đọc song ngữ, tra từ, nghe phát âm theo câu, lưu từ vựng vào Anki, và theo dõi tiến trình đọc có thể resume.
+Tihoka Reader là tính năng mở rộng của tiện ích Tihoka MV3, cho phép người học ngoại ngữ (10–25 tuổi) import và đọc sách ở định dạng EPUB/PDF/TXT/HTML trên desktop/tablet/mobile. Reader tận dụng lại các thành phần sẵn có của hệ thống (tokenizer, dictionary popup, TTS queue, card creator, storage) để cung cấp trải nghiệm đọc song ngữ, tra từ, nghe phát âm theo câu, lưu từ vựng vào Anki, và theo dõi tiến trình đọc có thể resume.
 
 ---
 
 ## 2. User Stories
 
 ### US-1: Mở Reader từ Universal Panel
-Là người dùng Cell, tôi muốn mở Reader từ Universal Panel để bắt đầu đọc sách.
+Là người dùng Tihoka, tôi muốn mở Reader từ Universal Panel để bắt đầu đọc sách.
 
 ### US-2: Import sách định dạng hỗ trợ
 Là người dùng, tôi muốn import file TXT/HTML/EPUB/PDF vào Reader để tạo thư viện sách cá nhân.

@@ -50,8 +50,8 @@ REQ-3: Annotation rendering
 - Actor: system
 - Goal: reading visible on the token without polluting copy, selection, or layout
 - Basic flow:
-  1. `tokenSpanRenderer` (`tokenSpanRenderer.ts:63-115`) sets `data-reading` on the inner `.js-cell-token-word` span — `attr()` only reads the element's own attribute, so attribute and `::before` must target the same node; `restyleTokenBlock` (`:165-186`) re-applies the attribute alongside classes so post-bind resolution still lands
-  2. CSS: `::before { content: attr(data-reading) }` on `.js-cell-token-word` — copy-clean (pseudo-element text never enters clipboard/selection); absolutely positioned in a fixed slot so the host line's `line-height` and cue layout are untouched; hidden when the attribute is absent/empty; `pointer-events: none` so tap-to-lookup is unaffected
+  1. `tokenSpanRenderer` (`tokenSpanRenderer.ts:63-115`) sets `data-reading` on the inner `.js-Tihoka-token-word` span — `attr()` only reads the element's own attribute, so attribute and `::before` must target the same node; `restyleTokenBlock` (`:165-186`) re-applies the attribute alongside classes so post-bind resolution still lands
+  2. CSS: `::before { content: attr(data-reading) }` on `.js-Tihoka-token-word` — copy-clean (pseudo-element text never enters clipboard/selection); absolutely positioned in a fixed slot so the host line's `line-height` and cue layout are untouched; hidden when the attribute is absent/empty; `pointer-events: none` so tap-to-lookup is unaffected
   3. React twins — BOTH must carry the attribute: `CueTokenText` (`CueList.tsx:99-170`) and `TokenSpan` inside `PreviewBlock.tsx:192-204` (card-creator preview already calls `resolveTokenListMetadata`, `PreviewBlock.tsx:27-35`)
   4. both CSS builders emit the rule: `buildTokenSpanCss` (`tokenSpanCss.ts:100`) and `buildTokenSpanCssForShadow` (`tokenSpanCss.ts:309+`) — covers shadow surfaces (split view, universal panel, card creator)
   5. exact geometry (above vs below glyph, font size, truncation) is a design-stage decision within these constraints

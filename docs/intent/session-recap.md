@@ -12,7 +12,7 @@
 | Change | Dữ liệu session chỉ nằm ở `HistoryRecord` thô (duration, position) + `ImmersionStats` tổng tích lũy → mỗi phiên được làm giàu metric (lookups, status changes, position span, coverage signal) và có surface đọc lại phiên mới nhất + các phiên gần đây. | `mediaLibraryRepository.ts:66-72` (HistoryRecord thô); `ImmersionStats.tsx` (chỉ totals) | high |
 | Solution | Hướng: session-stats accumulator ở background (điểm *signal-capture* duy nhất — mọi lookup/status message đều qua đây) + join stats ↔ history records theo (tabId, session window) ở read-time; metrics derivable được thì derive, không ghi trùng. Background KHÔNG thấy boundary phiên local (`useImmersionSession` flush thẳng vào IDB, SAVE_HISTORY handler là dead code) → join theo window, không theo write-path. | `immersionTracker.ts` (bg, stream segments); `useImmersionSession.ts:33-53` (local flush page-side); `handlers/lookup.ts`; `handlers/wordStatus.ts:82` | medium |
 | Value | Feedback hữu hình sau mỗi phiên → dopamine loop → retention ("progress chỉ tích lũy ở đây"); đồng thời cho learner thấy từ mình vừa tra/học trong context vừa xem → cầu nối immersion→SRS. | Market scan: exSTATic streak calendar, LingQ LingQs-per-session, LR saved-words | high |
-| Stakeholder | Language learner dùng Cell immersion (persona 5–80, mọi thiết bị); Anh là primary dogfooder. | AGENTS.md persona | high |
+| Stakeholder | Language learner dùng Tihoka immersion (persona 5–80, mọi thiết bị); Anh là primary dogfooder. | AGENTS.md persona | high |
 | Context | Chrome MV3, local-first; SW có thể chết bất cứ lúc nào; mọi data phải đọc được offline từ IDB; universal panel là surface chung duy nhất có mặt trên mọi site. | AGENTS.md; `src/features/universalPanel/types.ts:5` | high |
 
 ## Stakeholders
@@ -30,7 +30,7 @@
 | ID | Need (statement) | FURPS+ | Evidence/`[assumption]` | Confidence |
 |---|---|---|---|---|
 | N1 | Learner đọc lại được "phiên vừa xem làm được gì" — mỗi phiên (local `watch-*` + stream `stream-*`) có: thời lượng, khoảng vị trí, số lần tra từ + danh sách từ, số status changes theo loại + danh sách từ | F | `immersionTracker.ts:63-77` (stream flush); `useImmersionSession.ts:33-53` (local flush); lookups/status đều qua bg handlers (`lookup.ts`, `wordStatus.ts:82`) | high |
-| N2 | Surface đọc recap: phiên mới nhất nổi bật + danh sách phiên gần đây, truy cập được trên mọi site Cell chạy (universal panel) — không chỉ local-player library | F, U | `universalPanel` tabs hiện: dictionary/playlist/settings/studyModes/vocabulary (`types.ts:5`); `ImmersionStats.tsx` chỉ sống trong local-player | high |
+| N2 | Surface đọc recap: phiên mới nhất nổi bật + danh sách phiên gần đây, truy cập được trên mọi site Tihoka chạy (universal panel) — không chỉ local-player library | F, U | `universalPanel` tabs hiện: dictionary/playlist/settings/studyModes/vocabulary (`types.ts:5`); `ImmersionStats.tsx` chỉ sống trong local-player | high |
 | N3 | Recap của phiên quá khứ vẫn có phần derivable: status changes suy từ `wordStatusStore` entries có `source:'user'` + `sourceAt`/`updatedAt` trong window phiên (lọc sync writes — `wordStatusStore.ts:48-51,243`); lookups chỉ có từ khi counter được ship (ẩn field, không hiện "0" giả). Derivation chỉ đáng tin cho phiên gần đây — re-mark sau phiên xoá vết (upsert-by-key) → label derived + cap recency | R | `wordStatusStore.ts:46-51` (`updatedAt`/`source`/`sourceAt` per entry); `lookupLogStore.ts` là dev-only (`isDevMode` gate) → không dùng được cho prod | high |
 | N4 | Coverage signal cho local media có score cache: hiển thị coverage/band + delta khi suy được đáng tin. Stream coverage NGOÀI scope — stream score chỉ sống trong `comprehensionStore` in-memory, không persist, và `stream-*` records chỉ có `videoId:'stream:<host>'` (không media identity để join) | F | `mediaLibraryRepository.ts:34-40` (`VideoComprehension.computedAt`); `immersionTracker.ts:104` | medium |
 | N5 | Zero-effort: không bước thủ công nào để có recap; counter fail-closed (SW chết mất ≤1 segment buffer, không bơm số ảo) | R, +privacy | `immersionTracker.ts:37` cùng semantics fail-closed | high |
@@ -44,13 +44,13 @@
 
 ## Workflow
 
-Learner xem video trên streaming site (hoặc local player) → Cell subtitles active → background immersion tracker / local page-side hook đang ghi segment vào `history` → trong lúc xem learner tra từ (lookup handler) và mark status (wordStatus handler) — hai luồng này đều chạy qua background nên accumulator gộp chúng vào session stats keyed theo tabId + window (kể cả lookup lúc pause — segment đóng nhưng window còn) → learner mở universal panel → tab Recap → read-time join stats ↔ history records theo (tabId, window) → đọc phiên vừa rồi: thời lượng, số từ tra, từ mới learning/known, coverage signal → thấy tiến bộ hữu hình → quay lại immersion. System↔system: content-script↔background (lookup/status/timeupdate), background↔IDB (history/wordStatus/stats), panel↔background (đọc recap). Person↔device: learner đọc recap, tap vào từ trong list → mở dictionary tab tra lại (reuse surface có sẵn).
+Learner xem video trên streaming site (hoặc local player) → Tihoka subtitles active → background immersion tracker / local page-side hook đang ghi segment vào `history` → trong lúc xem learner tra từ (lookup handler) và mark status (wordStatus handler) — hai luồng này đều chạy qua background nên accumulator gộp chúng vào session stats keyed theo tabId + window (kể cả lookup lúc pause — segment đóng nhưng window còn) → learner mở universal panel → tab Recap → read-time join stats ↔ history records theo (tabId, window) → đọc phiên vừa rồi: thời lượng, số từ tra, từ mới learning/known, coverage signal → thấy tiến bộ hữu hình → quay lại immersion. System↔system: content-script↔background (lookup/status/timeupdate), background↔IDB (history/wordStatus/stats), panel↔background (đọc recap). Person↔device: learner đọc recap, tap vào từ trong list → mở dictionary tab tra lại (reuse surface có sẵn).
 
 ## Journey
 
 ### AS-IS
 
-1. Learner xem một tập trên YouTube với Cell subtitles, tra ~12 từ, mark 3 từ learning, xem hết 22 phút rồi tắt.
+1. Learner xem một tập trên YouTube với Tihoka subtitles, tra ~12 từ, mark 3 từ learning, xem hết 22 phút rồi tắt.
 2. Segment `stream-<tab>-<t>` được flush vào `history` — chỉ chứa duration + position cuối.
 3. Learner mở library/panel muốn xem mình vừa làm được gì → chỉ thấy tổng giờ tích lũy (`ImmersionStats`), không có khái niệm "phiên vừa rồi".
 4. 12 từ vừa tra "bốc hơi" — không surface nào liệt kê lại chúng; `lookupLogStore` chỉ ghi ở dev-mode nên production không có vết.
@@ -58,7 +58,7 @@ Learner xem video trên streaming site (hoặc local player) → Cell subtitles 
 
 ### TO-BE
 
-1. Learner xem một tập trên YouTube với Cell subtitles, tra 12 từ, mark 3 từ learning + 1 known, xem 22 phút rồi tắt — không làm thêm thao tác nào.
+1. Learner xem một tập trên YouTube với Tihoka subtitles, tra 12 từ, mark 3 từ learning + 1 known, xem 22 phút rồi tắt — không làm thêm thao tác nào.
 2. Background gộp lookup/status events của tab đó vào session-stats theo window (lookup lúc pause vẫn tính — window không đóng theo segment); local flush chạy page-side nhưng join theo window vẫn bắt được stats.
 3. Learner mở universal panel → tab Recap → card "Phiên gần nhất": 22 phút · youtube.com · 12 từ tra (list) · +3 learning +1 known (list) · coverage 89% (nếu media local có score).
 4. Bên dưới là list các phiên trước (7 ngày / N gần nhất) — mỗi row cùng metrics; tap từ trong list → tra lại trong dictionary tab.

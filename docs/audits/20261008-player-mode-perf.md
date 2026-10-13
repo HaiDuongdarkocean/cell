@@ -7,11 +7,11 @@ frequency, status data loaded) with a synthetic 2,400-cue VTT corpus via
 
 ## Method
 
-- Brave debug session on port 9223, persistent profile `C:\cell-browser-sessions\brave-debug`,
+- Brave debug session on port 9223, persistent profile `C:\Tihoka-browser-sessions\brave-debug`,
   extension loaded live from `dist/` through the `ext-dist` junction.
 - `node script/watch.mjs` captures console to `tmp/debug-brave/console.jsonl`.
 - `tmp/perf-trace/brave-trace.mjs <label>` drives the page over CDP: waits for
-  `#cell-subtitle-root`, presses `g`, samples PM overlay/tokens/longtasks/heap,
+  `#Tihoka-subtitle-root`, presses `g`, samples PM overlay/tokens/longtasks/heap,
   records `PerformanceObserver` longtasks and `performance.memory`.
 - Baseline measured by `git stash`-reverting the perf commits, rebuilding, reloading
   the extension in Brave via `chrome.runtime.reload()`.

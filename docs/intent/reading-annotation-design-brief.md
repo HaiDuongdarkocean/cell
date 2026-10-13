@@ -11,8 +11,8 @@ Subtitles live on a rhythm — eyes scan the glyph stream. An annotation that sh
 
 | Function (spec REQ) | Features | Element affected |
 |---|---|---|
-| batch resolution (REQ-1/2) | invisible — message + cache | `data-reading` attribute lands on `.js-cell-token-word` |
-| annotation render (REQ-3) | `::before` cap above token, absolute, centered | `.js-cell-token-word` in `tokenSpanRenderer` + React twins (`CueTokenText`, `PreviewBlock.TokenSpan`) + both CSS builders |
+| batch resolution (REQ-1/2) | invisible — message + cache | `data-reading` attribute lands on `.js-Tihoka-token-word` |
+| annotation render (REQ-3) | `::before` cap above token, absolute, centered | `.js-Tihoka-token-word` in `tokenSpanRenderer` + React twins (`CueTokenText`, `PreviewBlock.TokenSpan`) + both CSS builders |
 | profile toggle (REQ-4) | "Show readings" Toggle row | Subtitle card of `SettingsDialogContent` (next to `subtitleOverlayAutoLoad` family) |
 | visibility flip (REQ-4/5) | per-token `reading-off` modifier class, same mechanism as the existing `status-off`/`frequency-off` layer toggles | `applyTokenClasses` + `restyleTokenBlock` already re-apply classes → flip = restyle, no rebind |
 | empty/degrade (NFR-4) | no `data-reading` → no pseudo content | nothing renders |
@@ -31,7 +31,7 @@ DESIGN_VARIANCE 1 (pure token-layer extension of existing layer-toggle conventio
 
 ## Chosen variant — "Ruby cap"
 
-- **Geometry:** `::before { content: attr(data-reading) }` on `.js-cell-token-word`; `position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%)`; the word span gains `position: relative` (inline+relative is layout-neutral). Cap may overflow the token's width symmetrically into inter-word whitespace — accepted (furigana extensions do the same); it never widens the line.
+- **Geometry:** `::before { content: attr(data-reading) }` on `.js-Tihoka-token-word`; `position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%)`; the word span gains `position: relative` (inline+relative is layout-neutral). Cap may overflow the token's width symmetrically into inter-word whitespace — accepted (furigana extensions do the same); it never widens the line.
 - **Type:** `font-size: 0.55em` (em-relative — overlay subtitle size is user-configured), `line-height: 1`, `white-space: nowrap`, `font-style: normal`, `font-weight: 500`, `letter-spacing: -0.01em`, `color: inherit; opacity: 0.72` — reads as hint, not content.
 - **Legibility:** `text-shadow` reusing `static.shadow.sm` — same guard the status underline uses over video.
 - **Layer toggle:** `showReadings` in `TokenSpanBindOptions` → a per-token `reading-off` modifier class (mirrors the existing `status-off`/`frequency-off` layer toggles); CSS rule `content: none` kills the cap without touching `data-reading` → toggle flips via `restyleTokenBlock`, zero DOM rebuild.

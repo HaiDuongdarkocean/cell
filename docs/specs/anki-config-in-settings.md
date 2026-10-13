@@ -10,7 +10,7 @@ Move Card Creator field mapping and destination configuration from the inline Ca
 ## User stories
 
 1. In **Settings → Card Creator**, the user picks `Save cards to: Anki | Ocean SRS`.
-2. When `Anki` is selected, the user sets the AnkiConnect URL, tests the connection, then picks the default note type and deck from cached lists, and maps each Cell source field to an Anki field.
+2. When `Anki` is selected, the user sets the AnkiConnect URL, tests the connection, then picks the default note type and deck from cached lists, and maps each Tihoka source field to an Anki field.
 3. When `Ocean SRS` is selected, the whole Anki section is hidden.
 4. Opening the Card Creator form uses the saved mapping; it no longer shows per-field mapping selects.
 5. With a warm cache, opening Card Creator does not trigger `deckNames`/`modelNames`/`modelFieldNames` AnkiConnect calls (a background revalidation may run). Switching to a cached note type also does not re-fetch fields.

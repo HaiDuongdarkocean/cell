@@ -71,7 +71,7 @@ REQ-4: Tokenize capsule at natural content width with a seam
   2. actor views two joined icon halves at 390px and 1440px alike
 - Alt flow: `hasMedia=false` → media half still renders disabled inside the same capsule (existing `TokenizeControls.tsx:59` behavior preserved).
 - Exception: header too narrow → the title (REQ-3) truncates first; the capsule never squeezes its halves below their floor.
-- Rules: seam = hairline divider between halves (token-based, e.g. `--color-border-subtle`/`--color-divider` — DESIGN picks); both `fullWidth` halves (`TokenizeControls.tsx:38`) drop `fullWidth` so each hugs its icon; `role="group"`, `aria-pressed`, disabled state, `data-cell-id`s unchanged; the fix is shared across all viewports — no media query needed.
+- Rules: seam = hairline divider between halves (token-based, e.g. `--color-border-subtle`/`--color-divider` — DESIGN picks); both `fullWidth` halves (`TokenizeControls.tsx:38`) drop `fullWidth` so each hugs its icon; `role="group"`, `aria-pressed`, disabled state, `data-tihoka-id`s unchanged; the fix is shared across all viewports — no media query needed.
 - Postcondition: capsule measures natural width at every viewport; seam visible; behavior identical.
 - NFR refs: NFR-1
 

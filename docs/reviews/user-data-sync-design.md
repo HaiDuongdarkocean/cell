@@ -5,7 +5,7 @@
 ## What was reviewed
 
 - Three divergent concepts (Beacon / Watershed / Passport) built as an interactive mockup at `src/entrypoints/mockup-user-data-sync/` — distinct IA, interaction grammar and stylesheets, no shared presentation primitives.
-- Real-Chrome audit via `chrome-devtools` MCP: 132 scenario cells (11 scenarios × 3 concepts × {mobile, desktop} × {light, dark}) — 0 horizontal scroll, 0 real overflow, 0 axe violations; dialog focus trap/restore, roving tabs, connect/rebind/migration/disconnect flows verified with trusted input. Evidence: `tmp/user-data-sync-mcp-audit/` (report.md + 33 captures).
+- Real-Chrome audit via `chrome-devtools` MCP: 132 scenario Tihokas (11 scenarios × 3 concepts × {mobile, desktop} × {light, dark}) — 0 horizontal scroll, 0 real overflow, 0 axe violations; dialog focus trap/restore, roving tabs, connect/rebind/migration/disconnect flows verified with trusted input. Evidence: `tmp/user-data-sync-mcp-audit/` (report.md + 33 captures).
 - Two real bugs found and fixed during that audit (render-phase trigger capture; detached-trigger restore fallback).
 
 ## Owner decision

@@ -44,7 +44,7 @@ Cấu trúc xương sống, áp dụng cho mọi mô hình (Waterfall, Agile, Sp
 | **Ai làm** | BA (Business Analyst) |
 | **Làm gì** | Phỏng vấn khách hàng, quan sát, dùng prototype mockup để kéo yêu cầu ra |
 | **Output** | **Business Requirements Document (BRD)** — "khách hàng muốn gì" |
-| **Ví dụ Cell** | Persona 10-25 tuổi, học ngoại ngữ, cần tải sub song ngữ, máy RAM ≥1GB |
+| **Ví dụ Tihoka** | Persona 10-25 tuổi, học ngoại ngữ, cần tải sub song ngữ, máy RAM ≥1GB |
 
 > Pha quan trọng nhất với khách hàng chưa biết nói — BA làm hết, khách hàng chỉ trả lời câu hỏi.
 
@@ -55,7 +55,7 @@ Cấu trúc xương sống, áp dụng cho mọi mô hình (Waterfall, Agile, Sp
 | **Ai làm** | BA + System Analyst |
 | **Làm gì** | Quy đổi business requirement → functional requirement (cụ thể, đo lường được) |
 | **Output** | **Software Requirements Specification (SRS)** — "phần mềm phải làm gì" |
-| **Ví dụ Cell** | "Tải sub" → "Hỗ trợ .srt/.vtt/.ass; merge vào video; detect ngôn ngữ tự động" |
+| **Ví dụ Tihoka** | "Tải sub" → "Hỗ trợ .srt/.vtt/.ass; merge vào video; detect ngôn ngữ tự động" |
 
 ### Pha 3 — Design (Thiết kế)
 
@@ -64,7 +64,7 @@ Cấu trúc xương sống, áp dụng cho mọi mô hình (Waterfall, Agile, Sp
 | **Ai làm** | Architect / Tech Lead + UX Designer |
 | **Làm gì** | Thiết kế architecture (HLD) + chi tiết (LLD) + UI/UX mockup |
 | **Output** | **Architecture document + Design system + Wireframe** |
-| **Ví dụ Cell** | MV3 extension, Shadow DOM isolation, design system tokens, popup UI responsive |
+| **Ví dụ Tihoka** | MV3 extension, Shadow DOM isolation, design system tokens, popup UI responsive |
 
 > Khách hàng có thể tham gia: review mockup, nói "thấy thế nào" — vẫn không cần nói kỹ thuật.
 
@@ -75,7 +75,7 @@ Cấu trúc xương sống, áp dụng cho mọi mô hình (Waterfall, Agile, Sp
 | **Ai làm** | Developer |
 | **Làm gì** | Viết code theo design |
 | **Output** | **Source code** |
-| **Ví dụ Cell** | Background SW, content script, popup, subtitle parser |
+| **Ví dụ Tihoka** | Background SW, content script, popup, subtitle parser |
 
 > Khách hàng không tham gia — pha thuần kỹ thuật.
 
@@ -86,7 +86,7 @@ Cấu trúc xương sống, áp dụng cho mọi mô hình (Waterfall, Agile, Sp
 | **Ai làm** | QA / Tester |
 | **Làm gì** | Kiểm tra code có khớp requirement không: unit test, integration test, UAT |
 | **Output** | **Test report + Bug list** |
-| **Ví dụ Cell** | Test tải sub trên 5 site, test trên máy RAM 1GB, test responsive |
+| **Ví dụ Tihoka** | Test tải sub trên 5 site, test trên máy RAM 1GB, test responsive |
 
 > Khách hàng tham gia UAT (User Acceptance Testing) — dùng thử, nói "được/không được". Vẫn không cần nói kỹ thuật.
 
@@ -97,7 +97,7 @@ Cấu trúc xương sống, áp dụng cho mọi mô hình (Waterfall, Agile, Sp
 | **Ai làm** | DevOps / Release Manager |
 | **Làm gì** | Đưa sản phẩm lên môi trường production |
 | **Output** | **Sản phẩm chạy thật** |
-| **Ví dụ Cell** | Publish lên Chrome Web Store, Edge Add-ons, Brave store |
+| **Ví dụ Tihoka** | Publish lên Chrome Web Store, Edge Add-ons, Brave store |
 
 ### Pha 7 — Maintenance (Bảo trì)
 
@@ -106,7 +106,7 @@ Cấu trúc xương sống, áp dụng cho mọi mô hình (Waterfall, Agile, Sp
 | **Ai làm** | Toàn team |
 | **Làm gì** | Sửa bug, tối ưu, thêm feature theo feedback |
 | **Output** | **Bản update** |
-| **Ví dụ Cell** | Fix site đổi DOM, thêm site mới, tối ưu RAM |
+| **Ví dụ Tihoka** | Fix site đổi DOM, thêm site mới, tối ưu RAM |
 
 ---
 

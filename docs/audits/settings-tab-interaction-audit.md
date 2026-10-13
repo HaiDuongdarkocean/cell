@@ -60,7 +60,7 @@ Settings tab sau redesign dùng grammar Section→Group→Row phẳng — hình 
 
 - **Question**: user 5–80 tuổi có nhận ra còn section ẩn sau mép phải không?
 - **Aspect**: Information Architecture / discoverability.
-- **Evidence**: `navBtns.btns=[]` — không có `data-cell-id` scroll button nào trong DOM ở 320 (nav `sw=1183 > cw=213`, có `_fadeEnd_`). Commit `70a5d597` từng thêm chevron Buttons (`up-settings-subnav`), hiện code chỉ còn fade — chevron mất lúc nào đó trong rebuild.
+- **Evidence**: `navBtns.btns=[]` — không có `data-tihoka-id` scroll button nào trong DOM ở 320 (nav `sw=1183 > cw=213`, có `_fadeEnd_`). Commit `70a5d597` từng thêm chevron Buttons (`up-settings-subnav`), hiện code chỉ còn fade — chevron mất lúc nào đó trong rebuild.
 - **Proposal**: fade-only là YouTube-acceptable nhưng yếu hơn spec trước; hoặc khôi phục bound-aware chevron (đã từng có), hoặc chấp nhận fade + cập nhật spec `up-settings-subnav` cho khớp reality. Quyết định cần Anh yêu.
 
 ### P3 — Row-level hover absent là cố ý; note để không "fix" nhầm
@@ -146,7 +146,7 @@ Request: per-section minimalism audit, cut non-essential copy, plus a grading ch
 - `role="list"` children got `role="listitem"` (`DictLinksManager`, `ResourcesPanel`).
 - Dict-popup surface tabs: full tablist pattern — roving tabindex, Arrow/Home/End nav, `aria-controls` + `role="tabpanel"`/`aria-labelledby`.
 - Heading skip fixed: `headingLevel={4}` → `{3}` (13 sections; dialog title is h2).
-- `data-testid` → `data-cell-id` in `LanguageProfilePanel` (test infra reads `data-cell-id` via `tests/setup.ts`).
+- `data-testid` → `data-tihoka-id` in `LanguageProfilePanel` (test infra reads `data-tihoka-id` via `tests/setup.ts`).
 - **Profile delete now confirms**: new `Dialog` in `LanguageProfilePanel` (was instant delete while dict-link delete confirmed) + 4 i18n keys + tests updated.
 
 ### Rejected/deferred

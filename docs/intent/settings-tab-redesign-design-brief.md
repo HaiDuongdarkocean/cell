@@ -1,7 +1,7 @@
 # Settings Tab Redesign — Design Brief
 
 > Item: `settings-tab-redesign` · mode `all` (single justified variant) · Spec: `docs/specs/settings-tab-redesign.md`
-> Inspiration anchor: YouTube/Spotify settings grammar — **flat grouped lists, strong section titles, visible supporting text, right-edge controls** — expressed only through Cell tokens + shared atoms. No literal foreign values.
+> Inspiration anchor: YouTube/Spotify settings grammar — **flat grouped lists, strong section titles, visible supporting text, right-edge controls** — expressed only through Tihoka tokens + shared atoms. No literal foreign values.
 
 ## Design Read
 
@@ -9,7 +9,7 @@ The shipped surface stacks 13 identical boxed `Card`s. Inside them, the same job
 
 ## Primary job
 
-Let a learner (5–80, phone → desktop) scan 13 sections, know what each section is for, and understand each row's purpose without tapping ⓘ — while every existing control, scroll-sync anchor, and `data-cell-id` keeps working byte-for-byte.
+Let a learner (5–80, phone → desktop) scan 13 sections, know what each section is for, and understand each row's purpose without tapping ⓘ — while every existing control, scroll-sync anchor, and `data-tihoka-id` keeps working byte-for-byte.
 
 ## 3 dials (defaults)
 
@@ -92,7 +92,7 @@ Let a learner (5–80, phone → desktop) scan 13 sections, know what each secti
 ### Surface kept verbatim
 
 - `Sidebar`/`Navigation`/`NavItem`/`SettingsRow`-independent subnav logic, `observeScrollDirection`, `sectionRefs`, `data-section`, `aria-current`, auto-center, hide-on-scroll (REQ-6/AC-9).
-- All controls, `data-cell-id`s, `onChange` paths, storage listeners, Escape layers (REQ-7/AC-8).
+- All controls, `data-tihoka-id`s, `onChange` paths, storage listeners, Escape layers (REQ-7/AC-8).
 - `Heading`/`Text`/`Toggle`/`Select`/`MultiSelect`/`ShortcutInput`/`HintIcon`/`Button`/`SegmentedControl`/`EmptyState`/`Alert`/`StatusDot`/`Badge`/`Chip`/`Checkbox`/`Dialog`/`Menu` atoms.
 
 ## Responsive behavior (container widths — `popoverBody` is `container-type: inline-size`)

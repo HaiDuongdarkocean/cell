@@ -18,7 +18,7 @@ Backlog #12 · Source: internal-audit (`docs/audits/20260916_src-features-entryp
 | `pendingSubsRef` unbounded | **Already bounded** — `LruCache<string, File>` cap `FILE_CACHE_CAP = 500` | `src/entrypoints/local-player/logic/fileCache.ts:5,11-18`; created in `hooks/useFileCaches.ts:15-16` |
 | `videoFileCacheRef` unbounded | **Already bounded** — same `createFileCache()` → `LruCache(500)` | `fileCache.ts:11-18`; `useFileCaches.ts:16`; `useVideoLibrary.ts:296` clears on dir change |
 | `subtitleResponseCache` unbounded | **Already bounded** — `LruCache` `MAX_ENTRIES = 50` + `MAX_BODY_CHARS = 500_000` + `clearSubtitleBodyCache()` on re-inject | `src/features/subtitle/logic/subtitleResponseCache.ts:5-8,17,54` |
-| 26 `console.*` in local-player | **Already cleaned** — exactly **1** remains: `console.error('[local-player] Cannot load settings — storage unavailable.')` — a production-visible error that *should* stay (all `logger.*` methods are `__CELL_DEBUG__`-gated noops in production after `debug-seam-hardening`) | `useSubtitleActions.ts:145`; `src/shared/lib/logger.ts:3-20` |
+| 26 `console.*` in local-player | **Already cleaned** — exactly **1** remains: `console.error('[local-player] Cannot load settings — storage unavailable.')` — a production-visible error that *should* stay (all `logger.*` methods are `__Tihoka_DEBUG__`-gated noops in production after `debug-seam-hardening`) | `useSubtitleActions.ts:145`; `src/shared/lib/logger.ts:3-20` |
 
 LruCache migration shipped in `0d45d6e1` (god-file split) / `5b8934b0` (response cache); `LruCache` itself is a tested shared primitive (`src/shared/lib/lruCache.ts`).
 

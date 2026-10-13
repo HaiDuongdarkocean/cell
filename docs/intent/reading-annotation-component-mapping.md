@@ -4,9 +4,9 @@
 
 | Element (site) | Component | Decision | Token(s) | Icon |
 |---|---|---|---|---|
-| Reading attribute (`tokenSpanRenderer`) | css (feature module) | extend — `data-reading` on inner `js-cell-token-word` when `token.reading` resolves; `applyTokenClasses` gains `showReadings` → per-token `reading-off` modifier (mirrors the `status-off`/`frequency-off` layer toggles) | — | — |
+| Reading attribute (`tokenSpanRenderer`) | css (feature module) | extend — `data-reading` on inner `js-Tihoka-token-word` when `token.reading` resolves; `applyTokenClasses` gains `showReadings` → per-token `reading-off` modifier (mirrors the `status-off`/`frequency-off` layer toggles) | — | — |
 | Annotation cap CSS (`tokenSpanCss`) | css (feature module) | extend — one rule block in both `buildTokenSpanCss` (:100) and `buildTokenSpanCssForShadow` (:309+); `html body` ancestor specificity precedent applies to the plain builder | `static.shadow.sm` | — |
-| Word span positioning (`tokenSpanCss`) | css (feature module) | extend — `js-cell-token-word` gains `position: relative` (inline+relative is layout-neutral, no reflow) | — | — |
+| Word span positioning (`tokenSpanCss`) | css (feature module) | extend — `js-Tihoka-token-word` gains `position: relative` (inline+relative is layout-neutral, no reflow) | — | — |
 | Cue-list tokens (`CueList.tsx` token twin) | css (feature module) | extend — same attribute + modifier mirror on the React twin | — | — |
 | Card-creator preview tokens (`PreviewBlock.tsx` twin) | css (feature module) | extend — same attribute + modifier mirror | — | — |
 | "Show readings" settings row (`SettingsDialogContent` Subtitle card) | Toggle | reuse — beside the `subtitleOverlayAutoLoad` family (:377-422); i18n `settings.subtitle.showReadings` + desc, en+vi | `component.toggle.*`, `color-text-secondary` | — |

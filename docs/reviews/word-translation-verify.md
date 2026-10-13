@@ -2,7 +2,7 @@
 
 > Date: 2026-10-07 · Owner: devin
 > Item stage: `deliver` · Gates: typecheck/lint/testUnit/build = pass · **browser = pass**
-> Environment: Brave `:9224` (agent profile `C:\cell-browser-sessions\brave-agent`), extension reloaded from current `dist/`, mock StreamFlix `http://127.0.0.1:4321/` (Solo Leveling Ep 1, EN track, native = `vi`).
+> Environment: Brave `:9224` (agent profile `C:\Tihoka-browser-sessions\brave-agent`), extension reloaded from current `dist/`, mock StreamFlix `http://127.0.0.1:4321/` (Solo Leveling Ep 1, EN track, native = `vi`).
 
 ## Root cause fixed during verify
 
@@ -38,11 +38,11 @@ re-verified in the browser (fresh `dist/`, glosses + IPA confirmed again):
 | 1 | Tokens render `data-gloss` alongside `data-reading` on the overlay block — "YOU WERE GOOD TO ME" → `bạn/đã/tốt/để/tôi` + `ju/wɜr/ɡʊd/tu/mi` (DOM probe, 5/5 word tokens) | ✅ |
 | 2 | Glosses actually paint — IPA caps above glyphs, glosses below, cue between nav clusters; re-verified after the stale-write fix on a fresh build (screenshot `tmp/word-translation/gloss-live.png`, DOM `data-gloss` + `data-reading` on all 5 tokens) | ✅ |
 | 3 | Glosses don't overlap adjacent tokens — bounded `::after` (`left/right: -0.4em`, `overflow:hidden`, `text-overflow:ellipsis`), confirmed in mockup `concept-a-light.png` and the live shot | ✅ |
-| 4 | Toggle OFF live → `js-cell-token--gloss-off` on all tokens, `data-gloss` cleared, glosses hidden (screenshot `gloss-off.png`); toggle ON re-fetches and restores `bạn/đã/tốt/để/tôi` | ✅ |
+| 4 | Toggle OFF live → `js-Tihoka-token--gloss-off` on all tokens, `data-gloss` cleared, glosses hidden (screenshot `gloss-off.png`); toggle ON re-fetches and restores `bạn/đã/tốt/để/tôi` | ✅ |
 | 5 | Native-language change invalidates and re-fetches — `vi→fr` produced `vous/étaient/bien/à/moi`, `fr→vi` produced `bạn/đã/tốt/để/tôi`; no stale glosses | ✅ |
 | 6 | Disabled mode makes zero translation requests — gloss leg gated by `showGlosses && glossTargetLanguage`; unit test asserts `getWordTranslations` not called when either is unset | ✅ |
 | 7 | Failed/skipped gloss leg retains existing glosses (undefined map semantics); covered terms with `''` clear — `videoTokenMap.test.ts` | ✅ |
 | 8 | Marker alignment + 1500-char sub-batching + same-term suppression — `translateService.test.ts` / handler logic | ✅ |
-| 9 | Scope limited to subtitle overlay block — `CueList`/`PreviewBlock` render `js-cell-token--gloss-off` so the `::after` lane and footroom stay out of non-overlay surfaces | ✅ |
+| 9 | Scope limited to subtitle overlay block — `CueList`/`PreviewBlock` render `js-Tihoka-token--gloss-off` so the `::after` lane and footroom stay out of non-overlay surfaces | ✅ |
 
 VERDICT: PASS

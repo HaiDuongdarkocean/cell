@@ -2,7 +2,7 @@
 
 ## Confirmed intent
 
-- **Tính năng:** Quản lý **Language Profile** trong Cell.
+- **Tính năng:** Quản lý **Language Profile** trong Tihoka.
 - **Vị trí Settings:** `Settings → Profile Language card`.
   - **Universal Native language** ở trên cùng (global option, một tài khoản/ một người dùng).
   - Danh sách **Language Profile** hiển thị dạng card.

@@ -23,9 +23,9 @@ DictionaryTab
    │        ├─ EmptyState / Alert
    │        └─ .candidateList
    │           └─ CandidateView
-   │              ├─ .cellHeader (h2, send/quick-add icon-buttons)
-   │              ├─ .cellHeaderReading (IPA + audio icon-buttons)
-   │              ├─ .cellHeaderSecond (status pill, frequency pill)
+   │              ├─ .TihokaHeader (h2, send/quick-add icon-buttons)
+   │              ├─ .TihokaHeaderReading (IPA + audio icon-buttons)
+   │              ├─ .TihokaHeaderSecond (status pill, frequency pill)
    │              ├─ DictionaryToolbar (audio/image/translate/links/pronunciation tabs)
    │              ├─ Media panels
    │              │  ├─ AudioPanel
@@ -33,7 +33,7 @@ DictionaryTab
    │              │  ├─ TranslatePanel
    │              │  ├─ LinksPanel
    │              │  └─ PronunciationPanel
-   │              └─ section.cellDef / DefinitionItem
+   │              └─ section.TihokaDef / DefinitionItem
    └─ .rightPane
       └─ CardCreatorPanel
          └─ CardCreatorDialogContent
@@ -105,7 +105,7 @@ SettingsTab
 | Signal | Count | Source |
 |---|---|---|
 | M3 `audit.sh` violations in scope | ~58 | `m3-design-standard/audit/audit.sh` per feature dir |
-| Undefined / legacy CSS tokens | 4 + 26 `cell-*` | `grep var(--...)` cross-checked with `tokens.css` |
+| Undefined / legacy CSS tokens | 4 + 26 `Tihoka-*` | `grep var(--...)` cross-checked with `tokens.css` |
 | Hardcoded `1px` / `2px` border/outline | 10+ in scope | `grep` for `\b1px\b` / `\b2px\b` in `*.module.css` |
 | Native HTML inputs in TSX | 7 in scope | `audit.sh [9]` + manual TSX read |
 | Emoji in TSX | 6 in scope | `audit.sh [8]` |
@@ -123,7 +123,7 @@ SettingsTab
 
 1. **Undefined token `--font-size-xm` kills label text**
    - **File:** `src/features/dictionaryPopup/ui/DictionaryPanelView.module.css:158`
-   - **Current:** `.cellLabel { font-size: var(--font-size-xm); }`
+   - **Current:** `.TihokaLabel { font-size: var(--font-size-xm); }`
    - **Evidence:** No `--font-size-xm` in `tokens.css`; rule is invalid.
    - **Proposed:** Replace with `var(--font-size-xs)` or `var(--font-size-sm)`.
 
@@ -142,7 +142,7 @@ SettingsTab
 
 4. **Toolbar tab overrides shared `Button` contract**
    - **File:** `src/features/dictionaryPopup/ui/DictionaryPanelView.module.css:488-499`
-   - **Current:** `.cellToolbar .cellToolbarTab` resets `height`, `min-height`, `padding`, `gap` to `0`/`var(--iconbutton-size-sm)`, beats the 40 px touch target.
+   - **Current:** `.TihokaToolbar .TihokaToolbarTab` resets `height`, `min-height`, `padding`, `gap` to `0`/`var(--iconbutton-size-sm)`, beats the 40 px touch target.
    - **Proposed:** Use `IconButton` for icon-only tabs, or `Button` with `size="sm"` and remove local overrides.
 
 5. **Candidate chip underline uses `2px` hardcoded**
@@ -197,8 +197,8 @@ SettingsTab
 1. **Double padding with `UniversalPanel.content`**
    - **Files:** `src/features/universalPanel/UniversalPanel.module.css:48`, `src/features/studyModes/ui/StudyModesTab.module.css:2`
    - **Current:** `.content` adds `padding: var(--space-4)`, `.tab` adds `padding: var(--space-6)`; Dictionary/Settings get `padding: 0` override.
-   - **Evidence:** Study Modes is not in the `.content[data-cell-id="..."]` zero-padding list.
-   - **Proposed:** Add `.content[data-cell-id="universal-panel-content-studyModes"] { padding: var(--space-0); }` or remove `.tab` padding.
+   - **Evidence:** Study Modes is not in the `.content[data-tihoka-id="..."]` zero-padding list.
+   - **Proposed:** Add `.content[data-tihoka-id="universal-panel-content-studyModes"] { padding: var(--space-0); }` or remove `.tab` padding.
 
 2. **Custom mode builder error color ambiguous**
    - **File:** `src/features/studyModes/ui/CustomModeBuilder.tsx:177`
@@ -223,7 +223,7 @@ SettingsTab
    - **Current:** `.modeIcon { opacity: 0.8; }`, `.modeDesc { opacity: 0.85; }`
    - **Proposed:** Use `var(--color-text-tertiary)` / `var(--color-text-secondary)`.
 
-6. **Hardcoded breakpoints outside Cell standard**
+6. **Hardcoded breakpoints outside Tihoka standard**
    - **File:** `src/features/studyModes/ui/StudyModesTab.module.css:51,57,268`
    - **Current:** `360px`, `520px`, `639px`
    - **Proposed:** Align with `480px` / `768px` or add `--breakpoint-*` tokens.
@@ -259,9 +259,9 @@ SettingsTab
 
 #### P0 — Blocker
 
-1. **`TtsLanguagePanel` is written in a non-existent `cell-*` token namespace**
+1. **`TtsLanguagePanel` is written in a non-existent `Tihoka-*` token namespace**
    - **File:** `src/features/tts/ui/TtsLanguagePanel.module.css` (entire file)
-   - **Current:** Uses `var(--cell-gap-sm, 8px)`, `var(--cell-color-text-primary, #111)`, `font: var(--cell-text-body, 14px / 1.5 sans-serif)`, etc. None of these `cell-*` tokens exist in `tokens.css`.
+   - **Current:** Uses `var(--Tihoka-gap-sm, 8px)`, `var(--Tihoka-color-text-primary, #111)`, `font: var(--Tihoka-text-body, 14px / 1.5 sans-serif)`, etc. None of these `Tihoka-*` tokens exist in `tokens.css`.
    - **Impact:** Everything falls back to hardcoded hex/type on every theme, breaking dark mode, contrast, and SSOT.
    - **Proposed:** Rewrite to current tokens (`--space-*`, `--color-text-*`, `--font-size-*`, `--font-family`, `--radius-*`, `--color-error`).
 
@@ -366,7 +366,7 @@ SettingsTab
 
 ## 4. Cross-Cutting Themes
 
-1. **Undefined / legacy tokens** — `TtsLanguagePanel` is the worst offender (`cell-*` namespace), followed by `--font-size-xm`, `--border-radius-sm`, `--radius-m3-small`, `--border-radius-md`.
+1. **Undefined / legacy tokens** — `TtsLanguagePanel` is the worst offender (`Tihoka-*` namespace), followed by `--font-size-xm`, `--border-radius-sm`, `--radius-m3-small`, `--border-radius-md`.
 2. **Native form controls** — Card Creator, Dictionary Popup settings, TTS Voice Manager, and Card Creator `FieldRow` all bypass `@/shared/ui` atoms.
 3. **Hardcoded `1px` / `2px`** — borders, outlines, text-decoration-thickness, and shadow offsets are still written as literal pixels in multiple files.
 4. **Spacing-stack / dead spacing** — `DictionaryPanelView.module.css` (73 spacing declarations), `SettingsDialog.module.css` (31), `TtsVoiceManagerPanel.module.css` (24), `ApiKeyManager.module.css` (25), `StudyModesTab.module.css` (21). Many are legitimate, but several files need leaf→root review.

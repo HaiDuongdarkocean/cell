@@ -30,7 +30,7 @@ single-page app where a full-screen stepper would fight the existing chrome.
 A persistent left step-rail on desktop collapses to a "Bước n/6" label +
 Progress bar on mobile (375px floor).
 
-The wizard follows existing Cell patterns: `SelectableCard` for binary
+The wizard follows existing Tihoka patterns: `SelectableCard` for binary
 source choice (same archetype as destination picker in Card Creator),
 `Checkbox` rows for the picker (same as deck select-mode), `Select` for
 field roles, `Tabs` for notetype switching, `Progress`+`Spinner` for the run,

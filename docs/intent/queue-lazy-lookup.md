@@ -10,7 +10,7 @@ Interview (one-question-at-a-time) + codebase observation.
 Khi nhấn **"Send to Card"** hoặc **"Quick Add"** từ subtitle overlay hoặc popup dictionary, hệ thống hiện tại phải tokenize dòng subtitle, lấy word status, rồi `Promise.all` lookup toàn bộ unknown/tracking words trong câu trước khi mở panel. Với khoảng 10 từ unknown, việc này gây delay lâu trong lúc UI chỉ hiển thị "recording".
 
 ### 2. User
-Người dùng Cell đang xem video/web có subtitle, muốn chọn nhanh các từ cần học và đẩy vào Card Creator hoặc Anki.
+Người dùng Tihoka đang xem video/web có subtitle, muốn chọn nhanh các từ cần học và đẩy vào Card Creator hoặc Anki.
 
 ### 3. Current workflow
 1. Nhấn "Send to Card" hoặc "Quick Add" từ subtitle overlay / popup dictionary.

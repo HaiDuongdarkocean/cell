@@ -46,7 +46,7 @@
 - Seam: `CardCreatorPanel` `border-left` deleted (mobile keeps `border-left:none` at :21); `DictionaryTab.module.css:18` keeps `border-right: hairline divider` → single 1px seam at desktop ✓.
 
 ### REQ-7 — One EmptyState anatomy — PASS
-- Playlist hand-rolled `.empty` → `EmptyState compact` + `audioWave` icon + description, `role="status"` preserved, `data-cell-id="playlist-empty"` added (live-verified icon+title+desc).
+- Playlist hand-rolled `.empty` → `EmptyState compact` + `audioWave` icon + description, `role="status"` preserved, `data-tihoka-id="playlist-empty"` added (live-verified icon+title+desc).
 - Vocabulary empties gain descriptions via new `vocabulary.emptyHint|emptyFilteredHint|emptyTrashHint` (en+vi).
 - Loading branch (`Spinner`+`role="status"`) untouched ✓.
 

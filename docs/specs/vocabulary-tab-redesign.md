@@ -198,7 +198,7 @@ REQ-12: Purge expired trash (system-internal)
 | NFR-3 | Visual/interaction language matches Universal Panel + Dictionary: shared `src/shared/ui` components, tokens, `ICON_CATALOG` icons, segmented-toolbar pattern like `DictionaryToolbar` | U | design-system check |
 | NFR-4 | Every new string in `en.json` + `vi.json`; all controls expose accessible names/roles (segmented control uses `tablist` semantics) | U | i18n diff + a11y pass |
 | NFR-5 | No complexity regression vs current list code (existing `selectEntries` sort cost preserved); pagination unchanged at 200 | P | existing behavior preserved |
-| NFR-6 | No new dependencies; token changes only via `tokens.json`; stable `data-cell-id` hooks kept where listed | +infra | diff review |
+| NFR-6 | No new dependencies; token changes only via `tokens.json`; stable `data-tihoka-id` hooks kept where listed | +infra | diff review |
 
 ## Flows / States
 
@@ -253,7 +253,7 @@ edit mode: off --Edit--> on (delete affordances) --Done--> off
 
 **Plumbing checklist (DELIVER):** `MessageType` union (`entities/message/types.ts`), zod payload schemas (`entities/message/dictionarySchemas.ts`), `registry.ts` entries, `MESSAGE_TYPES` constants, `handlers/wordStatus.ts` handlers, client functions + barrel export (`features/dictionary/index.ts`), local emits in handlers (`broadcastToOtherTabs` excludes the source tab — acting tab needs local `emitWordStatusRemoved/Changed`), `STORES.WORD_TRASH` + `createAllStores` + `DB_SCHEMA_VERSION` bump (sync test assertions per learning atom `schema-version-bump-sync-test-assertions`), `clearAllStores` must include the new store (test cleanup), `dbCache` closes on `versionchange` so the v11→v12 upgrade isn't blocked by a cached connection.
 
-**data-cell-id stability:** keep `vocabulary-tab`, `vocabulary-row-*`, `vocabulary-term-*`, `vocabulary-cycle-*`, `vocabulary-delete-*`, `vocabulary-delete-dialog`, `vocabulary-delete-confirm`, `vocabulary-search`, `vocabulary-sort`. Retire `vocabulary-filter-*` (chips gone → segments). Add `vocabulary-segment-*`, `vocabulary-edit-toggle`, `vocabulary-trash-row-*`, `vocabulary-restore-*`, `vocabulary-trash-delete-*`, `vocabulary-trash-empty`.
+**data-tihoka-id stability:** keep `vocabulary-tab`, `vocabulary-row-*`, `vocabulary-term-*`, `vocabulary-cycle-*`, `vocabulary-delete-*`, `vocabulary-delete-dialog`, `vocabulary-delete-confirm`, `vocabulary-search`, `vocabulary-sort`. Retire `vocabulary-filter-*` (chips gone → segments). Add `vocabulary-segment-*`, `vocabulary-edit-toggle`, `vocabulary-trash-row-*`, `vocabulary-restore-*`, `vocabulary-trash-delete-*`, `vocabulary-trash-empty`.
 
 ## Traceability
 
@@ -283,7 +283,7 @@ edit mode: off --Edit--> on (delete affordances) --Done--> off
 
 ## Boundaries
 
-- Always: reuse `src/shared/ui` + tokens + `ICON_CATALOG`; i18n for every string; keep listed `data-cell-id`s stable; barrel imports (`@/features/dictionary`) — deep-import gate; unit tests for store + source + tab.
+- Always: reuse `src/shared/ui` + tokens + `ICON_CATALOG`; i18n for every string; keep listed `data-tihoka-id`s stable; barrel imports (`@/features/dictionary`) — deep-import gate; unit tests for store + source + tab.
 - Ask first: any manifest/permission change (none anticipated); any new dependency (none anticipated).
 - Never: edit generated token CSS/TS; hardcode colors/spacing; commit unrelated WIP files; write `unknown` status rows; leave a term in both status and trash stores.
 

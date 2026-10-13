@@ -26,12 +26,12 @@ REQ-1: Select an individual example line
 - Basic flow:
   1. actor clicks/taps the example row's gutter/check zone, or presses Space/Enter on the focused row
   2. system sets `exampleSelection[defId] += index` AND `definitionSelection[defId] = true` (cascade up)
-  3. system renders the example row's `cellDefCheckBox` checked and the parent def checked
+  3. system renders the example row's `TihokaDefCheckBox` checked and the parent def checked
 - Alt flow: unchecking a selected example removes only that index; parent def state unchanged
-- Exception: click lands on example text (`cellDefExampleText`) → no toggle — the click passes through to the section's `data-allow-lookup` nested-lookup path and text selection, mirroring the def row's `cellDefText` guard; text-selection drag anywhere on the row → no toggle (`getSelection()` guard)
+- Exception: click lands on example text (`TihokaDefExampleText`) → no toggle — the click passes through to the section's `data-allow-lookup` nested-lookup path and text selection, mirroring the def row's `TihokaDefText` guard; text-selection drag anywhere on the row → no toggle (`getSelection()` guard)
 - Rules:
-  - Each example row is its own `role="checkbox"` host — markup restructures so example rows are SIBLINGS of the def's `cellDefItem` (inside a neutral wrapper), never nested `checkbox` inside `checkbox`
-  - Example rows use a new `cellDefExampleItem` host class defined in `DictionaryCheckable.module.css` with the same reveal compounds as `cellDefItem` (`·` idle dot via `cellDefCheck::before`, hover/focus-visible/press reveal, checked fill)
+  - Each example row is its own `role="checkbox"` host — markup restructures so example rows are SIBLINGS of the def's `TihokaDefItem` (inside a neutral wrapper), never nested `checkbox` inside `checkbox`
+  - Example rows use a new `TihokaDefExampleItem` host class defined in `DictionaryCheckable.module.css` with the same reveal compounds as `TihokaDefItem` (`·` idle dot via `TihokaDefCheck::before`, hover/focus-visible/press reveal, checked fill)
   - Example-row `onClick`/`onKeyDown` call `e.stopPropagation()` so no event reaches the def host; keyboard toggling an example can never toggle or reset the parent def
   - Toggle zone mirrors the def row: check slot + row padding/background; the example text itself is excluded so nested lookup keeps working
 - Postcondition: `selectedExampleIds` includes `defId:index`; def checked
@@ -102,9 +102,9 @@ REQ-5: Persisted setting in Settings → Dictionary Popup
 
 | ID | Requirement | Class | Target |
 |---|---|---|---|
-| NFR-1 | Keyboard + AT parity with def rows: `role="checkbox"`, `aria-checked`, Space/Enter, `:focus-visible` outline; no nested checkboxes | U | sibling `cellDefExampleItem` hosts |
+| NFR-1 | Keyboard + AT parity with def rows: `role="checkbox"`, `aria-checked`, Space/Enter, `:focus-visible` outline; no nested checkboxes | U | sibling `TihokaDefExampleItem` hosts |
 | NFR-2 | Example rows never bubble clicks/keys into parent def toggle; text-selection does not toggle | U | `stopPropagation` + `getSelection()` guard |
-| NFR-3 | Toggle affordance = check slot + row padding (same as def); example text preserves nested lookup + selection | U | `cellDefExampleText` exclusion |
+| NFR-3 | Toggle affordance = check slot + row padding (same as def); example text preserves nested lookup + selection | U | `TihokaDefExampleText` exclusion |
 | NFR-4 | Selection output order = `result.definitions` order then example index order — derived by iterating the result, never `Map`/`Set` insertion order | R | deterministic |
 | NFR-5 | New strings i18n'd in `en.json` + `vi.json`; setting tolerant of absent key | U | `t()` only, `?? false` |
 
@@ -138,7 +138,7 @@ actor → CandidateView.sendToCard → useCandidate.buildPrefill
 | Function (what the system does) | Features (tools supporting it) |
 |---|---|
 | Track per-example check state with def cascades | `ExampleSelection` map + `initExampleSelection`/`toSelectedExampleIds` in `definitionSelection.ts` family; `useCandidate` state + `toggleExample` |
-| Present selectable example rows | Sibling `cellDefExampleItem` rows with `cellDefCheck`/`cellDefCheckBox` slots + `·` idle dot; `cellDefExampleText` lookup-safe zone |
+| Present selectable example rows | Sibling `TihokaDefExampleItem` rows with `TihokaDefCheck`/`TihokaDefCheckBox` slots + `·` idle dot; `TihokaDefExampleText` lookup-safe zone |
 | Gate def→examples auto-selection | `dictionaryPopup.includeAllExamplesOnDefSelect` + Settings pill step (string→bool coercion) |
 | Deliver selected examples to card surfaces | `PopupCardCreatorPrefill.definitions[].selectedExamples`, `selectedExampleIds` snapshot, `formatDefinitions` `·` lines, `buildSrsFieldsFromPrefill` appended examples |
 | Clone popup selection into integrated panel | `PopupSelectionSnapshot.selectedExampleIds` + `useCandidate` re-init key |
@@ -184,7 +184,7 @@ Alternatives considered: flat `Map<compositeId,bool>` (rejected — per-def grou
 
 ## Success Criteria
 
-- [ ] AC-1: Each example line under a def renders as its own checkable sibling row: `role="checkbox"`, `aria-checked`, `tabIndex=0`, idle `·` dot in the `cellDefCheck` slot, box reveals on row hover/focus-visible/press; text renders without `•` prefix; no `role="checkbox"` ancestor.
+- [ ] AC-1: Each example line under a def renders as its own checkable sibling row: `role="checkbox"`, `aria-checked`, `tabIndex=0`, idle `·` dot in the `TihokaDefCheck` slot, box reveals on row hover/focus-visible/press; text renders without `•` prefix; no `role="checkbox"` ancestor.
 - [ ] AC-2: Space/Enter on a focused example row toggles only that example (parent def affected solely via cascade-up on check); `:focus-visible` shows outline + revealed box.
 - [ ] AC-3: Checking an example checks it AND its parent def; unchecking it leaves the def checked.
 - [ ] AC-4: With the setting OFF (default), checking a def selects zero examples.
@@ -213,4 +213,4 @@ Alternatives considered: flat `Map<compositeId,bool>` (rejected — per-def grou
 - `useDictionaryLookup.definitionSelection`/`toggleDefinition`/`selectedDefinitions` are dead state (no consumer) — left untouched; cleanup is a separate hygiene item.
 - Indeterminate def state when only some examples checked: not shown (def stays plain checked) — matches requested semantics.
 - Settings-load race: a def check before `loadSettings()` resolves behaves as OFF (persisted default) — accepted; revisit if users report surprise.
-- Hovering an example row no longer reveals the parent def's checkbox (examples are siblings now, outside `cellDefItem:hover`) — intentional per-row reveal, matches reviewer guidance.
+- Hovering an example row no longer reveals the parent def's checkbox (examples are siblings now, outside `TihokaDefItem:hover`) — intentional per-row reveal, matches reviewer guidance.

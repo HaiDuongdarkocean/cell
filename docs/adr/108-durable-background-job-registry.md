@@ -27,7 +27,7 @@ ResourcesPanel or a Settings card. Three failure modes resulted:
    background (`handlers/jobs.ts`).** A `Job` record
    (`{id, kind, label, status, progress, params, retryable, resourceId?,
    pendingEffect?, error?, result?, createdAt, updatedAt}`) is persisted per
-   job to `chrome.storage.session` under `cellJob:<id>` through a serialized
+   job to `chrome.storage.session` under `TihokaJob:<id>` through a serialized
    per-job `writeChain`; progress writes are throttled (500ms) while status
    and significant metadata flush immediately. Kinds:
    `resource-import | resource-delete | voice-download | local-audio-index`.

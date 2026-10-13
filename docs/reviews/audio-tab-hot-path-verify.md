@@ -22,7 +22,7 @@ Spec: `docs/specs/audio-tab-hot-path.md` (APPROVE_WITH_CHANGES, all 6 minors app
 1. `PRONUNCIATION_ESPEAK_TTS` from an extension page → SW relay → offscreen eSpeak synthesis → response arrives with `audioBytesB64: string`, no `audioBytes`, base64 decodes to a real `RIFF` WAV header (>44 bytes). Proves the 2-hop serialized path carries bytes as base64, not integer-keyed objects.
 2. `FETCH_LOCAL_AUDIO` round-trips and validates (`items: []` unconfigured — message path + schema fine).
 
-`e2e/extension-local-pronunciation-audio.spec.ts` fails on the popup `heading "Cell"` mount — **pre-existing**: the same spec fails identically on baseline HEAD with all item changes stashed (popup entry point regression, unrelated to this diff — no popup code touched).
+`e2e/extension-local-pronunciation-audio.spec.ts` fails on the popup `heading "Tihoka"` mount — **pre-existing**: the same spec fails identically on baseline HEAD with all item changes stashed (popup entry point regression, unrelated to this diff — no popup code touched).
 
 ## Requirement traceability
 

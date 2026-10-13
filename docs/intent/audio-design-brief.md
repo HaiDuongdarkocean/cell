@@ -1,6 +1,6 @@
 # Audio — Design Brief
 
-> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Cell. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
+> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Tihoka. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
 
 > Gộp 3 section **Pronunciation**, **Local Pronunciation**, **TTS Voices** trong Settings thành một section duy nhất **Audio**.
 > Nguồn: `SettingsDialogContent.tsx` (cards 7.4, 7.5, 10) + 3 production panels.
@@ -11,7 +11,7 @@
 
 ## 0. Design Story (từ `project-context.md`)
 
-> *"Cell được sinh ra cũng từ nước, lớn lên và phát triển… tôi muốn Liquid Glass sẽ là design system style, màu chủ đạo là màu xanh dương của bầu trời…"*
+> *"Tihoka được sinh ra cũng từ nước, lớn lên và phát triển… tôi muốn Liquid Glass sẽ là design system style, màu chủ đạo là màu xanh dương của bầu trời…"*
 
 - **Cảm giác:** yên bình, trong suốt, có trật tự, phản hồi nhẹ nhàng khi chạm.
 - **Form:** pill, squircle, không góc vuông; touch target ≥ 44 px; mobile-first (320 px → 1280 px).

@@ -60,7 +60,7 @@ REQ-2: Clean target-cue arrays upstream of the cue engine
 REQ-3: Same cleaned text on every learning surface
 - Actor: — (system guarantee)
 - Basic flow:
-  1. `SubtitleBlock` renders `cue.text` from `useCuesStore` — populated from `CELL_CUES_UPDATED` carrying the (already-cleaned) engine arrays → cleaned. Legacy `removeBracketed` prop pass stays for the native line.
+  1. `SubtitleBlock` renders `cue.text` from `useCuesStore` — populated from `Tihoka_CUES_UPDATED` carrying the (already-cleaned) engine arrays → cleaned. Legacy `removeBracketed` prop pass stays for the native line.
   2. Overlay tokenize binding reads `engine.getTargetCues()` — cleaned objects → no raw re-insertion.
   3. `studyMode.setCues(engine.getTargetCues())` → playback's cue list holds cleaned objects → `enterCue`'s `cue.text.trim()` check and all emitted cue text are cleaned.
   4. `mergeCuesForPanel` emits `BilingualCue` with `targetText` = cleaned text + `rawTargetText` = `cue.rawText ?? cue.text` → panel props and the `SUBTITLE_CUES_LOADED` broadcast carry both (`bilingualCueSchema` gains optional `rawTargetText` — **required**, zod strips unknown keys).
@@ -307,7 +307,7 @@ study-mode chain/skip/JUMP            practice replay/prev/next (SubtitlePanel)
 ## Open Questions / Accepted Risks
 
 - Tokenize staleness mechanism (corrected): `videoTokenMap` caches **prepared tokens keyed by cue index** (`videoTokenPreloader.ts:156-160`) — an in-place `text` rewrite does not invalidate the cache, so after a rule toggle the binding can align OLD prepared tokens onto NEW text until the next `setCues`/cue load. Bounded to the tokenize feature, cosmetic, resolves on next cue load; no clean seam exists to force a rebind (controller is dirty-owned). Accepted.
-- OCR bridge re-cleans the growing `d.targetCues` array per `__CELL_OCR_TRACKS` message (~5/s, O(cues×rules)) — bounded by typical OCR session volume; the helper is idempotent so unchanged cues are cheap re-maps.
+- OCR bridge re-cleans the growing `d.targetCues` array per `__Tihoka_OCR_TRACKS` message (~5/s, O(cues×rules)) — bounded by typical OCR session volume; the helper is idempotent so unchanged cues are cheap re-maps.
 - Translate prefill now receives **cleaned** target text (`latestTargetCues`/engine refs) — translations skip annotations; desired, flagged as a content change.
 - Seek-intent freshness window 250ms covers relay/CustomEvent hop jitter; a second unmarked user seek within the window could briefly suppress one `enterCue` — self-heals on the next cue boundary.
 - `removeBracketed` legacy field lingers as a derived value until `subtitle-bulk-status` lands and its call site can be cleaned up — recorded debt.

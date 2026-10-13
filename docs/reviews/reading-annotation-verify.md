@@ -2,7 +2,7 @@
 
 > Date: 2026-10-07 (re-verify after fix) · Owner: devin-ux-coord
 > Item stage: `deliver` · Gates: typecheck/lint/testUnit/build = pass · **browser = pass**
-> Environment: Brave `:9224` (agent profile `C:\cell-browser-sessions\brave-agent`), extension reloaded from current `dist/`, real Chromium, kisskh.do Cobra Kai S4E10.
+> Environment: Brave `:9224` (agent profile `C:\Tihoka-browser-sessions\brave-agent`), extension reloaded from current `dist/`, real Chromium, kisskh.do Cobra Kai S4E10.
 
 ## Root cause of the earlier `fail`
 

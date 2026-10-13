@@ -1,7 +1,7 @@
 # Research Report — `https://phimwar.com/watch/qBMG`
 
 > Research-only. No `src/` files were modified during this investigation.
-> Conducted with a persistent Chrome profile (`C:\cell-browser-sessions\cell-phimwar`).
+> Conducted with a persistent Chrome profile (`C:\Tihoka-browser-sessions\Tihoka-phimwar`).
 
 ---
 
@@ -12,7 +12,7 @@
 | Supplied URL | `https://phimwar.com/watch/qBMG` |
 | Window title (initial) | `Cobra Kai - Võ đường Cobra Kai - S02E07` |
 | Browser | Stealth Chrome (headful) with DevTools MCP |
-| Profile | `cell-phimwar` (persistent, cloned from main user profile) |
+| Profile | `Tihoka-phimwar` (persistent, cloned from main user profile) |
 | Evidence model | E0 → E4, separating player-side and extension-side |
 
 **Assumptions**
@@ -117,7 +117,7 @@ function un(e,t,n){
 - Player-side list: **2 entries**.
 - Network `Fetch` requests observed: exactly **2** `.srt` fetches for `qBMG`.
 - Extension overlay: **0 cue blocks**.
-- Extension `data-cell-autoload-handled` / `data-cell-debug-autoload-arr`: both `null`.
+- Extension `data-tihoka-autoload-handled` / `data-tihoka-debug-autoload-arr`: both `null`.
 - The `getSubtitles` endpoint itself matches the broad `/(subtitles|subs|caption|cc)/i` pattern, so the `NetworkInterceptor` may also record it as a third spurious `vtt`/`unknown` entry (not confirmed in background).
 
 ---
@@ -175,11 +175,11 @@ At multiple checkpoints:
 
 | Marker | Value | Meaning |
 |--------|-------|---------|
-| `#cell-subtitle-root` | present | Cell content script is active |
+| `#Tihoka-subtitle-root` | present | Tihoka content script is active |
 | `cue-block` count | `0` | No subtitle cues loaded |
 | `data-role=target span` text | empty | Target subtitle not loaded |
-| `data-cell-autoload-handled` | `null` | No `AUTO_LOAD_SUBTITLES` was handled |
-| `data-cell-debug-autoload-arr` | `null` | No auto-load array pushed to content script |
+| `data-tihoka-autoload-handled` | `null` | No `AUTO_LOAD_SUBTITLES` was handled |
+| `data-tihoka-debug-autoload-arr` | `null` | No auto-load array pushed to content script |
 
 ### 7.3 Evidence level for extension delivery
 
@@ -195,17 +195,17 @@ The implementation was generalized beyond PhimWar:
 - The listing adapter is now `svelteKitSubtitles.ts` and matches any `/_app/remote/<hash>/getSubtitles?payload=` endpoint.
 - The page-context fetch is now `FETCH_SUBTITLE_PAGE_CONTEXT` and can be used by any same-origin encrypted/auth subtitle endpoint.
 
-**Conclusion**: E1–E4 reached; PhimWar subtitles are now both discoverable and downloadable through Cell.
+**Conclusion**: E1–E4 reached; PhimWar subtitles are now both discoverable and downloadable through Tihoka.
 
 ---
 
 ## 8. Root Cause
 
 ### Primary
-Cell intercepts the **file-level** `.srt` URLs, but `phimwar` delivers subtitle metadata (language, default flag, fileName) through a separate **listing endpoint** (`getSubtitles`). The files themselves are AES-GCM-encrypted. Cell's existing detection chain treats the file URL as the source of truth:
+Tihoka intercepts the **file-level** `.srt` URLs, but `phimwar` delivers subtitle metadata (language, default flag, fileName) through a separate **listing endpoint** (`getSubtitles`). The files themselves are AES-GCM-encrypted. Tihoka's existing detection chain treats the file URL as the source of truth:
 
-1. **Language is lost.** The URL path segment `v07.srt` / `e07.srt` is not a BCP-47 tag, so `extractLanguage` returns `unknown`. Without the listing, Cell cannot know the tracks are `vi` and `en`.
-2. **Body is undecipherable.** The `.srt` response is base64-wrapped AES-GCM. Cell fetches/parses it as plain SRT, ASS, or VTT and gets ciphertext, causing parse failure and failing language resolution.
+1. **Language is lost.** The URL path segment `v07.srt` / `e07.srt` is not a BCP-47 tag, so `extractLanguage` returns `unknown`. Without the listing, Tihoka cannot know the tracks are `vi` and `en`.
+2. **Body is undecipherable.** The `.srt` response is base64-wrapped AES-GCM. Tihoka fetches/parses it as plain SRT, ASS, or VTT and gets ciphertext, causing parse failure and failing language resolution.
 3. **Overlay cannot auto-load** because `findSubtitlesForOverlay` needs `language` to match user target/native settings.
 
 ### Secondary
@@ -302,8 +302,8 @@ The existing `fetchInterceptor.iife.ts` already runs in the MAIN world. It can:
 | File URLs are `.../api/subtitle/-19074/{v07,e07}.srt` | E2 | Listing + route template in bundle |
 | Files are AES-GCM-encrypted, not plain SRT | E3 | Content-Type and decryption verification |
 | Both files decrypt to valid SRT | E3 | Reproduced in the page context with the player's own key derivation |
-| Extension overlay has 0 cues | E1/E2 | DOM inspection of `#cell-subtitle-root` shadow DOM |
-| No `AUTO_LOAD_SUBTITLES` handled | E1 | `data-cell-autoload-handled` is `null` |
+| Extension overlay has 0 cues | E1/E2 | DOM inspection of `#Tihoka-subtitle-root` shadow DOM |
+| No `AUTO_LOAD_SUBTITLES` handled | E1 | `data-tihoka-autoload-handled` is `null` |
 | Background inventory contains the entries | **E4** | `GET_DETECTED_MEDIA` returned `vi` and `en` entries with full URLs and correct `displayName` |
 | Download produces plaintext SRT | **E4** | `DOWNLOAD_SUBTITLE` completed and saved a valid `*.vi.srt` file to the Downloads folder |
 | Root cause is language loss + encryption | E2/E3 | Traced from `getSubtitles` → `.srt` → `subtitleDetector.ts` behavior |

@@ -6,7 +6,7 @@ Accepted — build verification passed; foundation tokens shipped in tokens.css.
 
 ## Context
 
-Cell chạy trên desktop, tablet, Android. UI surfaces khác nhau: popup (nhỏ, 320-400px), sidepanel (trung bình, 360-480px), options page (lớn, 800px+), content script overlays. Cần breakpoint và grid rõ ràng để responsive không phải "cắt cho có".
+Tihoka chạy trên desktop, tablet, Android. UI surfaces khác nhau: popup (nhỏ, 320-400px), sidepanel (trung bình, 360-480px), options page (lớn, 800px+), content script overlays. Cần breakpoint và grid rõ ràng để responsive không phải "cắt cho có".
 
 ## Decision
 

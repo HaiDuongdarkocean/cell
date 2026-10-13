@@ -31,7 +31,7 @@ Edge cases: no-card learning badge (read-only), ignore word with card (ignore wi
 
 ## SRS card button (new element, all concepts)
 
-State-aware icon button trong `cellHeaderActions` (vị trí user đã annotate "view srs"):
+State-aware icon button trong `TihokaHeaderActions` (vị trí user đã annotate "view srs"):
 
 | State | Visual | Action |
 |---|---|---|

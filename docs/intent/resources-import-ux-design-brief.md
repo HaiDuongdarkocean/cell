@@ -46,7 +46,7 @@ Baseline: `DESIGN_VARIANCE 3` (the list stays a card list; only the *fill channe
 
 ## Inspiration anchor
 
-The Yomitan dictionaries screen the user referenced — six-dot grip, card that floats above a dashed placeholder while dragged — filtered through Cell's water story: progress is *water rising in a vessel*, not a detached bar.
+The Yomitan dictionaries screen the user referenced — six-dot grip, card that floats above a dashed placeholder while dragged — filtered through Tihoka's water story: progress is *water rising in a vessel*, not a detached bar.
 
 ## Context quote
 

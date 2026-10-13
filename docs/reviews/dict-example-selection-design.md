@@ -12,7 +12,7 @@
 
 ## User decision
 
-Picked **Concept A — Mirror rows** with amendment: "cả def và example dùng • cái nhỏ này" — the idle marker is the shared small dot (`cellDefCheck::before` circle) for both def and example rows. Concept A already renders exactly that.
+Picked **Concept A — Mirror rows** with amendment: "cả def và example dùng • cái nhỏ này" — the idle marker is the shared small dot (`TihokaDefCheck::before` circle) for both def and example rows. Concept A already renders exactly that.
 
 Amendment implication recorded in mapping: UI marker unified (`•` idle dot); card-text serialization keeps `· ` for example lines so the string round-trip parse can distinguish them from `• ` def lines.
 

@@ -24,7 +24,7 @@ Mockup: `docs/mockups/player-mode-mobile-layout.png`
 
 ## DOM/runtime assertions (Chrome devtools)
 
-- `document.documentElement[data-cell-player-mode-mobile]` = `"true"` while mobile PM mounted; removed on unmount (unit test).
+- `document.documentElement[data-tihoka-player-mode-mobile]` = `"true"` while mobile PM mounted; removed on unmount (unit test).
 - `--pm-anchor-bottom` = `109px` — computed from real bottomBar + caption + anchorRow heights; pill re-docks via `:host-context` in `ComprehensionPill.module.css` (pill ships via `allModuleCss` glob, verified in manifest).
 - Cue region: `overflow-y: hidden`, `scrollbar-width: none`, `::-webkit-scrollbar` hidden — no user scroll; `scrollTop` still writable by the system's align() logic (system-driven positioning per spec).
 - Menu stacking: `pm-more-menu` portals into `.overlay` via new `Popover.container` prop — escapes the `.portal` wrapper's `z-popover`(1500) stacking context which was painting it behind `z-overlay-settings`(10001). `elementFromPoint` on the menu returns `panel-toggle-btn` — verified topmost.

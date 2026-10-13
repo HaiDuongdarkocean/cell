@@ -16,7 +16,7 @@ Fresh-context `spec-reviewer` returned APPROVE_WITH_CHANGES (6 majors, 6 minors)
 ## Minors applied
 
 - `frequencyAllowedIds` is an unordered `Set` — ordering via `ResourceInfo.priority` + resourceId-desc; `buildResourcePriority` is module-private → extract/reimplement.
-- `data-reading` pinned to inner `.js-cell-token-word` (`attr()` reads own element only).
+- `data-reading` pinned to inner `.js-Tihoka-token-word` (`attr()` reads own element only).
 - `cueListTokens` per-request chunk 1000, list unbounded.
 - Cite fixes: `dictionarySchemas.ts:321-325`, `buildTokenSpanCss` name.
 - Toggle-ON requires explicit `resolvedTerms` reset (`videoTokenPreloader.ts:130-135`).

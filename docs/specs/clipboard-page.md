@@ -1,6 +1,6 @@
-# Spec: Cell Clipboard Page
+# Spec: Tihoka Clipboard Page
 
-> Source of truth cho tính năng Clipboard Page trong Cell MV3.
+> Source of truth cho tính năng Clipboard Page trong Tihoka MV3.
 > Tổng hợp từ `docs/intent/clipboard-page.md` (15 rounds feedback) + prototype trong `design-system-showcase`.
 > **Revised after Round 16** — standalone page + orbital + token SSOT + dark/light.
 
@@ -22,7 +22,7 @@
 **Out of scope:**
 - Toggle tokenize (universal panel đã có)
 - Dark/light toggle (theme system lo)
-- 2-way bridge (Cell → native)
+- 2-way bridge (Tihoka → native)
 - Clipboard write back to system
 - Sync across devices
 
@@ -30,7 +30,7 @@
 
 ## 1. Objective
 
-Cell Clipboard Page cho phép người học ngoại ngữ (5–80 tuổi, persona chính 10–25) đọc system clipboard text trong một standalone page đầy đủ chức năng: history multi-item, CRUD, search, pin, pagination, inline edit, tách câu, font controls — tất cả reuse tokenize + dictionary popup từ universal panel.
+Tihoka Clipboard Page cho phép người học ngoại ngữ (5–80 tuổi, persona chính 10–25) đọc system clipboard text trong một standalone page đầy đủ chức năng: history multi-item, CRUD, search, pin, pagination, inline edit, tách câu, font controls — tất cả reuse tokenize + dictionary popup từ universal panel.
 
 **Flow mở clipboard page:**
 1. User dùng native app (game, app ngoài browser) → copy text
@@ -53,7 +53,7 @@ Cell Clipboard Page cho phép người học ngoại ngữ (5–80 tuổi, perso
 
 | Layer | Lựa chọn | Lý do |
 |---|---|---|
-| Framework | React 19 + Vite + TypeScript | Cùng stack với toàn bộ Cell. |
+| Framework | React 19 + Vite + TypeScript | Cùng stack với toàn bộ Tihoka. |
 | Entry point | Vite multi-page — thêm `clipboard` vào `rollupOptions.input` | Như Reader pattern. |
 | State | Zustand (`clipboardStore`) | Local page state, consistent với Reader. |
 | Storage | `chrome.storage.local` cho clipboard history | Text nhỏ, <5MB, đủ cho MV3. |

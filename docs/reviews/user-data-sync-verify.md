@@ -1,6 +1,6 @@
 # Verify — user-data-sync
 
-Three fresh-context adversarial reviews by `subagent_explore` agents against `docs/specs/user-data-sync.md` and the implementation in worktree `cell-worktrees/user-data-sync` (branch `feature/user-data-sync`, head `8471ec97`). Generation ≠ review — reviewers did not write the implementation.
+Three fresh-context adversarial reviews by `subagent_explore` agents against `docs/specs/user-data-sync.md` and the implementation in worktree `Tihoka-worktrees/user-data-sync` (branch `feature/user-data-sync`, head `8471ec97`). Generation ≠ review — reviewers did not write the implementation.
 
 ## Scope reviewed
 

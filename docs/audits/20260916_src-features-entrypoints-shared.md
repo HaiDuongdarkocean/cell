@@ -11,7 +11,7 @@
 |---|---|
 | 1. SW-state fragility (4.20) | **Partially fixed** — `mediaMap` repopulated on restore (`helpers.ts:430-433`), `OffscreenManager` consolidated to 1 instance, `closeOffscreenDocument` has a caller. Residual → item 6. |
 | 2. Layer boundaries (4.05) | **Partially fixed** — feature↔feature cycles broken (0 mutual pairs remain), `shared/`→`features` and `entities/`→`features` inversions eliminated, 6 `no-restricted-imports` boundary blocks in eslint. Residual → item 2. |
-| 3. Production debug seams (4.05) | **Partially fixed** — `__sendMessageDebug`, `__cellBg`, `__CELL_SPLIT_VIEW_LOG`, `__debugBroadcast`, `__CELL_OCR_DEBUG_INIT` now `__CELL_DEBUG__`-gated; `__CELL_OCR_TRACKS` posts to `window.location.origin` not `'*'`. Residual → item 3. |
+| 3. Production debug seams (4.05) | **Partially fixed** — `__sendMessageDebug`, `__TihokaBg`, `__Tihoka_SPLIT_VIEW_LOG`, `__debugBroadcast`, `__Tihoka_OCR_DEBUG_INIT` now `__Tihoka_DEBUG__`-gated; `__Tihoka_OCR_TRACKS` posts to `window.location.origin` not `'*'`. Residual → item 3. |
 | 4. God files (4.00) | **Mixed** — `contentScriptController` 1833→780, `SubtitlePanels` 1521→430 (decomposition worked). But the other god files *grew* → item 1. |
 | 5. Message protocol (3.75) | **Mostly fixed** — `MESSAGE_REGISTRY` + bus-level zod validation landed (`entities/message/registry.ts`). Residual → item 10. |
 | 6. Build pipeline (3.70) | **Open** — `patch-ocr-csp.mjs` still postbuild-patches artifacts; `FULL_INPUT` still ships test/mockup pages → item 7. |
@@ -35,12 +35,12 @@
 | Signal class | Result |
 |---|---|
 | Typecheck (`npm run typecheck`) | PASS |
-| Lint (`npm run lint`) | **FAIL** — 4 errors (3 `no-undef` in `launch-cell-context.mjs`, 1 `prefer-const` `selectionTerms.ts:102`), 2 react-hooks warnings |
+| Lint (`npm run lint`) | **FAIL** — 4 errors (3 `no-undef` in `launch-Tihoka-context.mjs`, 1 `prefer-const` `selectionTerms.ts:102`), 2 react-hooks warnings |
 | Unit tests (`npm run test:unit`) | **PASS** — 5987 pass / 0 fail / 32 skipped (was 7 fail on 09-13) |
 | `npm outdated` | 23 outdated: eslint 9→10 (EOL 2026-08), typescript 6→7, vite 8.0→8.3, lucide-react 1.34→1.46, onnxruntime-web 1.26→1.29 |
 | TODO/FIXME/HACK | 1 (`Spinner.tsx:23`) — unchanged, weak signal by design |
 | Files >500 lines | ~38 source files; god files regrew despite decomposition |
-| Human-inferred (git log) | 8 refactor commits post-audit (cycle-breaking, SubtitlePanels split, `__CELL_DEBUG__` gating, MESSAGE_REGISTRY) — high paydown cadence |
+| Human-inferred (git log) | 8 refactor commits post-audit (cycle-breaking, SubtitlePanels split, `__Tihoka_DEBUG__` gating, MESSAGE_REGISTRY) — high paydown cadence |
 | Subagent cross-check | 21 verified findings incl. `downloadQueue` pause bug, `autoDownloadedTabs` loss, ungated `'*'` postMessage, 7 eslint-disables in `main.tsx` |
 
 ## Inventory (all 16 items, ranked)
@@ -49,7 +49,7 @@
 |---|---|---|---|---|---|---|---|---|
 | 1 | `dictionaryPopup/controller/webTextDictionaryController.ts` (1816), `cardCreator/ui/useCardCreatorState.ts` (1425 + module-level `fieldMappingWriteQueue:98`), `content/content-script.ts` (1409, ~11 feature-internal imports), `local-player/main.tsx` (1134: 7 eslint-disable hooks, ~6 duplicated retry blocks, O(n·m) find :353), `download/downloader.ts` (1221) | Architectural | **God files regrowing.** Post-audit extractions worked for subtitle (`contentScriptController` −58%) but the remaining god files *grew* +25..+66 lines in 3 days — extraction without import boundaries doesn't hold. | 5 | 4 | 4 | 4 | **4.00** |
 | 2 | `SubtitlePanel.tsx:16`, `SubtitlePractice.tsx:5`, `PlayerModeOverlay.tsx:13`, `mountSubtitle.tsx:14`, `subtitlePanelsTypes.ts:20` → `@/entrypoints/sidepanel/components/CueList`; `src/stores/*` → feature internals; `features/subtitle/index.ts` `export *`; `BackgroundService` ~30 delegations in 3 places | Architectural | **Boundary residual.** Cycles/inversions fixed, but: features→entrypoints inversion unguarded (5 files), `src/stores/` outside layering, ~845 deep `@/features/*/` imports vs 35 barrel, 7/21 barrels all `export *`, no `import/no-cycle`. | 4 | 4 | 5 | 4 | **3.90** |
-| 3 | `contentScriptMessages.ts:154,168-173,250,266` (`data-cell-debug-autoload-arr` ungated + `__CELL_AUTOLOAD_HANDLED` posts subtitle URLs to `window.parent` `'*'`), `ocrContentScript.ts` (~20 `document.body.dataset.ocr*` writes + `__ocrLatencyLog`/`__ocrStepTimings`/`__ocrCtrlTimings` globals, `__ocrRegionResult` bypasses `STORAGE_KEYS`), `webTokenizeController.ts:369` (`__CELL_SCAN_INFO`), `content-script.ts:162-164,209-212` (`__YT_CS_INJECTED` etc.) | Code quality *(security-adjacent)* | **Debug-seam residual.** `__CELL_DEBUG__` gating landed for the 09-13 surfaces but a second layer of ungated writes remains; the `'*'` autoload post leaks iframe subtitle URLs cross-origin. | 3 | 4 | 4 | 2 | **3.70** |
+| 3 | `contentScriptMessages.ts:154,168-173,250,266` (`data-tihoka-debug-autoload-arr` ungated + `__Tihoka_AUTOLOAD_HANDLED` posts subtitle URLs to `window.parent` `'*'`), `ocrContentScript.ts` (~20 `document.body.dataset.ocr*` writes + `__ocrLatencyLog`/`__ocrStepTimings`/`__ocrCtrlTimings` globals, `__ocrRegionResult` bypasses `STORAGE_KEYS`), `webTokenizeController.ts:369` (`__Tihoka_SCAN_INFO`), `content-script.ts:162-164,209-212` (`__YT_CS_INJECTED` etc.) | Code quality *(security-adjacent)* | **Debug-seam residual.** `__Tihoka_DEBUG__` gating landed for the 09-13 surfaces but a second layer of ungated writes remains; the `'*'` autoload post leaks iframe subtitle URLs cross-origin. | 3 | 4 | 4 | 2 | **3.70** |
 | 4 | `eslint.config.ts` (`.mjs` not in node-globals block), `selectionTerms.ts:102`, `useDictionaryToolbar.ts:392`, `Popover.tsx:52` | Process | **Lint red on master again** — 4 errors / 2 warnings committed. Gate regression is recurring (also red on 09-13). | 3 | 3 | 4 | 1 | **3.50** |
 | 5 | `download/downloadQueue.ts:54-74,219-252` | Code quality | **Pause is broken; concurrency cap exceeded.** `activeCount` double-decrements on cancel/pause; executor has no AbortSignal — `pause()`d items complete as `'done'` (only `'cancelled'` excluded :222), cancelled items keep consuming bandwidth. Functional bug surfaced as debt. | 3 | 4 | 2 | 1 | **3.45** |
 | 6 | `background/context.ts:39`, `helpers.ts:691-707`, `downloadQueue.ts:125-127`, `index.ts:185-188`, `wireEvents.ts:325,343,355` | Architectural | **SW-state residual.** `autoDownloadedTabs`/`enqueuedIds` in-memory → restart re-enqueues duplicates; `restore()` never calls `processNext` → restored queued items stall; `clearSessionMedia` on navigation vs `clearSessionDownloads` on removal → retry dead-ends. | 3 | 4 | 3 | 3 | **3.35** |
@@ -67,14 +67,14 @@
 ## Business impact (top 3)
 
 1. **God files (4.00):** `dictionaryPopup`/`cardCreator` are the highest-churn features and their controllers grew ~2%/day this week — every subtitle/card change touches 1.4–1.8k-line files importing 10+ feature internals. Effectively **doubles change time** in the hottest area and guarantees regression surface; the `SubtitlePanels` regrowth pattern is repeating.
-2. **Debug seams (3.70):** `__CELL_AUTOLOAD_HANDLED` posts subtitle URLs to `window.parent` with `'*'` on every autoload — any embedding page can read which videos/subs the user loads. **Privacy + Web Store review risk**; ~25 ungated DOM dataset writes per OCR session fingerprint the extension to host pages.
+2. **Debug seams (3.70):** `__Tihoka_AUTOLOAD_HANDLED` posts subtitle URLs to `window.parent` with `'*'` on every autoload — any embedding page can read which videos/subs the user loads. **Privacy + Web Store review risk**; ~25 ungated DOM dataset writes per OCR session fingerprint the extension to host pages.
 3. **Download queue bug (3.45):** `pause()` doesn't pause — items complete anyway; cancel keeps pulling bandwidth; concurrent downloads can exceed `maxConcurrent`. **Direct user-facing defect** on the download path, one of the extension's two core features.
 
 ## Recommended roadmap
 
 ### Quick wins (cost ≤2 and score ≥3.4, or confirmed defect / cheap hygiene) — next sprint, owner TBD
 1. **Un-red the lint gate** (item 4): add `.mjs` scripts to the node-globals eslint block, `prefer-const` fix, resolve or suppress the 2 hook warnings. <1h.
-2. **Gate the debug-seam residual** (item 3): wrap `data-cell-debug-autoload-arr`, `dataset.ocr*`, `__ocr*` globals, `__CELL_SCAN_INFO`, `__YT_CS_INJECTED*` in `__CELL_DEBUG__`; scope `__CELL_AUTOLOAD_HANDLED` post to `window.location.origin`; move `__ocrRegionResult` under `STORAGE_KEYS`. <1 day.
+2. **Gate the debug-seam residual** (item 3): wrap `data-tihoka-debug-autoload-arr`, `dataset.ocr*`, `__ocr*` globals, `__Tihoka_SCAN_INFO`, `__YT_CS_INJECTED*` in `__Tihoka_DEBUG__`; scope `__Tihoka_AUTOLOAD_HANDLED` post to `window.location.origin`; move `__ocrRegionResult` under `STORAGE_KEYS`. <1 day.
 3. **Fix downloadQueue** (item 5): single-decrement `activeCount`, wire an AbortSignal into the executor so pause/cancel actually stop work, `restore()` → `processNext`. 1 day.
 4. **Delete dead code** (item 11): `fetchAllSegments`, `USE_LEGACY_*` flags + 2 legacy mounts + their tests, unreachable block at `contentScriptMessages.ts:225-232`, merge `downloadM3u8Legacy` decision (delete or fix divergence), `@/types` shims (35 sites). 1-2 days.
 
