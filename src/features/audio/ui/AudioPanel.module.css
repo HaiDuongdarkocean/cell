@@ -10,9 +10,6 @@
   font-size: var(--font-size-md);
 }
 
-.subLabel {
-  color: var(--color-text-primary);
-}
 
 /* The ⓘ hint must stay visually below the row title it annotates — the
    shared button is sm; shrink the glyph so it reads as a footnote, not a
@@ -26,12 +23,18 @@
   color: var(--color-text-disabled);
 }
 
-.advancedToggle {
+.modeRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-2);
-  width: 100%;
+  flex-wrap: wrap;
+}
+
+.advancedToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-inline-start: auto;
   padding: var(--space-1) 0;
   background: none;
   border: 0;
@@ -65,9 +68,6 @@
   transform: rotate(180deg);
 }
 
-.advancedModes {
-  padding-block-start: var(--space-2);
-}
 
 .status {
   margin: 0;

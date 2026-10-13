@@ -18,7 +18,7 @@
 
 import { useMemo, useState, type ReactElement } from 'react';
 import { t, type MessageKey } from '@/shared/i18n';
-import { Button, Collapsible, Icon, Input, SegmentedControl, Select, SettingsGroup, SettingsRow } from '@/shared/ui';
+import { Button, Icon, Input, SegmentedControl, Select, SettingsGroup, SettingsRow } from '@/shared/ui';
 import type {
   AudioEngineKind,
   PronunciationSettings,
@@ -168,60 +168,55 @@ export function AudioPanel({
           hintAriaLabel={t('audio.outputMode.aria')}
           hintTestId="audio-mode-hint"
         >
-          <SegmentedControl
-            variant="raised"
-            ariaLabel={t('audio.outputMode.aria')}
-            options={[
-              {
-                value: AUTO_MODE.value,
-                label: t(AUTO_MODE.label),
-                title: t(AUTO_MODE.desc),
-                testId: `audio-mode-${AUTO_MODE.value}`,
-              },
-            ]}
-            value={activeMode === 'auto' ? 'auto' : null}
-            onChange={handleModeChange}
-          />
-          <button
-            type="button"
-            className={styles.advancedToggle}
-            onClick={() => setModesOpen((o) => !o)}
-            aria-expanded={advancedVisible}
-            data-open={advancedVisible}
-            data-cell-id="audio-advanced-toggle"
-          >
-            <span className={styles.advancedLabel}>
-              {t('audio.modes.advanced')}
-              {advancedActive ? ` · ${t(ADVANCED_MODES.find((m) => m.value === activeMode)!.label)}` : ''}
-            </span>
-            <Icon name="chevronDown" size={16} />
-          </button>
-          <Collapsible collapsed={!advancedVisible}>
-            <div className={styles.advancedModes}>
-              <SegmentedControl
-              variant="raised"
-              ariaLabel={t('audio.modes.advanced.aria')}
-              options={ADVANCED_MODES.map((mode) => ({
-                value: mode.value,
-                label: t(mode.label),
-                title: t(mode.desc),
-                testId: `audio-mode-${mode.value}`,
-              }))}
-              value={advancedActive ? activeMode : null}
+          <div className={styles.modeRow}>
+            <SegmentedControl
+              variant="chips"
+              ariaLabel={t('audio.outputMode.aria')}
+              options={[
+                {
+                  value: AUTO_MODE.value,
+                  label: t(AUTO_MODE.label),
+                  title: t(AUTO_MODE.desc),
+                  testId: `audio-mode-${AUTO_MODE.value}`,
+                },
+              ]}
+              value={activeMode === 'auto' ? 'auto' : null}
               onChange={handleModeChange}
             />
-            </div>
-          </Collapsible>
+            {advancedVisible && (
+              <SegmentedControl
+                variant="chips"
+                ariaLabel={t('audio.modes.advanced.aria')}
+                options={ADVANCED_MODES.map((mode) => ({
+                  value: mode.value,
+                  label: t(mode.label),
+                  title: t(mode.desc),
+                  testId: `audio-mode-${mode.value}`,
+                }))}
+                value={advancedActive ? activeMode : null}
+                onChange={handleModeChange}
+              />
+            )}
+            <button
+              type="button"
+              className={styles.advancedToggle}
+              onClick={() => setModesOpen((o) => !o)}
+              aria-expanded={advancedVisible}
+              data-open={advancedVisible}
+              data-cell-id="audio-advanced-toggle"
+            >
+              <span className={styles.advancedLabel}>{t('audio.modes.advanced')}</span>
+              <Icon name="chevronDown" size={16} />
+            </button>
+          </div>
         </SettingsRow>
 
-        <SettingsGroup label={<span className={styles.subLabel}>{t('audio.pipeline.title')}</span>}>
-          <AudioPipeline
-            engines={[...engines]}
-            selected={selectedEngine}
-            statuses={statuses}
-            onSelect={setSelected}
-          />
-        </SettingsGroup>
+        <AudioPipeline
+          engines={[...engines]}
+          selected={selectedEngine}
+          statuses={statuses}
+          onSelect={setSelected}
+        />
 
         {selectedEngine && (
           <SourceDetailPanel

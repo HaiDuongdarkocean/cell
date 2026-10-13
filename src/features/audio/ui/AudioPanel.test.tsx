@@ -81,8 +81,10 @@ describe('AudioPanel', () => {
 
     expect(screen.getByTestId('audio-panel')).toBeInTheDocument();
 
-    // Output mode segmented control — 5 modes + hint popover trigger.
-    for (const mode of ['auto', 'natural', 'fast', 'offline', 'minimal']) {
+    // Output mode — Auto always visible; the rest reveal via More modes.
+    expect(screen.getByTestId('audio-mode-auto')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('audio-advanced-toggle'));
+    for (const mode of ['natural', 'fast', 'offline', 'minimal']) {
       expect(screen.getByTestId(`audio-mode-${mode}`)).toBeInTheDocument();
     }
     expect(screen.getByTestId('audio-mode-hint')).toBeInTheDocument();
@@ -120,6 +122,7 @@ describe('AudioPanel', () => {
     const onPronunciationChange = jest.fn();
     renderPanel({ onPronunciationChange });
 
+    fireEvent.click(screen.getByTestId('audio-advanced-toggle'));
     fireEvent.click(screen.getByTestId('audio-mode-fast'));
 
     expect(onPronunciationChange).toHaveBeenCalledWith(
@@ -157,16 +160,21 @@ describe('AudioPanel', () => {
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
   });
 
-  it('stays open and names the mode when an advanced mode is active', () => {
+  it('stays open and checks the chip when an advanced mode is active', () => {
     renderPanel({
       pronunciation: makePronunciation({
         fallbackEngines: ['localFile', 'espeak', 'supertonic'],
       }),
     });
 
-    const toggle = screen.getByTestId('audio-advanced-toggle');
-    expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    expect(toggle).toHaveTextContent('More modes · Offline');
+    expect(screen.getByTestId('audio-advanced-toggle')).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(screen.getByTestId('audio-mode-offline')).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
   });
 
   it('updates the detail pane when a pipeline step is selected', () => {
