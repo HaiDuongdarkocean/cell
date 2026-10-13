@@ -35,6 +35,8 @@ function makeTts(overrides: Partial<TtsSettings> = {}): TtsSettings {
     localTtsLanguage: 'en',
     downloadedLanguages: [],
     hiddenLanguages: [],
+    supertonicVoices: ['M1'],
+    supertonicDownloadedVoices: [],
     ...overrides,
   };
 }
@@ -87,13 +89,13 @@ describe('BrowserVoicePanel', () => {
     expect(onChangeSpy).toHaveBeenLastCalledWith(
       expect.objectContaining({ voices: [VOICES[0].voiceName] }),
     );
-    expect(screen.getByText('1 of 3 voices picked')).toBeInTheDocument();
+    expect(screen.getByText('1 of 3 picked')).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId(`voice-row-${VOICES[1].voiceName}`));
     expect(onChangeSpy).toHaveBeenLastCalledWith(
       expect.objectContaining({ voices: [VOICES[0].voiceName, VOICES[1].voiceName] }),
     );
-    expect(screen.getByText('2 of 3 voices picked')).toBeInTheDocument();
+    expect(screen.getByText('2 of 3 picked')).toBeInTheDocument();
   });
 
   it('removes a picked voice when tapped again', async () => {

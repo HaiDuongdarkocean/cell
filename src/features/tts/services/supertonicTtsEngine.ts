@@ -7,6 +7,7 @@
 
 import { createTtsAudioQueue, type TtsAudioQueue } from './ttsQueue';
 import { synthesizeSupertonic } from './supertonicInference';
+import { isSupertonicVoiceId } from './ttsDownloadManager';
 import type { TtsEngine, TtsSpeakOptions, TtsVoiceInfo } from '@/features/tts/services/ttsEngineService';
 
 const DEFAULT_VOICE: TtsVoiceInfo = {
@@ -66,7 +67,7 @@ async function stubSynthesize(): Promise<AudioBuffer> {
   return buffer;
 }
 
-async function synthesizeOneChunk(text: string, lang: string): Promise<AudioBuffer> {
+async function synthesizeOneChunk(text: string, lang: string, voice?: string): Promise<AudioBuffer> {
   const ctx = getAudioContext();
 
   if (typeof navigator?.storage?.getDirectory !== 'function') {
@@ -74,7 +75,7 @@ async function synthesizeOneChunk(text: string, lang: string): Promise<AudioBuff
     return stubSynthesize();
   }
 
-  const wavBuffer = await synthesizeSupertonic(text, lang);
+  const wavBuffer = await synthesizeSupertonic(text, lang, isSupertonicVoiceId(voice) ? voice : 'M1');
   return ctx.decodeAudioData(wavBuffer);
 }
 
@@ -102,7 +103,7 @@ export function createSupertonicTtsEngine(): TtsEngine {
 
         for (let i = 0; i < chunks.length; i++) {
           const isLast = i === chunks.length - 1;
-          void synthesizeOneChunk(chunks[i], lang)
+          void synthesizeOneChunk(chunks[i], lang, opts.voiceName)
             .then((audioBuffer) => {
               if (myToken !== activeToken) return;
               queue.enqueue({

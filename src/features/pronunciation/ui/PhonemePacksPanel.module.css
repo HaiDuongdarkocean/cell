@@ -1,0 +1,122 @@
+.groupLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+}
+
+.card {
+  --card-padding: var(--space-2) var(--space-3);
+  --card-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+  border: var(--border-width-hairline) solid var(--color-divider);
+  border-radius: var(--card-radius);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.iconWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-8);
+  height: var(--space-8);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-width: 0;
+  flex: 1;
+  align-self: center;
+}
+
+.nameButton {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.nameButton:hover {
+  background: var(--color-surface-hover);
+}
+
+.nameButton:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+.name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.packList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.status {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.detailList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2-5);
+  margin: 0;
+  min-width: 280px;
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.detailRow dt {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.detailRow dd {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  text-align: right;
+  word-break: break-word;
+}

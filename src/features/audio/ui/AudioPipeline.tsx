@@ -20,7 +20,7 @@ const ENGINE_LABEL_KEYS: Record<AudioEngineKind, MessageKey> = {
   espeak: 'audio.engine.espeak',
 };
 
-const STATUS_LABEL_KEYS: Record<'ready' | 'missing' | 'disabled', MessageKey> = {
+export const STATUS_LABEL_KEYS: Record<'ready' | 'missing' | 'disabled', MessageKey> = {
   ready: 'audio.engine.status.ready',
   missing: 'audio.engine.status.missing',
   disabled: 'audio.engine.status.disabled',

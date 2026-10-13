@@ -33,6 +33,8 @@ function makeTtsSettings(overrides?: Partial<TtsSettings>): TtsSettings {
     localTtsLanguage: 'en',
     downloadedLanguages: [],
     hiddenLanguages: [],
+    supertonicVoices: ['M1'],
+    supertonicDownloadedVoices: [],
     ...overrides,
   };
 }

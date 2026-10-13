@@ -14,7 +14,7 @@
 /* The ⓘ hint must stay visually below the row title it annotates — the
    shared button is sm; shrink the glyph so it reads as a footnote, not a
    peer of the label. */
-.panel [data-cell-id='audio-mode-hint'] svg {
+.panel [data-tihoka-id='audio-mode-hint'] svg {
   /* Button's sm-circle icon rules out-specify a plain descendant selector;
      this local size override must win to keep the hint smaller than the
      label it annotates. */
@@ -91,4 +91,12 @@
   font-size: var(--font-size-xs);
   line-height: var(--leading-normal);
   color: var(--color-text-secondary);
+}
+
+input.testerInput {
+  border-radius: var(--radius-md);
+}
+
+.testerPlay {
+  flex-shrink: 0;
 }

@@ -7,9 +7,9 @@
   overflow-x: auto;
   scrollbar-width: thin;
   align-items: center;
-  justify-content: center;
+  justify-content: safe center;
   gap: 0;
-  padding: var(--space-1) 0;
+  padding: var(--space-1) var(--space-2);
 }
 
 .stepWrapper {

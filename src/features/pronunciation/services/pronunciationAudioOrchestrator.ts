@@ -9,22 +9,28 @@
 
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { decodeBase64ToArrayBuffer } from '@/shared/lib/base64';
+import { DEFAULT_PRONUNCIATION_SETTINGS, DEFAULT_SETTINGS } from '@/shared/config/config';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { decodeBase64ToArrayBuffer, encodeBase64 } from '@/shared/lib/base64';
+import { t } from '@/shared/i18n';
 import type { MessageResponse } from '@/entities/message/types';
-import type { AudioItem } from '@/entities/dictionary';
+import type { AudioItem, AudioKind } from '@/entities/dictionary';
 import type {
   FetchCommunityAudioResponse,
   FetchLocalAudioResponse,
   TtsFetchAudioResponse,
 } from '@/entities/dictionary';
-import type { PronunciationEspeakTtsResult } from '@/entities/message/types';
+import type {
+  PronunciationEspeakTtsResult,
+  PronunciationSupertonicTtsResult,
+} from '@/entities/message/types';
 import type { AudioEngineKind } from '../types';
 import type { LocalFileAudioSettings, PronunciationSettings } from '@/entities/settings/types';
 import { getFileHandle, verifyPermission } from '@/shared/lib/storage/localFileHandleStorage';
 
 export interface PronunciationAudioProvider {
   readonly kind: AudioEngineKind;
-  resolve(term: string, langCode: string): Promise<readonly AudioItem[]>;
+  resolve(term: string, langCode: string, kind?: AudioKind): Promise<readonly AudioItem[]>;
 }
 
 function toUint8Array(value: unknown): Uint8Array | undefined {
@@ -92,11 +98,11 @@ export class CommunityAudioProvider implements PronunciationAudioProvider {
   }
 }
 
-/** Provider backed by Google Translate TTS (word audio). */
+/** Provider backed by Google Translate TTS (browser voice). */
 export class TtsAudioProvider implements PronunciationAudioProvider {
   readonly kind: AudioEngineKind = 'browserTts';
 
-  resolve(term: string, langCode: string): Promise<readonly AudioItem[]> {
+  resolve(term: string, langCode: string, kind: AudioKind = 'word'): Promise<readonly AudioItem[]> {
     return sendMessage<MessageResponse<TtsFetchAudioResponse>>({
       type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
       payload: { tabId: 0, text: term, langCode },
@@ -104,10 +110,10 @@ export class TtsAudioProvider implements PronunciationAudioProvider {
       if (!res?.success || !res.data?.url) return [];
       return [
         {
-          id: `tts-word-${term}-${langCode}`,
-          kind: 'word' as const,
+          id: `tts-${kind}-${term}-${langCode}`,
+          kind,
           source: 'system-tts' as const,
-          label: `${term} · TTS`,
+          label: kind === 'sentence' ? t('dict.audio.ttsSentence') : `${term} · TTS`,
           state: 'idle' as const,
           url: res.data.url,
           defaultSelected: false,
@@ -117,12 +123,28 @@ export class TtsAudioProvider implements PronunciationAudioProvider {
   }
 }
 
-/** Placeholder provider for Supertonic cloud TTS. */
+/** Provider backed by the offscreen Supertonic ONNX TTS engine (cloud voices). */
 export class SupertonicAudioProvider implements PronunciationAudioProvider {
   readonly kind: AudioEngineKind = 'supertonic';
 
-  resolve(): Promise<readonly AudioItem[]> {
-    return Promise.resolve([]);
+  resolve(term: string, langCode: string, kind: AudioKind = 'word'): Promise<readonly AudioItem[]> {
+    return sendMessage<MessageResponse<PronunciationSupertonicTtsResult>>({
+      type: MESSAGE_TYPES.PRONUNCIATION_SUPERTONIC_TTS,
+      payload: { text: term, langCode },
+    }).then((res) => {
+      if (!res?.success || !res.data?.items) return [];
+      return res.data.items
+        .filter((item) => item.audioBytesB64)
+        .map((item) => ({
+          id: `supertonic-${kind}-${term}-${langCode}-${item.voice}`,
+          kind,
+          source: 'cloud-tts' as const,
+          label: kind === 'sentence' ? t('dict.audio.sentenceVoice', [item.voice]) : `${term} · ${item.voice}`,
+          state: 'idle' as const,
+          audioBytes: new Uint8Array(decodeBase64ToArrayBuffer(item.audioBytesB64)),
+          defaultSelected: false,
+        }));
+    });
   }
 }
 
@@ -168,7 +190,26 @@ const providerFactories: Record<
   espeak: () => new EspeakAudioProvider(),
 };
 
-const PROVIDER_TIMEOUT_MS = 8_000;
+/** Single-engine provider for per-source testing (bypasses the chain). */
+export function createEngineProvider(
+  kind: AudioEngineKind,
+  settings: PronunciationSettings,
+): PronunciationAudioProvider {
+  return providerFactories[kind](settings);
+}
+
+/** Playable URL for an audio item — blob for in-memory bytes. */
+export function audioItemUrl(item: AudioItem): string | undefined {
+  return (
+    item.url ??
+    (item.audioBytes
+      ? URL.createObjectURL(new Blob([new Uint8Array(item.audioBytes)]))
+      : undefined)
+  );
+}
+
+// Supertonic's first synthesis after launch loads the ONNX sessions (~20s).
+const PROVIDER_TIMEOUT_MS = 30_000;
 
 function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   return Promise.race([
@@ -190,14 +231,34 @@ export class PronunciationAudioOrchestrator {
       .filter((p): p is PronunciationAudioProvider => p !== undefined);
   }
 
-  async resolve(term: string, langCode: string): Promise<readonly AudioItem[]> {
+  resolve(term: string, langCode: string): Promise<readonly AudioItem[]> {
+    return this.walk(this.providers, term, langCode, 'word');
+  }
+
+  /** Sentence audio follows the same configured chain, restricted to engines
+   *  that synthesize arbitrary text — cloud voices and browser voice. */
+  resolveSentence(text: string, langCode: string): Promise<readonly AudioItem[]> {
+    return this.walk(
+      this.providers.filter((p) => SENTENCE_ENGINE_KINDS.has(p.kind)),
+      text,
+      langCode,
+      'sentence',
+    );
+  }
+
+  private async walk(
+    providers: readonly PronunciationAudioProvider[],
+    text: string,
+    langCode: string,
+    kind: AudioKind,
+  ): Promise<readonly AudioItem[]> {
     const all: AudioItem[] = [];
     let selectedSet = false;
 
-    for (const provider of this.providers) {
+    for (const provider of providers) {
       try {
         const items = await withTimeout(
-          provider.resolve(term, langCode),
+          provider.resolve(text, langCode, kind),
           PROVIDER_TIMEOUT_MS,
           provider.kind,
         );
@@ -218,4 +279,27 @@ export class PronunciationAudioOrchestrator {
 
     return all;
   }
+}
+
+/** Engines that can synthesize arbitrary sentence text. */
+const SENTENCE_ENGINE_KINDS: ReadonlySet<AudioEngineKind> = new Set(['supertonic', 'browserTts']);
+
+/** Sentence audio through the user's fallback chain (cloud voices + browser
+ *  voice only), loading settings itself for call sites that don't hold them. */
+export async function resolveSentenceAudioItems(
+  text: string,
+  langCode: string,
+): Promise<readonly AudioItem[]> {
+  const settings = await loadSettings().catch(() => DEFAULT_SETTINGS);
+  const orchestrator = new PronunciationAudioOrchestrator(
+    settings.pronunciation ?? DEFAULT_PRONUNCIATION_SETTINGS,
+  );
+  return orchestrator.resolveSentence(text, langCode);
+}
+
+/** Self-contained URL for an audio item — byte payloads become a data: URL
+ *  so they survive handoff to other documents/contexts (unlike blob:). */
+export function audioItemDataUrl(item: AudioItem): string | undefined {
+  return item.url
+    ?? (item.audioBytes ? `data:audio/wav;base64,${encodeBase64(item.audioBytes)}` : undefined);
 }

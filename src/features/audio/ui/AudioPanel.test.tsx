@@ -18,7 +18,7 @@ jest.mock('@/features/tts/services/ttsEngineService', () => ({
 // need to verify the SourceDetailPanel route renders it for browserTts.
 jest.mock('./BrowserVoicePanel', () => ({
   BrowserVoicePanel() {
-    return <div data-cell-id="browser-voice-panel">Browser Voice Panel (mock)</div>;
+    return <div data-tihoka-id="browser-voice-panel">Browser Voice Panel (mock)</div>;
   },
 }));
 
@@ -52,6 +52,8 @@ function makeTts(overrides: Partial<TtsSettings> = {}): TtsSettings {
     localTtsLanguage: 'en',
     downloadedLanguages: [],
     hiddenLanguages: [],
+    supertonicVoices: ['M1'],
+    supertonicDownloadedVoices: [],
     ...overrides,
   };
 }
@@ -208,9 +210,9 @@ describe('AudioPanel', () => {
 
     fireEvent.click(screen.getByTestId('audio-tester-play'));
 
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Enter a word to test.',
-    );
+    expect(
+      await screen.findByTestId('audio-tester-status'),
+    ).toHaveTextContent('Enter a word to test.');
   });
 
   it('reports when no audio is found for a tester term', async () => {
@@ -223,7 +225,7 @@ describe('AudioPanel', () => {
 
     // jsdom has no chrome.runtime — every provider resolves to [].
     await waitFor(() =>
-      expect(screen.getByRole('status')).toHaveTextContent(
+      expect(screen.getByTestId('audio-tester-status')).toHaveTextContent(
         'No audio found in the current order.',
       ),
     );

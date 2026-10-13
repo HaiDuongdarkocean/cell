@@ -10,6 +10,7 @@
  */
 
 import { encodeSamplesToWav } from './wavEncoder';
+import { espeakStereoToMono } from './espeakPcm';
 
 const ESPEAK_DIR = 'espeakng/';
 
@@ -80,7 +81,7 @@ async function initializeEspeak(): Promise<EspeakNgApi> {
 /**
  * Synthesize a word or short phrase with eSpeak and return it as a WAV file.
  */
-export async function synthesizeEspeakToWav(text: string, langCode: string): Promise<Uint8Array> {
+export async function synthesizeEspeakToWav(text: string, langCode: string, rate = 175): Promise<Uint8Array> {
   const espeak = await initializeEspeak();
 
   return new Promise((resolve, reject) => {
@@ -94,7 +95,7 @@ export async function synthesizeEspeakToWav(text: string, langCode: string): Pro
     const chunks: number[] = [];
 
     espeak.set_voice(langCode);
-    espeak.set_rate(175);
+    espeak.set_rate(rate);
     espeak.set_pitch(50);
 
     espeak.synthesize(text, (samples) => {
@@ -102,8 +103,9 @@ export async function synthesizeEspeakToWav(text: string, langCode: string): Pro
 
       if (samples) {
         const data = samples instanceof ArrayBuffer ? new Float32Array(samples) : samples;
-        for (let i = 0; i < data.length; i++) {
-          chunks.push(data[i]!);
+        const mono = espeakStereoToMono(data);
+        for (let i = 0; i < mono.length; i++) {
+          chunks.push(mono[i]!);
         }
         return;
       }

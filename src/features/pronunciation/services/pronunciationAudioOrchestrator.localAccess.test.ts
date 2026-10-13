@@ -1,5 +1,5 @@
 /**
- * @jest-environment-options {"url": "chrome-extension://cell-test/"}
+ * @jest-environment-options {"url": "chrome-extension://Tihoka-test/"}
  */
 
 const mockGetFileHandle = jest.fn();
@@ -88,7 +88,7 @@ describe('LocalAudioProvider permission ensure', () => {
   });
 
   afterEach(() => {
-    delete (globalThis as { __cellSendMessage?: unknown }).__cellSendMessage;
+    delete (globalThis as { __TihokaSendMessage?: unknown }).__TihokaSendMessage;
   });
 
   it('re-verifies the archive handle before delegating to the service worker', async () => {
@@ -101,7 +101,7 @@ describe('LocalAudioProvider permission ensure', () => {
       order.push('verifyPermission');
       return Promise.resolve(true);
     });
-    (globalThis as { __cellSendMessage?: unknown }).__cellSendMessage = () => {
+    (globalThis as { __TihokaSendMessage?: unknown }).__TihokaSendMessage = () => {
       order.push('sendMessage');
       return Promise.resolve({ success: true, data: { items: [] } });
     };

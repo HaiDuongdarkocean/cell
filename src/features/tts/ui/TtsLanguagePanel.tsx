@@ -1,21 +1,43 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { t } from '@/shared/i18n';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { deleteVoicePack } from '@/features/tts/services/ttsDownloadManager';
-import { SettingsRow, SettingsGroup, Toggle, Select, Button, Icon } from '@/shared/ui';
+import { decodeBase64ToArrayBuffer } from '@/shared/lib/base64';
+import {
+  deleteVoice,
+  deleteVoicePack,
+  SUPERTONIC_MAX_SELECTED_VOICES,
+  SUPERTONIC_VOICE_IDS,
+} from '@/features/tts/services/ttsDownloadManager';
+import { SettingsRow, SettingsGroup, Toggle, Select, Button, Icon, Chip, Alert, Text } from '@/shared/ui';
 import type { SelectOption } from '@/shared/ui/Select';
 import type { TtsSettings } from '@/entities/settings/types';
 import type { MessageResponse } from '@/entities/message';
+import type { PronunciationSupertonicTtsResult } from '@/entities/message/types';
 
 
 import { JobRow, useJobs, dismissJob, retryJob } from '@/features/jobs';
 import { isActiveJob } from '@/entities/job/types';
 import styles from './TtsLanguagePanel.module.css';
 
-const AVAILABLE_LANGUAGES: readonly SelectOption[] = [
-  { value: 'en', label: 'English' },
-];
+const LANGUAGE_LABELS: Readonly<Record<string, string>> = {
+  en: 'English',
+};
+
+const AVAILABLE_LANGUAGES: readonly SelectOption[] = Object.entries(LANGUAGE_LABELS).map(
+  ([value, label]) => ({ value, label }),
+);
+
+function languageLabel(lang: string): string {
+  return LANGUAGE_LABELS[lang] ?? lang.toUpperCase();
+}
+
+function voiceLabel(voice: string): string {
+  const num = voice.slice(1);
+  return voice.startsWith('F')
+    ? t('tts.local.voice.female', [num])
+    : t('tts.local.voice.male', [num]);
+}
 
 interface TtsLanguagePanelProps {
   readonly settings: TtsSettings;
@@ -25,18 +47,27 @@ interface TtsLanguagePanelProps {
 export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): React.JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [selectedAdd, setSelectedAdd] = useState<string>('');
+  const [playingVoice, setPlayingVoice] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // The background JobRegistry owns downloads — the panel observes jobs and
   // the completion effect (downloadedLanguages/localTtsLanguage) lands via
   // the settings subscription, never from this mortal surface.
   const voiceJobs = useJobs('voice-download');
+  const visibleJobs = useMemo(() => voiceJobs.filter((j) => j.status !== 'done'), [voiceJobs]);
+  const downloadingVoices = useMemo(() => new Set(
+    voiceJobs
+      .filter((j) => isActiveJob(j))
+      .map((j) => j.params.voice)
+      .filter((v): v is string => typeof v === 'string'),
+  ), [voiceJobs]);
   const activeLanguage = useMemo(() => {
     const active = voiceJobs.find((j) => isActiveJob(j));
     return typeof active?.params.language === 'string' ? active.params.language : null;
   }, [voiceJobs]);
 
   const languageOptions = useMemo(
-    () => settings.downloadedLanguages.map((lang) => ({ value: lang, label: lang })),
+    () => settings.downloadedLanguages.map((lang) => ({ value: lang, label: languageLabel(lang) })),
     [settings.downloadedLanguages],
   );
 
@@ -82,6 +113,8 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
           ...settings,
           downloadedLanguages: settings.downloadedLanguages.filter((l) => l !== language),
           hiddenLanguages: settings.hiddenLanguages.filter((l) => l !== language),
+          supertonicDownloadedVoices: [],
+          supertonicVoices: [],
           localTtsLanguage:
             settings.localTtsLanguage === language
               ? (settings.downloadedLanguages.find((l) => l !== language) ?? '')
@@ -93,6 +126,81 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
       }
     },
     [onSave, settings],
+  );
+
+  const handleDownloadVoice = useCallback(
+    async (voice: string) => {
+      setError(null);
+      const language = settings.localTtsLanguage || settings.downloadedLanguages[0] || 'en';
+      try {
+        const response = await sendMessage<MessageResponse<{ jobId: string }>>({
+          type: MESSAGE_TYPES.TTS_DOWNLOAD_VOICE,
+          payload: { language, voice },
+        });
+        if (!response.success) {
+          throw new Error(response.error ?? t('tts.local.downloadFailed'));
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      }
+    },
+    [settings.localTtsLanguage, settings.downloadedLanguages],
+  );
+
+  const handleDeleteVoice = useCallback(
+    async (voice: string) => {
+      setError(null);
+      try {
+        await deleteVoice(voice);
+        onSave({
+          ...settings,
+          supertonicDownloadedVoices: settings.supertonicDownloadedVoices.filter((v) => v !== voice),
+          supertonicVoices: settings.supertonicVoices.filter((v) => v !== voice),
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      }
+    },
+    [onSave, settings],
+  );
+
+  const toggleVoicePick = useCallback(
+    (voice: string) => {
+      const picked = settings.supertonicVoices;
+      if (picked.includes(voice)) {
+        onSave({ ...settings, supertonicVoices: picked.filter((v) => v !== voice) });
+      } else if (picked.length < SUPERTONIC_MAX_SELECTED_VOICES) {
+        onSave({ ...settings, supertonicVoices: [...picked, voice] });
+      }
+    },
+    [onSave, settings],
+  );
+
+  const previewVoice = useCallback(
+    async (voice: string) => {
+      audioRef.current?.pause();
+      if (playingVoice === voice) {
+        setPlayingVoice(null);
+        return;
+      }
+      setPlayingVoice(voice);
+      try {
+        const response = await sendMessage<MessageResponse<PronunciationSupertonicTtsResult>>({
+          type: MESSAGE_TYPES.PRONUNCIATION_SUPERTONIC_TTS,
+          payload: { text: t('tts.testDefault'), langCode: settings.localTtsLanguage, voices: [voice] },
+        });
+        const bytes = response.success ? response.data?.items?.[0]?.audioBytesB64 : null;
+        if (!bytes) throw new Error(response.success ? 'empty' : response.error ?? 'failed');
+        const audio = new Audio(URL.createObjectURL(new Blob([decodeBase64ToArrayBuffer(bytes)], { type: 'audio/wav' })));
+        audioRef.current = audio;
+        audio.onended = () => setPlayingVoice((p) => (p === voice ? null : p));
+        void audio.play();
+      } catch (err) {
+        setPlayingVoice((p) => (p === voice ? null : p));
+        setError(err instanceof Error ? err.message : String(err));
+      }
+    },
+    [playingVoice, settings.localTtsLanguage],
   );
 
   const toggleHidden = useCallback(
@@ -107,7 +215,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
 
   return (
     <div className={styles.panel}>
-      <SettingsRow dense title={t('tts.local.label')}>
+      <SettingsRow dense title={t('audio.engine.supertonic.enable')} description={t('audio.engine.supertonic.description')}>
         <Toggle
           checked={settings.localTtsEnabled}
           onChange={setLocalTtsEnabled}
@@ -118,33 +226,38 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
 
       {settings.localTtsEnabled && (
         <>
-          {settings.downloadedLanguages.length > 0 && (
+          {settings.downloadedLanguages.length > 1 && (
             <SettingsRow dense title={t('tts.local.defaultLang')} className={styles.row}>
               <Select
                 value={settings.localTtsLanguage}
                 options={languageOptions}
                 onChange={setLocalTtsLanguage}
                 placeholder={t('tts.local.pickLang')}
-                data-cell-id="local-tts-language-select"
+                data-tihoka-id="local-tts-language-select"
               />
             </SettingsRow>
           )}
 
-          <SettingsGroup label={t('tts.local.downloaded')} className={styles.sectionHeader}>
+          <SettingsGroup label={t('tts.local.downloaded')}>
 
-          {settings.downloadedLanguages.length === 0 && voiceJobs.length === 0 && (
-            <p className={styles.empty}>{t('tts.local.empty')}</p>
+          {settings.downloadedLanguages.length === 0 && visibleJobs.length === 0 && (
+            <Text as="p" color="secondary">{t('tts.local.empty')}</Text>
           )}
 
           {settings.downloadedLanguages.map((language) => {
             const hidden = settings.hiddenLanguages.includes(language);
             return (
-              <SettingsRow key={language} dense className={styles.languageRow}>
+              <SettingsRow key={language} dense className={styles.languageRow} title={languageLabel(language)}>
                 <div className={styles.languageInfo}>
-                  <span className={styles.languageName}>{language}</span>
-                  {hidden && <span className={styles.hiddenBadge}>{t('tts.local.hidden')}</span>}
+                  {hidden && (
+                    <Chip size="xs" variant="outline" color="muted">
+                      {t('tts.local.hidden')}
+                    </Chip>
+                  )}
                   {activeLanguage === language && (
-                    <span className={styles.downloadingBadge}>{t('tts.local.downloading')}</span>
+                    <Chip size="xs" variant="outline" color="warning">
+                      {t('tts.local.downloading')}
+                    </Chip>
                   )}
                 </div>
                 <div className={styles.actions}>
@@ -154,7 +267,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
                     variant="ghost"
                     size="sm"
                     onClick={() => toggleHidden(language)}
-                    data-cell-id={`local-tts-hide-${language}`}
+                    data-tihoka-id={`local-tts-hide-${language}`}
                   >
                     <Icon name="eyeOff" />
                   </Button>
@@ -165,7 +278,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
                     size="sm"
                     disabled={activeLanguage === language}
                     onClick={() => void handleRedownload(language)}
-                    data-cell-id={`local-tts-redownload-${language}`}
+                    data-tihoka-id={`local-tts-redownload-${language}`}
                   >
                     <Icon name="rotateCcw" />
                   </Button>
@@ -176,7 +289,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
                     size="sm"
                     disabled={activeLanguage === language}
                     onClick={() => void handleDelete(language)}
-                    data-cell-id={`local-tts-delete-${language}`}
+                    data-tihoka-id={`local-tts-delete-${language}`}
                   >
                     <Icon name="trash" />
                   </Button>
@@ -185,7 +298,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
             );
           })}
 
-          {voiceJobs.map((job) => (
+          {visibleJobs.map((job) => (
             <JobRow
               key={job.id}
               job={job}
@@ -202,7 +315,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
               )}
               onChange={setSelectedAdd}
               placeholder={t('tts.local.addLang')}
-              data-cell-id="local-tts-add-select"
+              data-tihoka-id="local-tts-add-select"
               className={styles.addSelect}
             />
             <Button
@@ -215,15 +328,111 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
                   void handleDownload(selectedAdd);
                 }
               }}
-              data-cell-id="local-tts-download-btn"
+              data-tihoka-id="local-tts-download-btn"
             >
               {t('tts.local.download')}
             </Button>
           </div>
 
-          {error && <p className={styles.error}>{error}</p>}
+          {error && <Alert variant="error" description={error} />}
 
           </SettingsGroup>
+
+          {settings.downloadedLanguages.length > 0 && (
+            <SettingsGroup label={t('tts.local.voices')}>
+              <SettingsRow
+                dense
+                title={t('tts.local.voices')}
+                description={t('tts.local.voices.hint')}
+                className={styles.row}
+              >
+                <Text variant="supporting" color="secondary">
+                  {t('audio.voice.count', [settings.supertonicVoices.length])}
+                </Text>
+              </SettingsRow>
+
+              <ul className={styles.voiceList} data-full={settings.supertonicVoices.length >= SUPERTONIC_MAX_SELECTED_VOICES || undefined}>
+                {SUPERTONIC_VOICE_IDS.map((voice) => {
+                  const downloaded = settings.supertonicDownloadedVoices.includes(voice);
+                  const downloading = downloadingVoices.has(voice);
+                  const slot = settings.supertonicVoices.indexOf(voice);
+                  const picked = slot >= 0;
+                  const label = voiceLabel(voice);
+                  return (
+                    <li key={voice} className={styles.voiceItem}>
+                      {downloaded ? (
+                        <Button
+                          variant="unstyled"
+                          className={`${styles.voiceRow}${picked ? ` ${styles.voiceRowOn}` : ''}`}
+                          aria-pressed={picked}
+                          onClick={() => toggleVoicePick(voice)}
+                          data-tihoka-id={`tts-voice-pick-${voice}`}
+                        >
+                          <span className={styles.voiceName}>{label}</span>
+                          <span className={`${styles.voiceCheck}${picked ? ` ${styles.voiceCheckOn}` : ''}`}>
+                            {picked && <span className={styles.voiceNum} key={slot}>{slot + 1}</span>}
+                          </span>
+                        </Button>
+                      ) : (
+                        <span className={styles.voiceRow}>
+                          <span className={styles.voiceName}>{label}</span>
+                          {downloading && (
+                            <Chip size="xs" variant="outline" color="warning">
+                              {t('tts.local.downloading')}
+                            </Chip>
+                          )}
+                        </span>
+                      )}
+                      <div className={styles.actions}>
+                        {!downloaded && (
+                          <Button shape="circle"
+                            aria-label={t('tts.local.downloadVoice', [label])}
+                            title={t('tts.local.downloadVoice', [label])}
+                            variant="ghost"
+                            size="sm"
+                            disabled={downloading}
+                            onClick={() => void handleDownloadVoice(voice)}
+                            data-tihoka-id={`tts-voice-download-${voice}`}
+                          >
+                            <Icon name="download" />
+                          </Button>
+                        )}
+                        {downloaded && (
+                          <Button shape="circle"
+                            aria-label={t('tts.playVoice', [label])}
+                            title={t('tts.playVoice', [label])}
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => void previewVoice(voice)}
+                            data-tihoka-id={`tts-voice-play-${voice}`}
+                          >
+                            <Icon name={playingVoice === voice ? 'pause' : 'play'} />
+                          </Button>
+                        )}
+                        {downloaded && (
+                          <Button shape="circle"
+                            aria-label={t('tts.local.deleteVoice', [label])}
+                            title={t('tts.local.deleteTitle')}
+                            variant="ghost"
+                            size="sm"
+                            disabled={settings.supertonicDownloadedVoices.length === 1}
+                            onClick={() => void handleDeleteVoice(voice)}
+                            data-tihoka-id={`tts-voice-delete-${voice}`}
+                          >
+                            <Icon name="trash" />
+                          </Button>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {settings.supertonicVoices.length >= SUPERTONIC_MAX_SELECTED_VOICES && (
+                <p className={styles.fullHint} role="status">{t('audio.voice.full')}</p>
+              )}
+            </SettingsGroup>
+          )}
         </>
       )}
     </div>

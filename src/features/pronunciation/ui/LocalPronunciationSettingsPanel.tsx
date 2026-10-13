@@ -16,6 +16,7 @@ import { Icon } from '@/shared/ui/Icon';
 import { Input } from '@/shared/ui/Input';
 import { SettingsRow } from '@/shared/ui/SettingsRow';
 import { VStack } from '@/shared/ui/Stack';
+import { Text } from '@/shared/ui/Text';
 import styles from './LocalPronunciationSettingsPanel.module.css';
 
 interface LocalPronunciationSettingsPanelProps {
@@ -167,8 +168,7 @@ export function LocalPronunciationSettingsPanel({
 
   return (
     <VStack gap="2">
-      <SettingsRow dense>
-        <span className={styles.rowLabel}>{t('pronunciation.local.package')}</span>
+      <SettingsRow dense title={t('pronunciation.local.package')}>
         <Button onClick={() => { void pickPackage(); }} disabled={busy}>
           {busy
             ? t('pronunciation.local.scanning')
@@ -179,8 +179,7 @@ export function LocalPronunciationSettingsPanel({
       </SettingsRow>
 
       {local.packageType === 'split' && (
-        <SettingsRow dense stacked>
-          <label className={styles.rowLabel} htmlFor="split-pattern">{t('pronunciation.local.namePattern')}</label>
+        <SettingsRow dense stacked title={t('pronunciation.local.namePattern')} labelFor="split-pattern">
           <Input
             id="split-pattern"
             value={local.splitArchivePattern}
@@ -191,19 +190,11 @@ export function LocalPronunciationSettingsPanel({
       )}
 
       {needsReconnect && (
-        <SettingsRow dense>
-          <span className={styles.rowLabel}>{t('pronunciation.local.fileAccess')}</span>
+        <SettingsRow dense title={t('pronunciation.local.fileAccess')}>
           <Button onClick={() => { void reconnect(); }}>
             {t('pronunciation.local.reconnect')}
           </Button>
         </SettingsRow>
-      )}
-
-      {status && (
-        <p className={styles.note} role="status">
-          <Icon name="lightbulb" size="sm" color="secondary" />
-          <span>{status}</span>
-        </p>
       )}
 
       {indexJobs.map((job) => (
@@ -216,10 +207,16 @@ export function LocalPronunciationSettingsPanel({
       ))}
 
       {local.lastIndexedAt && (
-        <SettingsRow dense>
-          <span className={styles.rowLabel}>{t('pronunciation.local.lastIndexed')}</span>
-          <span>{new Date(local.lastIndexedAt).toLocaleString()}</span>
+        <SettingsRow dense title={t('pronunciation.local.lastIndexed')}>
+          <Text color="secondary">{new Date(local.lastIndexedAt).toLocaleString()}</Text>
         </SettingsRow>
+      )}
+
+      {status && (
+        <p className={styles.note} role="status">
+          <Icon name="lightbulb" size="sm" color="secondary" />
+          <span>{status}</span>
+        </p>
       )}
     </VStack>
   );

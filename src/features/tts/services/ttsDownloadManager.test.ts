@@ -58,15 +58,15 @@ describe('ttsDownloadManager', () => {
     expect(onProgress).toHaveBeenLastCalledWith({ loaded: 700, total: 700 });
   });
 
-  it('reports whether all voice pack files are present', async () => {
+  it('reports whether all model files are present', async () => {
     mockHasTtsFile.mockResolvedValue(true);
     const downloaded = await isVoicePackDownloaded();
     expect(downloaded).toBe(true);
-    expect(mockHasTtsFile).toHaveBeenCalledTimes(7);
+    expect(mockHasTtsFile).toHaveBeenCalledTimes(6);
   });
 
-  it('deletes all voice pack files', async () => {
+  it('deletes all model and voice style files', async () => {
     await deleteVoicePack();
-    expect(mockDeleteTtsFile).toHaveBeenCalledTimes(7);
+    expect(mockDeleteTtsFile).toHaveBeenCalledTimes(16);
   });
 });

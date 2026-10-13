@@ -24,7 +24,7 @@ import type {
   PronunciationSettings,
   TtsSettings,
 } from '@/entities/settings/types';
-import { PronunciationAudioOrchestrator } from '@/features/pronunciation';
+import { PronunciationAudioOrchestrator, audioItemUrl, PhonemePacksPanel } from '@/features/pronunciation';
 import {
   OUTPUT_MODES,
   getEngineStatus,
@@ -127,15 +127,11 @@ export function AudioPanel({
       const orchestrator = new PronunciationAudioOrchestrator(pronunciation);
       const items = await orchestrator.resolve(term, TEST_LANG_CODE);
       const item = items.find((i) => i.url || i.audioBytes);
+      const url = item ? audioItemUrl(item) : undefined;
       if (!item) {
         setTestStatus(t('audio.tester.none'));
         return;
       }
-      const url =
-        item.url ??
-        (item.audioBytes
-          ? URL.createObjectURL(new Blob([new Uint8Array(item.audioBytes)]))
-          : undefined);
       if (!url) {
         setTestStatus(t('audio.tester.unplayable'));
         return;
@@ -154,7 +150,7 @@ export function AudioPanel({
   };
 
   return (
-    <div className={styles.panel} data-cell-id="audio-panel">
+    <div className={styles.panel} data-tihoka-id="audio-panel">
       {/* Sources: pick a mode → see the order → configure a source → hear it. */}
       <SettingsGroup>
         <SettingsRow dense stacked>
@@ -173,7 +169,7 @@ export function AudioPanel({
               onClick={() => setModesOpen((o) => !o)}
               aria-expanded={advancedVisible}
               data-open={advancedVisible}
-              data-cell-id="audio-advanced-toggle"
+              data-tihoka-id="audio-advanced-toggle"
             >
               <span className={styles.advancedLabel}>{t('audio.modes.advanced')}</span>
               <Icon name="chevronDown" size={16} />
@@ -223,6 +219,7 @@ export function AudioPanel({
         {selectedEngine && (
           <SourceDetailPanel
             engine={selectedEngine}
+            status={statuses[selectedEngine]}
             pronunciation={pronunciation}
             tts={tts}
             targetLang={targetLang}
@@ -243,8 +240,9 @@ export function AudioPanel({
             }}
             placeholder={t('audio.tester.placeholder')}
             aria-label={t('audio.tester.inputAria')}
-            data-cell-id="audio-tester-input"
+            data-tihoka-id="audio-tester-input"
             size="md"
+            className={styles.testerInput}
             suffix={
               <Button
                 variant="primary"
@@ -254,19 +252,22 @@ export function AudioPanel({
                 onClick={() => void handlePlay()}
                 loading={testing}
                 aria-label={t('audio.tester.playAria')}
-                data-cell-id="audio-tester-play"
+                data-tihoka-id="audio-tester-play"
               >
                 <Icon name="play" size="sm" />
               </Button>
             }
           />
           {testStatus && (
-            <p className={styles.status} role="status" data-cell-id="audio-tester-status">
+            <p className={styles.status} role="status" data-tihoka-id="audio-tester-status">
               {testStatus}
             </p>
           )}
         </SettingsRow>
       </SettingsGroup>
+
+      {/* Phoneme chips: bundled recordings + user-imported plugin packs. */}
+      <PhonemePacksPanel />
 
       {/* Playback: behaviour applied after the sources are decided. */}
       <SettingsGroup label={<span className={styles.groupLabel}>{t('audio.group.playback')}</span>}>
@@ -276,7 +277,7 @@ export function AudioPanel({
             value={String(tts.autoplayCount)}
             options={AUTOPLAY_OPTION_KEYS.map((o) => ({ value: o.value, label: t(o.label) }))}
             onChange={(v) => onTtsChange({ ...tts, autoplayCount: Number(v) })}
-            data-cell-id="audio-autoplay"
+            data-tihoka-id="audio-autoplay"
             aria-label={t('audio.autoplay.aria')}
           />
         </SettingsRow>

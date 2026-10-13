@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { t } from '@/shared/i18n';
-import { Button, HintIcon, Icon, Text } from '@/shared/ui';
+import { Button, Icon, SettingsRow, Text } from '@/shared/ui';
 import { OVERLAY_LANGUAGE_OPTIONS, isoCodeToLabel } from '@/shared/config/languageRegistry';
 import { createTtsEngine } from '@/features/tts';
 import type { TtsEngine, TtsVoiceInfo } from '@/features/tts';
@@ -10,7 +10,6 @@ import styles from './BrowserVoicePanel.module.css';
 export const BROWSER_VOICE_MAX_SLOTS = 3;
 const REFRESH_MS = 1500;
 const SAVED_FLASH_MS = 1400;
-const FULL_HINT_MS = 2600;
 
 export interface BrowserVoicePanelProps {
   readonly settings: TtsSettings;
@@ -44,9 +43,8 @@ export function BrowserVoicePanel({
   const [loading, setLoading] = useState(true);
   const [playing, setPlaying] = useState<string | null>(null);
   const [savedCount, setSavedCount] = useState(0);
-  const [fullHint, setFullHint] = useState(false);
+  const [fullFlash, setFullFlash] = useState(0);
   const savedTimer = useRef<number | undefined>(undefined);
-  const fullTimer = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     const engine = engineRef.current;
@@ -76,7 +74,6 @@ export function BrowserVoicePanel({
 
   useEffect(() => () => {
     clearTimeout(savedTimer.current);
-    clearTimeout(fullTimer.current);
   }, []);
 
   const filtered = useMemo(() => {
@@ -106,9 +103,7 @@ export function BrowserVoicePanel({
         onChange({ ...settings, voices: [...slots, voiceName] });
         flashSaved();
       } else {
-        setFullHint(true);
-        clearTimeout(fullTimer.current);
-        fullTimer.current = window.setTimeout(() => setFullHint(false), FULL_HINT_MS);
+        setFullFlash((n) => n + 1);
       }
     },
     [slots, settings, onChange, flashSaved],
@@ -129,28 +124,25 @@ export function BrowserVoicePanel({
   );
 
   const savedVisible = savedCount > 0 && savedCount % 2 === 1;
+  const full = slots.length >= BROWSER_VOICE_MAX_SLOTS;
 
   return (
-    <div className={styles.panel} data-cell-id="browser-voice-panel">
-      <div className={styles.head}>
-        <Text as="span" variant="label" className={styles.title}>
-          {t('audio.voice.listTitle', [langLabel])}
-        </Text>
-        <HintIcon
-          hint={t('audio.voice.hint')}
-          ariaLabel={t('audio.voice.hintAria', [t('audio.voice.listTitle', [langLabel])])}
-        />
-        <span className={styles.spacer} />
-        <span className={styles.count} key={slots.length}>
+    <div className={styles.panel} data-tihoka-id="browser-voice-panel">
+      <SettingsRow
+        dense
+        title={t('audio.voice.listTitle', [langLabel])}
+        hint={t('audio.voice.hint')}
+        hintAriaLabel={t('audio.voice.hintAria', [t('audio.voice.listTitle', [langLabel])])}
+      >
+        <Text
+          variant="supporting"
+          color="secondary"
+          className={styles.count}
+          key={slots.length}
+        >
           {t('audio.voice.count', [slots.length])}
-        </span>
-        {savedVisible && (
-          <span className={styles.saved} key={savedCount} role="status">
-            <Icon name="check" size="sm" />
-            {t('audio.voice.saved')}
-          </span>
-        )}
-      </div>
+        </Text>
+      </SettingsRow>
 
       {loading && <Text color="secondary">{t('tts.voicesLoading')}</Text>}
 
@@ -159,44 +151,37 @@ export function BrowserVoicePanel({
       )}
 
       {!loading && filtered.length > 0 && (
-        <ul className={styles.list} aria-label={t('audio.voice.listTitle', [langLabel])}>
+        <ul
+          className={styles.list}
+          data-full={full || undefined}
+          aria-label={t('audio.voice.listTitle', [langLabel])}
+        >
           {filtered.map((v) => {
             const slot = slots.indexOf(v.voiceName);
             const used = slot >= 0;
             const name = displayName(v.voiceName);
             return (
-              <li key={v.voiceName}>
-                <div
-                  role="button"
-                  tabIndex={0}
+              <li key={v.voiceName} className={styles.item}>
+                <Button
+                  shape="circle"
+                  size="xs"
+                  variant={playing === v.voiceName ? 'primary' : 'ghost'}
+                  className={`${styles.play}${playing === v.voiceName ? ` ${styles.playActive}` : ''}`}
+                  aria-label={t('tts.playVoice', [name])}
+                  title={t('tts.playVoice', [name])}
+                  onClick={() => preview(v)}
+                  data-tihoka-id={`voice-play-${v.voiceName}`}
+                >
+                  <Icon name={playing === v.voiceName ? 'pause' : 'play'} />
+                </Button>
+                <Button
+                  variant="unstyled"
                   className={`${styles.row}${used ? ` ${styles.rowOn}` : ''}`}
                   aria-pressed={used}
                   onClick={() => toggle(v.voiceName)}
-                  onKeyDown={(e) => {
-                    if (e.target !== e.currentTarget) return;
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      toggle(v.voiceName);
-                    }
-                  }}
-                  data-cell-id={`voice-row-${v.voiceName}`}
+                  data-tihoka-id={`voice-row-${v.voiceName}`}
                 >
-                  <Button
-                    shape="circle"
-                    size="xs"
-                    variant={playing === v.voiceName ? 'primary' : 'ghost'}
-                    className={`${styles.play}${playing === v.voiceName ? ` ${styles.playActive}` : ''}`}
-                    aria-label={t('tts.playVoice', [name])}
-                    title={t('tts.playVoice', [name])}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      preview(v);
-                    }}
-                    data-cell-id={`voice-play-${v.voiceName}`}
-                  >
-                    <Icon name={playing === v.voiceName ? 'pause' : 'play'} />
-                  </Button>
-                  <span className={styles.rowLabel}>
+                  <span className={styles.voiceLabel}>
                     <span className={styles.rowName}>{name}</span>
                     <span className={styles.rowMeta}>
                       {v.lang ?? ''}
@@ -210,16 +195,27 @@ export function BrowserVoicePanel({
                       </span>
                     )}
                   </span>
-                </div>
+                </Button>
               </li>
             );
           })}
         </ul>
       )}
 
-      {fullHint && (
-        <p className={styles.full} role="status">
-          {t('audio.voice.full')}
+      {(savedVisible || full) && (
+        <p
+          className={styles.full}
+          role="status"
+          key={full ? `full-${fullFlash}` : `saved-${savedCount}`}
+        >
+          {full ? (
+            t('audio.voice.full')
+          ) : (
+            <span className={styles.saved}>
+              <Icon name="check" size="sm" />
+              {t('audio.voice.saved')}
+            </span>
+          )}
         </p>
       )}
     </div>

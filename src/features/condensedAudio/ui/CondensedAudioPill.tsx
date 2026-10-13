@@ -48,7 +48,7 @@ export function CondensedAudioPill({
   }, [getElapsedMs, phase]);
   if (phase === 'done') {
     return (
-      <div className={`${styles.pill} ${styles.pillDone}`} role="status" data-cell-id="condensed-audio-pill-done">
+      <div className={`${styles.pill} ${styles.pillDone}`} role="status" data-tihoka-id="condensed-audio-pill-done">
         <Icon name="circleCheck" size="sm" className={styles.doneIcon} />
         <span className={styles.status}>
           <span className={styles.statusLabelDone}>
@@ -63,12 +63,12 @@ export function CondensedAudioPill({
   }
   if (phase === 'ready') {
     return (
-      <div className={`${styles.pill} ${styles.pillReady}`} role="status" data-cell-id="condensed-audio-pill-ready">
+      <div className={`${styles.pill} ${styles.pillReady}`} role="status" data-tihoka-id="condensed-audio-pill-ready">
         <button
           type="button"
           className={styles.listenCta}
           onClick={onOpenLibrary}
-          data-cell-id="condensed-audio-open-playlist"
+          data-tihoka-id="condensed-audio-open-playlist"
           aria-label={t('condensedAudio.pill.openPlaylist')}
         >
           <Icon name="audioWave" size="sm" />
@@ -86,7 +86,7 @@ export function CondensedAudioPill({
           className={styles.action}
           onClick={onDismissDone}
           aria-label={t('condensedAudio.pill.dismissDone')}
-          data-cell-id="condensed-audio-dismiss-done"
+          data-tihoka-id="condensed-audio-dismiss-done"
         >
           <Icon name="x" size="sm" />
         </Button>
@@ -95,7 +95,7 @@ export function CondensedAudioPill({
   }
   return (
     <>
-      <div className={styles.pill} role="status" data-cell-id="condensed-audio-pill">
+      <div className={styles.pill} role="status" data-tihoka-id="condensed-audio-pill">
         <span className={paused ? styles.dotPaused : styles.dot} aria-hidden="true" />
         <span className={styles.status}>
           <span className={paused ? styles.statusLabelPaused : styles.statusLabel}>
@@ -112,7 +112,7 @@ export function CondensedAudioPill({
           className={styles.action}
           onClick={onTogglePause}
           aria-label={t(paused ? 'condensedAudio.pill.resume' : 'condensedAudio.pill.pause')}
-          data-cell-id="condensed-audio-pause"
+          data-tihoka-id="condensed-audio-pause"
         >
           <Icon name={paused ? 'recPlay' : 'recPause'} size="sm" />
         </Button>
@@ -123,7 +123,7 @@ export function CondensedAudioPill({
           className={styles.action}
           onClick={onStop}
           aria-label={t('condensedAudio.pill.stop')}
-          data-cell-id="condensed-audio-stop"
+          data-tihoka-id="condensed-audio-stop"
         >
           <Icon name="recStop" size="sm" />
         </Button>
@@ -135,12 +135,12 @@ export function CondensedAudioPill({
           className={`${styles.action} ${styles.actionDestructive}`}
           onClick={() => setConfirmOpen(true)}
           aria-label={t('condensedAudio.pill.discard')}
-          data-cell-id="condensed-audio-discard"
+          data-tihoka-id="condensed-audio-discard"
         >
           <Icon name="recDiscard" size="sm" />
         </Button>
       </div>
-      <div className={styles.dialogLayer} data-cell-id="condensed-audio-discard-dialog">
+      <div className={styles.dialogLayer} data-tihoka-id="condensed-audio-discard-dialog">
         <ConfirmDialog
           open={confirmOpen}
           onOpenChange={setConfirmOpen}

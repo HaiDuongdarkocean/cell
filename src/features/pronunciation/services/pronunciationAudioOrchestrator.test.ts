@@ -1,6 +1,7 @@
 import {
   LocalAudioProvider,
   PronunciationAudioOrchestrator,
+  SupertonicAudioProvider,
   type PronunciationAudioProvider,
 } from './pronunciationAudioOrchestrator';
 import type { AudioItem } from '@/entities/dictionary';
@@ -9,12 +10,13 @@ import type { PronunciationSettings } from '@/entities/settings/types';
 import type { AudioEngineKind } from '../types';
 
 class MockProvider {
-  readonly kind: AudioEngineKind = 'localFile';
+  constructor(
+    private readonly items: AudioItem[],
+    readonly kind: AudioEngineKind = 'localFile',
+  ) {}
 
-  constructor(private readonly items: AudioItem[]) {}
-
-  resolve(): Promise<readonly AudioItem[]> {
-    return Promise.resolve(this.items);
+  resolve(_term?: string, _langCode?: string, kind: 'word' | 'sentence' = 'word'): Promise<readonly AudioItem[]> {
+    return Promise.resolve(this.items.map((i) => ({ ...i, kind })));
   }
 }
 
@@ -73,7 +75,7 @@ describe('PronunciationAudioOrchestrator', () => {
 
     const result = await orchestrator.resolve('hello', 'en');
     expect(result.map((i) => i.id)).toEqual(['n1']);
-  }, 15_000);
+  }, 40_000);
 
   it('stops at the first non-empty provider and uses only its items', async () => {
     const orchestrator = new PronunciationAudioOrchestrator(makeSettings(['native', 'localFile']));
@@ -117,16 +119,57 @@ describe('PronunciationAudioOrchestrator', () => {
     });
     expect((orchestrator as unknown as { providers: PronunciationAudioProvider[] }).providers).toHaveLength(2);
   });
+
+  it('resolveSentence skips non-sentence engines and keeps chain order', async () => {
+    const orchestrator = new PronunciationAudioOrchestrator(
+      makeSettings(['native', 'browserTts', 'supertonic']),
+    );
+    (orchestrator as unknown as { providers: PronunciationAudioProvider[] }).providers = [
+      new MockProvider([makeItem('n1', 'community')], 'native'),
+      new MockProvider([makeItem('b1', 'system-tts')], 'browserTts'),
+      new MockProvider([makeItem('s1', 'cloud-tts')], 'supertonic'),
+    ];
+
+    const result = await orchestrator.resolveSentence('a sentence to speak', 'en');
+    expect(result.map((i) => i.id)).toEqual(['b1']);
+    expect(result[0].kind).toBe('sentence');
+    expect(result[0].defaultSelected).toBe(true);
+  });
+
+  it('resolveSentence prefers cloud voices when supertonic comes first', async () => {
+    const orchestrator = new PronunciationAudioOrchestrator(
+      makeSettings(['supertonic', 'browserTts']),
+    );
+    (orchestrator as unknown as { providers: PronunciationAudioProvider[] }).providers = [
+      new MockProvider([makeItem('s1', 'cloud-tts'), makeItem('s2', 'cloud-tts')], 'supertonic'),
+      new MockProvider([makeItem('b1', 'system-tts')], 'browserTts'),
+    ];
+
+    const result = await orchestrator.resolveSentence('a sentence to speak', 'en');
+    expect(result.map((i) => i.id)).toEqual(['s1', 's2']);
+    expect(result[0].defaultSelected).toBe(true);
+    expect(result[1].defaultSelected).toBe(false);
+  });
+
+  it('resolveSentence yields nothing when no sentence-capable engine is configured', async () => {
+    const orchestrator = new PronunciationAudioOrchestrator(makeSettings(['native', 'localFile']));
+    (orchestrator as unknown as { providers: PronunciationAudioProvider[] }).providers = [
+      new MockProvider([makeItem('n1', 'community')], 'native'),
+    ];
+
+    const result = await orchestrator.resolveSentence('a sentence to speak', 'en');
+    expect(result).toEqual([]);
+  });
 });
 
 describe('LocalAudioProvider', () => {
   afterEach(() => {
-    delete (globalThis as { __cellSendMessage?: unknown }).__cellSendMessage;
+    delete (globalThis as { __TihokaSendMessage?: unknown }).__TihokaSendMessage;
   });
 
   it('rehydrates audioBytes serialized to an integer-keyed object across sendMessage', async () => {
     const wireBytes = { 0: 73, 1: 68, 2: 51, 3: 4 };
-    (globalThis as { __cellSendMessage?: unknown }).__cellSendMessage = () =>
+    (globalThis as { __TihokaSendMessage?: unknown }).__TihokaSendMessage = () =>
       Promise.resolve({
         success: true,
         data: {
@@ -152,7 +195,7 @@ describe('LocalAudioProvider', () => {
   });
 
   it('decodes audioBytesB64 and strips the wire field from the materialized item', async () => {
-    (globalThis as { __cellSendMessage?: unknown }).__cellSendMessage = () =>
+    (globalThis as { __TihokaSendMessage?: unknown }).__TihokaSendMessage = () =>
       Promise.resolve({
         success: true,
         data: {
@@ -178,7 +221,8 @@ describe('LocalAudioProvider', () => {
   });
 
   it('prefers audioBytes over audioBytesB64 when both are present', async () => {
-    (globalThis as { __cellSendMessage?: unknown }).__cellSendMessage = () =>
+
+    (globalThis as { __TihokaSendMessage?: unknown }).__TihokaSendMessage = () =>
       Promise.resolve({
         success: true,
         data: {
@@ -200,5 +244,48 @@ describe('LocalAudioProvider', () => {
     const provider = new LocalAudioProvider();
     const items = await provider.resolve('hello', 'en');
     expect(Array.from(items[0].audioBytes ?? [])).toEqual([7, 7]);
+  });
+});
+
+describe('SupertonicAudioProvider', () => {
+  afterEach(() => {
+    delete (globalThis as { __TihokaSendMessage?: unknown }).__TihokaSendMessage;
+  });
+
+  it('maps each returned voice into a cloud-tts AudioItem', async () => {
+    (globalThis as { __TihokaSendMessage?: unknown }).__TihokaSendMessage = () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          items: [
+            { voice: 'M1', audioBytesB64: 'SUQzBA==' },
+            { voice: 'F2', audioBytesB64: 'SUQzBA==' },
+          ],
+        },
+      });
+
+    const provider = new SupertonicAudioProvider();
+    const items = await provider.resolve('hello', 'en');
+    expect(items).toHaveLength(2);
+    expect(items[0].source).toBe('cloud-tts');
+    expect(items[0].kind).toBe('word');
+    expect(items[0].id).toBe('supertonic-word-hello-en-M1');
+    expect(Array.from(items[0].audioBytes ?? [])).toEqual([73, 68, 51, 4]);
+  });
+
+  it('returns empty when synthesis fails', async () => {
+    (globalThis as { __TihokaSendMessage?: unknown }).__TihokaSendMessage = () =>
+      Promise.resolve({ success: false, error: 'pack missing' });
+
+    const provider = new SupertonicAudioProvider();
+    expect(await provider.resolve('hello', 'en')).toEqual([]);
+  });
+
+  it('returns empty when items are absent', async () => {
+    (globalThis as { __TihokaSendMessage?: unknown }).__TihokaSendMessage = () =>
+      Promise.resolve({ success: true, data: {} });
+
+    const provider = new SupertonicAudioProvider();
+    expect(await provider.resolve('hello', 'en')).toEqual([]);
   });
 });

@@ -1,11 +1,15 @@
 import { playPhoneme } from './phonemeAudioPlayer';
+import { espeakStereoToMono } from './espeakPcm';
 import type { Phoneme, PronunciationAudio } from '../types';
 
 interface EspeakNgApi {
   set_voice(voice: string): void;
   set_rate(rate: number): void;
   set_pitch(pitch: number): void;
-  synthesize(text: string, callback: (samples: number[], events: unknown[]) => void): void;
+  synthesize(
+    text: string,
+    callback: (samples: ArrayBuffer | Float32Array | number[] | null, events: unknown[]) => void,
+  ): void;
 }
 
 let initPromise: Promise<EspeakNgApi> | null = null;
@@ -74,24 +78,18 @@ async function initializeEspeak(): Promise<EspeakNgApi> {
   return initPromise;
 }
 
-/**
- * Convert eSpeak NG's 16-bit signed mono sample array to a Float32Array
- * and wrap it as a `PronunciationAudio` for the existing audio decoder.
- */
 function samplesToPronunciationAudio(
-  samples: number[],
+  samples: ArrayBuffer | Float32Array | number[],
   sampleRate = 22050,
 ): PronunciationAudio {
-  const floatSamples = new Float32Array(samples.length);
-  for (let i = 0; i < samples.length; i++) {
-    floatSamples[i] = samples[i]! / 32768;
-  }
+  const frames = samples instanceof ArrayBuffer ? new Float32Array(samples) : samples;
+  const mono = espeakStereoToMono(frames);
 
   return {
-    samples: floatSamples,
+    samples: mono,
     sampleRate,
     source: 'espeak',
-    duration: samples.length / sampleRate,
+    duration: mono.length / sampleRate,
   };
 }
 
@@ -111,15 +109,33 @@ export async function synthesizeEspeakWord(text: string): Promise<PronunciationA
       reject(new Error('eSpeak word synthesis timeout'));
     }, 10000);
 
+    const chunks: Float32Array[] = [];
+
     espeak.synthesize(text, (samples, _events) => {
       if (settled) return;
+
+      if (samples) {
+        const frames = samples instanceof ArrayBuffer ? new Float32Array(samples) : samples;
+        chunks.push(new Float32Array(frames));
+        return;
+      }
+
       settled = true;
       clearTimeout(timeout);
-      if (!samples?.length) {
+
+      const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+      if (!totalLength) {
         reject(new Error('eSpeak returned empty audio'));
         return;
       }
-      resolve(samplesToPronunciationAudio(samples));
+
+      const frames = new Float32Array(totalLength);
+      let offset = 0;
+      for (const chunk of chunks) {
+        frames.set(chunk, offset);
+        offset += chunk.length;
+      }
+      resolve(samplesToPronunciationAudio(frames));
     });
   });
 }

@@ -50,7 +50,6 @@ const ONNX_FILES = [
 const JSON_FILES = {
   config: 'tts.json',
   indexer: 'unicode_indexer.json',
-  style: 'M1.json',
 } as const;
 
 type SessionMap = {
@@ -65,11 +64,11 @@ interface SupertonicCache {
   sessions?: SessionMap;
   cfgs?: SupertonicConfig;
   textProcessor?: UnicodeProcessor;
-  style?: Style;
   error?: Error;
 }
 
 let cache: SupertonicCache = { loaded: false };
+const styleCache = new Map<string, Style>();
 
 class UnicodeProcessor {
   private readonly indexer: readonly number[];
@@ -505,9 +504,12 @@ async function loadIndexer(): Promise<readonly number[]> {
   return parsed as number[];
 }
 
-async function loadStyle(): Promise<Style> {
-  const file = await readTtsFile(JSON_FILES.style);
-  if (!file) throw new Error(`Missing ${JSON_FILES.style}`);
+async function loadStyle(voice: string): Promise<Style> {
+  const cached = styleCache.get(voice);
+  if (cached) return cached;
+  const name = `${voice}.json`;
+  const file = await readTtsFile(name);
+  if (!file) throw new Error(`Voice ${voice} is not downloaded`);
   const text = await file.text();
   const data = JSON.parse(text) as SupertonicStyleJson;
 
@@ -517,7 +519,9 @@ async function loadStyle(): Promise<Style> {
   const ort = await getOrt();
   const ttlTensor = new ort.Tensor('float32', ttlFlat, data.style_ttl.dims as number[]);
   const dpTensor = new ort.Tensor('float32', dpFlat, data.style_dp.dims as number[]);
-  return new Style(ttlTensor, dpTensor);
+  const style = new Style(ttlTensor, dpTensor);
+  styleCache.set(voice, style);
+  return style;
 }
 
 async function loadSessions(): Promise<SessionMap> {
@@ -541,7 +545,7 @@ async function loadSessions(): Promise<SessionMap> {
 }
 
 async function ensureLoaded(): Promise<TextToSpeech> {
-  if (cache.loaded && cache.sessions && cache.cfgs && cache.textProcessor && cache.style) {
+  if (cache.loaded && cache.sessions && cache.cfgs && cache.textProcessor) {
     return new TextToSpeech(
       cache.cfgs,
       cache.textProcessor,
@@ -562,15 +566,14 @@ async function ensureLoaded(): Promise<TextToSpeech> {
   }
 
   try {
-    const [cfgs, indexer, style, sessions] = await Promise.all([
+    const [cfgs, indexer, sessions] = await Promise.all([
       loadConfig(),
       loadIndexer(),
-      loadStyle(),
       loadSessions(),
     ]);
 
     const textProcessor = new UnicodeProcessor(indexer);
-    cache = { loaded: true, cfgs, textProcessor, style, sessions };
+    cache = { loaded: true, cfgs, textProcessor, sessions };
 
     return new TextToSpeech(
       cfgs,
@@ -587,9 +590,10 @@ async function ensureLoaded(): Promise<TextToSpeech> {
   }
 }
 
-export async function synthesizeSupertonic(text: string, lang: string): Promise<ArrayBuffer> {
+export async function synthesizeSupertonic(text: string, lang: string, voice = 'M1'): Promise<ArrayBuffer> {
   const tts = await ensureLoaded();
-  const { wav, duration } = await tts.call(text, lang, cache.style as Style);
+  const style = await loadStyle(voice);
+  const { wav, duration } = await tts.call(text, lang, style);
   const durationSeconds = Array.isArray(duration) ? (duration[0] ?? 0) : duration;
   return writeWavBuffer(wav, tts.sampleRate, durationSeconds);
 }

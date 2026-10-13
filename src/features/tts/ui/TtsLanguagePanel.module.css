@@ -2,22 +2,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding-block: var(--space-2);
 }
 
 .row {
   align-items: center;
-}
-
-.sectionHeader {
-  margin-block-start: var(--space-3);
-}
-
-.empty {
-  font-size: var(--font-size-sm);
-  line-height: var(--leading-normal);
-  color: var(--color-text-tertiary);
-  margin: 0;
 }
 
 .languageRow {
@@ -31,23 +19,6 @@
   gap: var(--space-2);
   flex: 1;
   min-width: 0;
-}
-
-.languageName {
-  font-size: var(--font-size-sm);
-  line-height: var(--leading-normal);
-  color: var(--color-text);
-  text-transform: uppercase;
-}
-
-.hiddenBadge,
-.downloadingBadge {
-  font-size: var(--font-size-xs);
-  line-height: var(--leading-snug);
-  padding: var(--space-0-5) var(--space-1-5);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-hover);
-  color: var(--color-text-secondary);
 }
 
 .actions {
@@ -68,9 +39,105 @@
   min-width: 0;
 }
 
-.error {
-  font-size: var(--font-size-xs);
-  line-height: var(--leading-snug);
-  color: var(--color-error);
+.voiceList {
+  list-style: none;
   margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.voiceItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.voiceRow {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.voiceRow:hover {
+  background: var(--color-surface-hover);
+}
+
+.voiceRow:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.voiceName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.voiceCheck {
+  position: relative;
+  flex-shrink: 0;
+  width: var(--space-5);
+  height: var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-on-primary);
+  transform: scale(0.85);
+  transition:
+    transform var(--duration-slow) var(--ease-spring),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.voiceCheck::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  border: var(--border-width-thick) solid var(--color-border);
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.voiceRow:hover .voiceCheck::before,
+.voiceRow:focus-visible .voiceCheck::before {
+  border-color: var(--color-border-emphasized);
+}
+
+.voiceList[data-full] .voiceRow:not(.voiceRowOn) .voiceCheck::before {
+  border-color: var(--color-divider);
+}
+
+.voiceCheckOn {
+  background: var(--color-primary);
+  transform: scale(1);
+}
+
+.voiceCheckOn::before { content: none; }
+
+.voiceNum {
+  animation: voiceNumPop var(--duration-slow) var(--ease-spring) both;
+}
+
+.fullHint {
+  margin: 0;
+  padding: 0 var(--space-3);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+@keyframes voiceNumPop {
+  from { transform: scale(0.6); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }

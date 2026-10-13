@@ -7,7 +7,7 @@ import { SourceDetailPanel } from './SourceDetailPanel';
 // jsdom. We mock it to a simple placeholder and test the routing only.
 jest.mock('./BrowserVoicePanel', () => ({
   BrowserVoicePanel() {
-    return <div data-cell-id="browser-voice-panel">Browser Voice Panel (mock)</div>;
+    return <div data-tihoka-id="browser-voice-panel">Browser Voice Panel (mock)</div>;
   },
 }));
 jest.mock('@/features/tts/services/ttsEngineService', () => ({
@@ -48,6 +48,8 @@ function makeTts(overrides: Partial<TtsSettings> = {}): TtsSettings {
     localTtsLanguage: 'en',
     downloadedLanguages: [],
     hiddenLanguages: [],
+    supertonicVoices: ['M1'],
+    supertonicDownloadedVoices: [],
     ...overrides,
   };
 }
@@ -64,6 +66,7 @@ function renderPanel(
   return render(
     <SourceDetailPanel
       engine={engine}
+      status="ready"
       pronunciation={options.pronunciation ?? makePronunciation()}
       tts={options.tts ?? makeTts()}
       targetLang="en"
@@ -94,7 +97,7 @@ describe('SourceDetailPanel', () => {
   it('renders TtsLanguagePanel for the supertonic engine', async () => {
     renderPanel('supertonic');
 
-    expect(screen.getByText('Local voices (Supertonic)')).toBeInTheDocument();
+    expect(screen.getByText('Use cloud voices')).toBeInTheDocument();
     expect(screen.getByTestId('local-tts-toggle')).toBeInTheDocument();
   });
 
@@ -108,7 +111,6 @@ describe('SourceDetailPanel', () => {
   it('renders the eSpeak data toggle for the espeak engine', async () => {
     renderPanel('espeak');
 
-    expect(screen.getByText('Download device-voice data')).toBeInTheDocument();
     expect(screen.getByText('Download device-voice data')).toBeInTheDocument();
     expect(screen.getByTestId('espeak-data-toggle')).toBeInTheDocument();
   });
