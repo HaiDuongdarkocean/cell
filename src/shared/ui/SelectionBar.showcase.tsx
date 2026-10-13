@@ -17,7 +17,7 @@ export function Showcase(): ReactElement {
         </Button>
       </div>
       <div style={{ minHeight: 200, border: '1px dashed var(--color-divider)', padding: 12, overflow: 'auto' }}>
-        <SelectionBar open={open} data-cell-id="showcase-selection-bar">
+        <SelectionBar open={open} data-tihoka-id="showcase-selection-bar">
           <Button variant="secondary">Change status</Button>
           <Button variant="errorSubtle">Delete</Button>
         </SelectionBar>
@@ -26,7 +26,7 @@ export function Showcase(): ReactElement {
         <SelectionBar
           open={openWithLabel}
           label={<Text color="secondary">3 selected</Text>}
-          data-cell-id="showcase-selection-bar-labeled"
+          data-tihoka-id="showcase-selection-bar-labeled"
         >
           <Button variant="destructive" size="sm">Delete</Button>
           <Button variant="ghost" size="sm">Cancel</Button>

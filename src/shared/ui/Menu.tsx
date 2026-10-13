@@ -59,7 +59,7 @@ export interface MenuProps {
   readonly className?: string;
   /** Portal target override (passed through to Popover). */
   readonly container?: Element | DocumentFragment | null;
-  readonly 'data-cell-id'?: string;
+  readonly 'data-tihoka-id'?: string;
 }
 
 /**
@@ -81,7 +81,7 @@ export function Menu({
   emphasis = false,
   className,
   container,
-  'data-cell-id': dataCellId,
+  'data-tihoka-id': dataTihokaId,
 }: MenuProps): React.JSX.Element | null {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -137,7 +137,7 @@ export function Menu({
       menuMaxHeight={maxHeight}
       onKeyDown={handleKeyDown}
       container={container}
-      data-cell-id={dataCellId}
+      data-tihoka-id={dataTihokaId}
     >
       {children}
     </Popover>
@@ -162,7 +162,7 @@ export interface MenuItemProps {
   /** Marks the row as the current destination (nav rows inside a sheet). */
   readonly 'aria-current'?: boolean | 'page' | 'step' | 'location' | 'date' | 'time';
   readonly disabled?: boolean;
-  readonly 'data-cell-id'?: string;
+  readonly 'data-tihoka-id'?: string;
 }
 
 export function MenuItem({
@@ -176,7 +176,7 @@ export function MenuItem({
   emphasis = false,
   'aria-current': ariaCurrent,
   disabled = false,
-  'data-cell-id': dataCellId,
+  'data-tihoka-id': dataTihokaId,
 }: MenuItemProps): React.JSX.Element {
   const trailingContent = trailing ?? (radio && selected ? <Icon name="check" className={styles.check} /> : null);
   return (
@@ -188,7 +188,7 @@ export function MenuItem({
       className={`${styles.item}${destructive ? ` ${styles.itemDanger}` : ''}${emphasis ? ` ${styles.itemEmphasis}` : ''}`}
       disabled={disabled}
       onClick={onSelect}
-      data-cell-id={dataCellId}
+      data-tihoka-id={dataTihokaId}
     >
       {icon && <span className={styles.icon}>{icon}</span>}
       <span className={styles.label}>{children}</span>

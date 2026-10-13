@@ -14,7 +14,7 @@ export interface ToggleProps {
   size?: ToggleSize;
   /** Optional HTML id */
   id?: string;
-  /** Optional data-cell-id for testing */
+  /** Optional data-tihoka-id for testing */
   dataTestId?: string;
   /** Optional title attribute */
   title?: string;
@@ -56,7 +56,7 @@ export function Toggle({
     >
       <input
         id={inputId}
-        data-cell-id={dataTestId}
+        data-tihoka-id={dataTestId}
         className={styles.input}
         type="checkbox"
         role="switch"

@@ -145,7 +145,7 @@ describe('SearchableSelect', () => {
     fireEvent.click(screen.getByTestId('language-select'));
     const option = screen.getByRole('option', { name: 'Vietnamese' });
     fireEvent.pointerDown(option);
-    expect(option.querySelector('[data-cell-ripple]')).not.toBeNull();
+    expect(option.querySelector('[data-tihoka-ripple]')).not.toBeNull();
   });
 
   it('does not open menu when disabled', () => {

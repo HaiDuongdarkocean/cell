@@ -150,6 +150,8 @@ export function deriveColorTokens(
     : mixHex(mixHex(colors.surface, colors.primary, 5), colors.background, 12);
   const secondary = colors.surface;
   const primaryForeground = pickPrimaryForeground(colors);
+  const emphasis = generateShade(colors.primary, 35);
+  const { r: fgR, g: fgG, b: fgB } = hexToRgb(primaryForeground);
 
   // Tokens that must be computed from the runtime palette; base derived fills
   // the rest; optional preset derived overrides for hand-tuned glass/hover.
@@ -158,6 +160,9 @@ export function deriveColorTokens(
     '--color-primary-active': generateShade(colors.primary, 20),
     '--color-primary-subtle': rgbaVar('primary', mode === 'dark' ? 0.12 : 0.1),
     '--color-primary-foreground': primaryForeground,
+    '--color-primary-foreground-soft': `rgba(${fgR},${fgG},${fgB},0.92)`,
+    '--color-primary-emphasis': emphasis,
+    '--color-on-primary-emphasis': pickPrimaryForeground({ ...colors, primary: emphasis }),
     '--color-text-on-primary': primaryForeground,
     '--color-secondary': secondary,
     '--color-secondary-hover': surfaceHover,
@@ -184,7 +189,14 @@ export function deriveColorTokens(
     '--color-info-subtle': rgbaVar('primary', 0.1),
   };
 
-  const presetDerived = preset ? prefixDerived(PRESET_DATA[preset].derived[mode]) : {};
+  // Preset-derived values are hand-tuned for the preset's own palette — they
+  // only apply while the palette is pristine. Any custom color makes the
+  // whole palette runtime-computed, or tuned accents like dawn's
+  // primary-emphasis would cling to an unrelated primary.
+  const presetDerived =
+    preset && isEqualCore(colors, PRESET_DATA[preset].core[mode])
+      ? prefixDerived(PRESET_DATA[preset].derived[mode])
+      : {};
 
   return {
     ...mapCoreColors(colors),

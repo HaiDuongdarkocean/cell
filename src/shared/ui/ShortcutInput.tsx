@@ -18,7 +18,7 @@ interface ShortcutInputProps {
   /** Accessible label (required — pill has no visible label). */
   'aria-label': string;
   /** Test ID. */
-  'data-cell-id'?: string;
+  'data-tihoka-id'?: string;
   /** HTML id for label association. */
   id?: string;
   /** Marks the value as conflicting. */
@@ -83,7 +83,7 @@ export function ShortcutInput({
   onChange,
   id,
   'aria-label': ariaLabel,
-  'data-cell-id': testId,
+  'data-tihoka-id': testId,
   'aria-invalid': ariaInvalid,
   'aria-describedby': ariaDescribedby,
 }: ShortcutInputProps): React.JSX.Element {
@@ -121,9 +121,9 @@ export function ShortcutInput({
       aria-label={ariaLabel}
       aria-invalid={ariaInvalid}
       aria-describedby={ariaDescribedby}
-      data-cell-id={testId}
+      data-tihoka-id={testId}
       data-compact-hit
-      data-cell-keycapture
+      data-tihoka-keycapture
     >
       {hasCombo ? (
         <>

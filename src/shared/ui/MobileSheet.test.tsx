@@ -35,8 +35,8 @@ function getPill(): HTMLElement {
 }
 
 describe('MobileSheet', () => {
-  it('renders a visible pill drag handle with data-cell-id="card-creator-sheet-pill"', () => {
-    render(<MobileSheet data-cell-id="mobile-sheet">Body</MobileSheet>);
+  it('renders a visible pill drag handle with data-tihoka-id="card-creator-sheet-pill"', () => {
+    render(<MobileSheet data-tihoka-id="mobile-sheet">Body</MobileSheet>);
     const pill = getPill();
     expect(pill).toBeInTheDocument();
     expect(pill).toHaveAttribute('role', 'button');
@@ -45,7 +45,7 @@ describe('MobileSheet', () => {
 
   it('renders header and scrollable content', () => {
     render(
-      <MobileSheet data-cell-id="mobile-sheet" defaultSnap="half" header={<span>Create card — neko</span>}>
+      <MobileSheet data-tihoka-id="mobile-sheet" defaultSnap="half" header={<span>Create card — neko</span>}>
         <p>Form body</p>
       </MobileSheet>,
     );
@@ -54,14 +54,14 @@ describe('MobileSheet', () => {
   });
 
   it('starts collapsed at the 56px peek snap point', () => {
-    render(<MobileSheet data-cell-id="mobile-sheet">Body</MobileSheet>);
+    render(<MobileSheet data-tihoka-id="mobile-sheet">Body</MobileSheet>);
     expect(getSheet()).toHaveClass('snapCollapsed');
     expect(getPill()).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('tapping the pill toggles collapsed ↔ last expanded snap point', () => {
     const onSnapChange = jest.fn();
-    render(<MobileSheet data-cell-id="mobile-sheet" onSnapChange={onSnapChange}>Body</MobileSheet>);
+    render(<MobileSheet data-tihoka-id="mobile-sheet" onSnapChange={onSnapChange}>Body</MobileSheet>);
     const pill = getPill();
 
     // Tap — expand to the default expanded snap (half).
@@ -81,7 +81,7 @@ describe('MobileSheet', () => {
   });
 
   it('tapping re-expands to the last expanded snap point, not always half', () => {
-    render(<MobileSheet data-cell-id="mobile-sheet">Body</MobileSheet>);
+    render(<MobileSheet data-tihoka-id="mobile-sheet">Body</MobileSheet>);
     const pill = getPill();
 
     // Expand fully via keyboard, then collapse, then tap → back to 'full'.
@@ -98,7 +98,7 @@ describe('MobileSheet', () => {
     const onSnapChange = jest.fn();
     render(
       <div data-mock-container>
-        <MobileSheet data-cell-id="mobile-sheet" onSnapChange={onSnapChange}>Body</MobileSheet>
+        <MobileSheet data-tihoka-id="mobile-sheet" onSnapChange={onSnapChange}>Body</MobileSheet>
       </div>,
     );
     const sheet = getSheet();
@@ -127,7 +127,7 @@ describe('MobileSheet', () => {
 
   it('a small drag below the tap threshold still counts as a tap', () => {
     const onSnapChange = jest.fn();
-    render(<MobileSheet data-cell-id="mobile-sheet" onSnapChange={onSnapChange}>Body</MobileSheet>);
+    render(<MobileSheet data-tihoka-id="mobile-sheet" onSnapChange={onSnapChange}>Body</MobileSheet>);
     const pill = getPill();
     pointer('pointerdown', pill, { clientY: 500 });
     pointer('pointermove', pill, { clientY: 503 });
@@ -137,7 +137,7 @@ describe('MobileSheet', () => {
 
   it('supports keyboard control: Enter/Space toggles, arrows step, Home/End jump', () => {
     const onSnapChange = jest.fn();
-    render(<MobileSheet data-cell-id="mobile-sheet" onSnapChange={onSnapChange}>Body</MobileSheet>);
+    render(<MobileSheet data-tihoka-id="mobile-sheet" onSnapChange={onSnapChange}>Body</MobileSheet>);
     const pill = getPill();
 
     fireEvent.keyDown(pill, { key: 'Enter' });
@@ -152,16 +152,16 @@ describe('MobileSheet', () => {
 
   it('supports controlled snap for programmatic open to 50% or 100%', () => {
     const { rerender } = render(
-      <MobileSheet data-cell-id="mobile-sheet" snap="half">Body</MobileSheet>,
+      <MobileSheet data-tihoka-id="mobile-sheet" snap="half">Body</MobileSheet>,
     );
     expect(getSheet()).toHaveClass('snapHalf');
-    rerender(<MobileSheet data-cell-id="mobile-sheet" snap="full">Body</MobileSheet>);
+    rerender(<MobileSheet data-tihoka-id="mobile-sheet" snap="full">Body</MobileSheet>);
     expect(getSheet()).toHaveClass('snapFull');
   });
 
   it('in controlled mode a tap reports onSnapChange without self-updating', () => {
     const onSnapChange = jest.fn();
-    render(<MobileSheet data-cell-id="mobile-sheet" snap="collapsed" onSnapChange={onSnapChange}>Body</MobileSheet>);
+    render(<MobileSheet data-tihoka-id="mobile-sheet" snap="collapsed" onSnapChange={onSnapChange}>Body</MobileSheet>);
     const pill = getPill();
     pointer('pointerdown', pill, { clientY: 500 });
     pointer('pointerup', pill, { clientY: 500 });
@@ -171,7 +171,7 @@ describe('MobileSheet', () => {
   });
 
   it('defaultSnap opens uncontrolled at a given snap point', () => {
-    render(<MobileSheet data-cell-id="mobile-sheet" defaultSnap="full">Body</MobileSheet>);
+    render(<MobileSheet data-tihoka-id="mobile-sheet" defaultSnap="full">Body</MobileSheet>);
     expect(getSheet()).toHaveClass('snapFull');
   });
 });

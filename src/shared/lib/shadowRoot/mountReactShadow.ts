@@ -26,7 +26,7 @@ export interface MountShadowOptions {
   reparentOnFullscreen?: boolean;
   /**
    * Persistent chrome surface (e.g. a pill docked in the PM layout): when the
-   * fullscreen-like target's shadow exposes a `cell-host-chrome` slot, project
+   * fullscreen-like target's shadow exposes a `Tihoka-host-chrome` slot, project
    * the host there instead of the top shadow level — so hoisted host menus and
    * sheets still render above it. Has no effect without `reparentOnFullscreen`.
    */
@@ -84,7 +84,7 @@ export function mountReactShadow(
 
   const removeKeyboardTrap = attachKeyboardTrap(shadow);
 
-  if (options.chromeLayer) host.setAttribute('data-cell-chrome', '');
+  if (options.chromeLayer) host.setAttribute('data-tihoka-chrome', '');
   const removeFullscreenListeners = reparentOnFullscreen
     ? attachFullscreenReparenting(host, parent)
     : null;
@@ -135,7 +135,7 @@ export function attachFullscreenReparenting(
   // tree the same way they attach into a fullscreen element.
   const resolveFsLikeElement = (): Element | null =>
     document.fullscreenElement
-    ?? document.querySelector('#cell-subtitle-root[data-cell-player-mode]');
+    ?? document.querySelector('#Tihoka-subtitle-root[data-tihoka-player-mode]');
 
   const onFullscreenChange = (): void => {
     const fsEl = resolveFsLikeElement();
@@ -149,11 +149,11 @@ export function attachFullscreenReparenting(
       // shadow exposes the chrome slot; a slotted element without a matching
       // slot never renders.
       if (
-        host.hasAttribute('data-cell-chrome')
+        host.hasAttribute('data-tihoka-chrome')
         && fsEl instanceof HTMLElement
-        && fsEl.shadowRoot?.querySelector('slot[name="cell-host-chrome"]')
+        && fsEl.shadowRoot?.querySelector('slot[name="Tihoka-host-chrome"]')
       ) {
-        host.slot = 'cell-host-chrome';
+        host.slot = 'Tihoka-host-chrome';
         if (host.parentElement !== fsEl) fsEl.appendChild(host);
         return;
       }
@@ -172,12 +172,12 @@ export function attachFullscreenReparenting(
   document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 
   // The PM host attribute does not fire fullscreenchange — Player Mode marks
-  // itself via data-cell-player-mode on <html>. MutationObserver callbacks run
+  // itself via data-tihoka-player-mode on <html>. MutationObserver callbacks run
   // after the commit, so the host attribute is already set when we resolve.
   const pmObserver = new MutationObserver(onFullscreenChange);
   pmObserver.observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ['data-cell-player-mode'],
+    attributeFilter: ['data-tihoka-player-mode'],
   });
 
   onFullscreenChange();

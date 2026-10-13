@@ -13,7 +13,7 @@ export interface SettingsRowProps extends Omit<HTMLAttributes<HTMLDivElement>, '
   /** Secondary explanation behind a ⓘ popover next to the title. */
   hint?: string;
   hintAriaLabel?: string;
-  /** data-cell-id for the hint trigger button. */
+  /** data-tihoka-id for the hint trigger button. */
   hintTestId?: string;
   /** When set, the title renders as a <label htmlFor> bound to a control id. */
   labelFor?: string;

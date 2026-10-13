@@ -60,7 +60,7 @@ describe('Button', () => {
 
   it('renders leading and trailing icons', () => {
     render(
-      <Button leadingIcon={<span data-cell-id="leading">L</span>} trailingIcon={<span data-cell-id="trailing">T</span>}>
+      <Button leadingIcon={<span data-tihoka-id="leading">L</span>} trailingIcon={<span data-tihoka-id="trailing">T</span>}>
         Label
       </Button>,
     );
@@ -69,7 +69,7 @@ describe('Button', () => {
   });
 
   it('auto-switches to circle and iconOnly when only an icon is provided', () => {
-    const { container } = render(<Button aria-label="Icon only"><span data-cell-id="icon">I</span></Button>);
+    const { container } = render(<Button aria-label="Icon only"><span data-tihoka-id="icon">I</span></Button>);
     expect(container.firstChild).toHaveClass('circle');
     expect(container.firstChild).toHaveClass('iconOnly');
   });

@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import type { HTMLAttributes, KeyboardEvent } from 'react';
 import { t } from '@/shared/i18n';
+import { Icon } from '@/shared/icons/Icon';
 import styles from './DragHandle.module.css';
 
 interface DragHandleProps extends Omit<HTMLAttributes<HTMLDivElement>, 'role' | 'tabIndex' | 'onKeyDown'> {
@@ -17,8 +18,8 @@ interface DragHandleProps extends Omit<HTMLAttributes<HTMLDivElement>, 'role' | 
 /**
  * DragHandle — a draggable grip bar that reorders list items or panels.
  *
- * Renders a `<div role="button">` with `draggable="true"`, CSS grip dots, and
- * keyboard arrow-key support. Touch target meets 40px (desktop) / 44px (mobile).
+ * Renders a `<div role="button">` with `draggable="true"`, a six-dot grip icon,
+ * and keyboard arrow-key support. Touch target meets 40px (desktop) / 44px (mobile).
  */
 export function DragHandle({
   orientation = 'horizontal',
@@ -47,7 +48,7 @@ export function DragHandle({
       onKeyDown={handleKeyDown}
       {...rest}
     >
-      <span className={styles.gripDots} aria-hidden="true" />
+      <Icon name={orientation === 'vertical' ? 'gripVertical' : 'gripHorizontal'} className={styles.gripIcon} />
     </div>
   );
 }

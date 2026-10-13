@@ -11,7 +11,7 @@ export interface CollapsibleSidebarItem {
   label: string;
   active?: boolean;
   onClick?: () => void;
-  'data-cell-id'?: string;
+  'data-tihoka-id'?: string;
 }
 
 export interface CollapsibleSidebarSection {
@@ -39,7 +39,7 @@ export interface CollapsibleSidebarProps {
   /** Optional class name. */
   className?: string;
   /** Test hook / stable identifier. */
-  'data-cell-id'?: string;
+  'data-tihoka-id'?: string;
 }
 
 /**
@@ -54,14 +54,14 @@ export function CollapsibleSidebar({
   sections,
   footer,
   'aria-label': ariaLabel = t('ui.sidebar.aria'),
-  'data-cell-id': dataCellId,
+  'data-tihoka-id': dataTihokaId,
   className,
 }: CollapsibleSidebarProps): React.JSX.Element {
   return (
     <Tag
       className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${className ?? ''}`.trim()}
       aria-label={ariaLabel}
-      data-cell-id={dataCellId}
+      data-tihoka-id={dataTihokaId}
     >
       {header && <div className={styles.header}>{header}</div>}
 
@@ -84,7 +84,7 @@ export function CollapsibleSidebar({
                       active={item.active}
                       aria-current={item.active ? 'page' : undefined}
                       onClick={item.onClick}
-                      data-cell-id={item['data-cell-id']}
+                      data-tihoka-id={item['data-tihoka-id']}
                     />
                   </li>
                 ))}
@@ -102,7 +102,7 @@ export function CollapsibleSidebar({
             orientation="vertical"
             aria-label={collapsed ? t('ui.sidebar.expandAria') : undefined}
             onClick={() => onCollapsedChange(!collapsed)}
-            data-cell-id="collapsible-sidebar-toggle"
+            data-tihoka-id="collapsible-sidebar-toggle"
           />
         </div>
       )}

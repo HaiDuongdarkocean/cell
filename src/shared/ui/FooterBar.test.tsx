@@ -2,8 +2,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { FooterBar } from './FooterBar';
 
 const slots = [
-  { key: 'home', icon: <span data-cell-id="home-icon" />, label: 'Home', onClick: jest.fn() },
-  { key: 'search', icon: <span data-cell-id="search-icon" />, label: 'Search', onClick: jest.fn() },
+  { key: 'home', icon: <span data-tihoka-id="home-icon" />, label: 'Home', onClick: jest.fn() },
+  { key: 'search', icon: <span data-tihoka-id="search-icon" />, label: 'Search', onClick: jest.fn() },
 ];
 
 describe('FooterBar', () => {

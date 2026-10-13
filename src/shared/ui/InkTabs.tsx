@@ -13,7 +13,7 @@ export interface InkTabItem {
   disabled?: boolean;
   /** Accessible name override — defaults to the label text. */
   ariaLabel?: string;
-  /** data-cell-id passthrough for tests/e2e. */
+  /** data-tihoka-id passthrough for tests/e2e. */
   testId?: string;
 }
 
@@ -141,14 +141,14 @@ export function InkTabs({ items, value, onValueChange, stretch, className, ...re
             aria-label={item.ariaLabel}
             tabIndex={active ? 0 : -1}
             data-value={item.value}
-            data-cell-id={item.testId}
+            data-tihoka-id={item.testId}
             disabled={item.disabled}
             className={[styles.tab, active ? styles.tabActive : ''].filter(Boolean).join(' ')}
             onClick={(): void => onValueChange(item.value)}
           >
             {item.label}
             {item.badge !== undefined && (
-              <span className={styles.badge} data-cell-id={`inktab-badge-${item.value}`}>
+              <span className={styles.badge} data-tihoka-id={`inktab-badge-${item.value}`}>
                 {item.badge}
               </span>
             )}

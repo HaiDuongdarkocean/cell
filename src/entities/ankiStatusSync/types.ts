@@ -13,6 +13,20 @@ export interface AnkiCardLink {
 
 export type AnkiSyncTrigger = 'alarm' | 'manual' | 'import' | 'event' | 'srs';
 
+/** One completed sync pass — newest first, capped by ANKI_RUN_HISTORY_CAP. */
+export interface AnkiRunEntry {
+  readonly at: number;
+  readonly trigger: AnkiSyncTrigger;
+  readonly cardsSeen: number;
+  readonly changed: number;
+  readonly errors: number;
+  readonly writeBacksFlushed: number;
+  readonly addonOnline: boolean;
+  readonly langCode: string | null;
+}
+
+export const ANKI_RUN_HISTORY_CAP = 20;
+
 export interface AnkiStatusSyncState {
   readonly lastSyncAt: number | null;
   readonly lastTrigger: AnkiSyncTrigger | null;
@@ -24,6 +38,7 @@ export interface AnkiStatusSyncState {
   readonly addonOnline: boolean | null;
   readonly addonCursor: number;
   readonly writeBackUnsupportedNotified: boolean;
+  readonly history: readonly AnkiRunEntry[];
 }
 
 export const EMPTY_ANKI_SYNC_STATE: AnkiStatusSyncState = {
@@ -36,6 +51,7 @@ export const EMPTY_ANKI_SYNC_STATE: AnkiStatusSyncState = {
   addonOnline: null,
   addonCursor: 0,
   writeBackUnsupportedNotified: false,
+  history: [],
 };
 
 export interface WriteBackTask {
@@ -59,4 +75,13 @@ export interface AnkiBridgeEvent {
   readonly cardId: number;
   readonly kind: string;
   readonly ts: number;
+}
+
+/** UI-facing view: persisted state + live queue/log for the Anki Sync page. */
+export interface AnkiStatusSyncView extends AnkiStatusSyncState {
+  readonly running: boolean;
+  readonly linkedCards: number;
+  readonly pendingWriteBacks: number;
+  readonly writeBackQueue: readonly WriteBackTask[];
+  readonly writeBackLog: readonly WriteBackLogEntry[];
 }

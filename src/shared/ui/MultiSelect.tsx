@@ -12,7 +12,7 @@ export interface MultiSelectOption {
 
 /** Props for the MultiSelect component. */
 export interface MultiSelectProps {
-  /** Test-id prefix used for data-cell-id attributes on sub-elements. */
+  /** Test-id prefix used for data-tihoka-id attributes on sub-elements. */
   testId: string;
   /** HTML id bound to the search input — enables `<label htmlFor>` association. */
   id?: string;
@@ -110,7 +110,7 @@ export function MultiSelect({
   const showSuggestions = focused || query.trim().length > 0;
 
   return (
-    <div className={styles.container} data-cell-id={testId}>
+    <div className={styles.container} data-tihoka-id={testId}>
       {/* Chip field — the selection itself */}
       <div
         className={`${styles.field} ${focused ? styles.fieldFocused : ''}`}
@@ -124,14 +124,14 @@ export function MultiSelect({
             <span
               key={value}
               className={`${styles.chip} ${exclusiveSet.has(value) ? styles.chipExclusive : ''}`}
-              data-cell-id={`${testId}-chip-${value}`}
+              data-tihoka-id={`${testId}-chip-${value}`}
             >
               {label}
               <button
                 type="button"
                 className={styles.chipRemove}
                 aria-label={t('ui.multiSelect.removeChip', [label])}
-                data-cell-id={`${testId}-remove-${value}`}
+                data-tihoka-id={`${testId}-remove-${value}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   remove(value);
@@ -169,7 +169,7 @@ export function MultiSelect({
               key={o.value}
               type="button"
               className={styles.popChip}
-              data-cell-id={`${testId}-popular-${o.value}`}
+              data-tihoka-id={`${testId}-popular-${o.value}`}
               onClick={() => add(o.value)}
             >
               {o.label}
@@ -194,7 +194,7 @@ export function MultiSelect({
                 role="option"
                 aria-selected={false}
                 className={styles.suggest}
-                data-cell-id={`${testId}-option-${o.value}`}
+                data-tihoka-id={`${testId}-option-${o.value}`}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => add(o.value)}
               >

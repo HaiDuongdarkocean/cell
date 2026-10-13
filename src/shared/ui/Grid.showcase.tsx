@@ -1,7 +1,7 @@
 ﻿import { Grid } from './Grid';
 import type { ReactElement } from 'react';
 
-const cellStyle: React.CSSProperties = {
+const TihokaStyle: React.CSSProperties = {
   padding: '8px 12px',
   background: 'var(--color-muted)',
   borderRadius: 'var(--radius-sm)',
@@ -16,7 +16,7 @@ export function Showcase(): ReactElement {
         {([2, 3, 4] as const).map((cols) => (
           <Grid key={cols} columns={cols} gap="2" style={{ marginTop: 4 }}>
             {Array.from({ length: cols * 2 }, (_, i) => (
-              <div key={i} style={cellStyle}>{i + 1}</div>
+              <div key={i} style={TihokaStyle}>{i + 1}</div>
             ))}
           </Grid>
         ))}
@@ -25,29 +25,29 @@ export function Showcase(): ReactElement {
         <span>gap: 2 / 4 / 6</span>
         {(['2', '4', '6'] as const).map((gap) => (
           <Grid key={gap} columns={3} gap={gap} style={{ marginTop: 4 }}>
-            <div style={cellStyle}>A</div>
-            <div style={cellStyle}>B</div>
-            <div style={cellStyle}>C</div>
+            <div style={TihokaStyle}>A</div>
+            <div style={TihokaStyle}>B</div>
+            <div style={TihokaStyle}>C</div>
           </Grid>
         ))}
       </div>
       <div>
         <span>columnGap / rowGap separately</span>
         <Grid columns={3} columnGap="1" rowGap="4" style={{ marginTop: 4 }}>
-          <div style={cellStyle}>A</div>
-          <div style={cellStyle}>B</div>
-          <div style={cellStyle}>C</div>
-          <div style={cellStyle}>D</div>
-          <div style={cellStyle}>E</div>
-          <div style={cellStyle}>F</div>
+          <div style={TihokaStyle}>A</div>
+          <div style={TihokaStyle}>B</div>
+          <div style={TihokaStyle}>C</div>
+          <div style={TihokaStyle}>D</div>
+          <div style={TihokaStyle}>E</div>
+          <div style={TihokaStyle}>F</div>
         </Grid>
       </div>
       <div>
         <span>custom template: &quot;1fr 2fr 1fr&quot;</span>
         <Grid columns="1fr 2fr 1fr" gap="2" style={{ marginTop: 4 }}>
-          <div style={cellStyle}>1</div>
-          <div style={cellStyle}>2</div>
-          <div style={cellStyle}>3</div>
+          <div style={TihokaStyle}>1</div>
+          <div style={TihokaStyle}>2</div>
+          <div style={TihokaStyle}>3</div>
         </Grid>
       </div>
       <div>
@@ -58,9 +58,9 @@ export function Showcase(): ReactElement {
           gap="2"
           style={{ marginTop: 4 }}
         >
-          <div style={{ ...cellStyle, gridArea: 'header' }}>header</div>
-          <div style={{ ...cellStyle, gridArea: 'sidebar' }}>sidebar</div>
-          <div style={{ ...cellStyle, gridArea: 'main' }}>main</div>
+          <div style={{ ...TihokaStyle, gridArea: 'header' }}>header</div>
+          <div style={{ ...TihokaStyle, gridArea: 'sidebar' }}>sidebar</div>
+          <div style={{ ...TihokaStyle, gridArea: 'main' }}>main</div>
         </Grid>
       </div>
     </div>

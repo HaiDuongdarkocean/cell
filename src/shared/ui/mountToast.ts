@@ -44,7 +44,7 @@ export function createToastHost(options: CreateToastHostOptions = {}): ToastHost
         css: allModuleCss,
         reparentOnFullscreen: true,
       });
-      mount.host.classList.add('js-cell-toast-host');
+      mount.host.classList.add('js-Tihoka-toast-host');
       mount.host.style.zIndex = 'var(--z-overlay-top)';
       mount.host.style.pointerEvents = 'none';
     }

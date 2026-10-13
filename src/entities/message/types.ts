@@ -90,6 +90,7 @@ export type MessageType =
   | 'TTS_DOWNLOAD_PROGRESS'
   | 'FETCH_MEDIA_URL'
   | 'PRONUNCIATION_ESPEAK_TTS'
+  | 'PRONUNCIATION_SUPERTONIC_TTS'
   | 'WORD_STATUS_GET'
   | 'WORD_STATUSES_GET'
   | 'WORD_STATUS_SET'
@@ -821,12 +822,25 @@ export interface FetchMediaUrlResponse {
 export interface PronunciationEspeakTtsPayload {
   readonly text: string;
   readonly langCode: string;
+  readonly rate?: number;
 }
 
 /** Offscreen → background → content: eSpeak TTS result. */
 export interface PronunciationEspeakTtsResult {
   readonly audioBytes?: unknown;
   readonly audioBytesB64?: string;
+}
+
+/** Content → background → offscreen: synthesize Supertonic TTS audio. */
+export interface PronunciationSupertonicTtsPayload {
+  readonly text: string;
+  readonly langCode: string;
+  readonly voices?: readonly string[];
+}
+
+/** Offscreen → background → content: Supertonic TTS result. */
+export interface PronunciationSupertonicTtsResult {
+  readonly items?: readonly { readonly voice: string; readonly audioBytesB64: string }[];
 }
 
 /** Content → background: get word status. */

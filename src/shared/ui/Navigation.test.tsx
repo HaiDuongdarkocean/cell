@@ -83,8 +83,8 @@ describe('Navigation', () => {
 
     it('renders no scroll arrows when the strip fits', () => {
       const { container } = renderStrip();
-      expect(container.querySelector('[data-cell-id="settings-nav-scroll-left"]')).not.toBeInTheDocument();
-      expect(container.querySelector('[data-cell-id="settings-nav-scroll-right"]')).not.toBeInTheDocument();
+      expect(container.querySelector('[data-tihoka-id="settings-nav-scroll-left"]')).not.toBeInTheDocument();
+      expect(container.querySelector('[data-tihoka-id="settings-nav-scroll-right"]')).not.toBeInTheDocument();
     });
 
     it('renders the <nav> landmark inside the wrapper with its aria-label intact', () => {
@@ -96,7 +96,7 @@ describe('Navigation', () => {
 
     it('keeps edge fades without arrow controls across the horizontal scroll range', () => {
       const { container, nav } = renderStrip();
-      const arrows = '[data-cell-id^="settings-nav-scroll-"]';
+      const arrows = '[data-tihoka-id^="settings-nav-scroll-"]';
       setScrollMetrics(nav, { scrollWidth: 1000, clientWidth: 400, scrollLeft: 0 });
       fireEvent.scroll(nav);
       expect(nav.className).toContain('fadeEnd');
@@ -126,7 +126,7 @@ describe('Navigation', () => {
       if (!nav) throw new Error('nav element not rendered');
       setScrollMetrics(nav, { scrollWidth: 1000, clientWidth: 400, scrollLeft: 0 });
       fireEvent.scroll(nav);
-      expect(container.querySelector('[data-cell-id^="settings-nav-scroll"]')).not.toBeInTheDocument();
+      expect(container.querySelector('[data-tihoka-id^="settings-nav-scroll"]')).not.toBeInTheDocument();
     });
   });
 });

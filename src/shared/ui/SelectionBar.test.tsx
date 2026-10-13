@@ -13,7 +13,7 @@ describe('SelectionBar', () => {
 
   it('marks the bar open when open=true', () => {
     render(
-      <SelectionBar open data-cell-id="bar">
+      <SelectionBar open data-tihoka-id="bar">
         <button>Action</button>
       </SelectionBar>,
     );
@@ -42,12 +42,12 @@ describe('SelectionBar', () => {
     expect(screen.getByText('3 selected')).toBeInTheDocument();
   });
 
-  it('passes data-cell-id through', () => {
+  it('passes data-tihoka-id through', () => {
     render(
-      <SelectionBar open data-cell-id="my-bar">
+      <SelectionBar open data-tihoka-id="my-bar">
         <button>Action</button>
       </SelectionBar>,
     );
-    expect(document.querySelector('[data-cell-id="my-bar"]')).toBeTruthy();
+    expect(document.querySelector('[data-tihoka-id="my-bar"]')).toBeTruthy();
   });
 });

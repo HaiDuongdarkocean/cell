@@ -60,7 +60,7 @@ export interface SubtitleBlockSettings {
 /** How media fields are merged when updating an existing note. */
 export type MediaUpdateMode = 'overwrite' | 'append' | 'skip';
 
-/** Source field keys (Cell side). Tags are NOT a mapped field — they're sent
+/** Source field keys (Tihoka side). Tags are NOT a mapped field — they're sent
  *  via the note's `tags` array, not mapped to an Anki note field. */
 export type SourceFieldKey =
   | 'targetWord'
@@ -96,9 +96,6 @@ export interface CardCreatorSettings {
    *  anki-config-in-settings). Edited in Settings → Card Creator; the Card
    *  Creator form reads these instead of showing per-field map selects. */
   readonly fieldMappings?: Record<string, FieldMapping>;
-  /** Def-field frequency rendering — `stars` shows a 5-slot ★ scale,
-   *  `rank` shows `[list:rank]` tokens. Default 'stars' (schema v35). */
-  readonly frequencyDisplay?: 'stars' | 'rank';
 }
 
 /** Field có thể auto-complete trong Quick Add (spec §9.3.1 — trục content, khác field-map routing). */
@@ -200,6 +197,10 @@ export interface TtsSettings {
   readonly downloadedLanguages: readonly string[];
   /** Downloaded languages hidden from the popup language list. */
   readonly hiddenLanguages: readonly string[];
+  /** Selected Supertonic voice ids (M1–M5, F1–F5), ordered, max 3 — used for pronunciation. */
+  readonly supertonicVoices: readonly string[];
+  /** Supertonic voice ids whose style files are downloaded. */
+  readonly supertonicDownloadedVoices: readonly string[];
 }
 
 /** SRS destination for dictionary popup / universal panel add actions. */
@@ -263,6 +264,11 @@ export interface DictionaryPopupSettings {
   /** true = checking a definition selects all its example lines; false =
    *  examples are picked manually per line. Default false. */
   readonly includeAllExamplesOnDefSelect?: boolean;
+  /** Frequency rendering — `stars` shows a 5-slot ★ scale (ranks convert
+   *  through `frequencyBands` thresholds), `rank` shows `[list:rank]` /
+   *  source+rank chips. Drives both popup chips and card fields.
+   *  Default 'stars' (schema v42 — moved from cardCreator.frequencyDisplay). */
+  readonly frequencyDisplay?: 'stars' | 'rank';
 }
 
 /** Local Player settings slice (spec local-video-player.md — schema v22). */
@@ -276,6 +282,12 @@ export interface LocalPlayerSettings {
 }
 
 // === Language Profile (schema v23) ===
+
+/** Display mode for inline token annotations (reading cap / gloss lane).
+ *  'hover' reveals the lane on token hover — only effective while the
+ *  dictionary popup trigger does not already own hover. 'i1' renders the
+ *  lane on the single new word of a sentence; 'unknown' on not-known words. */
+export type AnnotationDisplayMode = 'off' | 'always' | 'hover' | 'i1' | 'unknown';
 
 /** A single language learning profile. */
 export interface LanguageProfile {
@@ -295,10 +307,10 @@ export interface LanguageProfile {
   readonly subtitleOverlayAutoLoadAsr: boolean;
   readonly subtitleOverlayAutoTranslate: boolean;
   readonly dictionaryPopup: DictionaryPopupSettings;
-  /** Show pronunciation/reading annotations on tokenized tokens. Default: zh targets true, others false (schema v36). */
-  readonly showReadings: boolean;
-  /** Show native-language glosses below subtitle-overlay tokens (spec word-translation). Default false (schema v37). */
-  readonly showWordTranslations: boolean;
+  /** Reading-cap display mode on tokenized tokens. Default: zh targets 'always', others 'off' (schema v41). */
+  readonly readingDisplay: AnnotationDisplayMode;
+  /** Native-language gloss lane display mode (spec word-translation). Default 'off' (schema v41). */
+  readonly glossDisplay: AnnotationDisplayMode;
 }
 
 /** Active profile with inheritance resolved. */
@@ -425,10 +437,10 @@ export interface Settings {
    * clear on SPA nav.
    */
   readonly subtitleOverlayAutoTranslate: boolean;
-  /** Reading annotation toggle (mirrors active LanguageProfile.showReadings). Default false (schema v36); zh profiles default true. */
-  readonly showReadings: boolean;
-  /** Word-translation gloss toggle (mirrors active LanguageProfile.showWordTranslations). Default false (schema v37). */
-  readonly showWordTranslations: boolean;
+  /** Reading-cap display mode (mirrors active LanguageProfile.readingDisplay). Default 'off' (schema v41); zh profiles default 'always'. */
+  readonly readingDisplay: AnnotationDisplayMode;
+  /** Word-translation gloss display mode (mirrors active LanguageProfile.glossDisplay). Default 'off' (schema v41). */
+  readonly glossDisplay: AnnotationDisplayMode;
   /** Per-layer appearance config for target subtitle overlay (ADR-013, ADR-025). Independent from native. */
   readonly subtitleOverlayTargetStyle?: OverlayStyleConfig;
   /** Per-layer appearance config for native subtitle overlay (ADR-013, ADR-025). Independent from target. */

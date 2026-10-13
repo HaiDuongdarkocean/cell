@@ -71,11 +71,11 @@ export function findFarthestSameSizeContainer(
   let el: HTMLElement | null = video.parentElement;
 
   while (el && el !== document.body) {
-    // Skip Cell's own Split View elements (wrapper/stage/handle/panel) —
+    // Skip Tihoka's own Split View elements (wrapper/stage/handle/panel) —
     // they're ancestors of the video after a normal→fullscreen→normal
     // transition but are NOT the real player shell. Walking through them
     // would return the old wrapper as playerShell, breaking the next run.
-    if (el.hasAttribute('data-cell-split-view')) {
+    if (el.hasAttribute('data-tihoka-split-view')) {
       el = el.parentElement;
       continue;
     }
@@ -130,7 +130,7 @@ export function findLargestPlayableVideo(): HTMLVideoElement | null {
  * (it shrink-wraps the video once promoted), else the first oversized
  * ancestor, else `video.parentElement`/`document.body`.
  *
- * Callers that mount Cell video-level UI should go through
+ * Callers that mount Tihoka video-level UI should go through
  * findVideoOverlayContainer, which lifts the result to the shared ancestor
  * on hosts whose own overlays live outside the video subtree.
  */
@@ -166,14 +166,14 @@ export function findVideoContainer(video: HTMLVideoElement): HTMLElement {
   return oversized ?? directParent ?? document.body;
 }
 
-/** Mount container for Cell video-level UI (subtitle overlay host, toasts,
+/** Mount container for Tihoka video-level UI (subtitle overlay host, toasts,
  *  drag hint). Usually the nearest sized ancestor (findVideoContainer), but
  *  when the host site keeps its own video overlays in a SIBLING subtree of
  *  the video, no z-index inside the video subtree can paint above them.
  *  m.youtube: #player-control-container (native controls + scrim) is a
  *  sibling of #player — mount into the shared parent #player-container-id so
- *  Cell UI, appended last with var(--z-overlay-video), wins the context.
- *  Cell's body-level surfaces (dictionary popup, universal panel, dialogs)
+ *  Tihoka UI, appended last with var(--z-overlay-video), wins the context.
+ *  Tihoka's body-level surfaces (dictionary popup, universal panel, dialogs)
  *  still render above via their own stacking contexts, and portals via
  *  higher z-index. The same-size guard keeps `inset:0` anchored to the
  *  video box; any layout divergence falls back to the nearest container.

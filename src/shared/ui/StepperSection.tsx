@@ -4,13 +4,13 @@ import styles from './StepperSection.module.css';
 
 export function StepperValue({
   children,
-  dataCellId,
+  dataTihokaId,
 }: {
   readonly children: ReactNode;
-  readonly dataCellId?: string;
+  readonly dataTihokaId?: string;
 }): React.JSX.Element {
   return (
-    <span className={styles.value} data-cell-id={dataCellId}>
+    <span className={styles.value} data-tihoka-id={dataTihokaId}>
       {children}
     </span>
   );

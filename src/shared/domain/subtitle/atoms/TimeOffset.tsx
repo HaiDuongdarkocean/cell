@@ -11,7 +11,7 @@ export interface TimeOffsetProps {
   showSign?: boolean;
   /** Optional HTML id. */
   id?: string;
-  /** Optional data-cell-id for testing. */
+  /** Optional data-tihoka-id for testing. */
   dataTestId?: string;
   /** Optional extra class name. */
   className?: string;
@@ -60,7 +60,7 @@ export function TimeOffset({
   return (
     <span
       id={id}
-      data-cell-id={dataTestId}
+      data-tihoka-id={dataTestId}
       className={cls}
       role="text"
       aria-label={t('subtitle.offset.aria', [offset])}

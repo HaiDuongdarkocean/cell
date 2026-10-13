@@ -221,7 +221,7 @@ function TypographySection(): ReactElement {
       <h3 style={{ margin: 0, fontSize: 'var(--font-size-lg)', fontWeight: 600 }}>Typography Scale (M3 15-style)</h3>
       <p style={{ margin: 0, fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
         15 styles [OFFICIAL M3]: Display (L/M/S), Headline (L/M/S), Title (L/M/S), Body (L/M/S), Label (L/M/S).
-        Font: Figtree (cell default, M3 uses Roboto). Min font: 10sp. Cell font sizes approximate M3 sp values.
+        Font: Figtree (Tihoka default, M3 uses Roboto). Min font: 10sp. Tihoka font sizes approximate M3 sp values.
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
         {TYPE_SCALE.map((t) => (
@@ -262,7 +262,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'M3 Design Tokens',
-  description: 'Reference archive: Material Design 3 verified token specs. Kept for comparison only; Cell design system does not use M3 tokens.',
+  description: 'Reference archive: Material Design 3 verified token specs. Kept for comparison only; Tihoka design system does not use M3 tokens.',
   level: 'atoms',
   category: 'Reference',
   group: 'Tokens',

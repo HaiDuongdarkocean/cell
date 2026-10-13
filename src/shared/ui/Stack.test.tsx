@@ -63,13 +63,13 @@ describe('Stack', () => {
 
   it('forwards native div attributes', () => {
     const { container } = render(
-      <HStack role="group" aria-label="controls" data-cell-id="stack">
+      <HStack role="group" aria-label="controls" data-tihoka-id="stack">
         Stack
       </HStack>,
     );
     const el = container.firstChild as HTMLElement;
     expect(el).toHaveAttribute('role', 'group');
     expect(el).toHaveAttribute('aria-label', 'controls');
-    expect(el).toHaveAttribute('data-cell-id', 'stack');
+    expect(el).toHaveAttribute('data-tihoka-id', 'stack');
   });
 });

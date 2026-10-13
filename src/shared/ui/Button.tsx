@@ -153,7 +153,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       aria-invalid={error || undefined}
-      data-cell-ripple-self
+      data-tihoka-ripple-self
       onPointerDown={handlePointerDown}
       {...rest}
     >

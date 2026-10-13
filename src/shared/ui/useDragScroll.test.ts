@@ -5,7 +5,7 @@ import { useDragScroll } from './useDragScroll';
 
 function Probe(): React.JSX.Element {
   const ref = useDragScroll<HTMLDivElement>();
-  return createElement('div', { ref, 'data-cell-id': 'scroller' });
+  return createElement('div', { ref, 'data-tihoka-id': 'scroller' });
 }
 
 function firePointer(el: HTMLElement, type: string, init: { clientX?: number; button?: number; pointerType?: string; pointerId?: number }): void {

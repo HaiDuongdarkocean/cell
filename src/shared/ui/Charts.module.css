@@ -1,0 +1,111 @@
+.spark {
+  display: block;
+  inline-size: 100%;
+  block-size: 28px;
+  overflow: visible;
+}
+
+.sparkArea {
+  fill: var(--color-primary-subtle);
+  stroke: none;
+}
+
+.sparkLine {
+  stroke: var(--color-primary);
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+}
+
+.sparkDot {
+  fill: var(--color-primary);
+}
+
+.spark-error .sparkArea {
+  fill: var(--color-error-subtle);
+}
+
+.spark-error .sparkLine {
+  stroke: var(--color-error);
+}
+
+.spark-error .sparkDot {
+  fill: var(--color-error);
+}
+
+.donut {
+  display: block;
+  inline-size: 84px;
+  block-size: 84px;
+}
+
+.donutTrack {
+  stroke: var(--color-border-subtle);
+  stroke-width: 3.4;
+}
+
+.donutSeg {
+  stroke-width: 3.4;
+}
+
+.donut-primary {
+  stroke: var(--color-primary);
+}
+
+.donut-success {
+  stroke: var(--color-success);
+}
+
+.donut-warning {
+  stroke: var(--color-warning);
+}
+
+.donut-error {
+  stroke: var(--color-error);
+}
+
+.donut-muted {
+  stroke: var(--color-border-emphasized);
+}
+
+.donutCenter {
+  fill: var(--color-text);
+  font-size: 8px;
+  font-weight: 600;
+}
+
+.donutCaption {
+  fill: var(--color-text-muted);
+  font-size: 3.4px;
+}
+
+.bars {
+  display: block;
+  inline-size: 100%;
+  block-size: 34px;
+}
+
+.bar {
+  fill: var(--color-primary-subtle);
+  stroke: var(--color-primary);
+  stroke-width: 0.6;
+}
+
+.barZero {
+  fill: var(--color-border-subtle);
+  stroke: var(--color-border-emphasized);
+  stroke-width: 0.4;
+}
+
+.barSelected {
+  fill: var(--color-primary);
+}
+
+.barHit {
+  cursor: pointer;
+  outline: none;
+}
+
+.barHit:focus-visible .bar {
+  stroke: var(--color-border-focus);
+  stroke-width: 1;
+}

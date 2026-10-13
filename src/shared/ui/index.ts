@@ -12,6 +12,7 @@ export { CheckboxGroup } from './CheckboxGroup';
 export { CollapsibleSidebar } from './CollapsibleSidebar';
 export { Dialog } from './Dialog';
 export { ConfirmDialog } from './ConfirmDialog';
+export { Dropzone } from './Dropzone';
 export { EmptyState } from './EmptyState';
 export { ErrorBoundary } from './ErrorBoundary';
 export { ListItem } from './ListItem';

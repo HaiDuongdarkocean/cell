@@ -1,14 +1,14 @@
 /**
  * SSOT — Extension UI host selectors.
  *
- * All Cell extension UI elements injected into host pages. Text inside these
+ * All Tihoka extension UI elements injected into host pages. Text inside these
  * hosts must NOT trigger dictionary lookup, tokenization, or host-page
  * keyboard shortcuts.
  *
  * Consumers:
  * - `webTriggerController.ts` — blocks dictionary popup on click/hover
- * - `subtitleShortcuts.ts` — blocks keyboard shortcuts inside Cell UI
- * - `tokenizeBlock.ts` — blocks tokenization of Cell UI text
+ * - `subtitleShortcuts.ts` — blocks keyboard shortcuts inside Tihoka UI
+ * - `tokenizeBlock.ts` — blocks tokenization of Tihoka UI text
  *
  * Three lists derived from this base:
  * - `ALL_EXTENSION_UI_HOSTS` — every host (use for keyboard shortcut blocking)
@@ -22,26 +22,26 @@
 
 /** Shadow-DOM hosts — created by mountReactShadow / attachShadow. */
 const SHADOW_HOSTS = [
-  '#cell-subtitle-root',
-  '#cell-manager-portal',
-  '#cell-host-manager-sheet',
-  '.js-cell-popup-host',
-  '.js-cell-orbital-badge-host',
-  '.js-cell-token-badge-host',
+  '#Tihoka-subtitle-root',
+  '#Tihoka-manager-portal',
+  '#Tihoka-host-manager-sheet',
+  '.js-Tihoka-popup-host',
+  '.js-Tihoka-orbital-badge-host',
+  '.js-Tihoka-token-badge-host',
 ] as const;
 
 /** Light-DOM hosts — React-rendered text reachable by TreeWalker. */
 const LIGHT_HOSTS = [
-  '#cell-settings-dialog-host',
-  '#cell-card-creator-host',
-  '#cell-universal-panel-host',
-  '#cell-settings-dialog-host-legacy',
+  '#Tihoka-settings-dialog-host',
+  '#Tihoka-card-creator-host',
+  '#Tihoka-universal-panel-host',
+  '#Tihoka-settings-dialog-host-legacy',
 ] as const;
 
 /** OCR overlay hosts — light-DOM elements injected by OCR feature. */
 const OCR_HOSTS = [
-  '.cell-ocr-overlay',
-  '.cell-ocr-region-selector',
+  '.Tihoka-ocr-overlay',
+  '.Tihoka-ocr-region-selector',
 ] as const;
 
 /** All extension UI host selectors — use for keyboard shortcut blocking. */
@@ -62,15 +62,15 @@ export const DICTIONARY_LOOKUP_BLOCKED_HOSTS: readonly string[] = [
  *  Excludes universal panel — it contains allowed lookup text (dictionary
  *  definitions, card creator preview) that the caret resolver must see. */
 export const POINTER_EVENT_DISABLED_HOSTS: readonly string[] = [
-  '#cell-subtitle-root',
-  '#cell-manager-portal',
-  '#cell-host-manager-sheet',
-  '.js-cell-popup-host',
-  '.js-cell-orbital-badge-host',
-  '.js-cell-token-badge-host',
-  '#cell-settings-dialog-host',
-  '#cell-card-creator-host',
-  '#cell-settings-dialog-host-legacy',
+  '#Tihoka-subtitle-root',
+  '#Tihoka-manager-portal',
+  '#Tihoka-host-manager-sheet',
+  '.js-Tihoka-popup-host',
+  '.js-Tihoka-orbital-badge-host',
+  '.js-Tihoka-token-badge-host',
+  '#Tihoka-settings-dialog-host',
+  '#Tihoka-card-creator-host',
+  '#Tihoka-settings-dialog-host-legacy',
   ...OCR_HOSTS,
 ];
 
@@ -79,13 +79,13 @@ export const POINTER_EVENT_DISABLED_HOSTS: readonly string[] = [
  *  Excludes subtitle root (subtitle text is handled by subtitle controller).
  *  Universal panel has `data-allow-tokenize` whitelist. */
 export const TOKENIZE_BLOCKED_HOSTS: readonly string[] = [
-  '#cell-settings-dialog-host',
-  '#cell-card-creator-host',
-  '#cell-universal-panel-host',
-  '#cell-settings-dialog-host-legacy',
-  '.js-cell-popup-host',
-  '.js-cell-orbital-badge-host',
-  '.js-cell-token-badge-host',
+  '#Tihoka-settings-dialog-host',
+  '#Tihoka-card-creator-host',
+  '#Tihoka-universal-panel-host',
+  '#Tihoka-settings-dialog-host-legacy',
+  '.js-Tihoka-popup-host',
+  '.js-Tihoka-orbital-badge-host',
+  '.js-Tihoka-token-badge-host',
   ...OCR_HOSTS,
 ];
 

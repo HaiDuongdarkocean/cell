@@ -68,7 +68,7 @@ describe('LanguageSelector', () => {
     expect(onChange).toHaveBeenCalledWith('ja');
   });
 
-  it('applies data-cell-id', () => {
+  it('applies data-tihoka-id', () => {
     render(
       <LanguageSelector
         languages={mockLanguages}

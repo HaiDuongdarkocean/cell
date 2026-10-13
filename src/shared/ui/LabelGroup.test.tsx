@@ -7,7 +7,7 @@ jest.mock('@/shared/icons/Icon', () => ({
 
 describe('LabelGroup', () => {
   it('renders label and icon', () => {
-    render(<LabelGroup icon={<span data-cell-id="leading" />} label="Primary label" />);
+    render(<LabelGroup icon={<span data-tihoka-id="leading" />} label="Primary label" />);
     expect(screen.getByText('Primary label')).toBeInTheDocument();
     expect(screen.getByTestId('leading')).toBeInTheDocument();
   });

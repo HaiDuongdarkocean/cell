@@ -15,9 +15,9 @@ export interface StepperProps {
   readonly onIncrease: () => void;
   readonly decreaseDisabled?: boolean;
   readonly increaseDisabled?: boolean;
-  readonly decreaseDataCellId?: string;
-  readonly increaseDataCellId?: string;
-  readonly dataCellId?: string;
+  readonly decreaseDataTihokaId?: string;
+  readonly increaseDataTihokaId?: string;
+  readonly dataTihokaId?: string;
   readonly className?: string;
 }
 
@@ -31,22 +31,22 @@ export function Stepper({
   onIncrease,
   decreaseDisabled,
   increaseDisabled,
-  decreaseDataCellId,
-  increaseDataCellId,
-  dataCellId,
+  decreaseDataTihokaId,
+  increaseDataTihokaId,
+  dataTihokaId,
   className,
 }: StepperProps): React.JSX.Element {
   return (
     <div
       className={className ? `${styles.group} ${className}` : styles.group}
-      data-cell-id={dataCellId}
+      data-tihoka-id={dataTihokaId}
     >
       <Button
         variant="ghost"
         size="md"
         aria-label={decreaseAriaLabel}
         disabled={decreaseDisabled}
-        data-cell-id={decreaseDataCellId}
+        data-tihoka-id={decreaseDataTihokaId}
         onClick={onDecrease}
       >
         <span className={styles.stepLabel}>{decreaseLabel}</span>
@@ -57,7 +57,7 @@ export function Stepper({
         size="md"
         aria-label={increaseAriaLabel}
         disabled={increaseDisabled}
-        data-cell-id={increaseDataCellId}
+        data-tihoka-id={increaseDataTihokaId}
         onClick={onIncrease}
       >
         <span className={styles.stepLabel}>{increaseLabel}</span>

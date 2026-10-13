@@ -12,7 +12,7 @@ describe('SubtitleText', () => {
     expect(screen.getByRole('text')).toBeInTheDocument();
   });
 
-  it('applies data-cell-id', () => {
+  it('applies data-tihoka-id', () => {
     render(<SubtitleText dataTestId="subtitle-text">Caption</SubtitleText>);
     expect(screen.getByTestId('subtitle-text')).toBeInTheDocument();
   });

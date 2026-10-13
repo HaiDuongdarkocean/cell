@@ -82,6 +82,7 @@ import {
   LookupRequestPayloadSchema,
   LookupResultPayloadSchema,
   PronunciationEspeakTtsPayloadSchema,
+  PronunciationSupertonicTtsPayloadSchema,
   ReadingsGetPayloadSchema,
   TranslatePayloadSchema,
   TranslateTermsPayloadSchema,
@@ -513,6 +514,12 @@ export const MESSAGE_REGISTRY = {
   [MESSAGE_TYPES.PRONUNCIATION_ESPEAK_TTS]: {
     type: MESSAGE_TYPES.PRONUNCIATION_ESPEAK_TTS,
     schema: PronunciationEspeakTtsPayloadSchema,
+    direction: 'cs->bg',
+    owner: 'background/handlers/pronunciation',
+  },
+  [MESSAGE_TYPES.PRONUNCIATION_SUPERTONIC_TTS]: {
+    type: MESSAGE_TYPES.PRONUNCIATION_SUPERTONIC_TTS,
+    schema: PronunciationSupertonicTtsPayloadSchema,
     direction: 'cs->bg',
     owner: 'background/handlers/pronunciation',
   },

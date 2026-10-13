@@ -21,8 +21,8 @@ describe('ShortcutInput atom — ADR-021 D7 combo support', () => {
       expect(screen.getByRole('button', { name: 'Next cue' })).toHaveAttribute('aria-label', 'Next cue');
     });
 
-    it('forwards data-cell-id', () => {
-      render(<ShortcutInput value={{ key: 'a' }} onChange={() => {}} aria-label="Test" data-cell-id="shortcut-prev-cue" />);
+    it('forwards data-tihoka-id', () => {
+      render(<ShortcutInput value={{ key: 'a' }} onChange={() => {}} aria-label="Test" data-tihoka-id="shortcut-prev-cue" />);
       expect(screen.getByTestId('shortcut-prev-cue')).toBeInTheDocument();
     });
 
@@ -112,7 +112,7 @@ describe('ShortcutInput atom — ADR-021 D7 combo support', () => {
 
     it('marks the pill as a key-capture surface for the content-script guard', () => {
       render(<ShortcutInput value={{ key: 'a' }} onChange={() => {}} aria-label="Test" />);
-      expect(screen.getByRole('button', { name: 'Test' })).toHaveAttribute('data-cell-keycapture');
+      expect(screen.getByRole('button', { name: 'Test' })).toHaveAttribute('data-tihoka-keycapture');
     });
 
     it('normalizes arrow key press', () => {

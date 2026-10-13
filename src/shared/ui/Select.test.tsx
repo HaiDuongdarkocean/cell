@@ -214,7 +214,7 @@ describe('Select', () => {
 
     const { getByRole } = render(
       <Select
-        data-cell-id="regression-select"
+        data-tihoka-id="regression-select"
         options={[
           { value: '0.5', label: '0.5x' },
           { value: '1', label: '1x' },

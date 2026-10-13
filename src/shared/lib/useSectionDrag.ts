@@ -29,6 +29,7 @@ interface DragSession {
   edgeDir: -1 | 0 | 1;
   rafId: number;
   reduceMotion: boolean;
+  prevMinHeight: string;
 }
 
 const EDGE_ZONE = 56;
@@ -38,7 +39,7 @@ const SETTLE_MS = 200;
 const DEFAULT_SLOT_PREFIX = 'slot-';
 
 function slotElements(list: HTMLElement, slotPrefix: string): HTMLElement[] {
-  return Array.from(list.querySelectorAll<HTMLElement>(`[data-cell-id^="${slotPrefix}"]`));
+  return Array.from(list.querySelectorAll<HTMLElement>(`[data-tihoka-id^="${slotPrefix}"]`));
 }
 
 function findScrollParent(el: HTMLElement): HTMLElement | null {
@@ -54,7 +55,7 @@ function findScrollParent(el: HTMLElement): HTMLElement | null {
 }
 
 export interface UseSectionDragOptions {
-  /** `data-cell-id` prefix identifying draggable slot wrappers. Default 'slot-'. */
+  /** `data-tihoka-id` prefix identifying draggable slot wrappers. Default 'slot-'. */
   readonly slotPrefix?: string;
 }
 
@@ -81,6 +82,7 @@ export function useSectionDrag(
       settleTimerRef.current = null;
     }
     setDrag(null);
+    if (s) s.list.style.minHeight = s.prevMinHeight;
     if (s && commit && s.toIndex !== s.fromIndex) onDrop(s.draggedId, s.toIndex);
   }, [onDrop]);
 
@@ -138,6 +140,8 @@ export function useSectionDrag(
     e.currentTarget.setPointerCapture?.(e.pointerId);
     const rect = el.getBoundingClientRect();
     const gap = Number.parseFloat(getComputedStyle(list).rowGap) || 0;
+    const prevMinHeight = list.style.minHeight;
+    list.style.minHeight = `${list.offsetHeight}px`;
     sessionRef.current = {
       list,
       draggedEl: el,
@@ -154,6 +158,7 @@ export function useSectionDrag(
       edgeDir: 0,
       rafId: 0,
       reduceMotion: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
+      prevMinHeight,
     };
     setDrag({
       draggedId,
@@ -210,6 +215,7 @@ export function useSectionDrag(
     if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
     const s = sessionRef.current;
     if (s && s.rafId) cancelAnimationFrame(s.rafId);
+    if (s) s.list.style.minHeight = s.prevMinHeight;
   }, []);
 
   return { listRef, drag, beginDrag };

@@ -89,7 +89,7 @@ export const subtitleDiscoveryPayloadSchema = z.object({
 });
 
 export const subtitleDiscoveryBridgePayloadSchema = z.object({
-  type: z.literal('__CELL_SUBTITLE_DISCOVERY'),
+  type: z.literal('__Tihoka_SUBTITLE_DISCOVERY'),
   nonce: z.string().min(16).max(256),
   signal: subtitleSignalSchema,
 });

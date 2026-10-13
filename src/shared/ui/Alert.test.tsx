@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Alert } from './Alert';
 
-const TestIcon = () => <svg data-cell-id="test-icon" />;
+const TestIcon = () => <svg data-tihoka-id="test-icon" />;
 
 describe('Alert', () => {
   it('renders all variants', () => {

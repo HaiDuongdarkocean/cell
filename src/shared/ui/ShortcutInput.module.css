@@ -36,6 +36,11 @@
   box-shadow: var(--shadow-focus-primary);
 }
 
+.shortcutPill[aria-invalid='true'],
+.shortcutPill[aria-invalid='true']:hover {
+  border-color: var(--color-destructive);
+}
+
 /* Single-char display — uppercase center */
 .kbdSingle {
   text-transform: uppercase;

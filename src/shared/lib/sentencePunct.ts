@@ -1,5 +1,5 @@
 /**
- * Sentence and clause punctuation across the scripts Cell tokenizes.
+ * Sentence and clause punctuation across the scripts Tihoka tokenizes.
  *
  * Sentence terminators are not "dot, bang, question" everywhere:
  * - Latin / Greek / Cyrillic / Hebrew (modern) use `. ! ?`

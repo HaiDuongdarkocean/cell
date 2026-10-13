@@ -28,7 +28,7 @@ export interface BottomSheetProps {
   /** Custom className for the sheet panel (extends styles.sheet). */
   className?: string;
   /** Test id for the overlay. */
-  'data-cell-id'?: string;
+  'data-tihoka-id'?: string;
 }
 
 /**
@@ -50,7 +50,7 @@ export function BottomSheet({
   hideHeader,
   hideDragHandle,
   className,
-  'data-cell-id': dataTestId,
+  'data-tihoka-id': dataTestId,
 }: BottomSheetProps): React.JSX.Element | null {
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, open);
@@ -76,7 +76,7 @@ export function BottomSheet({
       className={styles.overlay}
       onClick={handleOverlayClick}
       role="presentation"
-      data-cell-id={dataTestId}
+      data-tihoka-id={dataTestId}
     >
       <VStack
         ref={panelRef}

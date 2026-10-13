@@ -1,4 +1,4 @@
-const ATTR = 'data-cell-surface-open';
+const ATTR = 'data-tihoka-surface-open';
 let open = 0;
 
 export function acquireSurfaceLayer(doc: Document = document): () => void {

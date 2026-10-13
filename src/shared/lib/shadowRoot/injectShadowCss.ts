@@ -8,7 +8,7 @@ export interface InjectShadowCssOptions {
   css?: string[];
 }
 
-const SHADOW_STYLE_MARKER = 'data-cell-shadow-css';
+const SHADOW_STYLE_MARKER = 'data-tihoka-shadow-css';
 
 const BASE_SHADOW_CSS = `${tokensCss.replace(/:root\b/g, ':host')}\n${componentsCss}\n${scrollbarsShadowCss}`;
 

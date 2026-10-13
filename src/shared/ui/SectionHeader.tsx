@@ -12,8 +12,8 @@ export interface SectionHeaderProps {
   action?: ReactNode;
   /** Semantic heading level. Default: 3. */
   level?: 1 | 2 | 3 | 4 | 5 | 6;
-  /** data-cell-id for the header element. */
-  'data-cell-id'?: string;
+  /** data-tihoka-id for the header element. */
+  'data-tihoka-id'?: string;
   className?: string;
 }
 
@@ -26,11 +26,11 @@ export function SectionHeader({
   subtitle,
   action,
   level = 3,
-  'data-cell-id': dataCellId,
+  'data-tihoka-id': dataTihokaId,
   className,
 }: SectionHeaderProps): ReactElement {
   return (
-    <div className={`${styles.header} ${className ?? ''}`} data-cell-id={dataCellId}>
+    <div className={`${styles.header} ${className ?? ''}`} data-tihoka-id={dataTihokaId}>
       <div className={styles.text}>
         <Heading level={level} size={3} className={styles.title}>
           {title}

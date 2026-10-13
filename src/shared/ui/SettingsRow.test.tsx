@@ -9,7 +9,7 @@ describe('SettingsRow', () => {
 
   it('spreads extra attributes on the row', () => {
     render(
-      <SettingsRow data-cell-id="settings-row" aria-label="API key">
+      <SettingsRow data-tihoka-id="settings-row" aria-label="API key">
         Row content
       </SettingsRow>,
     );
@@ -29,7 +29,7 @@ describe('SettingsRow', () => {
   it('forwards refs to the div', () => {
     const ref = { current: null as HTMLDivElement | null };
     render(
-      <SettingsRow ref={ref} data-cell-id="row">
+      <SettingsRow ref={ref} data-tihoka-id="row">
         Ref row
       </SettingsRow>,
     );

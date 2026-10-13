@@ -61,7 +61,7 @@ export const Surface = forwardRef<HTMLDivElement, SurfaceProps>(function Surface
   }: SurfaceProps,
   ref: Ref<HTMLDivElement>,
 ): React.JSX.Element {
-  // Cell UI surfaces should never leak non-Escape keyboard events to the host
+  // Tihoka UI surfaces should never leak non-Escape keyboard events to the host
   // page — that breaks host shortcuts while the user is focused inside a panel,
   // dialog, or popover. Escape is left to the consumer / escape-layer stack.
   const handleKeyDown = useCallback((e: KeyboardEvent<HTMLDivElement>): void => {

@@ -395,7 +395,41 @@ export const SyncEngineStatusSchema = z.object({
   ]),
   retryAt: z.number().optional(),
   lastError: z.string().optional(),
+  progress: z
+    .object({
+      phase: z.enum(['push', 'pull', 'check']),
+      pending: z.number(),
+      done: z.number(),
+      scopesDone: z.number(),
+      scopesTotal: z.number(),
+      scope: z.string().optional(),
+      items: z
+        .array(
+          z.object({
+            scope: z.string(),
+            dataClass: z.string().nullable(),
+            total: z.number(),
+            done: z.number(),
+            key: z.string().optional(),
+          }),
+        )
+        .optional(),
+    })
+    .optional(),
   updatedAt: z.number(),
+});
+
+export const SyncRunRecordSchema = z.object({
+  id: z.string().min(1),
+  at: z.number(),
+  kind: z.enum(['full', 'push', 'check']),
+  ok: z.boolean(),
+  pushed: z.array(z.string()),
+  pulled: z.array(z.string()),
+  appliedDataClasses: z.array(z.string()),
+  ackedKeys: z.number(),
+  failed: z.array(z.object({ connectionId: z.string(), state: z.string() })),
+  errors: z.array(z.string()),
 });
 
 export const SyncConnectionStatusSchema = z.object({
@@ -441,6 +475,7 @@ export const SyncStatusViewSchema = z.object({
     systemConnection: z.string().nullable(),
     lastAppliedAt: z.number().nullable(),
   }),
+  history: z.array(SyncRunRecordSchema),
 });
 
 // === Detection / media-update broadcasts ===

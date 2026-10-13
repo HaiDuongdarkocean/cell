@@ -9,7 +9,7 @@
 export function sendMessage<T = unknown>(
   message: unknown,
 ): Promise<T> {
-  const override = (typeof globalThis !== 'undefined' && (globalThis as { __cellSendMessage?: (m: unknown) => Promise<unknown> }).__cellSendMessage);
+  const override = (typeof globalThis !== 'undefined' && (globalThis as { __TihokaSendMessage?: (m: unknown) => Promise<unknown> }).__TihokaSendMessage);
   if (override) {
     return override(message) as Promise<T>;
   }
@@ -35,9 +35,9 @@ type MessageListener = Parameters<typeof chrome.runtime.onMessage.addListener>[0
 /** Non-extension contexts (design showcase, jsdom) keep listeners here so a
  *  mock backend can push messages (e.g. JOB_EVENT). */
 function listenerRegistry(): Set<MessageListener> {
-  const g = globalThis as { __cellOnMessageListeners?: Set<MessageListener> };
-  if (!g.__cellOnMessageListeners) g.__cellOnMessageListeners = new Set();
-  return g.__cellOnMessageListeners;
+  const g = globalThis as { __TihokaOnMessageListeners?: Set<MessageListener> };
+  if (!g.__TihokaOnMessageListeners) g.__TihokaOnMessageListeners = new Set();
+  return g.__TihokaOnMessageListeners;
 }
 
 export function onMessage(callback: MessageListener): void {
@@ -70,8 +70,8 @@ export function onInstalled(
 
 /** Remove a message listener. */
 export function removeOnMessageListener(callback: MessageListener): void {
-  const g = globalThis as { __cellOnMessageListeners?: Set<MessageListener> };
-  if (g.__cellOnMessageListeners) g.__cellOnMessageListeners.delete(callback);
+  const g = globalThis as { __TihokaOnMessageListeners?: Set<MessageListener> };
+  if (g.__TihokaOnMessageListeners) g.__TihokaOnMessageListeners.delete(callback);
   if (typeof chrome === 'undefined' || !chrome.runtime?.onMessage) return;
   chrome.runtime.onMessage.removeListener(callback);
 }

@@ -39,7 +39,7 @@ interface DialogProps {
    *  default `description`-based wiring. */
   'aria-describedby'?: string;
   /** Test id for the overlay. */
-  'data-cell-id'?: string;
+  'data-tihoka-id'?: string;
 }
 
 /**
@@ -61,7 +61,7 @@ export function Dialog({
   size = 'md',
   fill = false,
   'aria-describedby': ariaDescribedBy,
-  'data-cell-id': dataTestId,
+  'data-tihoka-id': dataTestId,
 }: DialogProps): React.JSX.Element | null {
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, open);
@@ -85,7 +85,7 @@ export function Dialog({
       className={styles.overlay}
       onClick={handleOverlayClick}
       role="presentation"
-      data-cell-id={dataTestId}
+      data-tihoka-id={dataTestId}
     >
       <Surface
         ref={panelRef}

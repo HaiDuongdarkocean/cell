@@ -35,17 +35,17 @@ export const CueCard = forwardRef<HTMLDivElement, CueCardProps>(function CueCard
         content
       ) : (
         <div {...textProps} className={textClassName} data-allow-lookup>
-          <div className={styles.targetText} data-cell-id="cue-target-text">
+          <div className={styles.targetText} data-tihoka-id="cue-target-text">
             {title}
           </div>
           {subtitle !== undefined && subtitle !== null && (
-            <div className={styles.nativeText} data-cell-id="cue-native-text">
+            <div className={styles.nativeText} data-tihoka-id="cue-native-text">
               {subtitle}
             </div>
           )}
         </div>
       )}
-      <div className={styles.actions} data-cell-id="cue-actions">
+      <div className={styles.actions} data-tihoka-id="cue-actions">
         {actions}
       </div>
     </div>

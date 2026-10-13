@@ -18,7 +18,7 @@ import { toIso6391, baseLangCode } from '@/shared/config/languageRegistry';
 import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 40;
+export const CURRENT_SCHEMA_VERSION = 43;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -425,8 +425,8 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
         DEFAULT_SETTINGS.subtitleOverlayAutoTranslate) as boolean,
       dictionaryPopup: (merged.dictionaryPopup ??
         DEFAULT_DICTIONARY_POPUP_SETTINGS) as LanguageProfile['dictionaryPopup'],
-      showReadings: toIso6391(baseLangCode(oldTarget)) === 'zh',
-      showWordTranslations: false,
+      readingDisplay: toIso6391(baseLangCode(oldTarget)) === 'zh' ? 'always' : 'off',
+      glossDisplay: 'off',
     };
 
     merged.universalNativeLanguage = universalNative;
@@ -550,10 +550,10 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
   35: (s) => {
     const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 36 } as Record<string, unknown>;
     if (Array.isArray(merged.languageProfiles)) {
-      merged.languageProfiles = (merged.languageProfiles as LanguageProfile[]).map((p) => ({
+      merged.languageProfiles = (merged.languageProfiles as Record<string, unknown>[]).map((p) => ({
         ...p,
         showReadings:
-          p.showReadings ?? (toIso6391(baseLangCode(p.target)) === 'zh'),
+          p.showReadings ?? (toIso6391(baseLangCode(p.target as string)) === 'zh'),
       }));
     }
     return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
@@ -563,7 +563,7 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
   36: (s) => {
     const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 37 } as Record<string, unknown>;
     if (Array.isArray(merged.languageProfiles)) {
-      merged.languageProfiles = (merged.languageProfiles as LanguageProfile[]).map((p) => ({
+      merged.languageProfiles = (merged.languageProfiles as Record<string, unknown>[]).map((p) => ({
         ...p,
         showWordTranslations: p.showWordTranslations ?? false,
       }));
@@ -593,6 +593,79 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     const shortcuts = Array.isArray(merged.keyboardShortcuts) ? merged.keyboardShortcuts : [];
     if (!shortcuts.some((sc: { action: string }) => sc.action === 'open-dictionary-search')) {
       merged.keyboardShortcuts = [...shortcuts, { action: 'open-dictionary-search', key: 't', shift: true }];
+    }
+    return merged;
+  },
+  // v40 → v41: showReadings/showWordTranslations booleans →
+  // readingDisplay/glossDisplay AnnotationDisplayMode (spec word-display).
+  // true → 'always', anything else → 'off'. Applied to the flat mirror AND
+  // every language profile (the fields are per-profile flat fields).
+  40: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 41 } as Record<string, unknown>;
+    merged.readingDisplay = s.showReadings === true ? 'always' : 'off';
+    merged.glossDisplay = s.showWordTranslations === true ? 'always' : 'off';
+    delete merged.showReadings;
+    delete merged.showWordTranslations;
+    if (Array.isArray(merged.languageProfiles)) {
+      merged.languageProfiles = (merged.languageProfiles as Record<string, unknown>[]).map((p) => {
+        const { showReadings, showWordTranslations, ...rest } = p;
+        return {
+          ...rest,
+          readingDisplay: (rest.readingDisplay as string | undefined) ?? (showReadings === true ? 'always' : 'off'),
+          glossDisplay: (rest.glossDisplay as string | undefined) ?? (showWordTranslations === true ? 'always' : 'off'),
+        };
+      });
+    }
+    return merged;
+  },
+  // v41 → v42: cardCreator.frequencyDisplay → dictionaryPopup.frequencyDisplay —
+  // one display pref now drives both popup chips and card fields. dictionaryPopup
+  // is a per-profile flat field, so the value must land on every profile too or
+  // resolveSettingsFlatFields overwrites the top-level copy with the profile's.
+  41: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 42 } as Record<string, unknown>;
+    const cc = { ...(merged.cardCreator as Record<string, unknown> | undefined) };
+    const fmt = cc.frequencyDisplay;
+    delete cc.frequencyDisplay;
+    merged.cardCreator = cc;
+    if (fmt === 'stars' || fmt === 'rank') {
+      const moveInto = (obj: Record<string, unknown>): Record<string, unknown> =>
+        obj.frequencyDisplay === undefined ? { ...obj, frequencyDisplay: fmt } : obj;
+      const dp = merged.dictionaryPopup as Record<string, unknown> | undefined;
+      if (dp) merged.dictionaryPopup = moveInto({ ...dp });
+      if (Array.isArray(merged.languageProfiles)) {
+        merged.languageProfiles = (merged.languageProfiles as Record<string, unknown>[]).map((p) =>
+          p.dictionaryPopup === undefined
+            ? p
+            : { ...p, dictionaryPopup: moveInto({ ...(p.dictionaryPopup as Record<string, unknown>) }) },
+        );
+      }
+    }
+    return merged;
+  },
+  // v42 → v43: Supertonic voice selection — `supertonicVoices` (picked ≤3,
+  // ordered) and `supertonicDownloadedVoices` under dictionaryPopup.tts. Users
+  // with an existing pack already have the M1 style file on disk.
+  42: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 43 } as Record<string, unknown>;
+    const migrateTts = (tts: Record<string, unknown>): Record<string, unknown> => {
+      const downloaded = Array.isArray(tts.downloadedLanguages) && tts.downloadedLanguages.length > 0;
+      return {
+        ...tts,
+        supertonicVoices: tts.supertonicVoices ?? ['M1'],
+        supertonicDownloadedVoices: tts.supertonicDownloadedVoices ?? (downloaded ? ['M1'] : []),
+      };
+    };
+    const migratePopup = (dp: Record<string, unknown>): Record<string, unknown> =>
+      dp.tts === undefined ? dp : { ...dp, tts: migrateTts({ ...(dp.tts as Record<string, unknown>) }) };
+    const dp = merged.dictionaryPopup as Record<string, unknown> | undefined;
+    if (dp) merged.dictionaryPopup = migratePopup({ ...dp });
+    if (Array.isArray(merged.languageProfiles)) {
+      merged.languageProfiles = (merged.languageProfiles as Record<string, unknown>[]).map((p) =>
+        p.dictionaryPopup === undefined
+          ? p
+          : { ...p, dictionaryPopup: migratePopup({ ...(p.dictionaryPopup as Record<string, unknown>) }) },
+      );
     }
     return merged;
   },

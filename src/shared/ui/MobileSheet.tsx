@@ -88,7 +88,7 @@ export interface MobileSheetProps {
   /** Extra className for the scrollable content area. */
   readonly contentClassName?: string;
   /** Test id for the sheet element. */
-  readonly 'data-cell-id'?: string;
+  readonly 'data-tihoka-id'?: string;
 }
 
 /**
@@ -119,7 +119,7 @@ export function MobileSheet({
   handleAriaLabel = t('ui.mobileSheet.handleAria'),
   className,
   contentClassName,
-  'data-cell-id': dataTestId,
+  'data-tihoka-id': dataTestId,
 }: MobileSheetProps): React.JSX.Element {
   const isControlled = snapProp !== undefined;
   const [internalSnap, setInternalSnap] = useState<MobileSheetSnap>(defaultSnap);
@@ -252,7 +252,7 @@ export function MobileSheet({
       className={sheetClass}
       style={sheetStyle}
       aria-label={ariaLabel}
-      data-cell-id={dataTestId}
+      data-tihoka-id={dataTestId}
       data-snap={snap}
     >
       <div
@@ -262,7 +262,7 @@ export function MobileSheet({
         tabIndex={0}
         aria-label={handleAriaLabel}
         aria-expanded={snap !== 'collapsed'}
-        data-cell-id="card-creator-sheet-pill"
+        data-tihoka-id="card-creator-sheet-pill"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

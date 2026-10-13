@@ -1,6 +1,6 @@
-import { isCellDebug } from './cellDebug';
+import { isTihokaDebug } from './TihokaDebug';
 
-const DEBUG_ENABLED = isCellDebug();
+const DEBUG_ENABLED = isTihokaDebug();
 
 const noop = (..._args: unknown[]): void => {};
 

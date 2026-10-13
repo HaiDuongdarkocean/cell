@@ -14,7 +14,7 @@ export interface SearchableSelectOption {
 
 /** Props for the SearchableSelect component. */
 export interface SearchableSelectProps {
-  /** Test-id prefix used for data-cell-id attributes on sub-elements. */
+  /** Test-id prefix used for data-tihoka-id attributes on sub-elements. */
   testId?: string;
   /** All available options. */
   options: SearchableSelectOption[];
@@ -26,7 +26,7 @@ export interface SearchableSelectProps {
   ariaLabel: string;
   /** Optional HTML id. */
   id?: string;
-  /** Optional data-cell-id for the trigger button. */
+  /** Optional data-tihoka-id for the trigger button. */
   dataTestId?: string;
   /** Search input placeholder. Defaults to "Search...". */
   placeholder?: string;
@@ -108,10 +108,14 @@ export function SearchableSelect({
       closeMenu();
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setHighlightedIndex((prev) => Math.min(prev + 1, filtered.length - 1));
+      const next = Math.min(highlightedIndex + 1, filtered.length - 1);
+      setHighlightedIndex(next);
+      menuRef.current?.querySelector(`[id="${listboxId}-option-${next}"]`)?.scrollIntoView({ block: 'nearest' });
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setHighlightedIndex((prev) => Math.max(prev - 1, 0));
+      const next = Math.max(highlightedIndex - 1, 0);
+      setHighlightedIndex(next);
+      menuRef.current?.querySelector(`[id="${listboxId}-option-${next}"]`)?.scrollIntoView({ block: 'nearest' });
     } else if (e.key === 'Enter' && filtered.length > 0) {
       e.preventDefault();
       const clampedIndex = Math.min(highlightedIndex, filtered.length - 1);
@@ -159,7 +163,7 @@ export function SearchableSelect({
       <Button variant="secondary"
         ref={triggerRef}
         id={triggerId}
-        data-cell-id={dataTestId}
+        data-tihoka-id={dataTestId}
         className={`${styles.trigger} ${isOpen ? styles.triggerOpen : ''} ${disabled ? styles.triggerDisabled : ''}`}
         aria-label={ariaLabel}
         aria-expanded={isOpen}
@@ -216,7 +220,7 @@ export function SearchableSelect({
                   className={`${styles.option} ${opt.value === value ? styles.optionSelected : ''} ${index === highlightedIndex ? styles.optionHighlighted : ''}`}
                   role="option"
                   aria-selected={opt.value === value}
-                  data-cell-id={`${testId}-option-${opt.value}`}
+                  data-tihoka-id={`${testId}-option-${opt.value}`}
                   onPointerDown={(e) => spawnRipple(e.currentTarget, e.clientX, e.clientY)}
                   onClick={() => handleSelect(opt.value)}
                 >
@@ -227,7 +231,7 @@ export function SearchableSelect({
                 </li>
               ))
             ) : (
-              <li className={styles.emptyState} role="presentation">
+              <li className={styles.emptyState} role="option" aria-disabled="true" aria-selected="false">
                 {t('common.noResults')}
               </li>
             )}

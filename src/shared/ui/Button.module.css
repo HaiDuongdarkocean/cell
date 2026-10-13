@@ -29,7 +29,7 @@
     box-shadow var(--duration-slow) var(--ease-out);
 }
 
-.button > *:not([data-cell-ripple]) {
+.button > *:not([data-tihoka-ripple]) {
   pointer-events: none;
   position: relative;
   z-index: calc(var(--z-base) + 1);
@@ -493,7 +493,7 @@
 }
 
 /* === Ripple — wave expanding from the touch point ===
-   Span styles live in components.css ([data-cell-ripple]) so the same
+   Span styles live in components.css ([data-tihoka-ripple]) so the same
    element works for delegated ripples on non-Button controls. */
 
 .rippleHost {

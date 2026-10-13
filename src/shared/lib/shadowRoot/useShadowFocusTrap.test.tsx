@@ -7,9 +7,9 @@ function Panel() {
   useShadowFocusTrap(ref);
   return (
     <div ref={ref}>
-      <button type="button" data-cell-id="first">First</button>
-      <input data-cell-id="second" />
-      <button type="button" data-cell-id="last">Last</button>
+      <button type="button" data-tihoka-id="first">First</button>
+      <input data-tihoka-id="second" />
+      <button type="button" data-tihoka-id="last">Last</button>
     </div>
   );
 }

@@ -7,9 +7,9 @@ describe('mountReactShadow', () => {
     let received: HTMLElement | null = null;
     const Provider = ({ container, children }: { container: HTMLElement; children?: ReactNode }) => {
       received = container;
-      return createElement('div', { 'data-cell-id': 'provider-wrap' }, children);
+      return createElement('div', { 'data-tihoka-id': 'provider-wrap' }, children);
     };
-    const Component = () => createElement('span', { 'data-cell-id': 'inner' });
+    const Component = () => createElement('span', { 'data-tihoka-id': 'inner' });
     const { shadow, rootEl, unmount } = mountReactShadow(createElement(Component), {
       provider: Provider,
     });
@@ -17,8 +17,8 @@ describe('mountReactShadow', () => {
     await act(async () => {});
 
     expect(received).toBe(rootEl);
-    const wrap = shadow.querySelector('[data-cell-id="provider-wrap"]');
-    expect(wrap?.querySelector('[data-cell-id="inner"]')).not.toBeNull();
+    const wrap = shadow.querySelector('[data-tihoka-id="provider-wrap"]');
+    expect(wrap?.querySelector('[data-tihoka-id="inner"]')).not.toBeNull();
 
     await act(async () => unmount());
   });
@@ -47,7 +47,7 @@ describe('mountReactShadow', () => {
   });
 
   it('traps non-Escape keyboard events inside the shadow root', async () => {
-    const Component = () => createElement('input', { type: 'text', 'data-cell-id': 'trap-input' });
+    const Component = () => createElement('input', { type: 'text', 'data-tihoka-id': 'trap-input' });
     const { host, shadow, unmount } = mountReactShadow(createElement(Component), {});
     await act(async () => {});
 
@@ -109,7 +109,7 @@ describe('mountReactShadow', () => {
   it('projects chrome-marked hosts into the overlay chrome slot', async () => {
     const pmHost = document.createElement('div');
     const pmShadow = pmHost.attachShadow({ mode: 'open' });
-    pmShadow.appendChild(document.createElement('slot')).name = 'cell-host-chrome';
+    pmShadow.appendChild(document.createElement('slot')).name = 'Tihoka-host-chrome';
     document.body.appendChild(pmHost);
 
     const Component = () => createElement('span');
@@ -124,7 +124,7 @@ describe('mountReactShadow', () => {
 
     await act(async () => {});
     expect(host.parentElement).toBe(pmHost);
-    expect(host.slot).toBe('cell-host-chrome');
+    expect(host.slot).toBe('Tihoka-host-chrome');
 
     (document as unknown as { fullscreenElement: HTMLElement | null }).fullscreenElement = null;
     document.dispatchEvent(new Event('fullscreenchange'));
@@ -140,7 +140,7 @@ describe('mountReactShadow', () => {
   it('projects chrome hosts when mounting while fullscreen is already active', async () => {
     const pmHost = document.createElement('div');
     const pmShadow = pmHost.attachShadow({ mode: 'open' });
-    pmShadow.appendChild(document.createElement('slot')).name = 'cell-host-chrome';
+    pmShadow.appendChild(document.createElement('slot')).name = 'Tihoka-host-chrome';
     document.body.appendChild(pmHost);
     (document as unknown as { fullscreenElement: HTMLElement }).fullscreenElement = pmHost;
 
@@ -152,7 +152,7 @@ describe('mountReactShadow', () => {
     await act(async () => {});
 
     expect(host.parentElement).toBe(pmHost);
-    expect(host.slot).toBe('cell-host-chrome');
+    expect(host.slot).toBe('Tihoka-host-chrome');
 
     (document as unknown as { fullscreenElement: HTMLElement | null }).fullscreenElement = null;
     pmHost.remove();

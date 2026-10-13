@@ -5,7 +5,7 @@ import { useSheet } from './useSheet';
 
 function Probe({ onClose }: { readonly onClose: () => void }): React.JSX.Element {
   const { onPointerDownHandle } = useSheet({ onClose });
-  return createElement('div', { 'data-cell-id': 'handle', onPointerDown: onPointerDownHandle });
+  return createElement('div', { 'data-tihoka-id': 'handle', onPointerDown: onPointerDownHandle });
 }
 
 function firePointer(target: EventTarget, type: string, clientX: number, clientY: number): void {

@@ -16,11 +16,11 @@ describe('SegmentedControl', () => {
         value="b"
         onChange={onChange}
         ariaLabel="Pick one"
-        data-cell-id="seg-group"
+        data-tihoka-id="seg-group"
       />,
     );
     expect(screen.getByRole('radiogroup', { name: 'Pick one' })).toHaveAttribute(
-      'data-cell-id',
+      'data-tihoka-id',
       'seg-group',
     );
     const radios = screen.getAllByRole('radio');

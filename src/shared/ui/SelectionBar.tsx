@@ -7,7 +7,7 @@ export interface SelectionBarProps {
   readonly label?: ReactNode;
   readonly children: ReactNode;
   readonly className?: string;
-  readonly 'data-cell-id'?: string;
+  readonly 'data-tihoka-id'?: string;
 }
 
 /** Sticky bottom action bar for multi-select flows — elevated pill with an
@@ -19,7 +19,7 @@ export function SelectionBar({
   label,
   children,
   className,
-  'data-cell-id': dataCellId,
+  'data-tihoka-id': dataTihokaId,
 }: SelectionBarProps): React.JSX.Element {
   return (
     <div
@@ -27,7 +27,7 @@ export function SelectionBar({
       aria-label={t('ui.selectionBar.aria')}
       aria-hidden={!open}
       data-open={open ? '' : undefined}
-      data-cell-id={dataCellId}
+      data-tihoka-id={dataTihokaId}
       className={[styles.bar, className].filter(Boolean).join(' ')}
     >
       {label !== undefined && label !== null ? (

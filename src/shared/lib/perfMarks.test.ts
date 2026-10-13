@@ -38,11 +38,11 @@ function loadModule() {
   return m;
 }
 
-describe('gate on (isCellDebug)', () => {
+describe('gate on (isTihokaDebug)', () => {
   beforeEach(() => {
-    jest.doMock('./cellDebug', () => ({ isCellDebug: () => true }));
+    jest.doMock('./TihokaDebug', () => ({ isTihokaDebug: () => true }));
   });
-  afterEach(() => jest.dontMock('./cellDebug'));
+  afterEach(() => jest.dontMock('./TihokaDebug'));
 
   it('marks + measures + clears marks, retains measure entries', () => {
     const m = loadModule();
@@ -50,13 +50,13 @@ describe('gate on (isCellDebug)', () => {
     m.markLookup('response', 'r1');
     m.measureLookup('dispatch', 'response', 'r1');
     expect(measureMock).toHaveBeenCalledWith(
-      'cell:lookup:dispatch→response:r1',
-      'cell:lookup:dispatch:r1',
-      'cell:lookup:response:r1',
+      'Tihoka:lookup:dispatch→response:r1',
+      'Tihoka:lookup:dispatch:r1',
+      'Tihoka:lookup:response:r1',
     );
     m.clearLookupMarks('r1');
     expect(marks.size).toBe(0);
-    expect(measures.get('cell:lookup:dispatch→response:r1')).toBe(42);
+    expect(measures.get('Tihoka:lookup:dispatch→response:r1')).toBe(42);
   });
 
   it('audio marks + start→render measure', () => {
@@ -65,7 +65,7 @@ describe('gate on (isCellDebug)', () => {
     m.markAudio('render', 'hi');
     m.measureAudio('start', 'render', 'hi');
     m.clearAudioMarks('hi');
-    expect(measures.get('cell:audio:start→render:hi')).toBe(42);
+    expect(measures.get('Tihoka:audio:start→render:hi')).toBe(42);
     expect(marks.size).toBe(0);
   });
 
@@ -79,11 +79,11 @@ describe('gate on (isCellDebug)', () => {
 
 describe('gate off', () => {
   beforeEach(() => {
-    jest.doMock('./cellDebug', () => ({ isCellDebug: () => false }));
+    jest.doMock('./TihokaDebug', () => ({ isTihokaDebug: () => false }));
     jest.doMock('./env/devMode', () => ({ isDevMode: false }));
   });
   afterEach(() => {
-    jest.dontMock('./cellDebug');
+    jest.dontMock('./TihokaDebug');
     jest.dontMock('./env/devMode');
   });
 

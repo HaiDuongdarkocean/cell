@@ -176,7 +176,7 @@ export interface QuickAddPayload {
   /** Default = LookupRequest.contextSentence. */
   readonly sentence: string;
   readonly status: WordStatus;
-  /** MVP: chỉ 'anki'. Cell Memory thêm lại khi scheduler ready. */
+  /** MVP: chỉ 'anki'. Tihoka Memory thêm lại khi scheduler ready. */
   readonly destination: SrsDestination;
 }
 
@@ -436,6 +436,11 @@ export interface PopupCardCreatorPrefill extends PopupSelectionSnapshot {
   /** The original lookup result used to build this prefill. Carried so the
    *  integrated Dictionary can render the same candidate without re-searching. */
   readonly lookupResult?: LookupResult;
+  /** Frequency ranks of the SELECTED variant (term-level rows when no
+   *  variants exist) — the same chips the popup status row displayed. */
+  readonly frequencies?: readonly { readonly rank: number; readonly source: string }[];
+  /** First-wins stars of the selected variant, mirroring `frequencies`. */
+  readonly frequencyStars?: { readonly count: number; readonly source: string };
   /** Audio items loaded for the popup candidate. Mirrors the popup's audio tab. */
   readonly audioItems?: readonly AudioItem[];
   /** Image items loaded for the popup candidate. Mirrors the popup's image tab. */

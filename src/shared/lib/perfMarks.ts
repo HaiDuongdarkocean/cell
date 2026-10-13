@@ -1,19 +1,19 @@
 import { isDevMode } from '@/shared/lib/env/devMode';
-import { isCellDebug } from '@/shared/lib/cellDebug';
+import { isTihokaDebug } from '@/shared/lib/TihokaDebug';
 
 function active(): boolean {
-  return isDevMode || isCellDebug();
+  return isDevMode || isTihokaDebug();
 }
 
 const LOOKUP_POINTS = ['dispatch', 'response', 'render'] as const;
 const AUDIO_POINTS = ['start', 'applied', 'render'] as const;
 
 export function markLookup(point: (typeof LOOKUP_POINTS)[number], requestId: string): void {
-  if (active()) performance.mark(`cell:lookup:${point}:${requestId}`);
+  if (active()) performance.mark(`Tihoka:lookup:${point}:${requestId}`);
 }
 
 export function markAudio(point: (typeof AUDIO_POINTS)[number], term: string): void {
-  if (active()) performance.mark(`cell:audio:${point}:${term}`);
+  if (active()) performance.mark(`Tihoka:audio:${point}:${term}`);
 }
 
 function measure(name: string, from: string, to: string): void {
@@ -31,7 +31,7 @@ export function measureLookup(
   requestId: string,
 ): void {
   if (!active()) return;
-  measure(`cell:lookup:${from}→${to}:${requestId}`, `cell:lookup:${from}:${requestId}`, `cell:lookup:${to}:${requestId}`);
+  measure(`Tihoka:lookup:${from}→${to}:${requestId}`, `Tihoka:lookup:${from}:${requestId}`, `Tihoka:lookup:${to}:${requestId}`);
 }
 
 export function measureAudio(
@@ -40,15 +40,15 @@ export function measureAudio(
   term: string,
 ): void {
   if (!active()) return;
-  measure(`cell:audio:${from}→${to}:${term}`, `cell:audio:${from}:${term}`, `cell:audio:${to}:${term}`);
+  measure(`Tihoka:audio:${from}→${to}:${term}`, `Tihoka:audio:${from}:${term}`, `Tihoka:audio:${to}:${term}`);
 }
 
 export function clearLookupMarks(requestId: string): void {
   if (!active()) return;
-  for (const point of LOOKUP_POINTS) performance.clearMarks(`cell:lookup:${point}:${requestId}`);
+  for (const point of LOOKUP_POINTS) performance.clearMarks(`Tihoka:lookup:${point}:${requestId}`);
 }
 
 export function clearAudioMarks(term: string): void {
   if (!active()) return;
-  for (const point of AUDIO_POINTS) performance.clearMarks(`cell:audio:${point}:${term}`);
+  for (const point of AUDIO_POINTS) performance.clearMarks(`Tihoka:audio:${point}:${term}`);
 }

@@ -15,7 +15,7 @@ export interface HintIconProps {
   ariaLabel: string;
   /** Optional HTML id. */
   id?: string;
-  /** Optional data-cell-id for the button. */
+  /** Optional data-tihoka-id for the button. */
   dataTestId?: string;
 }
 
@@ -128,7 +128,7 @@ export function HintIcon({
     <span className={styles.hintWrap} ref={wrapRef}>
       <Button shape="circle" variant="ghost" size="sm"
         id={id}
-        data-cell-id={dataTestId}
+        data-tihoka-id={dataTestId}
         data-compact-hit
         className={styles.hintBtn}
         aria-expanded={isOpen}

@@ -16,16 +16,15 @@
   user-select: none;
 }
 
-/* === Sizes — touch target + grip dot scale === */
+/* === Sizes — touch target + grip icon scale === */
 .sm {
   width: var(--iconbutton-size-xs);
   height: var(--iconbutton-size-xs);
 }
 
-.sm .gripDots {
+.sm .gripIcon {
   width: var(--iconbutton-icon-xs);
-  height: calc(var(--iconbutton-icon-xs) / 3 * 2);
-  background-size: calc(var(--iconbutton-icon-xs) / 3) calc(var(--iconbutton-icon-xs) / 3);
+  height: var(--iconbutton-icon-xs);
 }
 
 .md {
@@ -33,10 +32,9 @@
   height: var(--iconbutton-size-md);
 }
 
-.md .gripDots {
+.md .gripIcon {
   width: var(--iconbutton-icon-sm);
-  height: calc(var(--iconbutton-icon-sm) / 3 * 2);
-  background-size: calc(var(--iconbutton-icon-sm) / 3) calc(var(--iconbutton-icon-sm) / 3);
+  height: var(--iconbutton-icon-sm);
 }
 
 .lg {
@@ -44,10 +42,9 @@
   height: var(--space-12);
 }
 
-.lg .gripDots {
+.lg .gripIcon {
   width: var(--iconbutton-icon-md);
-  height: calc(var(--iconbutton-icon-md) / 3 * 2);
-  background-size: calc(var(--iconbutton-icon-md) / 3) calc(var(--iconbutton-icon-md) / 3);
+  height: var(--iconbutton-icon-md);
 }
 
 .dragHandle:hover {
@@ -64,16 +61,9 @@
   outline-offset: var(--space-0-5);
 }
 
-/* === Grip dots — three columns × two rows (6 dots via radial-gradient) === */
-.gripDots {
-  background-image: radial-gradient(circle, currentColor 1.5px, transparent 1.6px);
-  background-position: center;
-  background-repeat: repeat;
-}
-
-/* Vertical — rotate the grip 90deg so dots read top-to-bottom */
-.vertical .gripDots {
-  transform: rotate(90deg);
+/* === Grip icon — six-dot SVG from ICON_CATALOG (gripVertical/gripHorizontal) === */
+.gripIcon {
+  flex-shrink: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

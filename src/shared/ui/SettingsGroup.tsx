@@ -13,8 +13,8 @@ export interface SettingsGroupProps {
   action?: ReactNode;
   /** Grouped rows/controls. */
   children?: ReactNode;
-  /** data-cell-id for the group element. */
-  'data-cell-id'?: string;
+  /** data-tihoka-id for the group element. */
+  'data-tihoka-id'?: string;
   className?: string;
 }
 
@@ -23,10 +23,10 @@ export interface SettingsGroupProps {
  * a secondary label (with optional description + trailing action) above a
  * group of related rows.
  */
-export function SettingsGroup({ label, description, action, children, 'data-cell-id': dataCellId, className }: SettingsGroupProps): React.JSX.Element {
+export function SettingsGroup({ label, description, action, children, 'data-tihoka-id': dataTihokaId, className }: SettingsGroupProps): React.JSX.Element {
   const cls = [styles.group, className ?? ''].filter(Boolean).join(' ');
   return (
-    <div className={cls} role="group" aria-label={typeof label === 'string' ? label : undefined} data-cell-id={dataCellId}>
+    <div className={cls} role="group" aria-label={typeof label === 'string' ? label : undefined} data-tihoka-id={dataTihokaId}>
       {(label != null || action != null) && (
         <div className={styles.header}>
           {label != null && (

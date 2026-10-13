@@ -21,7 +21,7 @@ export interface FooterBarSlot {
   readonly onClick: () => void;
   /** Ref forwarded to underlying button. */
   readonly ref?: React.Ref<HTMLButtonElement>;
-  /** Extra button attributes (title, data-cell-id, aria-*). */
+  /** Extra button attributes (title, data-tihoka-id, aria-*). */
   readonly buttonProps?: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick' | 'ref'> & Record<`data-${string}`, string | undefined>;
 }
 

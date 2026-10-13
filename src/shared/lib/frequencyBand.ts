@@ -73,6 +73,32 @@ export function pickBestFrequencyEntry(
   );
 }
 
+/** Map a frequency band to a 0-5 star count (core → 5★ … rare → 1★). */
+export function bandToStars(band: TokenFrequencyBand): number {
+  switch (band) {
+    case 'core': return 5;
+    case 'common': return 4;
+    case 'general': return 3;
+    case 'advanced': return 2;
+    case 'rare': return 1;
+    default: return 0;
+  }
+}
+
+/** Inverse of bandToStars — dictionary-embedded star counts ride the same
+ *  0-5 scale (formatDefEntry prints them as ★/5), so a count maps back to
+ *  the band whose color the chip must wear. */
+export function starsToBand(stars: number): TokenFrequencyBand {
+  switch (Math.round(stars)) {
+    case 5: return 'core';
+    case 4: return 'common';
+    case 3: return 'general';
+    case 2: return 'advanced';
+    case 1: return 'rare';
+    default: return 'none';
+  }
+}
+
 export function entriesToBand(
   entries: readonly FrequencyEntry[],
   opts?: { readonly thresholds?: FrequencyBandThresholds; readonly resourcePriority?: readonly number[] },

@@ -1,6 +1,6 @@
-# Cell Design System Standard
+# Tihoka Design System Standard
 
-> Foundation contract cho toàn bộ UI của Cell.
+> Foundation contract cho toàn bộ UI của Tihoka.
 > Mọi component, token, icon, layout phải tuân theo document này.
 > Source of truth: `src/shared/styles/tokens.json` (giá trị) + document này (nguyên tắc, vai trò, naming, kiểm tra).
 
@@ -8,7 +8,7 @@
 
 ## 0. Quiet confidence — bản sắc foundation
 
-Cell hướng đến **quiet confidence**: calm, focused, learnable, điềm đạm, có hứng thú học tập, đơn giản, thanh lịch.
+Tihoka hướng đến **quiet confidence**: calm, focused, learnable, điềm đạm, có hứng thú học tập, đơn giản, thanh lịch.
 
 Các nguyên tắc áp dụng cho mọi quyết định UI:
 
@@ -199,7 +199,7 @@ Base unit 4px. Scale names: `0`, `0-5`, `1`, `1-5`, `2`, `2-5`, `3`, `3-5`, `4`,
 
 ### 5.2 Density
 
-Cell dùng **một adaptive density duy nhất**, không có density selector.
+Tihoka dùng **một adaptive density duy nhất**, không có density selector.
 - Mặc định là `comfortable`.
 - Context compact (list dài, data dày đặc) có thể giảm padding/gap qua component token hoặc lớp wrapper, không tạo token density mới.
 
@@ -310,9 +310,8 @@ Tôn trọng `prefers-reduced-motion: reduce`. CSS global reset đã trong `toke
 
 ### 10.3 Pointer target
 
-- Coarse pointer: ≥ 44px.
-- Fine pointer: ≥ 40px.
-- Dùng `--touch-target-mobile` / `--touch-target-desktop` (theme-independent).
+- ≥ 40px cả coarse và fine pointer.
+- Dùng `--touch-target` (alias theo pointer) hoặc `--touch-target-mobile` / `--touch-target-desktop` (theme-independent).
 
 ### 10.4 Focus
 

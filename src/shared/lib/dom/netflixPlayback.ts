@@ -88,14 +88,14 @@ export function seekToCue(video: HTMLVideoElement, cue: { start: number }, offse
 }
 
 /**
- * ADR-031: Netflix UI z-index fix — move Cell UI elements to `.watch-video`
+ * ADR-031: Netflix UI z-index fix — move Tihoka UI elements to `.watch-video`
  * (parent of Netflix's active/inactive wrappers) + set z-index max.
  *
  * Netflix has 2 sibling wrappers (`active`/`inactive`, class
  * `default-ltr-iqcdef-cache-fntwn3`). On hover, Netflix activates the
  * `active` wrapper which covers the `inactive` one — blocking clicks on
- * Cell UI appended into the `inactive` branch. Moving UI to their common
- * parent (`.watch-video`, position:fixed) + z-index var(--z-overlay-video) puts Cell
+ * Tihoka UI appended into the `inactive` branch. Moving UI to their common
+ * parent (`.watch-video`, position:fixed) + z-index var(--z-overlay-video) puts Tihoka
  * UI above both wrappers in the same stacking context, but below the
  * settings dialog (var(--z-overlay-settings)), dictionary popup (var(--z-overlay-top)) and Card
  * Creator (var(--z-overlay-secondary)) so those float above the subtitle block.
@@ -107,7 +107,7 @@ export function seekToCue(video: HTMLVideoElement, cue: { start: number }, offse
  *
  * Non-Netflix: no-op (UI stays in original container).
  *
- * @param el - Top-level Cell UI element (subtitle-block, toolbar, panel, etc.)
+ * @param el - Top-level Tihoka UI element (subtitle-block, toolbar, panel, etc.)
  * @param container - Original video container (source of `data-theme`)
  */
 export function mountToWatchVideo(el: HTMLElement, container: HTMLElement): void {

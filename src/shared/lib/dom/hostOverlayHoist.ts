@@ -1,10 +1,10 @@
 // Hoists host-page overlay roots (menus, sheets, dialogs, toasts) into a
-// Cell shadow host while a Cell surface owns the fullscreen layer. Host
+// Tihoka shadow host while a Tihoka surface owns the fullscreen layer. Host
 // popups either live outside the fullscreen subtree (can't paint at all —
 // m.youtube BOTTOM-SHEET-CONTAINER in YTM-APP) or inside the slotted player
 // container where the stage wrap (transform/overflow clip) breaks their
 // positioning. Moving the outermost overlay root to a direct child of the
-// shadow host — assigned to the "cell-host-popup" slot — projects it into
+// shadow host — assigned to the "Tihoka-host-popup" slot — projects it into
 // the popup stage at viewport level with its original page CSS intact.
 
 const OVERLAY_NAME_RE =
@@ -28,7 +28,7 @@ const OVERLAY_DESCENDANT_QUERY =
   '[class*="menu" i],[class*="popup" i],[class*="dialog" i],[class*="modal" i],' +
   '[class*="sheet" i],[class*="dropdown" i],[class*="toast" i],[class*="popover" i],' +
   '[class*="drawer" i],[class*="snackbar" i],[class*="lightbox" i]';
-const OVERLAY_SLOT = 'cell-host-popup';
+const OVERLAY_SLOT = 'Tihoka-host-popup';
 
 const isSemanticOverlay = (el: HTMLElement): boolean => {
   const role = el.getAttribute('role');
@@ -106,16 +106,16 @@ export function startHostOverlayHoist(shadowHost: HTMLElement): () => void {
     { parent: Node | null; next: Node | null; pointerEvents: string }
   >();
 
-  // NOTE: [data-cell-player-mode] must NOT be a closest() exclusion — Player
-  // Mode sets data-cell-player-mode on <html> itself while active, which
+  // NOTE: [data-tihoka-player-mode] must NOT be a closest() exclusion — Player
+  // Mode sets data-tihoka-player-mode on <html> itself while active, which
   // would exclude every element in the document. The center style marker is
   // already covered by the script/style filter below.
   const isExcluded = (el: HTMLElement): boolean =>
     el === shadowHost ||
     el.contains(shadowHost) ||
-    el.getAttribute('slot') === 'cell-video' ||
-    el.closest('#cell-universal-panel-host,#cell-manager-portal') !== null ||
-    el.closest('[data-cell-id]') !== null ||
+    el.getAttribute('slot') === 'Tihoka-video' ||
+    el.closest('#Tihoka-universal-panel-host,#Tihoka-manager-portal') !== null ||
+    el.closest('[data-tihoka-id]') !== null ||
     el.closest('script,style,template,noscript') !== null;
 
   const adopt = (root: HTMLElement, parent: Node | null, next: Node | null): void => {
@@ -131,7 +131,7 @@ export function startHostOverlayHoist(shadowHost: HTMLElement): () => void {
     // inherit that, so pin each root's own value — read AFTER slotting so
     // previously unrendered roots (framework-appended to the host) resolve
     // their stylesheet value. Pass-through containers
-    // (cdk-overlay-container) keep passing clicks to Cell UI.
+    // (cdk-overlay-container) keep passing clicks to Tihoka UI.
     root.style.pointerEvents = getComputedStyle(root).pointerEvents;
   };
 

@@ -25,10 +25,10 @@ describe('SectionHeader', () => {
     expect(screen.getByRole('heading', { level: 3, name: 'Solo' })).toBeInTheDocument();
   });
 
-  it('passes data-cell-id through to the header element', () => {
-    render(<SectionHeader title="T" data-cell-id="res-header" />);
+  it('passes data-tihoka-id through to the header element', () => {
+    render(<SectionHeader title="T" data-tihoka-id="res-header" />);
     expect(screen.getByRole('heading').parentElement?.parentElement).toHaveAttribute(
-      'data-cell-id',
+      'data-tihoka-id',
       'res-header',
     );
   });

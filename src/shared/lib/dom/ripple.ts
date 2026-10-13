@@ -1,6 +1,6 @@
-const RIPPLE_ATTR = 'data-cell-ripple';
-const SELF_ATTR = 'data-cell-ripple-self';
-const SKIP_ATTR = 'data-cell-no-ripple';
+const RIPPLE_ATTR = 'data-tihoka-ripple';
+const SELF_ATTR = 'data-tihoka-ripple-self';
+const SKIP_ATTR = 'data-tihoka-no-ripple';
 const REMOVE_FALLBACK_MS = 1200;
 const delegatedRoots = new WeakSet<ShadowRoot | Document>();
 
@@ -10,7 +10,10 @@ export function spawnRipple(host: HTMLElement, clientX: number, clientY: number)
   const radius = diameter / 2;
   const computed = getComputedStyle(host);
   if (computed.position === 'static') host.style.position = 'relative';
-  if (computed.overflow === 'visible') host.style.overflow = 'hidden';
+  // `clip` (not `hidden`): it doesn't make the host a scroll container, so a
+  // flex/grid child's content-based min-size survives — `hidden` resolves it
+  // to 0 and pressed rows collapse inside scrollable column lists.
+  if (computed.overflow === 'visible') host.style.overflow = 'clip';
   const span = host.ownerDocument.createElement('span');
   span.setAttribute(RIPPLE_ATTR, '');
   span.style.width = span.style.height = `${diameter}px`;

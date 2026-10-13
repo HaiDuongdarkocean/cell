@@ -1,0 +1,58 @@
+.dropzone {
+  border: var(--border-width-hairline) dashed var(--color-divider);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--duration-normal) var(--ease-in-out),
+              background-color var(--duration-normal) var(--ease-in-out);
+
+}
+
+.compact {
+  padding: var(--space-3);
+}
+
+.dropzone:hover:not(.disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.dropzone:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+
+.dragging {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.label {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  font-family: var(--font-family);
+}
+
+.hint {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family);
+}
+
+.input {
+  display: none;
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .dropzone { transition: none; animation: none; }
+}

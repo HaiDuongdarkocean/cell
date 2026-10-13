@@ -202,7 +202,6 @@ export const DEFAULT_CARD_CREATOR_SETTINGS: CardCreatorSettings = {
   // schema v29: per-note-type field mappings (edited in Settings → Card Creator).
   fieldMappings: {},
   audioFallback: 'community-then-tts',
-  frequencyDisplay: 'stars',
 };
 
 /** Default Pronunciation settings (spec ocean-pronunciation-engine + local-pronunciation-audio — schema v26). */
@@ -268,6 +267,8 @@ export const DEFAULT_TTS_SETTINGS: TtsSettings = {
   localTtsLanguage: 'en',
   downloadedLanguages: [],
   hiddenLanguages: [],
+  supertonicVoices: ['M1'],
+  supertonicDownloadedVoices: [],
 };
 
 /** Default Dictionary Popup settings (spec §9.3 — schema v14). */
@@ -288,6 +289,7 @@ export const DEFAULT_DICTIONARY_POPUP_SETTINGS: DictionaryPopupSettings = {
   badgePointerTrigger: { position: 'center', size: 36, pointerScale: 0.25 },
   translationVisibility: 'hidden',
   includeAllExamplesOnDefSelect: false,
+  frequencyDisplay: 'stars',
 };
 
 export const DEFAULT_CONDENSED_AUDIO_SETTINGS: CondensedAudioSettings = {
@@ -329,12 +331,12 @@ export const DEFAULT_SETTINGS: Settings = {
   // ADR-021: auto-translate target→native when site has no native track.
   // Default true — kim chỉ nam "user vào và học thôi" (auto-dịch khi native thiếu).
   subtitleOverlayAutoTranslate: true,
-  // Reading annotations (spec reading-annotation, schema v36): default OFF at
-  // the flat level — zh profiles carry true; flat value mirrors active profile.
-  showReadings: false,
-  // Word-translation glosses (spec word-translation, schema v37): flat level
+  // Reading annotations (spec reading-annotation, schema v41): default OFF at
+  // the flat level — zh profiles carry 'always'; flat value mirrors active profile.
+  readingDisplay: 'off',
+  // Word-translation glosses (spec word-translation, schema v41): flat level
   // mirrors the active profile; default OFF for all targets.
-  showWordTranslations: false,
+  glossDisplay: 'off',
   subtitleOverlayTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET,
   subtitleOverlayNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
   subtitlePreference: {},

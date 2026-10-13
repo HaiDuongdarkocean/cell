@@ -403,11 +403,26 @@ export const TtsFetchAudioResponseSchema = z.object({
 export const PronunciationEspeakTtsPayloadSchema = z.object({
   text: z.string().min(1).max(2000),
   langCode: z.string().length(2),
+  rate: z.number().min(50).max(450).optional(),
 });
 
 export const PronunciationEspeakTtsResponseSchema = z.object({
   audioBytes: z.unknown().optional(),
   audioBytesB64: z.string().optional(),
+});
+
+// === Supertonic offscreen TTS (PRONUNCIATION_SUPERTONIC_TTS) — returns WAV bytes ===
+
+export const PronunciationSupertonicTtsPayloadSchema = z.object({
+  text: z.string().min(1).max(2000),
+  langCode: z.string().length(2),
+  voices: z.array(z.string().min(1)).max(3).optional(),
+});
+
+export const PronunciationSupertonicTtsResponseSchema = z.object({
+  items: z
+    .array(z.object({ voice: z.string(), audioBytesB64: z.string() }))
+    .optional(),
 });
 
 // === Media URL fetch (FETCH_MEDIA_URL) — fetch external URL via background (CSP bypass) ===
@@ -457,6 +472,7 @@ export const TtsSpeakLocalPayloadSchema = z.object({
 export const TtsDownloadVoicePayloadSchema = z.object({
   language: z.string().length(2),
   jobId: z.string().optional(),
+  voice: z.string().min(1).optional(),
 });
 
 export const TtsDownloadProgressPayloadSchema = z.object({

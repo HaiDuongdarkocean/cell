@@ -12,7 +12,7 @@ export interface SegmentedOption<T extends string> {
   readonly ariaLabel?: string;
   /** Optional native tooltip. */
   readonly title?: string;
-  /** data-cell-id for tests. */
+  /** data-tihoka-id for tests. */
   readonly testId?: string;
 }
 
@@ -30,8 +30,8 @@ export interface SegmentedControlProps<T extends string> {
   /** Accessible group label (rendered as `aria-label` on the radiogroup). */
   readonly ariaLabel: string;
   readonly className?: string;
-  /** data-cell-id for the group element. */
-  readonly 'data-cell-id'?: string;
+  /** data-tihoka-id for the group element. */
+  readonly 'data-tihoka-id'?: string;
 }
 
 /**
@@ -55,7 +55,7 @@ export function SegmentedControl<T extends string>({
   size = 'sm',
   ariaLabel,
   className,
-  'data-cell-id': dataCellId,
+  'data-tihoka-id': dataTihokaId,
 }: SegmentedControlProps<T>): ReactElement {
   const rootCls = [styles.root, styles[variant], className ?? ''].filter(Boolean).join(' ');
   const activeIdx = options.findIndex((o) => o.value === value);
@@ -81,7 +81,7 @@ export function SegmentedControl<T extends string>({
   };
 
   return (
-    <div role="radiogroup" aria-label={ariaLabel} className={rootCls} data-cell-id={dataCellId}>
+    <div role="radiogroup" aria-label={ariaLabel} className={rootCls} data-tihoka-id={dataTihokaId}>
       {options.map((option, i) => (
         <button
           key={option.value}
@@ -92,7 +92,7 @@ export function SegmentedControl<T extends string>({
           title={option.title}
           tabIndex={i === focusIdx ? 0 : -1}
           data-value={option.value}
-          data-cell-id={option.testId}
+          data-tihoka-id={option.testId}
           data-compact-hit={variant === 'chips' || undefined}
           className={
             variant === 'chips'

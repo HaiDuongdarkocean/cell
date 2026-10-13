@@ -1,6 +1,6 @@
 // Child iframe context detection.
 //
-// Cell content scripts run in all frames (`all_frames: true`). Many subtitle
+// Tihoka content scripts run in all frames (`all_frames: true`). Many subtitle
 // flows differ between the top-level page and a cross-origin iframe that hosts
 // the actual player (e.g. AnimeKai/megaplay, moviepire/vidnest). This tiny
 // helper is the single source of truth for that branch.

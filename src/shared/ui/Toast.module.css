@@ -24,7 +24,7 @@
   -webkit-backdrop-filter: blur(var(--blur-md));
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  animation: cell-toast-in var(--duration-normal) var(--ease-standard);
+  animation: Tihoka-toast-in var(--duration-normal) var(--ease-standard);
   transition:
     background-color var(--duration-normal) var(--ease-standard),
     color var(--duration-normal) var(--ease-standard);
@@ -51,26 +51,26 @@
 }
 
 .toast.leaving {
-  animation: cell-toast-out var(--duration-slow) var(--ease-standard) forwards;
+  animation: Tihoka-toast-out var(--duration-slow) var(--ease-standard) forwards;
 }
 
 .icon {
   display: inline-flex;
   flex-shrink: 0;
-  animation: cell-toast-icon-in var(--duration-normal) var(--ease-standard);
+  animation: Tihoka-toast-icon-in var(--duration-normal) var(--ease-standard);
 }
 
 .iconSpin {
   animation:
-    cell-toast-icon-in var(--duration-normal) var(--ease-standard),
-    cell-toast-spin var(--duration-1000) linear infinite;
+    Tihoka-toast-icon-in var(--duration-normal) var(--ease-standard),
+    Tihoka-toast-spin var(--duration-1000) linear infinite;
 }
 
 .message {
   white-space: nowrap;
 }
 
-@keyframes cell-toast-in {
+@keyframes Tihoka-toast-in {
   from {
     opacity: 0;
     transform: translateY(8px);
@@ -81,14 +81,14 @@
   }
 }
 
-@keyframes cell-toast-out {
+@keyframes Tihoka-toast-out {
   to {
     opacity: 0;
     transform: translateY(-12px);
   }
 }
 
-@keyframes cell-toast-icon-in {
+@keyframes Tihoka-toast-icon-in {
   from {
     opacity: 0;
     transform: scale(0.6);
@@ -99,7 +99,7 @@
   }
 }
 
-@keyframes cell-toast-spin {
+@keyframes Tihoka-toast-spin {
   to {
     transform: rotate(360deg);
   }

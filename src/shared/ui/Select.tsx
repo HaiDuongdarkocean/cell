@@ -60,8 +60,8 @@ export interface SelectProps {
   searchable?: boolean;
   /** Placeholder for the search input. */
   searchPlaceholder?: string;
-  /** Optional data-cell-id for the root element. */
-  'data-cell-id'?: string;
+  /** Optional data-tihoka-id for the root element. */
+  'data-tihoka-id'?: string;
   /** Accessible label for the trigger button. */
   'aria-label'?: string;
 }
@@ -91,7 +91,7 @@ export function Select({
   menuAlign = 'left',
   searchable = false,
   searchPlaceholder = t('ui.select.searchPlaceholder'),
-  'data-cell-id': dataTestId,
+  'data-tihoka-id': dataTestId,
   'aria-label': ariaLabel,
 }: SelectProps): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
@@ -439,7 +439,7 @@ export function Select({
   const portalContainer = getPortalContainer();
 
   return (
-    <div className={rootClass} ref={rootRef} data-cell-id={dataTestId}>
+    <div className={rootClass} ref={rootRef} data-tihoka-id={dataTestId}>
       {name && <input type="hidden" name={name} value={value ?? ''} />}
       <Button variant="secondary"
         ref={triggerRef}

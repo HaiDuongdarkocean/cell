@@ -15,12 +15,12 @@ describe('injectShadowCss', () => {
     const shadow = freshShadow();
     const cleanup = injectShadowCss(shadow, { css: ['.x { color: red; }'] });
 
-    const style = shadow.querySelector('style[data-cell-shadow-css]');
+    const style = shadow.querySelector('style[data-tihoka-shadow-css]');
     expect(style).not.toBeNull();
     expect(style!.textContent).toContain('.x { color: red; }');
 
     cleanup();
-    expect(shadow.querySelector('style[data-cell-shadow-css]')).toBeNull();
+    expect(shadow.querySelector('style[data-tihoka-shadow-css]')).toBeNull();
   });
 
   it('reuses the existing marked <style> on re-inject', () => {
@@ -28,7 +28,7 @@ describe('injectShadowCss', () => {
     injectShadowCss(shadow, { css: ['.a {}'] });
     injectShadowCss(shadow, { css: ['.b {}'] });
 
-    const styles = shadow.querySelectorAll('style[data-cell-shadow-css]');
+    const styles = shadow.querySelectorAll('style[data-tihoka-shadow-css]');
     expect(styles).toHaveLength(1);
     expect(styles[0]!.textContent).toContain('.b {}');
     expect(styles[0]!.textContent).not.toContain('.a {}');

@@ -31,7 +31,7 @@ export interface SheetProps {
   /** Custom className for the content area. */
   readonly contentClassName?: string;
   /** Test id. */
-  readonly 'data-cell-id'?: string;
+  readonly 'data-tihoka-id'?: string;
 }
 
 /**
@@ -53,7 +53,7 @@ export function Sheet({
   footer,
   className,
   contentClassName,
-  'data-cell-id': dataTestId,
+  'data-tihoka-id': dataTestId,
 }: SheetProps): React.JSX.Element | null {
   const {
     sheetRef,
@@ -102,7 +102,7 @@ export function Sheet({
       <div
         className={styles.handleGuard}
         aria-hidden="true"
-        data-cell-id="sheet-handle-guard"
+        data-tihoka-id="sheet-handle-guard"
         style={{ bottom: style.height }}
         onPointerDown={onPointerDownHandle}
       />
@@ -112,7 +112,7 @@ export function Sheet({
         role="dialog"
         aria-modal="true"
         aria-label={ariaLabel}
-        data-cell-id={dataTestId}
+        data-tihoka-id={dataTestId}
         style={style}
         onKeyDown={handleKeyDown}
         onKeyUp={handleKeyUp}

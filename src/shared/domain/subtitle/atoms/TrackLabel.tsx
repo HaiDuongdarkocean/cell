@@ -10,7 +10,7 @@ export interface TrackLabelProps {
   active: boolean;
   /** Optional HTML id. */
   id?: string;
-  /** Optional data-cell-id for testing. */
+  /** Optional data-tihoka-id for testing. */
   dataTestId?: string;
   /** Optional extra class name. */
   className?: string;
@@ -40,7 +40,7 @@ export function TrackLabel({
   return (
     <span
       id={id}
-      data-cell-id={dataTestId}
+      data-tihoka-id={dataTestId}
       className={cls}
       aria-current={active ? 'true' : undefined}
     >

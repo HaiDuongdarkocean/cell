@@ -176,7 +176,7 @@ export function Showcase(): ReactElement {
           <code style={{ color: 'var(--color-primary)', fontWeight: 'var(--font-weight-semibold)' }}>ref</code>
           <span>Ref&lt;HTMLButtonElement&gt; — forwarded</span>
           <code style={{ color: 'var(--color-primary)', fontWeight: 'var(--font-weight-semibold)' }}>buttonProps</code>
-          <span>title, data-cell-id, aria-* passthrough</span>
+          <span>title, data-tihoka-id, aria-* passthrough</span>
         </div>
       </section>
 

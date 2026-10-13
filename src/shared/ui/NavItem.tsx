@@ -45,7 +45,7 @@ export function NavItem({
   };
 
   return (
-    <button type="button" className={cls} disabled={disabled} title={tooltip ?? title} data-cell-ripple-self {...rest} onPointerDown={handlePointerDown}>
+    <button type="button" className={cls} disabled={disabled} title={tooltip ?? title} data-tihoka-ripple-self {...rest} onPointerDown={handlePointerDown}>
       <span className={styles.pill} aria-hidden="true" />
       {iconNode && <span className={styles.icon}>{iconNode}</span>}
       {label && <span className={styles.label}>{label}</span>}

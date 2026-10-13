@@ -29,14 +29,14 @@ export interface PopoverProps {
   /** Portal target override — needed when the surface must stay inside a
    *  high z-index stacking context (e.g. Player Mode overlay). */
   readonly container?: Element | DocumentFragment | null;
-  readonly 'data-cell-id'?: string;
+  readonly 'data-tihoka-id'?: string;
 }
 
 function getPortalContainer(trigger: HTMLElement | null): Element | DocumentFragment {
   if (!trigger) return document.body;
   const root = trigger.getRootNode();
   if (root instanceof ShadowRoot) {
-    const subtitlePanel = trigger.closest('[data-cell-id="subtitle-panel"]');
+    const subtitlePanel = trigger.closest('[data-tihoka-id="subtitle-panel"]');
     if (subtitlePanel) return subtitlePanel;
     return trigger.closest('[data-theme]') ?? root;
   }
@@ -57,7 +57,7 @@ export function Popover({
   contentRef,
   onKeyDown,
   container,
-  'data-cell-id': dataCellId,
+  'data-tihoka-id': dataTihokaId,
 }: PopoverProps): React.JSX.Element | null {
   const internalRef = useRef<HTMLDivElement>(null);
   const menuRef = contentRef ?? internalRef;
@@ -85,7 +85,7 @@ export function Popover({
         className={cls}
         style={style}
         role={role}
-        data-cell-id={dataCellId}
+        data-tihoka-id={dataTihokaId}
         aria-label={ariaLabel}
         aria-activedescendant={ariaActiveDescendant}
         onKeyDown={onKeyDown}

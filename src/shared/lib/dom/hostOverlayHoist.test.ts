@@ -40,7 +40,7 @@ describe('startHostOverlayHoist', () => {
     sheet.innerHTML = '<div>content</div>';
     await flush();
     expect(sheet.parentElement).toBe(host);
-    expect(sheet.getAttribute('slot')).toBe('cell-host-popup');
+    expect(sheet.getAttribute('slot')).toBe('Tihoka-host-popup');
     stop();
     expect(sheet.parentElement?.id).toBe('app');
     expect(sheet.hasAttribute('slot')).toBe(false);
@@ -114,7 +114,7 @@ describe('startHostOverlayHoist', () => {
     cdk.style.position = 'fixed';
     host.appendChild(cdk);
     await flush();
-    expect(cdk.getAttribute('slot')).toBe('cell-host-popup');
+    expect(cdk.getAttribute('slot')).toBe('Tihoka-host-popup');
     expect(cdk.parentElement).toBe(host);
     stop();
     expect(cdk.hasAttribute('slot')).toBe(false);
@@ -156,14 +156,14 @@ describe('startHostOverlayHoist', () => {
     stop();
   });
 
-  it('ignores cell-owned and non-overlay mutations', async () => {
+  it('ignores Tihoka-owned and non-overlay mutations', async () => {
     document.body.innerHTML = `
       <div id="host"></div>
-      <div data-cell-id="hint" style="position:fixed" class="menu"></div>
+      <div data-tihoka-id="hint" style="position:fixed" class="menu"></div>
       <div id="plain" style="position:fixed"></div>`;
     const host = document.getElementById('host')!;
     const stop = startHostOverlayHoist(host);
-    const hint = document.querySelector('[data-cell-id="hint"]')!;
+    const hint = document.querySelector('[data-tihoka-id="hint"]')!;
     const plain = document.getElementById('plain')!;
     hint.setAttribute('class', 'menu open');
     plain.appendChild(document.createElement('span'));
