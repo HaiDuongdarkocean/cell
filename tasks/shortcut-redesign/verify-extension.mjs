@@ -1,3 +1,4 @@
+/* global chrome, document */
 import { chromium } from '@playwright/test';
 import fs from 'node:fs';
 

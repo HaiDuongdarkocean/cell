@@ -97,6 +97,7 @@ export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDi
     } catch (e) {
       throw new DatabaseError('Failed to open SQLite database.', e);
     }
+    // eslint-disable-next-line no-useless-assignment -- release the source buffer while the Database lives on
     dbData = undefined;
 
     try {

@@ -212,7 +212,6 @@ test.describe('Unified resource import — one section, components from content'
     const list = panel.locator('[role="list"]').first();
 
     await frame.locator('[data-tihoka-id="dropzone-input"]').setInputFiles(filePath);
-    const card = list.locator('[data-tihoka-id="resource-card-10000"]');
     await expect(list.locator('[data-tihoka-id="enable-toggle-10000"]')).toBeAttached({ timeout: IMPORT_DONE_MS });
     await expect(frame.locator('[data-tihoka-id^="job-row-"]')).toHaveCount(0);
 

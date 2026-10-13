@@ -62,7 +62,7 @@ function App(): React.ReactElement {
           <p className="scrSubtitle">
             Each shortcut group becomes its own card; pills align on one right-edge rail per card;
             cards flow in a two-column masonry that collapses to one column under ~880px of content
-            width. The conflict pair ("Auto-translate subtitles" + "Search dictionary", both Shift+T)
+            width. The conflict pair (&quot;Auto-translate subtitles&quot; + &quot;Search dictionary&quot;, both Shift+T)
             shows the destructive pill border plus the existing conflict dot.
           </p>
           <div className="scrControls">
@@ -100,11 +100,11 @@ function App(): React.ReactElement {
             <li>Group label becomes the card header — same secondary group-label style as today.</li>
             <li>
               One key rail per card: labels keep min-width 0 and wrap (never truncate); the
-              ShortcutInput is flex-shrink 0 pinned to the card's right edge.
+              ShortcutInput is flex-shrink 0 pinned to the card&rsquo;s right edge.
             </li>
             <li>Hairline dividers between rows inside a card; no dividers between cards.</li>
             <li>
-              aria-invalid="true" gets a destructive pill border via a scoped mockup override —
+              aria-invalid=&quot;true&quot; gets a destructive pill border via a scoped mockup override —
               src/shared/ui is untouched.
             </li>
           </ul>

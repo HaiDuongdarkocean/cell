@@ -5,7 +5,6 @@ const OUT = 'tasks/shortcut-redesign';
 fs.mkdirSync(OUT, { recursive: true });
 
 const b = await chromium.connectOverCDP('http://127.0.0.1:9331');
-const c = b.contexts()[0];
 const pages = b.contexts().flatMap((x) => x.pages());
 const p = pages.find((x) => !x.url().startsWith('chrome')) ?? pages[0];
 if (!p) { console.log('NO PAGE'); process.exit(1); }
