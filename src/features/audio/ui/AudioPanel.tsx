@@ -7,7 +7,7 @@
 //   1. Output mode segmented control — a UI-only preset that overwrites
 //      pronunciation.fallbackEngines with the mode's engine chain (hint
 //      popover explains the replace behavior)
-//   2. AudioOrderList — numbered engine order next to the source detail
+//   2. AudioPipeline — horizontal engine chain with status dots
 //   3. SourceDetailPanel — per-engine config for the selected pipeline step
 //   Playback group:
 //   4. Compact audio tester (40px input + round play button inside)
@@ -18,7 +18,7 @@
 
 import { useMemo, useState, type ReactElement } from 'react';
 import { t, type MessageKey } from '@/shared/i18n';
-import { Button, Icon, Input, SegmentedControl, Select, SettingsGroup, SettingsRow } from '@/shared/ui';
+import { Button, Collapsible, Icon, Input, SegmentedControl, Select, SettingsGroup, SettingsRow } from '@/shared/ui';
 import type {
   AudioEngineKind,
   PronunciationSettings,
@@ -32,7 +32,7 @@ import {
   type EngineStatus,
   type OutputMode,
 } from '../lib/outputMode';
-import { AudioOrderList } from './AudioOrderList';
+import { AudioPipeline } from './AudioPipeline';
 import { SourceDetailPanel } from './SourceDetailPanel';
 import styles from './AudioPanel.module.css';
 
@@ -61,6 +61,9 @@ const AUTOPLAY_OPTION_KEYS = [
   { value: '3', label: 'audio.autoplay.option.three' },
 ] as const satisfies readonly { value: string; label: MessageKey }[];
 
+const AUTO_MODE = OUTPUT_MODES.find((m) => m.value === 'auto')!;
+const ADVANCED_MODES = OUTPUT_MODES.filter((m) => m.value !== 'auto');
+
 /** Language used by the compact tester. */
 const TEST_LANG_CODE = 'en';
 
@@ -84,6 +87,7 @@ export function AudioPanel({
 }: AudioPanelProps): ReactElement {
   const engines = pronunciation.fallbackEngines;
   const [selected, setSelected] = useState<AudioEngineKind | null>(null);
+  const [modesOpen, setModesOpen] = useState(false);
   const [testText, setTestText] = useState('');
   const [testStatus, setTestStatus] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
@@ -94,6 +98,8 @@ export function AudioPanel({
     selected && engines.includes(selected) ? selected : (engines[0] ?? null);
 
   const activeMode = detectMode(engines);
+  const advancedActive = activeMode !== null && activeMode !== 'auto';
+  const advancedVisible = modesOpen || advancedActive;
 
   const statuses = useMemo(() => {
     const map = {} as Record<AudioEngineKind, EngineStatus>;
@@ -163,39 +169,70 @@ export function AudioPanel({
           hintTestId="audio-mode-hint"
         >
           <SegmentedControl
-            variant="chips"
+            variant="raised"
             ariaLabel={t('audio.outputMode.aria')}
-            options={OUTPUT_MODES.map((mode) => ({
-              value: mode.value,
-              label: t(mode.label),
-              title: t(mode.desc),
-              testId: `audio-mode-${mode.value}`,
-            }))}
-            value={activeMode}
+            options={[
+              {
+                value: AUTO_MODE.value,
+                label: t(AUTO_MODE.label),
+                title: t(AUTO_MODE.desc),
+                testId: `audio-mode-${AUTO_MODE.value}`,
+              },
+            ]}
+            value={activeMode === 'auto' ? 'auto' : null}
             onChange={handleModeChange}
           />
+          <button
+            type="button"
+            className={styles.advancedToggle}
+            onClick={() => setModesOpen((o) => !o)}
+            aria-expanded={advancedVisible}
+            data-open={advancedVisible}
+            data-cell-id="audio-advanced-toggle"
+          >
+            <span className={styles.advancedLabel}>
+              {t('audio.modes.advanced')}
+              {advancedActive ? ` · ${t(ADVANCED_MODES.find((m) => m.value === activeMode)!.label)}` : ''}
+            </span>
+            <Icon name="chevronDown" size={16} />
+          </button>
+          <Collapsible collapsed={!advancedVisible}>
+            <div className={styles.advancedModes}>
+              <SegmentedControl
+              variant="raised"
+              ariaLabel={t('audio.modes.advanced.aria')}
+              options={ADVANCED_MODES.map((mode) => ({
+                value: mode.value,
+                label: t(mode.label),
+                title: t(mode.desc),
+                testId: `audio-mode-${mode.value}`,
+              }))}
+              value={advancedActive ? activeMode : null}
+              onChange={handleModeChange}
+            />
+            </div>
+          </Collapsible>
         </SettingsRow>
 
-        <div className={styles.console}>
-          <SettingsGroup label={<span className={styles.subLabel}>{t('audio.pipeline.title')}</span>}>
-            <AudioOrderList
-              engines={[...engines]}
-              selected={selectedEngine}
-              statuses={statuses}
-              onSelect={setSelected}
-            />
-          </SettingsGroup>
-          {selectedEngine && (
-            <SourceDetailPanel
-              engine={selectedEngine}
-              pronunciation={pronunciation}
-              tts={tts}
-              targetLang={targetLang}
-              onPronunciationChange={onPronunciationChange}
-              onTtsChange={onTtsChange}
-            />
-          )}
-        </div>
+        <SettingsGroup label={<span className={styles.subLabel}>{t('audio.pipeline.title')}</span>}>
+          <AudioPipeline
+            engines={[...engines]}
+            selected={selectedEngine}
+            statuses={statuses}
+            onSelect={setSelected}
+          />
+        </SettingsGroup>
+
+        {selectedEngine && (
+          <SourceDetailPanel
+            engine={selectedEngine}
+            pronunciation={pronunciation}
+            tts={tts}
+            targetLang={targetLang}
+            onPronunciationChange={onPronunciationChange}
+            onTtsChange={onTtsChange}
+          />
+        )}
 
         {/* Try it closes the pick→hear loop; it sits right after the source
             detail so the user does not scroll past it to test a change. */}
