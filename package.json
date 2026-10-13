@@ -17,6 +17,7 @@
     "build:mock": "vite build --mode mock",
     "postbuild": "node scripts/patch-ocr-csp.mjs",
     "ship:dist": "powershell -ExecutionPolicy Bypass -File scripts/ship-dist.ps1",
+    "ship:imobile": "node scripts/ship-mobile.mjs",
     "release": "powershell -ExecutionPolicy Bypass -File scripts/ship-dist.ps1 -Bump patch -Build",
     "release:minor": "powershell -ExecutionPolicy Bypass -File scripts/ship-dist.ps1 -Bump minor -Build",
     "release:major": "powershell -ExecutionPolicy Bypass -File scripts/ship-dist.ps1 -Bump major -Build",
