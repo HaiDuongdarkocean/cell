@@ -43,7 +43,9 @@ export function AppRedesigned(): React.JSX.Element {
   const themeMode = useThemeStore((state) => state.mode);
   const switchThemeMode = useThemeStore((state) => state.switchMode);
 
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(
+    () => new URLSearchParams(window.location.search).has('settings'),
+  );
   const [activeTab, setActiveTab] = useState<'media' | 'downloads'>('media');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isAutoDownloadActive, setIsAutoDownloadActive] = useState(false);
@@ -309,7 +311,7 @@ export function AppRedesigned(): React.JSX.Element {
   const selectionCount = selectedIds.size;
 
   return (
-    <div className={styles.popup} data-cell-id="app-root">
+    <div className={styles.popup} data-Tihoka-id="app-root">
       <Header
         isActive={isActive}
         onToggleExtension={toggle}
@@ -342,15 +344,15 @@ export function AppRedesigned(): React.JSX.Element {
           <div className={styles.tabContent} role="tabpanel">
             {hasMedia && (
               <div className={styles.actionsRow}>
-                <Button variant="link" size="sm" onClick={handleSelectAll} data-cell-id="select-all-btn">
+                <Button variant="link" size="sm" onClick={handleSelectAll} data-Tihoka-id="select-all-btn">
                   {allSelected ? t('downloads.action.deselectAll') : t('downloads.action.selectAll')}
                 </Button>
-                <Button variant="link" size="sm" onClick={handleDownload} data-cell-id="download-button">
+                <Button variant="link" size="sm" onClick={handleDownload} data-Tihoka-id="download-button">
                   {selectionCount > 0 ? t('downloads.action.downloadSelected', [selectionCount]) : t('downloads.action.downloadAll')}
                 </Button>
               </div>
             )}
-            <div className={styles.mediaList} role="list" data-cell-id="media-section">
+            <div className={styles.mediaList} role="list" data-Tihoka-id="media-section">
               {hasMedia ? (
                 <>
                   {videos.map((video) => (
@@ -387,7 +389,7 @@ export function AppRedesigned(): React.JSX.Element {
 
         {activeTab === 'downloads' && (
           <div className={styles.tabContent} role="tabpanel">
-            <div className={styles.downloadsList} role="list" data-cell-id="downloads-section">
+            <div className={styles.downloadsList} role="list" data-Tihoka-id="downloads-section">
               {downloads.length > 0 ? (
                 downloads.map((download) => (
                   <DownloadCard

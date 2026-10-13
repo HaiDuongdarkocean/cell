@@ -212,7 +212,7 @@ describe('LOCAL_AUDIO_OPEN_RECONNECT', () => {
     const res = await handler({ payload: {} }) as { success: boolean; data?: { tabId: number } };
     expect(res).toEqual({ success: true, data: { tabId: 7 } });
     expect(create).toHaveBeenCalledWith({
-      url: 'chrome-extension://ext/src/entrypoints/popup/index.html',
+      url: 'chrome-extension://ext/src/entrypoints/popup/index.html?settings=1',
     });
   });
 });

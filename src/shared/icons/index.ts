@@ -49,6 +49,8 @@ import {
   FolderOpen,
   Footprints,
   Gauge,
+  GripHorizontal,
+  GripVertical,
   Image,
   Info,
   Languages,
@@ -56,6 +58,7 @@ import {
   LayoutGrid,
   LayoutTemplate,
   Library,
+  Lightbulb,
   Link,
   Loader,
   Lock,
@@ -176,6 +179,8 @@ import chevronRightSvg from './svg/chevron-right.svg?raw';
 import chevronsLeftSvg from './svg/chevrons-left.svg?raw';
 import chevronsRightSvg from './svg/chevrons-right.svg?raw';
 import ellipsisSvg from './svg/ellipsis.svg?raw';
+import gripVerticalSvg from './svg/grip-vertical.svg?raw';
+import gripHorizontalSvg from './svg/grip-horizontal.svg?raw';
 import repeatSvg from './svg/repeat.svg?raw';
 import triangleAlertSvg from './svg/alert-triangle.svg?raw';
 import circleCheckSvg from './svg/circle-check.svg?raw';
@@ -185,6 +190,7 @@ import messageSquareSvg from './svg/message-square.svg?raw';
 import bookOpenSvg from './svg/book-open.svg?raw';
 import folderOpenSvg from './svg/folder-open.svg?raw';
 import librarySvg from './svg/library.svg?raw';
+import lightbulbSvg from './svg/lightbulb.svg?raw';
 import fileVideoSvg from './svg/file-video.svg?raw';
 import playRoundedRectSvg from './svg/play-square.svg?raw';
 import navPrevSvg from './svg/circle-chevron-left.svg?raw';
@@ -315,6 +321,8 @@ export const ICON_CATALOG = {
   chevronsLeft: { component: ChevronsLeft, svg: chevronsLeftSvg, source: 'lucide/chevrons-left', tags: ['chevron', 'left', 'first', 'back', 'arrow-left', 'double', 'pagination', 'skip-start'] } as IconEntry,
   chevronsRight: { component: ChevronsRight, svg: chevronsRightSvg, source: 'lucide/chevrons-right', tags: ['chevron', 'right', 'last', 'forward', 'arrow-right', 'double', 'pagination', 'skip-end'] } as IconEntry,
   ellipsis: { component: Ellipsis, svg: ellipsisSvg, source: 'lucide/ellipsis', tags: ['ellipsis', 'horizontal', 'more', 'dots', 'three-dots', 'pagination'] } as IconEntry,
+  gripVertical: { component: GripVertical, svg: gripVerticalSvg, source: 'lucide/grip-vertical', tags: ['grip', 'drag', 'handle', 'reorder', 'dots', 'six-dots', 'vertical'] } as IconEntry,
+  gripHorizontal: { component: GripHorizontal, svg: gripHorizontalSvg, source: 'lucide/grip-horizontal', tags: ['grip', 'drag', 'handle', 'reorder', 'dots', 'six-dots', 'horizontal'] } as IconEntry,
   repeat: { component: Repeat, svg: repeatSvg, source: 'lucide/repeat', tags: ['repeat', 'loop', 'cycle'] } as IconEntry,
   triangleAlert: { component: AlertTriangle, svg: triangleAlertSvg, source: 'lucide/alert-triangle', tags: ['warning', 'alert', 'triangle', 'caution'] } as IconEntry,
   circleCheck: { component: CircleCheck, svg: circleCheckSvg, source: 'lucide/circle-check', tags: ['success', 'check', 'circle', 'done', 'ok'] } as IconEntry,
@@ -324,6 +332,7 @@ export const ICON_CATALOG = {
   bookOpen: { component: BookOpen, svg: bookOpenSvg, source: 'lucide/book-open', tags: ['dictionary', 'book', 'lexicon'] } as IconEntry,
   folderOpen: { component: FolderOpen, svg: folderOpenSvg, source: 'lucide/folder-open', tags: ['folder', 'open', 'file', 'directory', 'browse'] } as IconEntry,
   library: { component: Library, svg: librarySvg, source: 'lucide/library', tags: ['library', 'collection', 'history', 'list', 'book-stack'] } as IconEntry,
+  lightbulb: { component: Lightbulb, svg: lightbulbSvg, source: 'lucide/lightbulb', tags: ['tip', 'note', 'idea', 'hint', 'insight'] } as IconEntry,
   fileVideo: { component: FileVideo, svg: fileVideoSvg, source: 'lucide/file-video', tags: ['file', 'video', 'media', 'document', 'filename'] } as IconEntry,
   playRoundedRect: { component: PlaySquare, svg: playRoundedRectSvg, source: 'lucide/play-square', tags: ['play', 'video', 'media', 'player', 'local-player', 'rounded', 'rectangle'] } as IconEntry,
   navPrev: { component: NavPrev, svg: navPrevSvg, source: 'phosphor/arrow-circle-left', tags: ['nav', 'prev', 'previous', 'back', 'sentence', 'arrow-circle-left', 'circle'] } as IconEntry,
@@ -368,7 +377,7 @@ export const ICON_CATALOG = {
   notebookPen: { component: NotebookPen, svg: notebookPenSvg, source: 'lucide/notebook-pen', tags: ['notebook', 'pen', 'flashcard', 'card', 'srs', 'notes', 'write', 'study'] } as IconEntry,
   atom: { component: Atom, svg: atomSvg, source: 'lucide/atom', tags: ['atom', 'orbital', 'electron', 'nucleus', 'particle', 'smallest-unit'] } as IconEntry,
   molecule: { component: Component, svg: moleculeSvg, source: 'lucide/component', tags: ['molecule', 'bond', 'triangle', 'atoms-combined', 'compound'] } as IconEntry,
-  organism: { component: Users, svg: organismSvg, source: 'lucide/users', tags: ['organism', 'cell', 'organelles', 'complex-unit', 'biological'] } as IconEntry,
+  organism: { component: Users, svg: organismSvg, source: 'lucide/users', tags: ['organism', 'Tihoka', 'organelles', 'complex-unit', 'biological'] } as IconEntry,
   wireframe: { component: LayoutTemplate, svg: wireframeSvg, source: 'lucide/layout-template', tags: ['wireframe', 'template', 'layout', 'scaffold', 'blueprint', 'sections'] } as IconEntry,
   windowPage: { component: AppWindow, svg: windowPageSvg, source: 'lucide/app-window', tags: ['page', 'window', 'browser', 'document', 'final', 'complete'] } as IconEntry,
   import: { component: Import, svg: importSvg, source: 'lucide/import', tags: ['import', 'anki', 'migrate', 'inbound', 'load', 'bring-in'] } as IconEntry,

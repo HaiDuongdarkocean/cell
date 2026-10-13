@@ -774,6 +774,8 @@
   "pronunciation.local.indexFailed": "Không dựng được chỉ mục",
   "pronunciation.local.permDenied": "Không có quyền đọc file .dsl.",
   "pronunciation.local.pickFailed": "Không đọc được thư mục gói",
+  "pronunciation.local.fsApiMissing": "Trình duyệt này không hỗ trợ chọn thư mục. Trên Brave, bật brave://flags/#file-system-access-api — hoặc dùng Chrome.",
+  "pronunciation.local.openExtensionPage": "Chọn thư mục phải thực hiện trên trang Cell — đang mở…",
   "pronunciation.local.indexed": "Đã dựng $1 mục.",
   "pronunciation.local.fileAccess": "Quyền đọc file",
   "pronunciation.local.reconnect": "Kết nối lại",

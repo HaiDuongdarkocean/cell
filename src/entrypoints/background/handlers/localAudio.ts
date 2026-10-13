@@ -182,7 +182,7 @@ export function registerLocalAudioHandlers(ctx: BackgroundContext): void {
 
   ctx.on(MESSAGE_TYPES.LOCAL_AUDIO_OPEN_RECONNECT, async (): Promise<MessageResponse<{ tabId: number }>> => {
     const tab = await chrome.tabs.create({
-      url: chrome.runtime.getURL('src/entrypoints/popup/index.html'),
+      url: chrome.runtime.getURL('src/entrypoints/popup/index.html?settings=1'),
     });
     if (tab.id === undefined) {
       return { success: false, error: 'Failed to create tab' };

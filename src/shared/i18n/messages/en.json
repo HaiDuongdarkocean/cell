@@ -774,6 +774,8 @@
   "pronunciation.local.indexFailed": "Couldn't build the index",
   "pronunciation.local.permDenied": "Permission denied for the DSL file.",
   "pronunciation.local.pickFailed": "Couldn't read the package folder",
+  "pronunciation.local.fsApiMissing": "This browser doesn't support folder picking. On Brave, enable brave://flags/#file-system-access-api — or use Chrome.",
+  "pronunciation.local.openExtensionPage": "Folder picking runs on the Cell page — opening it now…",
   "pronunciation.local.indexed": "Indexed $1 entries.",
   "pronunciation.local.fileAccess": "File access",
   "pronunciation.local.reconnect": "Reconnect",

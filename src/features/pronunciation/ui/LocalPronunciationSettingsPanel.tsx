@@ -12,6 +12,7 @@ import type { LocalFileAudioSettings, PronunciationSettings } from '@/entities/s
 
 import { JobRow, useJobs, useJobTerminalWatcher, dismissJob, retryJob, jobErrorText } from '@/features/jobs';
 import { Button } from '@/shared/ui/Button';
+import { Icon } from '@/shared/ui/Icon';
 import { Input } from '@/shared/ui/Input';
 import { SettingsRow } from '@/shared/ui/SettingsRow';
 import { VStack } from '@/shared/ui/Stack';
@@ -66,6 +67,14 @@ export function LocalPronunciationSettingsPanel({
   }, [archiveHandleId]);
 
   const reconnect = async (): Promise<void> => {
+    // Handles are origin-bound: one picked on a host page lives in that page's
+    // IndexedDB and permission scope — the background (extension origin) can
+    // never read it. Picking/reconnecting must run on the extension page.
+    if (location.protocol !== 'chrome-extension:') {
+      await sendMessage({ type: MESSAGE_TYPES.LOCAL_AUDIO_OPEN_RECONNECT, payload: {} });
+      setStatus(t('pronunciation.local.openExtensionPage'));
+      return;
+    }
     if (!archiveHandleId) return;
     const handle = await getFileHandle(archiveHandleId);
     if (!handle) return;
@@ -79,6 +88,15 @@ export function LocalPronunciationSettingsPanel({
   };
 
   const pickPackage = async (): Promise<void> => {
+    if (typeof window.showDirectoryPicker !== 'function') {
+      setStatus(t('pronunciation.local.fsApiMissing'));
+      return;
+    }
+    if (location.protocol !== 'chrome-extension:') {
+      await sendMessage({ type: MESSAGE_TYPES.LOCAL_AUDIO_OPEN_RECONNECT, payload: {} });
+      setStatus(t('pronunciation.local.openExtensionPage'));
+      return;
+    }
     setBusy(true);
     try {
       const dir = await window.showDirectoryPicker();
@@ -182,10 +200,10 @@ export function LocalPronunciationSettingsPanel({
       )}
 
       {status && (
-        <SettingsRow dense>
-          <span className={styles.rowLabel}>{t('pronunciation.local.status')}</span>
-          <span role="status">{status}</span>
-        </SettingsRow>
+        <p className={styles.note} role="status">
+          <Icon name="lightbulb" size="sm" color="secondary" />
+          <span>{status}</span>
+        </p>
       )}
 
       {indexJobs.map((job) => (

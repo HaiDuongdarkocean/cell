@@ -14,8 +14,7 @@
 
 import type { ReactElement, ReactNode } from 'react';
 import { t, type MessageKey } from '@/shared/i18n';
-import { Icon, SettingsRow, Text, Toggle } from '@/shared/ui';
-import type { ICON_CATALOG } from '@/shared/icons';
+import { SettingsRow, Text, Toggle } from '@/shared/ui';
 import type { AudioEngineKind, PronunciationSettings, TtsSettings } from '@/entities/settings/types';
 import { LocalPronunciationSettingsPanel } from '@/features/pronunciation';
 import { TtsLanguagePanel } from '@/features/tts';
@@ -38,14 +37,6 @@ const ENGINE_LABEL_KEYS: Record<AudioEngineKind, MessageKey> = {
   browserTts: 'audio.engine.browserTts',
   espeak: 'audio.engine.espeak',
 };
-
-const ENGINE_ICONS = {
-  localFile: 'folderOpen',
-  native: 'audioWave',
-  supertonic: 'download',
-  browserTts: 'play',
-  espeak: 'settings',
-} as const satisfies Record<AudioEngineKind, keyof typeof ICON_CATALOG>;
 
 export function SourceDetailPanel({
   engine,
@@ -104,9 +95,8 @@ export function SourceDetailPanel({
   }
 
   return (
-    <div className={styles.panel} data-engine={engine} data-cell-id="source-detail-panel">
+    <div className={styles.panel} data-engine={engine} data-Tihoka-id="source-detail-panel">
       <div className={styles.header}>
-        <Icon name={ENGINE_ICONS[engine]} size="sm" color="secondary" />
         <Text as="h4" className={styles.title}>
           {t(ENGINE_LABEL_KEYS[engine])}
         </Text>
