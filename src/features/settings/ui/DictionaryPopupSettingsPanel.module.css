@@ -24,8 +24,8 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  height: var(--iconbutton-size-sm);
-  min-height: var(--iconbutton-size-sm);
+  height: var(--chip-height);
+  min-height: var(--chip-height);
   padding: 0 var(--space-3);
   border: none;
   border-radius: var(--radius-full);

@@ -3,6 +3,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
+  min-height: var(--chip-height);
   border: var(--border-width-hairline) solid transparent;
   box-shadow: none;
   border-radius: var(--radius-pill);
@@ -15,7 +16,7 @@
 
 .chip.xs {
   min-height: 0;
-  height: var(--space-8);
+  height: var(--chip-height);
   padding: var(--space-1) var(--space-4);
   font-size: var(--font-size-sm);
 }

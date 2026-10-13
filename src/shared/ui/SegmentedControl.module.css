@@ -72,6 +72,7 @@
 }
 
 .accent .segment {
+  min-height: var(--chip-height);
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-pill);
   color: var(--color-text-muted);
@@ -109,6 +110,7 @@
 
 .filled .segment {
   flex: 1 1 auto;
+  min-height: var(--chip-height);
   padding: var(--space-1) var(--space-2-5);
   border-radius: var(--radius-pill);
   color: var(--color-text);
