@@ -26,47 +26,17 @@
   color: var(--color-text-disabled);
 }
 
-.advancedToggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  width: 100%;
-  padding: var(--space-1) 0;
-  background: none;
-  border: 0;
-  cursor: pointer;
-  color: var(--color-text-secondary);
-  border-radius: var(--radius-sm);
+.console {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: var(--space-4);
+  align-items: start;
 }
 
-.advancedToggle:hover {
-  color: var(--color-text-primary);
-}
-
-.advancedToggle:focus-visible {
-  outline: var(--space-0-5) solid var(--color-border-focus);
-  outline-offset: var(--space-0-5);
-}
-
-.advancedLabel {
-  color: var(--color-text-primary);
-  font-size: var(--text-label-font-size);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--text-label-line-height);
-  letter-spacing: var(--text-label-letter-spacing);
-}
-
-.advancedToggle svg {
-  transition: transform var(--duration-fast) var(--ease-standard);
-}
-
-.advancedToggle[data-open="true"] svg {
-  transform: rotate(180deg);
-}
-
-.advancedModes {
-  padding-block-start: var(--space-2);
+@media (max-width: 720px) {
+  .console {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .status {

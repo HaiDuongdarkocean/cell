@@ -146,27 +146,15 @@ describe('AudioPanel', () => {
     );
   });
 
-  it('keeps advanced modes behind a disclosure that opens on demand', () => {
+  it('shows each order row with its status text', () => {
     renderPanel();
 
-    const toggle = screen.getByTestId('audio-advanced-toggle');
-    expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    expect(toggle).toHaveTextContent('More modes');
-
-    fireEvent.click(toggle);
-    expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  });
-
-  it('stays open and names the mode when an advanced mode is active', () => {
-    renderPanel({
-      pronunciation: makePronunciation({
-        fallbackEngines: ['localFile', 'espeak', 'supertonic'],
-      }),
-    });
-
-    const toggle = screen.getByTestId('audio-advanced-toggle');
-    expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    expect(toggle).toHaveTextContent('More modes · Offline');
+    expect(
+      screen.getByRole('button', { name: '1. Local audio files (needs setup)' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Browser voice \(ready\)/ }),
+    ).toBeInTheDocument();
   });
 
   it('updates the detail pane when a pipeline step is selected', () => {
