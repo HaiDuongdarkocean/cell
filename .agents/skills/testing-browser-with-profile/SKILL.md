@@ -1,6 +1,6 @@
 ---
 name: testing-browser-with-profile
-description: Brave debug browser for intermittent bugs - one isolated window per agent session.
+description: Brave debug browser for intermittent bugs - one isolated window per agent session. Includes the flow runner (script/run.mjs) — `youtube spamVerify` is the asserted regression gate for split-view changes.
 ---
 
 # Brave debug

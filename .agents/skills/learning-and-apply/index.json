@@ -3677,6 +3677,24 @@
       ],
       "trigger": "A global toggle shortcut uses the shared editable-target guard while the surface it opens autofocuses an input — the very flow the shortcut exists for (open then toggle back) dead-ends",
       "fix": "Match the binding first; skip isEditableTarget only when the binding has ctrl or alt — those combos cannot produce a character so they fire inside editable fields. Shift-only combos DO type characters (Shift+T = 'T') and must stay guarded alongside bare keys"
+    },
+    {
+      "type": "experience",
+      "id": "split-view-spamverify-gate",
+      "title": "After touching split-view layout, the spamVerify flow is the committed regression gate",
+      "category": [
+        "testing"
+      ],
+      "tags": [
+        "split-view",
+        "regression-gate",
+        "flow-runner",
+        "youtube",
+        "spam-t",
+        "keeper"
+      ],
+      "trigger": "Any change to subtitleSplitView.ts / findPlayerContainer.ts / split-view layout — the slot-keeper regressions (body-top wrapper, collapsed height, orphaned sheet panel) only appear under rotate+rapid-t races that unit tests cannot reach",
+      "fix": "After npm run build: probe.mjs --match youtube --ext --reload, then run.mjs youtube spamVerify — rotate + spam t x3 rounds with hard assertSplit gates (fails on body-top, 0-height, orphan panels). Green before commit."
     }
   ]
 }
