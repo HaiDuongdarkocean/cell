@@ -506,17 +506,22 @@ export function useSplitView({
       // Ponytail ceiling: fixed px width won't resize on browser resize;
       // upgrade path = parse computed flex-basis percentage (e.g. 58.3333%)
       // for responsive sizing. On re-open the width recalculates.
-      const insertParentCs = getComputedStyle(insertParent);
-      const insertParentIsFlexRow = insertParentCs.display === 'flex'
-        && (insertParentCs.flexDirection === 'row'
-          || insertParentCs.flexDirection === 'row-reverse');
-      const hasFlexSiblings = insertParentIsFlexRow
-        && Array.from(insertParent.children)
-          .filter((c) => c !== playerShell
-            && c !== oldWrapper
-            && !(c as HTMLElement).hasAttribute?.('data-tihoka-split-view')
-            && c.getBoundingClientRect().width > 0)
-          .length > 0;
+      let insertParentIsFlexRow = false;
+      let hasFlexSiblings = false;
+      const refreshInsertParentLayout = (parent: HTMLElement): void => {
+        const cs = getComputedStyle(parent);
+        insertParentIsFlexRow = cs.display === 'flex'
+          && (cs.flexDirection === 'row' || cs.flexDirection === 'row-reverse');
+        hasFlexSiblings = insertParentIsFlexRow
+          && Array.from(parent.children)
+            .filter((c) => c !== playerShell
+              && c !== oldWrapper
+              && c !== wrapper
+              && !(c as HTMLElement).hasAttribute?.('data-tihoka-split-view')
+              && c.getBoundingClientRect().width > 0)
+            .length > 0;
+      };
+      refreshInsertParentLayout(insertParent);
       const wrapperFlex = !insertParentIsFlexRow
         ? '0 0 auto'
         : hasFlexSiblings
@@ -676,13 +681,28 @@ export function useSplitView({
       }
       const recalcWrapperLayout = (): void => {
         if (!wrapper?.isConnected) return;
+        // The keeper probe can miss at open — the shell may be pinned
+        // (fixed) while its slot scrolled off-viewport, or the host may not
+        // have sized the slot yet (transient 0x0). Recalc already runs on
+        // mutations, so retry here: once the keeper resolves, move the
+        // wrapper into the real slot and collapse the keeper.
+        if (shellOutOfFlow && !slotKeeper) {
+          const found = findFlowSlotKeeper(playerShell);
+          if (found?.parentElement) {
+            slotKeeper = found;
+            slotKeeperDisplay = found.style.display;
+            found.parentElement.insertBefore(wrapper, found);
+            found.style.setProperty('display', 'none');
+            refreshInsertParentLayout(found.parentElement);
+          }
+        }
         const rect = wrapper.getBoundingClientRect();
         // Row layout needs stage (min 200) + panel (min 200) + handle —
         // below the column breakpoint that cannot fit, so stack the panel
         // under the video instead of pushing it off-screen. The slot width
         // comes from the parent, not the wrapper: the wrapper may still
         // carry a stale px flex-basis that overflows the viewport.
-        const slotW = Math.max(insertParent.clientWidth, 1);
+        const slotW = Math.max((wrapper.parentElement ?? insertParent).clientWidth, 1);
         // Mobile viewport → the panel leaves the page flow and floats as a
         // bottom sheet (video keeps its natural slot). A narrow slot on a
         // wide viewport stacks column-in-place instead.

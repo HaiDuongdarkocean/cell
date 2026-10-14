@@ -74,28 +74,69 @@ function liftToOverlayOwner(shell: HTMLElement): HTMLElement {
 // THAT slot, not the shell's DOM position: wrapping a body-level absolute
 // shell in place lands the wrapper at the page top under fixed chrome and
 // pushes the whole feed down. elementsFromPoint below the shell's own
-// subtree finds the keeper without any host selector.
+// subtree finds the keeper without any host selector; when the probe point
+// is off-viewport (sticky shell pinned while the page scrolled the slot
+// away) a document-space containment walk over the shell's home box finds
+// the same element — the slot never moves even when the shell does.
 export function findFlowSlotKeeper(shell: HTMLElement): HTMLElement | null {
   const rect = shell.getBoundingClientRect();
   if (rect.width < 1 || rect.height < 1) return null;
+  const accept = (el: Element): el is HTMLElement => {
+    if (!(el instanceof HTMLElement)) return false;
+    if (el === shell || shell.contains(el) || el.contains(shell)) return false;
+    if (el.hasAttribute('data-tihoka-split-view')) return false;
+    const cs = getComputedStyle(el);
+    if (cs.position === 'absolute' || cs.position === 'fixed') return false;
+    const r = el.getBoundingClientRect();
+    const wDiff = Math.abs(r.width - rect.width) / rect.width;
+    const hDiff = Math.abs(r.height - rect.height) / rect.height;
+    return wDiff <= DEFAULT_DIMENSION_TOLERANCE && hDiff <= DEFAULT_DIMENSION_TOLERANCE;
+  };
   const hits = document.elementsFromPoint(
     rect.left + rect.width / 2,
     rect.top + rect.height / 2,
   );
   for (const el of hits) {
-    if (!(el instanceof HTMLElement)) continue;
-    if (el === shell || shell.contains(el) || el.contains(shell)) continue;
-    if (el.hasAttribute('data-tihoka-split-view')) continue;
-    const cs = getComputedStyle(el);
-    if (cs.position === 'absolute' || cs.position === 'fixed') continue;
-    const r = el.getBoundingClientRect();
-    const wDiff = Math.abs(r.width - rect.width) / rect.width;
-    const hDiff = Math.abs(r.height - rect.height) / rect.height;
-    if (wDiff <= DEFAULT_DIMENSION_TOLERANCE && hDiff <= DEFAULT_DIMENSION_TOLERANCE) {
-      return el;
-    }
+    if (accept(el)) return el;
+  }
+  const shellStyle = getComputedStyle(shell);
+  const fixedTop = parseFloat(shellStyle.top);
+  const fixedLeft = parseFloat(shellStyle.left);
+  const docTop = shellStyle.position === 'fixed' && Number.isFinite(fixedTop)
+    ? fixedTop
+    : rect.top + window.scrollY;
+  const docLeft = shellStyle.position === 'fixed' && Number.isFinite(fixedLeft)
+    ? fixedLeft
+    : rect.left + window.scrollX;
+  const containing: HTMLElement[] = [];
+  collectDocPointElements(
+    document.body,
+    docLeft + rect.width / 2,
+    docTop + rect.height / 2,
+    containing,
+  );
+  for (let i = containing.length - 1; i >= 0; i--) {
+    if (accept(containing[i])) return containing[i];
   }
   return null;
+}
+
+function collectDocPointElements(
+  root: Element,
+  docX: number,
+  docY: number,
+  out: HTMLElement[],
+): void {
+  for (const child of Array.from(root.children)) {
+    if (!(child instanceof HTMLElement)) continue;
+    const r = child.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) continue;
+    const top = r.top + window.scrollY;
+    const left = r.left + window.scrollX;
+    if (docX < left || docX > left + r.width || docY < top || docY > top + r.height) continue;
+    out.push(child);
+    collectDocPointElements(child, docX, docY, out);
+  }
 }
 
 function hasCoveringSibling(candidate: HTMLElement, parent: HTMLElement): boolean {

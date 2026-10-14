@@ -443,6 +443,25 @@ describe('findPlayerContainer', () => {
       expect(findFlowSlotKeeper(shell)).toBe(keeper);
     });
 
+    it('falls back to a document-space walk when the slot scrolled out of view', () => {
+      const shell = document.createElement('div');
+      shell.style.position = 'fixed';
+      shell.style.top = '48px';
+      shell.style.left = '0px';
+      const column = document.createElement('div');
+      column.style.position = 'relative';
+      const placeholder = document.createElement('div');
+      column.appendChild(placeholder);
+      document.body.appendChild(column);
+      document.body.appendChild(shell);
+      setBoundingClientRect(shell, 667, 279);
+      setBoundingClientRect(column, 667, 2000);
+      setBoundingClientRect(placeholder, 667, 279);
+      mockHits([shell, column]);
+
+      expect(findFlowSlotKeeper(shell)).toBe(placeholder);
+    });
+
     it('rejects an in-flow element that only matches one dimension', () => {
       const shell = document.createElement('div');
       shell.style.position = 'absolute';
