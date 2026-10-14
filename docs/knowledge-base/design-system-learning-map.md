@@ -35,7 +35,7 @@ These constraints determine 80% of whether a UI looks coherent.
 - **Grid system**: 12-column grid, container, gutter
 - **Breakpoints**: mobile-first 320px → 768px → 1280px+
 - **Layout patterns**: stack, flex, grid, sidebar, card, dialog
-  - Tihoka reference: `docs/design-system/DESIGN.md` §4
+  - Tihoka reference: `.agents/skills/clean-design/knowledge/foundations/responsive.md`
 
 ### 1.5 Shape & Elevation
 - **Border radius scale**: xs, sm, md, lg, full, pill
@@ -52,7 +52,7 @@ These constraints determine 80% of whether a UI looks coherent.
 ### 1.7 Iconography
 - **Icon style**: filled / outlined / rounded, stroke, corner radius
 - **Icon sizes**: 16, 20, 24, 32, 48 px
-  - Tihoka reference: `docs/design-system/DESIGN.md` §6
+  - Tihoka reference: `.agents/skills/clean-design/knowledge/foundations/icons.md`
 
 ---
 
@@ -100,7 +100,7 @@ These constraints determine 80% of whether a UI looks coherent.
 - **Screen readers**: semantic HTML, ARIA, alt text
 - **Reduced motion**: `prefers-reduced-motion`
 - **Touch targets**: 44×44px mobile, 40×40px desktop
-  - Tihoka reference: `docs/design-system/DESIGN.md` §4.4
+  - Tihoka reference: `.agents/skills/clean-design/knowledge/foundations/responsive.md`
 
 ---
 
@@ -178,7 +178,7 @@ Trước khi thêm thứ gì, hỏi:
 | 1 | Color, spacing, tokens | Read `tokens.json` → understand `color-*`, `space-*` |
 | 2 | Typography, layout, shape | Edit `tokens.json` → run `node scripts/generate-tokens.js` → verify in design-system showcase |
 | 3 | Components, Atomic Design, states | Add or reuse a component in `src/shared/ui/` |
-| 4 | a11y, motion, visual taste | Audit a screen using the checklist in `docs/design-system/DESIGN.md` |
+| 4 | a11y, motion, visual taste | Audit a screen using the rubric in `.agents/skills/clean-design/knowledge/ops/audit.md` |
 
 ---
 
@@ -205,5 +205,5 @@ Apply this knowledge to:
 - `src/shared/styles/tokens.json` — canonical token source
 - `src/shared/styles/tokens.css` — generated artifact (do not edit directly)
 - `src/shared/ui/*` — shared component patterns
-- `docs/design-system/DESIGN.md` — implementation rules
+- `.agents/skills/clean-design/knowledge/` — implementation rules + design canon
 - `src/entrypoints/design-system-showcase/` — prototype before production

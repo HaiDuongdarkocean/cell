@@ -233,7 +233,7 @@ npm run build
 
 **Actions:**
 - Invoke `/design-system-guardian` on changed `.css`/`.module.css`/`.tsx` files.
-- Or run the audit commands from `docs/design-system/DESIGN.md`.
+- Or run the audit commands from `.agents/skills/clean-design/knowledge/ops/audit.md`.
 
 ## Step 7: Report
 

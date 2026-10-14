@@ -1,9 +1,9 @@
 # Design System — Codebase Reference
 
 > Single source of truth for AI agents writing UI code.
-> **Standard (ngôn ngữ chung + naming convention):** `src/shared/styles/STANDARD.md` — đọc đầu tiên.
+> **Design canon (rules + luật + audit):** skill `clean-design` — `.agents/skills/clean-design/knowledge/` — đọc đầu tiên khi design.
 > `tokens.json` = token source (sửa ở đây). `tokens.css` = generated artifact. `src/shared/ui/*.module.css` = component patterns.
-> Reference: `src/shared/styles/STANDARD.md` (design-system standards and best practices).
+> Reference: `.agents/skills/clean-design/` (design-system standards and best practices).
 
 ## Token file
 
@@ -99,12 +99,12 @@ import '@/shared/styles/tokens.css';
 
 ## Audit checklist
 
-See `src/shared/styles/STANDARD.md` §13 "Audit checklist (trước merge)" for the canonical pre-merge checks.
+See `.agents/skills/clean-design/knowledge/ops/audit.md` "Audit commands" for the canonical pre-merge checks.
 
 ## When to read what
 
-- **Bắt đầu session / viết UI mới** → đọc `src/shared/styles/STANDARD.md` (ngôn ngữ chung + naming convention)
-- Adding NEW component (not in inventory above) → đọc `src/shared/ui/` component gần nhất → bắt chước pattern
+- **Bắt đầu session / viết UI mới** → skill `clean-design` (`knowledge/` = ngôn ngữ chung + naming convention + audit)
+- Adding NEW component (not in inventory above) → đọc `src/shared/ui/` component gần nhất → bắt chước pattern → `clean-design/knowledge/ops/lifecycle.md`
 - Changing token value → sửa `tokens.json` → chạy `node scripts/generate-tokens.js` → xong
-- Unsure which variant to use → đọc component `.tsx` + `.module.css` trong `src/shared/ui/`
-- Tham khảo best practice → `src/shared/styles/STANDARD.md`
+- Unsure which variant to use → `clean-design/knowledge/method/behavior.md` (decision tables)
+- Tham khảo best practice → `clean-design/knowledge/`

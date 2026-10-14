@@ -1,6 +1,6 @@
 # MIGRATION — Tihoka Design System
 
-> From / To / Action cho mọi breaking change (DESIGN.md §10.3). Mới nhất ở trên.
+> From / To / Action cho mọi breaking change (`.agents/skills/clean-design/knowledge/ops/lifecycle.md` §breaking). Mới nhất ở trên.
 
 ## 2026-09-08 — Toggle theo theme + Card Creator pane về surface
 
@@ -63,7 +63,7 @@
 
 ## 2026-09-08 — Dark canvas trung tính + loại Liquid Glass
 
-**Lý do:** `docs/design-system/DESIGN_RATIONALE.md` (luật L-CANVAS, L-HOST, L-SCARCITY). Dark mode cũ nhuộm màu accent vào canvas → accent mất figural contrast.
+**Lý do:** `.agents/skills/clean-design/knowledge/why/philosophy.md` (luật L-CANVAS, L-HOST, L-SCARCITY). Dark mode cũ nhuộm màu accent vào canvas → accent mất figural contrast.
 
 ### From / To
 
@@ -84,7 +84,7 @@
 ### Action
 
 - Consumer dùng semantic token (`--color-surface`, `--color-background`…) → không cần đổi gì; giá trị tự thay sau regen.
-- CSS/TSX hardcode hex dark cũ → thay bằng token; audit command DESIGN.md §7.
+- CSS/TSX hardcode hex dark cũ → thay bằng token; audit commands trong `.agents/skills/clean-design/knowledge/ops/audit.md`.
 - Test snapshot giá trị hex → cập nhật snapshot.
 
 ### Trạng thái thực thi

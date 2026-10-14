@@ -14,7 +14,7 @@ description: Recurring 7-stage loop auditing the whole UI, planning redesigns, v
 ```text
 Form:  "Audit UX của <scope> vì <business problem có manh mối>. Chuẩn: <baseline>. Giới hạn: <điều cấm phá>."
 Bad:   "Redesign lại, nó quá xấu."            → hỏi lại: scope nào? xấu theo chuẩn nào? gây hại gì?
-Good:  "Audit UX 11 surfaces vì user không biết dùng màu/component nào cho ngữ cảnh nào. Chuẩn: DESIGN.md + L-BORDER. Giới hạn: không phá chức năng."
+Good:  "Audit UX 11 surfaces vì user không biết dùng màu/component nào cho ngữ cảnh nào. Chuẩn: clean-design audit + L-BORDER. Giới hạn: không phá chức năng."
 ```
 
 Missing input → route to `pipeline-analyze` (interactive) before stage 1.
@@ -24,7 +24,7 @@ Missing input → route to `pipeline-analyze` (interactive) before stage 1.
 |---|---|---|---|
 | 1 | **Discover** | Enter app, collect evidence on every screen (screenshots, DOM measures, console) | Output doc passes exit gate → 2 — spec: `discover-output.md` |
 | 2 | **Journey Audit** | Run real user journeys: entry → steps → exit; test empty/full/overflow + destructive | Defect + painpoint list → 3 |
-| 3 | **Diagnose** | Map to business/user goals; find missing/excess UI, wrong-context color, layout breaks; **every element must map to a shared component — unmapped → log + reason → reuse / new variant / specialized-with-justification** (DESIGN.md rule 9) | Root causes named → 4 |
+| 3 | **Diagnose** | Map to business/user goals; find missing/excess UI, wrong-context color, layout breaks; **every element must map to a shared component — unmapped → log + reason → reuse / new variant / specialized-with-justification** (clean-design golden guard) | Root causes named → 4 |
 | 4 | **Plan** | Write plan with AC/DoD per task; split work for delegation | Every task has AC → 5 |
 | 5 | **Execute** | Delegate tasks; blockers found mid-work become new tasks, fixed inline | Tasks done → 6 |
 | 6 | **Verify** | Review quality, critique, accept/reject per AC/DoD | All pass → 7; fail → back to 4 |

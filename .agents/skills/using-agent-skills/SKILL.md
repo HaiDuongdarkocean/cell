@@ -198,7 +198,7 @@ DELIVER   pipeline-deliver           → owns the rest:
             autonomous-pipeline (engine, M+ lanes) → parallel build + fresh-context verify
             observability-and-instrumentation → instrument as you build
             doubt-driven-development → cross-examine non-trivial decisions in-flight
-            design-system-guardian → UI audit vs DESIGN.md
+            design-system-guardian → UI audit vs clean-design canon
             pre-commit-gate → deterministic local checks
             code-review-and-quality + code-simplification → review
             git-workflow-and-versioning → clean history
@@ -228,7 +228,8 @@ Not every task needs every skill. A bug fix might only need: `debugging-and-erro
 | Build | source-driven-development | Verify against official docs before implementing |
 | Build | doubt-driven-development | Adversarial fresh-context review of every non-trivial decision |
 | Build | context-engineering | Right context at the right time |
-| Verify | design-system-guardian | Audit UI against DESIGN.md (token, component, layout) |
+| Design | clean-design | B0–B7 spec-first workflow: goal→content→consequence→anatomy→spec→prototype→behavior→audit; design canon SSOT |
+| Verify | design-system-guardian | Audit UI code against clean-design canon (token, component, layout) |
 | Verify | test-driven-development | Failing test first, then make it pass |
 | Verify | pre-commit-gate | Deterministic local checks (lint, typecheck, test, build, debt smell) before commit |
 | Verify | testing-with-playwright | Playwright E2E — fixtures + actors + stage2 specs, Tihoka + uBOLite loaded in Chromium |

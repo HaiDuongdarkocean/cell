@@ -94,7 +94,7 @@ Ordered by priority: a "no/unsure" higher up makes lower checks meaningless. Any
 - **3 Classify** — per element: reuse `src/shared/ui/*` / extend / create / remove; new tokens/components flagged with rationale.
 - **4 Audit** — per finding: Aspect | L1/L2/L3 question | Evidence | Standard | Severity | Current | Proposed | Risk. Stop at 1×P0 or 2×P1.
 - **5 Decide** — per finding mapped to token/component; feasibility check: no new deps, shadow-DOM safe, reduced-motion respected, no hardcode.
-- **6 Brief & Verify** — emit brief table; `DESIGN.md` §8 audits; typecheck+build if code changed; hand-off section when feeding `pipeline-design`.
+- **6 Brief & Verify** — emit brief table; audits theo `clean-design/knowledge/ops/audit.md`; typecheck+build if code changed; hand-off section when feeding `pipeline-design`.
 
 ## Output format
 

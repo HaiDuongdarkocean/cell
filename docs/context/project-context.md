@@ -1,6 +1,6 @@
 # Project Context — Tihoka
 
-> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Tihoka. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
+> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Tihoka. Luật thiết kế hiện hành: `.agents/skills/clean-design/knowledge/why/philosophy.md`; checklist: `.agents/skills/clean-design/knowledge/ops/audit.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
 
 > Context không thay đổi giữa các feature. Skill `elicitation` load file này đầu tiên.
 > Update khi user nói khác. Không tự sửa mà chưa confirm.

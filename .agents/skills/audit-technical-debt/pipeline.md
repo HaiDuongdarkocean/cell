@@ -11,7 +11,7 @@
 
 ## Phase 1 — Prepare
 
-1. Read `AGENTS.md`/`DESIGN.md` if present.
+1. Read `AGENTS.md` + `.agents/skills/clean-design/knowledge/` (design canon) if UI-related.
 2. Run the churn + file-size commands: `git log --stat --since='90 days ago' --pretty=format:'%H %s' | head -100` and `find . -type f -not -path '*/node_modules/*' -not -path '*/.git/*' | xargs wc -l | sort -nr | head -20`.
 3. Scope = user's named scope, else top 3 by churn.
 4. Write the scope line: `Audit <scope> to find debt blocking <default: velocity of the next 3 features>`.

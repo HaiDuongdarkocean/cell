@@ -3,7 +3,7 @@
 ## Step 0 — Load context
 
 1. Read `docs/context/project-context.md` → extract the design story (palette, shape, motion, persona, platform, constraints). It is SSOT — if it states a design story, use it; don't re-ask the user about style.
-2. Read `docs/design-system/DESIGN.md` + `src/shared/styles/README.md` for tokens and audit rules.
+2. Read `.agents/skills/clean-design/knowledge/` (design rules + audit canon) + `src/shared/styles/README.md` for token mechanics.
 3. Read `src/shared/styles/tokens.json` for the color/spacing/radius/shadow/motion vocabulary. **Do not read `src/shared/ui/*` yet.**
 4. If the topic touches shared language, read `docs/1-share-language.md`.
 5. If an `audit-ui-ux-then-redesign` brief exists, read it — every P0/P1 finding is a hard constraint.

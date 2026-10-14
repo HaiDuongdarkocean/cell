@@ -25,7 +25,7 @@ Turns any topic into precise questions → verified knowledge from **two sources
 
 ## Source policy (non-negotiable)
 
-Every topic answered from **both**: (1) codebase — `docs/`, `src/shared/`, `AGENTS.md`, `DESIGN.md` with file:line; (2) internet — `web_search` + `webfetch` 3–5 sources, SIFT-verified. **Conflict → codebase wins for project decisions, internet wins for domain principles.** State and resolve the conflict.
+Every topic answered from **both**: (1) codebase — `docs/`, `src/shared/`, `AGENTS.md`, `.agents/skills/clean-design/knowledge/` (design canon) with file:line; (2) internet — `web_search` + `webfetch` 3–5 sources, SIFT-verified. **Conflict → codebase wins for project decisions, internet wins for domain principles.** State and resolve the conflict.
 
 ## Workflow
 

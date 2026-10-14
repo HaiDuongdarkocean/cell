@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "generated": "2026-10-11T17:45:36.106Z",
-  "count": 54,
+  "generated": "2026-10-14T17:09:51.003Z",
+  "count": 56,
   "skills": [
     {
       "name": "animation-vocabulary",
@@ -37,6 +37,11 @@
       "name": "ci-cd-and-automation",
       "description": "Design and maintain CI/CD pipelines and automation. Use when creating or changing workflows, gates, or release automation.",
       "path": ".agents/skills/ci-cd-and-automation/SKILL.md"
+    },
+    {
+      "name": "clean-design",
+      "description": "Design or fix UI by running the B0–B7 decision workflow — goal, content, consequence, anatomy, spec, prototype, behavior, audit — where every value traces to tokens.json or a documented law. Use when creating, redesigning, specifying, or auditing screens, components, dialogs, or layouts. Not for code-level token/M3 audits (→ design-system-guardian) or multi-concept pipeline mockups (→ pipeline-design).",
+      "path": ".agents/skills/clean-design/SKILL.md"
     },
     {
       "name": "code-review-and-quality",
@@ -240,8 +245,13 @@
     },
     {
       "name": "testing-browser-with-profile",
-      "description": "Brave debug browser for intermittent bugs - one isolated window per agent session.",
+      "description": "Brave debug browser for intermittent bugs - one isolated window per agent session. Includes the flow runner (script/run.mjs) — `youtube spamVerify` is the asserted regression gate for split-view changes.",
       "path": ".agents/skills/testing-browser-with-profile/SKILL.md"
+    },
+    {
+      "name": "testing-extension-android",
+      "description": "Install a packed .crx into Quetta (or any Chromium Android browser) over ADB and verify it via CDP. Use for on-device extension install/testing. Not for desktop Chrome testing (→ testing-extension-browser).",
+      "path": ".agents/skills/testing-extension-android/SKILL.md"
     },
     {
       "name": "testing-extension-browser",

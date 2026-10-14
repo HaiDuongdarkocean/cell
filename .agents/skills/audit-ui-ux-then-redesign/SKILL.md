@@ -34,7 +34,7 @@ Every finding must: start with a question naming the design tension → name the
 
 ## Source policy
 
-- **Codebase wins.** Read `docs/design-system/DESIGN.md`, `src/shared/styles/STANDARD.md`, `tokens.json`, `src/shared/ui/*`, `docs/adr/` first.
+- **Codebase wins.** Read `.agents/skills/clean-design/knowledge/` (design canon), `tokens.json`, `src/shared/ui/*`, `docs/adr/` first.
 - External sources allowed when the codebase is silent — state why you used them and reconcile conflicts (default: codebase).
 - **SSOT check before any proposal:** if a fix requires editing >1 file, it probably belongs in the shared token/component, not the page.
 
@@ -55,7 +55,7 @@ Strategy & Purpose · Interaction Flow · Information Architecture · Visual Sys
 - **Scope:** mobile-first by default (persona: 5–80 on any device). Produce a one-sentence Design Read.
 - **Classify:** every element → reuse `src/shared/ui/*` / extend / create / remove (layer rules + decision tree: `TAXONOMY.md`).
 - **Stop rule:** one P0 or two P1 findings that explain the user's feedback. Don't chase P2/P3 unless asked.
-- **Verify:** design-system audit commands from `DESIGN.md` §8; `npm run typecheck && npm run build` if code changed; append `## Hand-off to pipeline-design` when the audit feeds a redesign.
+- **Verify:** design-system audit commands from `.agents/skills/clean-design/knowledge/ops/audit.md`; `npm run typecheck && npm run build` if code changed; append `## Hand-off to pipeline-design` when the audit feeds a redesign.
 
 Severity: **P0** blocker (function/a11y/SSOT) · **P1** major · **P2** minor · **P3** suggestion.
 

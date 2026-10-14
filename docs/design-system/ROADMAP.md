@@ -3,6 +3,8 @@
 > Trạng thái audit: 2026-08-28  
 > Phạm vi: Design System phục vụ Chrome-family MV3 extension Tihoka, UI React 19 + Vite 8, Shadow DOM, desktop/tablet và responsive viewport.  
 > Đây là assessment nội bộ có denominator minh bạch, không phải chứng nhận tiêu chuẩn ngành.
+>
+> ⚠️ **Cập nhật — canon đã chuyển:** `DESIGN.md`, `DESIGN_RATIONALE.md`, `STANDARD.md`, `AUDIT-CHECKLIST.md` đã được hợp nhất vào skill `.agents/skills/clean-design/knowledge/` (WHY→`why/philosophy.md`, rules→`foundations/*`, audit→`ops/audit.md`, lifecycle→`ops/lifecycle.md`). Tham chiếu tới các file đó trong tài liệu này đọc như con trỏ tới skill tương ứng. Nội dung roadmap/governance của file này vẫn hiệu lực.
 
 ## 1. Mục tiêu thành công
 

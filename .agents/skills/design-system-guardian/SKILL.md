@@ -7,7 +7,7 @@ description: Audit UI changes against Tihoka's design system - tokens, shared co
 
 ## Overview
 
-Kiểm tra bất kỳ UI change nào trước khi merge. Đảm bảo agent tuân thủ `docs/design-system/DESIGN.md`: dùng đúng token, đúng component, không hardcode, không M3.
+Kiểm tra bất kỳ UI change nào trước khi merge ở **code level**: dùng đúng token, đúng component, không hardcode, không M3. Rubric design-level + luật WHY sống ở skill `clean-design` (`knowledge/ops/audit.md`); guardian chỉ chạy lệnh và báo violation.
 
 ## When to Use
 
@@ -23,7 +23,7 @@ Kiểm tra bất kỳ UI change nào trước khi merge. Đảm bảo agent tuâ
 
 ## Prerequisites
 
-- `docs/design-system/DESIGN.md` đã tồn tại.
+- Skill `clean-design` đã tồn tại (canon: `knowledge/ops/audit.md` + `foundations/*`).
 - Target files đã được sửa (không chạy trên file chưa tạo).
 
 ## Workflow

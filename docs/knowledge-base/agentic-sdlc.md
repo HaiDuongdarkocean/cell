@@ -564,7 +564,7 @@ User prompt ──► UserPromptSubmit ──► hook-ponytail (mode tracker)
 | UI trước implement | `pipeline-design` | Stub `/idea-to-interface` trỏ về đây |
 | Sửa CSS/TS | `learning-and-apply` (APPLY) | Grep `index.json` theo tags trước code |
 | Bug | `debugging-and-error-recovery` -> `test-driven-development` | Reproduce trước fix; tsx/css → UI component-check |
-| UI task | `design-system-guardian` | Build theo `DESIGN.md`, audit token/component sau |
+| UI task | `clean-design` → `design-system-guardian` | Build theo `clean-design/knowledge/`, audit token/component sau |
 | Performance | `performance-optimization` | Measure first |
 
 ### 11.3. Deterministic gates
