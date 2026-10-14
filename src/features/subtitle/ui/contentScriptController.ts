@@ -27,6 +27,7 @@ import { ReactSubtitleController } from '@/features/subtitle/ui/reactSubtitleCon
 import { SubtitleSyncController } from '@/features/subtitle/ui/subtitleSyncController';
 import { type SubtitleCueEngineUpdate, type CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';
 import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl, sentenceContextForSpan } from '@/features/tokenize';
+import { resolveTopFrameOrigin } from '@/shared/lib/dom/frameOrigin';
 import { SPLIT_VIEW_PANEL_SELECTOR } from '@/features/subtitle/logic/scrollPositionPreserve';
 import type { SubtitleTokenizeController } from '@/features/tokenize';
 import { modifierMatches, type ClickModifierState, type LookupRequest } from '@/entities/dictionary';
@@ -406,7 +407,11 @@ export function init(
       // A newer sync/navigation may have superseded this call — bail instead
       // of re-applying stale enablement (settings/url read at call time).
       if (currentSettings !== settings || window.location.href !== url) return;
-      const enabled = isSubtitleTokenizeEnabledForUrl(ts, url);
+      // Player iframes key off the page the user toggled (top origin), not
+      // the embed domain — location.href here is e.g. playembed.vip.
+      const topOrigin = window.top === window ? undefined : resolveTopFrameOrigin();
+      const enabled = isSubtitleTokenizeEnabledForUrl(ts, url)
+        || (topOrigin !== undefined && isSubtitleTokenizeEnabledForUrl(ts, topOrigin));
       subtitleTokenizeActive = enabled;
       if (enabled) {
         if (!subtitleTokenizeCtrl) {

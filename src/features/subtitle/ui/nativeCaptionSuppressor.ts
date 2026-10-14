@@ -6,6 +6,7 @@ const NATIVE_CAPTION_SELECTORS = [
   '.player-timedtext',
   '.jw-captions',
   '.vjs-text-track-display',
+  '.art-subtitle',
 ];
 
 /**

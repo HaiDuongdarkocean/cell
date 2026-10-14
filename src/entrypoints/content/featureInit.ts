@@ -15,6 +15,7 @@ import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigg
 import { modifierMatches, type LookupRequest, type TriggerMode } from '@/entities/dictionary';
 import { findAndInitOverlay } from './videoOverlay';
 import { isEditableTarget } from '@/shared/lib/dom/isEditable';
+import { resolveTopFrameOrigin } from '@/shared/lib/dom/frameOrigin';
 import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/TihokaUiHosts';
 import type { KeyboardShortcut, ShortcutAction } from '@/entities/settings/types';
 import { startMediaScoreSource } from '@/features/subtitle/logic/mediaScoreSource';
@@ -39,6 +40,15 @@ let universalPanelMount: UniversalPanelMountController | null = null;
 
 // Cached subtitle tokenize enabled state for this URL — read by universal panel.
 let cachedSubtitleEnabled = false;
+
+/** Subtitle tokenize enablement keys the top-level page — inside a player
+ *  iframe the href is the embed domain, so also honor the top frame origin. */
+function isSubtitleTokenizeEnabled(ts: Parameters<typeof isSubtitleTokenizeEnabledForUrl>[0]): boolean {
+  if (isSubtitleTokenizeEnabledForUrl(ts, window.location.href)) return true;
+  if (window.self === window.top) return false;
+  const top = resolveTopFrameOrigin();
+  return top !== undefined && isSubtitleTokenizeEnabledForUrl(ts, top);
+}
 
 /** Build a TokenizePanelState snapshot from current webTokenizeCtrl + cachedSubtitleEnabled. */
 function buildPanelState(): TokenizePanelState {
@@ -147,7 +157,7 @@ export function ensureUniversalPanelMount(): UniversalPanelMountController {
   if (!universalPanelMount) {
     // Initialize subtitle tokenize state from storage (async, fires once).
     void loadTokenizeSettings().then((ts) => {
-      cachedSubtitleEnabled = isSubtitleTokenizeEnabledForUrl(ts, window.location.href);
+      cachedSubtitleEnabled = isSubtitleTokenizeEnabled(ts);
       notifyPanelSubs();
     });
 
@@ -177,8 +187,10 @@ export function ensureUniversalPanelMount(): UniversalPanelMountController {
 /** Toggle subtitle tokenize for this URL — persists to storage + notifies panel. */
 async function toggleSubtitleTokenize(): Promise<void> {
   const ts = await loadTokenizeSettings();
-  const url = window.location.href;
-  const next = !isSubtitleTokenizeEnabledForUrl(ts, url);
+  const url = window.self === window.top
+    ? window.location.href
+    : (resolveTopFrameOrigin() ?? window.location.href);
+  const next = !isSubtitleTokenizeEnabled(ts);
   const updated = setSubtitleTokenizeEnabledForUrl(ts, url, next);
   await saveTokenizeSettings(updated);
   cachedSubtitleEnabled = next;
@@ -188,7 +200,7 @@ async function toggleSubtitleTokenize(): Promise<void> {
 export function installTokenizeNavListeners(): void {
   const onTokenizeNav = (): void => {
     void loadTokenizeSettings().then((ts) => {
-      cachedSubtitleEnabled = isSubtitleTokenizeEnabledForUrl(ts, window.location.href);
+      cachedSubtitleEnabled = isSubtitleTokenizeEnabled(ts);
       notifyPanelSubs();
     });
   };

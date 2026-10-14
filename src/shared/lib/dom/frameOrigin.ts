@@ -24,6 +24,18 @@ export function resolveParentFrameOrigin(): string | undefined {
   return undefined;
 }
 
+/** Resolve the TOP frame's origin — ancestorOrigins lists parent→top, so the
+ *  last entry is the page the user sees. Player iframes key settings to the
+ *  top site (onflix.lat), not the embed origin (playembed.vip). */
+export function resolveTopFrameOrigin(): string | undefined {
+  try {
+    const origins = window.location.ancestorOrigins;
+    const top = origins?.length ? origins[origins.length - 1] : undefined;
+    if (isResolvableHttpOrigin(top)) return top;
+  } catch { /* cross-origin restrictions */ }
+  return resolveParentFrameOrigin();
+}
+
 /** Resolve an iframe element's src-derived origin for top→child posts.
  *  Returns undefined for src-less/about:blank/srcdoc/redirected iframes. */
 export function resolveIframeOrigin(iframe: HTMLIFrameElement | null | undefined): string | undefined {

@@ -2,6 +2,7 @@ import { describe, expect, it, afterEach } from '@jest/globals';
 import {
   isResolvableHttpOrigin,
   resolveParentFrameOrigin,
+  resolveTopFrameOrigin,
   resolveIframeOrigin,
 } from './frameOrigin';
 
@@ -67,6 +68,26 @@ describe('resolveParentFrameOrigin', () => {
     setAncestorOrigins(undefined);
     setReferrer('');
     expect(resolveParentFrameOrigin()).toBeUndefined();
+  });
+});
+
+describe('resolveTopFrameOrigin', () => {
+  it('returns the last ancestor origin (top page), not the direct parent', () => {
+    // onflix.lat → intermediate embed → playembed.vip: the deep frame must key
+    // settings to the top page, not its own embed chain.
+    setAncestorOrigins(['https://embed.example', 'https://onflix.lat']);
+    expect(resolveTopFrameOrigin()).toBe('https://onflix.lat');
+  });
+
+  it('single-iframe chain returns the parent (= top)', () => {
+    setAncestorOrigins(['https://onflix.lat']);
+    expect(resolveTopFrameOrigin()).toBe('https://onflix.lat');
+  });
+
+  it('falls back to parent-frame resolution when ancestorOrigins is empty', () => {
+    setAncestorOrigins(undefined);
+    setReferrer('https://parent.example/page');
+    expect(resolveTopFrameOrigin()).toBe('https://parent.example');
   });
 });
 
