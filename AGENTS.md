@@ -1,5 +1,11 @@
 # Tihoka — Chrome MV3 extension: tải video + phụ đề + Anki card creator
 
+## Cách ghi rule vào file này
+
+- Format bắt buộc: `KHI <điều kiện nhận diện được> → <hành động cụ thể>` + signature nhận diện khi cần (vd `wrapper y=0 + parent BODY = keeper miss`). Cấm mệnh đề trừu tượng ("nên cẩn thận", "ưu tiên chất lượng") — đọc xong không biết phải làm gì = không ghi.
+- Rule nào check được bằng máy → KHÔNG ghi ở đây — viết hook (`.devin/hooks.v1.json` + `scripts/hook-*.mjs`); text không enforce được, hook thì có. File này chỉ chứa rule cần judgment.
+- Mỗi rule 1 dòng; đụng vào là hiểu trigger. File càng dài rule càng mờ — gộp/xóa rule cũ khi thêm.
+
 ## Mandate
 
 - Nêu giả định + plan trước khi chạm code — chưa có plan chưa sửa. Làm đúng luôn, không vá tạm; sửa ở gốc, không sửa triệu chứng.
