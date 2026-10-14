@@ -573,8 +573,18 @@ export function useSplitView({
       const shellZIndexCss = shellOutOfFlow && playerComputedStyle.zIndex !== 'auto'
         ? `z-index:${playerComputedStyle.zIndex};`
         : '';
+      // A fixed shell anchored with open-time px width goes stale on
+      // viewport resize/orientation change (the recalc can't re-measure the
+      // shell — it now sits inside the stage). A shell spanning the full
+      // viewport at open anchors with left:0;right:0 so it follows resizes.
+      // clientWidth (not innerWidth) — a fixed shell stops at the scrollbar,
+      // so compare against the scrollbar-free viewport width.
+      const shellFullWidth = Math.abs(playerRect.left) <= 1
+        && Math.abs(playerRect.right - document.documentElement.clientWidth) <= 1;
       const wrapperAnchorCss = shellOutOfFlow
-        ? `position:fixed;top:${Math.round(playerRect.top)}px;left:${Math.round(playerRect.left)}px;width:${Math.round(playerRect.width)}px;${shellZIndexCss}`
+        ? `position:fixed;top:${Math.round(playerRect.top)}px;${shellFullWidth
+          ? 'left:0;right:0'
+          : `left:${Math.round(playerRect.left)}px;width:${Math.round(playerRect.width)}px`};${shellZIndexCss}`
         : 'position:relative;width:100%;';
       wrapper.style.cssText = isYoutube
         ? `display:flex;flex-direction:row;height:${wrapperHeightStyle}!important;flex:0 0 auto;overflow:hidden;${wrapperAnchorCss}`
@@ -786,13 +796,23 @@ export function useSplitView({
             true,
           );
         } else if (isYoutube) {
-          // The wrapper keeps the shell's original height: the page reserves
-          // that slot for the player (m.youtube pads its scroll content), so
-          // shrinking leaves dead space below and growing covers neighbors.
-          // The video fills the stage via the YT_SPLIT_CSS bridge
-          // (object-fit:contain) — re-measuring the video would read back
-          // the same value anyway.
-          liveHeight = youtubeFollowsParent ? '100%' : wrapperHeightStyle;
+          if (shellOutOfFlow) {
+            // The wrapper was re-anchored from the shell's fixed rect — the
+            // open-time px height goes stale on orientation change. Derive it
+            // from the live stage width + captured video aspect, capped to
+            // the visible viewport (the shell floats over the page; the page
+            // reserves no slot for it).
+            const stageW = stageTihoka.getBoundingClientRect().width;
+            liveHeight = `${clampToVisibleViewport(Math.round(stageW / stageAspect), rect.top)}px`;
+          } else {
+            // The wrapper keeps the shell's original height: the page reserves
+            // that slot for the player (m.youtube pads its scroll content), so
+            // shrinking leaves dead space below and growing covers neighbors.
+            // The video fills the stage via the YT_SPLIT_CSS bridge
+            // (object-fit:contain) — re-measuring the video would read back
+            // the same value anyway.
+            liveHeight = youtubeFollowsParent ? '100%' : wrapperHeightStyle;
+          }
         } else {
           const keyChanged = !lastLayoutKey
             || Math.abs(rect.width - lastLayoutKey.w) > 1

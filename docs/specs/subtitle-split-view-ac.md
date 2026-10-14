@@ -92,3 +92,4 @@ toàn bộ nhóm AC liên quan. Chi tiết stress-test e2e: `split-view-stress-t
 | Zero fluid padding → video collapse 24px | `.vjs-fluid` box = chính padding; phải constrain width theo aspect | AC-4.10 |
 | Panel max làm wrapper co theo video | Height recompute theo stage width → shrink; phải freeze theo viewport key | AC-4.9 |
 | m.youtube sheet mode: video letterbox, khoảng đen trên/dưới | `.player-size` size bằng `padding-bottom:56.25%` (không phải padding-top) — rule chỉ zero top, `#movie_player`+video dài gấp đôi stage | AC-3.4 |
+| m.youtube rotate ngang: wrapper co lại, nửa phải màn hình đen | Fixed shell anchor `top/left/width` đóng băng px lúc mở + `liveHeight` nhánh YouTube giữ px cũ — shell full-width phải anchor `left:0;right:0` và height = `stageW/stageAspect` mỗi recalc | AC-4.1, AC-4.6 |
