@@ -8,7 +8,7 @@ import {
   SPLIT_VIEW_SHEET_MIN_HEIGHT,
 } from '@/features/subtitle/logic/playerModeGeometry';
 import { isChildFrame } from '@/features/subtitle/logic/iframePlayerModeBridge';
-import { findPlayerContainer } from '@/shared/lib/dom/findPlayerContainer';
+import { findFlowSlotKeeper, findPlayerContainer } from '@/shared/lib/dom/findPlayerContainer';
 import { waitForPlayerSettle } from '@/features/subtitle/logic/waitForPlayerSettle';
 import { saveScrollPosition, restoreScrollPosition } from '@/features/subtitle/logic/scrollPositionPreserve';
 import {
@@ -367,6 +367,8 @@ export function useSplitView({
 
     // Wrapper only needed in the normal (non-fullscreen) branch.
     let wrapper: HTMLDivElement | null = null;
+    let slotKeeper: HTMLElement | null = null;
+    let slotKeeperDisplay = '';
     let layoutObserver: ResizeObserver | null = null;
     let layoutRaf = 0;
     let scheduleLayoutRecalc: () => void = () => {};
@@ -466,12 +468,26 @@ export function useSplitView({
       const originalParentInOldWrapper = oldWrapper
         && oldWrapper !== wrapper
         && oldWrapper.contains(originalParent);
+      // Out-of-flow shells (fixed|absolute — m.youtube's #player-container-id
+      // is a body-level absolute layer) have no in-flow footprint, so their
+      // DOM position is the wrong place for the wrapper (body top, under
+      // fixed chrome). The page's real slot is held by a same-size in-flow
+      // keeper under the shell (.player-placeholder). Insert the wrapper
+      // there and collapse the keeper so it does not double the space or
+      // paint over the stage. No keeper → fall back to the shell's DOM
+      // spot. A fixed/floating wrapper is never used — the split view must
+      // scroll with the page.
+      const shellOutOfFlow = playerComputedStyle.position === 'fixed'
+        || playerComputedStyle.position === 'absolute';
+      if (shellOutOfFlow && !originalParentInOldWrapper) {
+        slotKeeper = findFlowSlotKeeper(playerShell);
+      }
       const insertParent = originalParentInOldWrapper
         ? oldWrapper!.parentElement!
-        : originalParent;
+        : slotKeeper?.parentElement ?? originalParent;
       const insertBefore = originalParentInOldWrapper
         ? oldWrapper!.nextSibling
-        : originalNextSibling;
+        : slotKeeper ?? originalNextSibling;
 
       // Wrapper flex: preserve playerShell's original footprint when the
       // INSERTION parent is a flex row with siblings (e.g. kisskh .row
@@ -515,14 +531,6 @@ export function useSplitView({
       // youtubeFollowsParentSlot decides when the insert parent hands the
       // shell a real definite-height slot.
       const youtubeFollowsParent = youtubeFollowsParentSlot(insertParent, playerRect.height);
-      // position:fixed shells (e.g. m.youtube's sticky player sits directly
-      // on <body>) have no meaningful DOM slot: an in-flow wrapper inserted
-      // there lands at the parent's content top, covering fixed chrome
-      // (masthead) and pushing the whole page flow down by the wrapper
-      // height. Re-anchor the wrapper at the shell's visual rect so it
-      // stays where the player was. Absolute shells keep the in-flow path —
-      // their DOM position usually sits inside the intended slot anyway.
-      const shellOutOfFlow = playerComputedStyle.position === 'fixed';
       const viewportCapH = Math.max(
         SPLIT_VIEW_MIN_HEIGHT,
         window.innerHeight - playerRect.top - SPLIT_VIEW_VIEWPORT_MARGIN,
@@ -565,28 +573,21 @@ export function useSplitView({
       // wrapper to the parent's full height, making the panel tower above
       // the video). Non-YouTube: keep flex stretch so tight shells fill.
       const ytActive = isYoutubePage();
-      const shellZIndexCss = shellOutOfFlow && playerComputedStyle.zIndex !== 'auto'
-        ? `z-index:${playerComputedStyle.zIndex};`
-        : '';
-      // A fixed shell anchored with open-time px width goes stale on
-      // viewport resize/orientation change (the recalc can't re-measure the
-      // shell — it now sits inside the stage). A shell spanning the full
-      // viewport at open anchors with left:0;right:0 so it follows resizes.
-      // clientWidth (not innerWidth) — a fixed shell stops at the scrollbar,
-      // so compare against the scrollbar-free viewport width.
-      const shellFullWidth = Math.abs(playerRect.left) <= 1
-        && Math.abs(playerRect.right - document.documentElement.clientWidth) <= 1;
-      const wrapperAnchorCss = shellOutOfFlow
-        ? `position:fixed;top:${Math.round(playerRect.top)}px;${shellFullWidth
-          ? 'left:0;right:0'
-          : `left:${Math.round(playerRect.left)}px;width:${Math.round(playerRect.width)}px`};${shellZIndexCss}`
-        : 'position:relative;width:100%;';
+      const wrapperAnchorCss = 'position:relative;width:100%;';
       wrapper.style.cssText = ytActive
         ? youtubeSplitViewWrapperCss(wrapperHeightStyle, wrapperAnchorCss)
         : `display:flex;flex-direction:row;flex:${wrapperFlex};height:${wrapperHeightStyle};align-self:stretch;overflow:hidden;${wrapperAnchorCss}`;
 
+      // A positioned shell's inset was authored for its old containing block
+      // (m.youtube's #player-container-id carries top:48px to clear the
+      // masthead) — inside the stage it is a stale offset that pushes the
+      // video down and clips its bottom. Pin every non-static shell to the
+      // stage box; fixed also needs re-anchoring to absolute so the shell
+      // cannot escape the stage.
       if (playerComputedStyle.position === 'fixed') {
         playerShell.style.setProperty('position', 'absolute', 'important');
+      }
+      if (playerComputedStyle.position !== 'static') {
         playerShell.style.setProperty('inset', '0', 'important');
       }
       playerShell.style.setProperty('width', '100%', 'important');
@@ -667,6 +668,12 @@ export function useSplitView({
         oldWrapper.remove();
       }
       splitViewWrapperRef.current = wrapper;
+      // The wrapper took the keeper's slot — collapse the keeper so it does
+      // not reserve the same space twice. Restored in cleanup.
+      if (slotKeeper) {
+        slotKeeperDisplay = slotKeeper.style.display;
+        slotKeeper.style.setProperty('display', 'none');
+      }
       const recalcWrapperLayout = (): void => {
         if (!wrapper?.isConnected) return;
         const rect = wrapper.getBoundingClientRect();
@@ -684,13 +691,16 @@ export function useSplitView({
         isNarrowLayout = narrow;
         isSheetMode = narrow && sheetMode;
         const stageH = Math.round(slotW / stageAspect);
-        // Site responsive CSS can switch the shell to position:fixed at
-        // narrow widths (kisskh .portrait covers the viewport), which rips
-        // it out of the stage and buries the panel. Pin it back into the
-        // stage whenever it is fixed — open-time or after a breakpoint
-        // change. In-flow shells are untouched.
-        if (getComputedStyle(playerShell).position === 'fixed') {
+        // Site responsive CSS can flip the shell out of flow mid-session
+        // (kisskh .portrait goes fixed at narrow widths) or re-apply a
+        // stylesheet inset (m.youtube #player-container-id top:48px) —
+        // either rips/offsets it out of the stage. Re-pin: fixed shells are
+        // re-anchored to absolute and every non-static shell gets inset:0.
+        const recalcShellPos = getComputedStyle(playerShell).position;
+        if (recalcShellPos === 'fixed') {
           playerShell.style.setProperty('position', 'absolute', 'important');
+        }
+        if (recalcShellPos !== 'static') {
           playerShell.style.setProperty('inset', '0', 'important');
         }
         const restorePanelIntoWrapper = (): void => {
@@ -1130,6 +1140,10 @@ export function useSplitView({
           }
           svLog('cleanup NORMAL done', { playerShellRect: rectLog(playerShell), originalParentTag: originalParent?.tagName });
         }
+        if (!wrapper?.isConnected && slotKeeper) {
+          slotKeeper.style.display = slotKeeperDisplay;
+          slotKeeper = null;
+        }
       }
       // User closed Split View while the player is fullscreen: the
       // normal-branch wrapper still wraps the fullscreen element. Removing
@@ -1149,6 +1163,10 @@ export function useSplitView({
           leftoverWrapper.remove();
           if (splitViewWrapperRef.current === leftoverWrapper) {
             splitViewWrapperRef.current = null;
+          }
+          if (slotKeeper) {
+            slotKeeper.style.display = slotKeeperDisplay;
+            slotKeeper = null;
           }
         };
         document.addEventListener('fullscreenchange', unwrapWhenFsExits);

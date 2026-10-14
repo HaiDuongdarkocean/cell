@@ -1,5 +1,6 @@
 import {
   findFarthestSameSizeContainer,
+  findFlowSlotKeeper,
   findLargestPlayableVideo,
   findPlayerContainer,
   findVideoOverlayContainer,
@@ -336,6 +337,81 @@ describe('findPlayerContainer', () => {
       setBoundingClientRect(cover, 652, 2000);
 
       expect(findPlayerContainer()).toBe(player);
+    });
+  });
+
+  describe('findFlowSlotKeeper', () => {
+    function mockHits(hits: Element[]): void {
+      Object.defineProperty(document, 'elementsFromPoint', {
+        value: () => hits,
+        configurable: true,
+      });
+    }
+
+    it('returns the same-size in-flow element below the shell (m.youtube player-placeholder)', () => {
+      const shell = document.createElement('div');
+      shell.id = 'player-container-id';
+      shell.style.position = 'absolute';
+      const placeholder = document.createElement('div');
+      placeholder.className = 'player-placeholder';
+      placeholder.style.position = 'relative';
+      document.body.appendChild(placeholder);
+      document.body.appendChild(shell);
+      setBoundingClientRect(shell, 667, 279);
+      setBoundingClientRect(placeholder, 667, 279);
+      mockHits([shell, placeholder, document.body, document.documentElement]);
+
+      expect(findFlowSlotKeeper(shell)).toBe(placeholder);
+    });
+
+    it('returns null when nothing below the shell is same-size in-flow', () => {
+      const shell = document.createElement('div');
+      shell.style.position = 'absolute';
+      document.body.appendChild(shell);
+      setBoundingClientRect(shell, 667, 279);
+      mockHits([shell, document.body, document.documentElement]);
+
+      expect(findFlowSlotKeeper(shell)).toBeNull();
+    });
+
+    it('skips shell descendants, shell ancestors, and positioned elements', () => {
+      const shell = document.createElement('div');
+      shell.style.position = 'absolute';
+      const inside = document.createElement('div');
+      inside.style.position = 'relative';
+      const cover = document.createElement('div');
+      cover.style.position = 'fixed';
+      const ancestor = document.createElement('div');
+      ancestor.style.position = 'relative';
+      const keeper = document.createElement('div');
+
+      document.body.appendChild(ancestor);
+      ancestor.appendChild(keeper);
+      document.body.appendChild(shell);
+      shell.appendChild(inside);
+      document.body.appendChild(cover);
+
+      setBoundingClientRect(shell, 667, 279);
+      setBoundingClientRect(inside, 667, 279);
+      setBoundingClientRect(cover, 667, 279);
+      setBoundingClientRect(ancestor, 667, 279);
+      setBoundingClientRect(keeper, 667, 279);
+      mockHits([inside, shell, cover, keeper, ancestor, document.body]);
+
+      expect(findFlowSlotKeeper(shell)).toBe(keeper);
+    });
+
+    it('rejects an in-flow element that only matches one dimension', () => {
+      const shell = document.createElement('div');
+      shell.style.position = 'absolute';
+      const column = document.createElement('div');
+      document.body.appendChild(column);
+      document.body.appendChild(shell);
+      setBoundingClientRect(shell, 667, 279);
+      setBoundingClientRect(column, 667, 2000);
+      mockHits([shell, column, document.body]);
+
+      expect(findFlowSlotKeeper(shell)).toBeNull();
     });
   });
 

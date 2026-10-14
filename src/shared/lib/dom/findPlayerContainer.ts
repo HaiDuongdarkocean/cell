@@ -67,6 +67,37 @@ function liftToOverlayOwner(shell: HTMLElement): HTMLElement {
   return lifted;
 }
 
+// Out-of-flow shells (position:absolute|fixed) leave no footprint in the
+// page flow — hosts that still reserve the player's slot do it with a
+// separate in-flow element (m.youtube's .player-placeholder sits exactly
+// under the absolute #player-container-id). Split View's wrapper must take
+// THAT slot, not the shell's DOM position: wrapping a body-level absolute
+// shell in place lands the wrapper at the page top under fixed chrome and
+// pushes the whole feed down. elementsFromPoint below the shell's own
+// subtree finds the keeper without any host selector.
+export function findFlowSlotKeeper(shell: HTMLElement): HTMLElement | null {
+  const rect = shell.getBoundingClientRect();
+  if (rect.width < 1 || rect.height < 1) return null;
+  const hits = document.elementsFromPoint(
+    rect.left + rect.width / 2,
+    rect.top + rect.height / 2,
+  );
+  for (const el of hits) {
+    if (!(el instanceof HTMLElement)) continue;
+    if (el === shell || shell.contains(el) || el.contains(shell)) continue;
+    if (el.hasAttribute('data-tihoka-split-view')) continue;
+    const cs = getComputedStyle(el);
+    if (cs.position === 'absolute' || cs.position === 'fixed') continue;
+    const r = el.getBoundingClientRect();
+    const wDiff = Math.abs(r.width - rect.width) / rect.width;
+    const hDiff = Math.abs(r.height - rect.height) / rect.height;
+    if (wDiff <= DEFAULT_DIMENSION_TOLERANCE && hDiff <= DEFAULT_DIMENSION_TOLERANCE) {
+      return el;
+    }
+  }
+  return null;
+}
+
 function hasCoveringSibling(candidate: HTMLElement, parent: HTMLElement): boolean {
   const rect = candidate.getBoundingClientRect();
   const area = rect.width * rect.height;
