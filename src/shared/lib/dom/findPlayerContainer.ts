@@ -27,121 +27,89 @@ const DEFAULT_DIMENSION_TOLERANCE = 0.10;
 export function findPlayerContainer(): HTMLElement | null {
   const video = findLargestPlayableVideo();
   if (!video) return null;
-  return pickYoutubePlayerShell(video)
-    ?? liftToOverlayOwner(findFarthestSameSizeContainer(video), video.getBoundingClientRect());
+  return pickYoutubePlayerShell(video) ?? findPlayerShell(video);
 }
 
-// Hosts can mount their player chrome (controls/scrim overlays) as siblings
-// NEXT TO the video subtree instead of inside it — m.youtube keeps
-// .player-controls-background / #player-control-overlay as siblings of
-// #player inside #player-container-id. The same-size walk may stop at the
-// inner shell when the outer container exceeds the dimension tolerance
-// (landscape stretches the fixed container wider than the video), leaving
-// those overlays floating over the split-view stage AND panel — they paint
-// above and swallow pointer hits. The real stage shell is the shared parent
-// of the covered subtree: climb ancestors while one owns a positioned
-// sibling covering ≥80% of it, and lift the shell to that parent.
-const OVERLAY_COVER_RATIO = 0.8;
-// A covering sibling is only player chrome when it is roughly player-sized.
-// Page-level scrims (kisskh .mat-drawer-backdrop spans the whole page)
-// would otherwise lift the shell past the player into the app container.
-const OVERLAY_MAX_VS_VIDEO = 1.5;
+// The player shell is the outermost ancestor that still belongs to the
+// player — it owns CHROME: positioned elements (absolute|fixed) painted on
+// the video's box (control bars, overlay scrims). Neutral same-size
+// wrappers are traversed but never selected: a layout cell that merely
+// shares the video's box is an unstable anchor — kisskh .col-12 loses
+// col-xl-7 under 1200px, the shell then spans the full row and the dock
+// strip collapses to 0px. An ancestor that outgrows the player box without
+// adding chrome is page layout → stop. Chrome also has to stay ≤1.5× the
+// video per dimension — page-level scrims (kisskh .mat-drawer-backdrop
+// spans the whole page) live higher up and must not pull the shell into
+// the app container.
+const CHROME_COVER_RATIO = 0.05;
+const SHELL_MAX_VS_VIDEO = 1.5;
 
-function liftToOverlayOwner(shell: HTMLElement, videoRect: DOMRect): HTMLElement {
-  // A lift must stay inside the visible slot — reject page-column parents
-  // that dwarf the viewport (height cap keeps room for the masthead).
-  const maxH = window.innerHeight * 1.2;
-  const maxW = window.innerWidth + 1;
-  let lifted = shell;
-  let node: HTMLElement | null = shell;
-  while (node && node !== document.body && node !== document.documentElement) {
-    // Never treat our own split-view elements as evidence — on a re-open the
-    // video sits inside stageTihoka and the panel must not lift us into the
-    // wrapper.
-    if (node.hasAttribute('data-tihoka-split-view')) break;
-    const parent: HTMLElement | null = node.parentElement;
-    if (!parent) break;
-    if (hasCoveringSibling(node, parent, videoRect)) {
-      const pr = parent.getBoundingClientRect();
-      if (pr.width === 0 || pr.height === 0 || pr.height > maxH || pr.width > maxW) break;
-      lifted = parent;
-    }
-    node = parent;
-  }
-  return lifted;
-}
+export function findPlayerShell(video: HTMLVideoElement): HTMLElement {
+  const videoRect = video.getBoundingClientRect();
+  const vw = Math.round(videoRect.width);
+  const vh = Math.round(videoRect.height);
+  const videoArea = vw * vh;
 
-function hasCoveringSibling(
-  candidate: HTMLElement,
-  parent: HTMLElement,
-  videoRect: DOMRect,
-): boolean {
-  const rect = candidate.getBoundingClientRect();
-  const area = rect.width * rect.height;
-  if (area === 0) return false;
-  for (const sib of Array.from(parent.children)) {
-    if (sib === candidate || !(sib instanceof HTMLElement)) continue;
-    if (sib.id.startsWith('Tihoka') || sib.hasAttribute('data-tihoka-split-view')) continue;
-    const cs = getComputedStyle(sib);
-    if (cs.position !== 'absolute' && cs.position !== 'fixed') continue;
-    const s = sib.getBoundingClientRect();
-    if (
-      s.width > videoRect.width * OVERLAY_MAX_VS_VIDEO ||
-      s.height > videoRect.height * OVERLAY_MAX_VS_VIDEO
-    ) continue;
-    const iw = Math.min(s.right, rect.right) - Math.max(s.left, rect.left);
-    const ih = Math.min(s.bottom, rect.bottom) - Math.max(s.top, rect.top);
-    if (iw > 0 && ih > 0 && (iw * ih) / area >= OVERLAY_COVER_RATIO) return true;
-  }
-  return false;
-}
-
-/**
- * Walk up from a <video> element to the farthest ancestor whose bounding
- * width AND height are each within `tolerance` of the video's corresponding
- * dimension. Per-dimension comparison (not area) so a container matching one
- * axis but diverging on the other is rejected. This is the shared container
- * algorithm for Player Mode and Split View.
- */
-export function findFarthestSameSizeContainer(
-  video: HTMLVideoElement,
-  tolerance: number = DEFAULT_DIMENSION_TOLERANCE,
-): HTMLElement {
-  const baseRect = video.getBoundingClientRect();
-  const vw = Math.round(baseRect.width);
-  const vh = Math.round(baseRect.height);
-
-  let farthest: HTMLElement = video;
+  let candidate: HTMLElement = video;
   let el: HTMLElement | null = video.parentElement;
-
-  while (el && el !== document.body) {
-    // Skip Tihoka's own Split View elements (wrapper/stage/handle/panel) —
-    // they're ancestors of the video after a normal→fullscreen→normal
-    // transition but are NOT the real player shell. Walking through them
-    // would return the old wrapper as playerShell, breaking the next run.
-    if (el.hasAttribute('data-tihoka-split-view')) {
-      el = el.parentElement;
-      continue;
-    }
-
+  while (el && el !== document.body && el !== document.documentElement) {
+    // Skip Tihoka's own Split View elements — they're ancestors of the
+    // video after a normal→fullscreen→normal transition but are NOT the
+    // real player shell.
+    if (el.hasAttribute('data-tihoka-split-view')) break;
     const rect = el.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) {
       el = el.parentElement;
       continue;
     }
-
+    // display:inline ancestors (Angular custom elements like mat-video) can
+    // wrap the video's box but width:% never applies to them — an
+    // unresizable shell leaves the dock strip at 0px. Traverse, never pick.
+    const resizable = getComputedStyle(el).display !== 'inline';
+    const withinCap =
+      rect.width <= vw * SHELL_MAX_VS_VIDEO && rect.height <= vh * SHELL_MAX_VS_VIDEO;
+    if (resizable && withinCap && ownsVideoChrome(el, candidate, videoRect, videoArea)) {
+      candidate = el;
+      el = el.parentElement;
+      continue;
+    }
     const wDiff = Math.abs(Math.round(rect.width) - vw) / vw;
     const hDiff = Math.abs(Math.round(rect.height) - vh) / vh;
-    if (wDiff <= tolerance && hDiff <= tolerance) {
-      farthest = el;
+    if (wDiff > DEFAULT_DIMENSION_TOLERANCE || hDiff > DEFAULT_DIMENSION_TOLERANCE) break;
+    // Nearest same-size ancestor = the tightest player box. Later same-size
+    // wrappers add nothing — traverse them but keep the tight pick. Only a
+    // still-unpicked walk (candidate === video) may claim the box: a chrome
+    // upgrade already found a deeper shell and must not be overwritten by
+    // a neutral layout cell like kisskh's .col-12.
+    if (resizable && candidate === video) {
+      candidate = el;
     }
-
-    // Do not stop on a rejected intermediate wrapper. A wider ancestor can be
-    // the actual player shell (e.g. video aspect-ratio wrapper → controls shell).
     el = el.parentElement;
   }
+  return candidate;
+}
 
-  return farthest;
+// Chrome = a positioned child of `el` outside the candidate subtree that
+// covers ≥5% of the video's box. Player chrome (control bars ~10–30%)
+// clears the bar; slivers like badge overlays do not.
+function ownsVideoChrome(
+  el: HTMLElement,
+  candidate: HTMLElement,
+  videoRect: DOMRect,
+  videoArea: number,
+): boolean {
+  for (const child of Array.from(el.children)) {
+    if (child === candidate || child.contains(candidate)) continue;
+    if (!(child instanceof HTMLElement)) continue;
+    if (child.id.startsWith('Tihoka') || child.hasAttribute('data-tihoka-split-view')) continue;
+    const cs = getComputedStyle(child);
+    if (cs.position !== 'absolute' && cs.position !== 'fixed') continue;
+    const c = child.getBoundingClientRect();
+    const iw = Math.min(c.right, videoRect.right) - Math.max(c.left, videoRect.left);
+    const ih = Math.min(c.bottom, videoRect.bottom) - Math.max(c.top, videoRect.top);
+    if (iw > 0 && ih > 0 && (iw * ih) / videoArea >= CHROME_COVER_RATIO) return true;
+  }
+  return false;
 }
 
 import { findLargestPlayableVideo as findLargestPlayableVideoFromDom } from '@/shared/lib/dom/videoFinder';

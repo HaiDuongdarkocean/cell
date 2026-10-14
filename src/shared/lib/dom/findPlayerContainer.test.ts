@@ -1,7 +1,7 @@
 import {
-  findFarthestSameSizeContainer,
   findLargestPlayableVideo,
   findPlayerContainer,
+  findPlayerShell,
   findVideoOverlayContainer,
   videoOverlayMountNeedsMove,
 } from './findPlayerContainer';
@@ -36,7 +36,7 @@ describe('findPlayerContainer', () => {
     jest.restoreAllMocks();
   });
 
-  describe('findFarthestSameSizeContainer', () => {
+  describe('findPlayerShell', () => {
     it('returns the video itself when there is no matching parent', () => {
       const video = createVideo(640, 360);
       const parent = document.createElement('div');
@@ -44,11 +44,11 @@ describe('findPlayerContainer', () => {
       parent.appendChild(video);
       setBoundingClientRect(parent, 1000, 800); // much larger
 
-      const result = findFarthestSameSizeContainer(video);
+      const result = findPlayerShell(video);
       expect(result).toBe(video);
     });
 
-    it('walks up through same-size ancestors', () => {
+    it('keeps the nearest same-size ancestor through neutral wrappers', () => {
       const video = createVideo(640, 360);
       const player = document.createElement('div');
       player.id = 'player';
@@ -63,8 +63,8 @@ describe('findPlayerContainer', () => {
       setBoundingClientRect(player, 640, 360);
       setBoundingClientRect(wrapper, 640, 360);
 
-      const result = findFarthestSameSizeContainer(video);
-      expect(result).toBe(wrapper);
+      const result = findPlayerShell(video);
+      expect(result).toBe(player); // nearest player box, not farthest wrapper
     });
 
     it('stops when an ancestor is much larger', () => {
@@ -82,7 +82,7 @@ describe('findPlayerContainer', () => {
       setBoundingClientRect(player, 640, 360);
       setBoundingClientRect(page, 1200, 900);
 
-      const result = findFarthestSameSizeContainer(video);
+      const result = findPlayerShell(video);
       expect(result).toBe(player);
     });
 
@@ -100,7 +100,7 @@ describe('findPlayerContainer', () => {
       setBoundingClientRect(zero, 640, 0); // zero area
       setBoundingClientRect(player, 640, 360);
 
-      const result = findFarthestSameSizeContainer(video);
+      const result = findPlayerShell(video);
       expect(result).toBe(player);
     });
 
@@ -121,7 +121,7 @@ describe('findPlayerContainer', () => {
       setBoundingClientRect(sameSize, 1226, 690);
       setBoundingClientRect(wider, 1635, 690); // same height, wider
 
-      const result = findFarthestSameSizeContainer(video);
+      const result = findPlayerShell(video);
       expect(result).toBe(sameSize);
     });
 
@@ -140,14 +140,15 @@ describe('findPlayerContainer', () => {
       setBoundingClientRect(sameSize, 640, 360);
       setBoundingClientRect(taller, 640, 480); // same width, +33% height
 
-      const result = findFarthestSameSizeContainer(video);
+      const result = findPlayerShell(video);
       expect(result).toBe(sameSize);
     });
 
-    it('accepts a container slightly taller because it owns the control bar (kisskh)', () => {
-      // kisskh: video 1103×913, .videoplayer 1103×922 (same width, +1% height
-      // for the control bar). Per-dimension tolerance accepts this so Split
-      // View wraps the player WITH controls, not just the bare video.
+    it('picks the tight player box, not a same-size layout cell (kisskh)', () => {
+      // kisskh: video 1103×913, .videoplayer 1103×922 (+1% control bar),
+      // .col-12 grid cell shares the box, .row is page-wide. The shell must
+      // stay on .videoplayer — col-12 loses col-xl-7 under 1200px and the
+      // dock strip collapses to 0px.
       const video = createVideo(1103, 913);
       const player = document.createElement('div');
       player.id = 'videoplayer';
@@ -166,8 +167,126 @@ describe('findPlayerContainer', () => {
       setBoundingClientRect(col, 1103, 922);
       setBoundingClientRect(row, 1891, 922); // much wider — layout container
 
-      const result = findFarthestSameSizeContainer(video);
-      expect(result).toBe(col); // farthest within tolerance, stops before row
+      const result = findPlayerShell(video);
+      expect(result).toBe(player); // nearest same-size, stops before row
+    });
+
+    it('skips display:inline ancestors — width:% does not apply to them', () => {
+      // kisskh mat-video/app-watch are Angular custom elements (display:inline).
+      // width% on an inline element is ignored — picking one leaves the dock
+      // strip at 0px. The walk must traverse them and select .videoplayer.
+      const video = createVideo(640, 360);
+      const player = document.createElement('div');
+      player.id = 'videoplayer';
+      player.style.position = 'relative';
+      const custom = document.createElement('mat-video');
+      const col = document.createElement('div');
+      col.id = 'col';
+      const row = document.createElement('div');
+      row.id = 'row';
+
+      document.body.appendChild(row);
+      row.appendChild(col);
+      col.appendChild(custom);
+      custom.appendChild(player);
+      player.appendChild(video);
+
+      setBoundingClientRect(video, 640, 360);
+      setBoundingClientRect(player, 640, 360);
+      setBoundingClientRect(custom, 640, 360);
+      setBoundingClientRect(col, 640, 360);
+      setBoundingClientRect(row, 1200, 360);
+
+      const result = findPlayerShell(video);
+      expect(result).toBe(player);
+    });
+
+    it('a chrome pick is not overwritten by a later same-size neutral wrapper (kisskh)', () => {
+      // Regression: .videoplayer owns chrome (positioned siblings) → picked.
+      // .col-12 above it shares the box and must NOT steal the pick — the
+      // grid cell collapses to full-width under Bootstrap breakpoints and
+      // zeroes the dock strip.
+      const video = createVideo(640, 360);
+      const player = document.createElement('div');
+      player.id = 'videoplayer';
+      player.style.position = 'relative';
+      const controls = document.createElement('div');
+      controls.id = 'controls';
+      controls.style.position = 'absolute';
+      const col = document.createElement('div');
+      col.id = 'col-12';
+      const row = document.createElement('div');
+      row.id = 'row';
+
+      document.body.appendChild(row);
+      row.appendChild(col);
+      col.appendChild(player);
+      player.appendChild(video);
+      player.appendChild(controls); // positioned sibling ON the video
+
+      setBoundingClientRect(video, 640, 360);
+      setBoundingClientRect(player, 640, 360);
+      setBoundingClientRect(controls, 640, 80);
+      setBoundingClientRect(col, 640, 360); // same box as player
+      setBoundingClientRect(row, 640, 360); // even row stays same-size here
+
+      const result = findPlayerShell(video);
+      expect(result).toBe(player);
+    });
+
+    it('upgrades to a chrome-owning ancestor over the player box (m.youtube)', () => {
+      // Host chrome as positioned siblings of the player subtree: the real
+      // shell is the shared parent that owns them.
+      const video = createVideo(640, 360);
+      const player = document.createElement('div');
+      player.id = 'player';
+      const overlay = document.createElement('div');
+      overlay.id = 'control-overlay';
+      overlay.style.position = 'absolute';
+      const shell = document.createElement('div');
+      shell.id = 'shell';
+
+      document.body.appendChild(shell);
+      shell.appendChild(player);
+      shell.appendChild(overlay);
+      player.appendChild(video);
+
+      setBoundingClientRect(video, 640, 360);
+      setBoundingClientRect(player, 640, 360);
+      setBoundingClientRect(overlay, 640, 60); // control bar at bottom
+      setBoundingClientRect(shell, 640, 360);
+
+      const result = findPlayerShell(video);
+      expect(result).toBe(shell);
+    });
+
+    it('rejects page-level scrims — a covering sibling bigger than the video is not player chrome', () => {
+      // kisskh .mat-drawer-backdrop covers the whole page next to the video
+      // column. The ancestor owning it (mat-sidenav-content) dwarfs the
+      // player → not a shell upgrade.
+      const video = createVideo(640, 360);
+      const player = document.createElement('div');
+      player.id = 'videoplayer';
+      const column = document.createElement('div');
+      const backdrop = document.createElement('div');
+      backdrop.className = 'mat-drawer-backdrop';
+      backdrop.style.position = 'absolute';
+      const sidenav = document.createElement('div');
+
+      document.body.appendChild(sidenav);
+      sidenav.appendChild(column);
+      sidenav.appendChild(backdrop);
+      column.appendChild(player);
+      player.appendChild(video);
+
+      setBoundingClientRect(video, 640, 360);
+      setBoundingClientRect(player, 640, 360);
+      setBoundingClientRect(column, 640, 360);
+      setBoundingClientRect(backdrop, 1200, 800); // full-page scrim
+      setBoundingClientRect(sidenav, 1200, 800); // way over the 1.5x cap
+
+      const result = findPlayerShell(video);
+      expect(result).toBe(player);
     });
   });
 

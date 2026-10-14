@@ -221,7 +221,7 @@ export function useSplitView({
     const savedShellStyles: Record<string, string> = {};
     const shellStyleProps = isPlayerFullscreen
       ? ['display', 'flex-direction', 'padding']
-      : ['width', 'height'];
+      : ['width', 'height', 'display'];
     for (const property of shellStyleProps) {
       savedShellStyles[property] = playerShell.style.getPropertyValue(property);
     }
@@ -327,6 +327,15 @@ export function useSplitView({
       // shrink the video vertically and leave dead space — with a definite
       // px height the CSS fill chain letterboxes the video instead.
       const shell = playerShell;
+      // display:inline shells (Angular custom elements — kisskh mat-video)
+      // ignore width:% — the shell would stay full-width and the dock strip
+      // collapses to 0px. Promote to block; teardown restores the original.
+      const normalizeShellDisplay = (): void => {
+        if (getComputedStyle(shell).display === 'inline') {
+          shell.style.setProperty('display', 'block', 'important');
+        }
+      };
+      normalizeShellDisplay();
       let shellH = 0;
       // Measure with the marker off — the injected fill chain zeroes
       // .player-size's %-padding, and with the shell back at height:auto
@@ -356,6 +365,7 @@ export function useSplitView({
           shell.style.removeProperty('width');
           shell.style.removeProperty('height');
           for (const [prop, val] of Object.entries(savedShellStyles)) {
+            shell.style.removeProperty(prop);
             if (val) shell.style.setProperty(prop, val);
           }
           shell.removeAttribute('data-tihoka-split-shell');
@@ -366,6 +376,7 @@ export function useSplitView({
         if (hostPinned) {
           hostPinned = false;
           shell.setAttribute('data-tihoka-split-shell', '');
+          normalizeShellDisplay();
           panel.style.visibility = 'visible';
           remeasure = true;
         }
