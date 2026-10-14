@@ -53,7 +53,7 @@ toàn bộ nhóm AC liên quan. Chi tiết stress-test e2e: `split-view-stress-t
 | AC-3.4 | Panel `visibility:hidden` khi shell rect < 2px (host giấu subtree — engagement panel, re-render) — co lại theo host thay vì nổi trên takeover; hiện lại khi shell quay về |
 | AC-3.5 | `#Tihoka-subtitle-root` không bao giờ được reparent — overlay fill shell theo anchor sẵn có của nó |
 | AC-3.6 | `playerShell` phải chứa CẢ video + host overlays/controls: `findPlayerContainer` lift lên shared parent khi một ancestor có positioned sibling (absolute\|fixed) phủ ≥80% box của nó (m.youtube: `.player-controls-background`/`#player-control-overlay` là sibling của `#player` trong `#player-container-id`). Guard: parent chỉ được lift khi ≤ `innerWidth+1` và ≤ `innerHeight×1.2` — reject page-column ancestor |
-| AC-3.7 | Shell out-of-flow (`fixed`/`absolute`/`sticky`) ở nguyên chỗ — host tự quản slot (m.youtube `.player-placeholder`, sticky pin, engagement-panel states). Panel bám theo rect sống của shell nên pin/scroll/reposition đều đúng; z-index `var(--z-overlay-video, 10000)` — trên host UI, dưới mọi Tihoka system surface |
+| AC-3.7 | Shell out-of-flow (`fixed`/`absolute`/`sticky`) ở nguyên chỗ — host tự quản slot (m.youtube `.player-placeholder`, sticky pin, engagement-panel states). Panel bám theo rect sống của shell nên pin/scroll/reposition đều đúng. z-index hai lớp: doc-space dock → `var(--z-overlay-content, 1)` — trên in-flow content (kisskh `.mat-drawer-content` z1, hòa z thắng bằng DOM order) nhưng dưới host chrome (toolbar z2, m.youtube topbar z4) để panel trôi dưới khi scroll; sheet/pinned → `var(--z-overlay-video, 10000)` — trên host UI, dưới mọi Tihoka system surface |
 
 ## AC-4 · Responsive layout (resize / sidebar / zoom / rotate)
 

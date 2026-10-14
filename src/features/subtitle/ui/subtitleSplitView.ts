@@ -421,10 +421,13 @@ export function useSplitView({
           const offX = docSpace ? window.scrollX : 0;
           const offY = docSpace ? window.scrollY : 0;
           panel.style.position = docSpace ? 'absolute' : 'fixed';
-          // In doc-space the panel must not cover page chrome it scrolls
-          // past — sit in normal stacking so the host masthead stays on
-          // top. Pinned/sheet overlays keep the video-overlay layer.
-          panel.style.zIndex = docSpace ? 'auto' : 'var(--z-overlay-video, 10000)';
+          // Doc-space z sits above in-flow page content (kisskh
+          // .mat-drawer-content z1 — DOM order wins the tie) yet below
+          // host chrome (kisskh toolbar z2, youtube topbar z4) so the
+          // panel slides under it while scrolling instead of covering it.
+          panel.style.zIndex = docSpace
+            ? 'var(--z-overlay-content, 1)'
+            : 'var(--z-overlay-video, 10000)';
           panel.style.left = `${Math.round(r.right + offX)}px`;
           panel.style.right = 'auto';
           panel.style.top = `${Math.round(r.top + offY)}px`;

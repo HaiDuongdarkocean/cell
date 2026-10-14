@@ -28,7 +28,7 @@ export function findPlayerContainer(): HTMLElement | null {
   const video = findLargestPlayableVideo();
   if (!video) return null;
   return pickYoutubePlayerShell(video)
-    ?? liftToOverlayOwner(findFarthestSameSizeContainer(video));
+    ?? liftToOverlayOwner(findFarthestSameSizeContainer(video), video.getBoundingClientRect());
 }
 
 // Hosts can mount their player chrome (controls/scrim overlays) as siblings
@@ -42,8 +42,12 @@ export function findPlayerContainer(): HTMLElement | null {
 // of the covered subtree: climb ancestors while one owns a positioned
 // sibling covering ≥80% of it, and lift the shell to that parent.
 const OVERLAY_COVER_RATIO = 0.8;
+// A covering sibling is only player chrome when it is roughly player-sized.
+// Page-level scrims (kisskh .mat-drawer-backdrop spans the whole page)
+// would otherwise lift the shell past the player into the app container.
+const OVERLAY_MAX_VS_VIDEO = 1.5;
 
-function liftToOverlayOwner(shell: HTMLElement): HTMLElement {
+function liftToOverlayOwner(shell: HTMLElement, videoRect: DOMRect): HTMLElement {
   // A lift must stay inside the visible slot — reject page-column parents
   // that dwarf the viewport (height cap keeps room for the masthead).
   const maxH = window.innerHeight * 1.2;
@@ -57,7 +61,7 @@ function liftToOverlayOwner(shell: HTMLElement): HTMLElement {
     if (node.hasAttribute('data-tihoka-split-view')) break;
     const parent: HTMLElement | null = node.parentElement;
     if (!parent) break;
-    if (hasCoveringSibling(node, parent)) {
+    if (hasCoveringSibling(node, parent, videoRect)) {
       const pr = parent.getBoundingClientRect();
       if (pr.width === 0 || pr.height === 0 || pr.height > maxH || pr.width > maxW) break;
       lifted = parent;
@@ -67,7 +71,11 @@ function liftToOverlayOwner(shell: HTMLElement): HTMLElement {
   return lifted;
 }
 
-function hasCoveringSibling(candidate: HTMLElement, parent: HTMLElement): boolean {
+function hasCoveringSibling(
+  candidate: HTMLElement,
+  parent: HTMLElement,
+  videoRect: DOMRect,
+): boolean {
   const rect = candidate.getBoundingClientRect();
   const area = rect.width * rect.height;
   if (area === 0) return false;
@@ -77,6 +85,10 @@ function hasCoveringSibling(candidate: HTMLElement, parent: HTMLElement): boolea
     const cs = getComputedStyle(sib);
     if (cs.position !== 'absolute' && cs.position !== 'fixed') continue;
     const s = sib.getBoundingClientRect();
+    if (
+      s.width > videoRect.width * OVERLAY_MAX_VS_VIDEO ||
+      s.height > videoRect.height * OVERLAY_MAX_VS_VIDEO
+    ) continue;
     const iw = Math.min(s.right, rect.right) - Math.max(s.left, rect.left);
     const ih = Math.min(s.bottom, rect.bottom) - Math.max(s.top, rect.top);
     if (iw > 0 && ih > 0 && (iw * ih) / area >= OVERLAY_COVER_RATIO) return true;
