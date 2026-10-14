@@ -462,6 +462,45 @@ describe('findPlayerContainer', () => {
       expect(findFlowSlotKeeper(shell)).toBe(placeholder);
     });
 
+    it('reuses the remembered keeper after the host collapses it to 0x0', () => {
+      const shell = document.createElement('div');
+      shell.style.position = 'absolute';
+      const placeholder = document.createElement('div');
+      placeholder.className = 'player-placeholder';
+      document.body.appendChild(placeholder);
+      document.body.appendChild(shell);
+      setBoundingClientRect(shell, 667, 279);
+      setBoundingClientRect(placeholder, 667, 279);
+      mockHits([shell, placeholder, document.body]);
+      expect(findFlowSlotKeeper(shell)).toBe(placeholder);
+
+      // m.youtube sizes the placeholder FROM the shell — with the shell
+      // inside our stage it stays 0x0 forever. The cached element still
+      // marks the slot's DOM position.
+      setBoundingClientRect(placeholder, 0, 0);
+      mockHits([shell, document.body, document.documentElement]);
+      expect(findFlowSlotKeeper(shell)).toBe(placeholder);
+
+      setBoundingClientRect(shell, 0, 0);
+      expect(findFlowSlotKeeper(shell)).toBe(placeholder);
+    });
+
+    it('drops the remembered keeper once the host removes it', () => {
+      const shell = document.createElement('div');
+      shell.style.position = 'absolute';
+      const placeholder = document.createElement('div');
+      document.body.appendChild(placeholder);
+      document.body.appendChild(shell);
+      setBoundingClientRect(shell, 667, 279);
+      setBoundingClientRect(placeholder, 667, 279);
+      mockHits([shell, placeholder, document.body]);
+      expect(findFlowSlotKeeper(shell)).toBe(placeholder);
+
+      placeholder.remove();
+      mockHits([shell, document.body]);
+      expect(findFlowSlotKeeper(shell)).toBeNull();
+    });
+
     it('rejects an in-flow element that only matches one dimension', () => {
       const shell = document.createElement('div');
       shell.style.position = 'absolute';

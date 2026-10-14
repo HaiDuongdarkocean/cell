@@ -78,7 +78,17 @@ function liftToOverlayOwner(shell: HTMLElement): HTMLElement {
 // is off-viewport (sticky shell pinned while the page scrolled the slot
 // away) a document-space containment walk over the shell's home box finds
 // the same element — the slot never moves even when the shell does.
+const flowSlotKeepers = new WeakMap<HTMLElement, HTMLElement>();
+
 export function findFlowSlotKeeper(shell: HTMLElement): HTMLElement | null {
+  // Hosts like m.youtube measure the placeholder FROM the shell — once the
+  // shell sits inside the stage, the keeper collapses to 0x0 and neither
+  // probe can see it. The remembered element still marks the slot's DOM
+  // position (its parent owns the in-flow space), so reuse it while alive.
+  const cached = flowSlotKeepers.get(shell);
+  if (cached?.isConnected && !cached.hasAttribute('data-tihoka-split-view')) {
+    return cached;
+  }
   const rect = shell.getBoundingClientRect();
   if (rect.width < 1 || rect.height < 1) return null;
   const accept = (el: Element): el is HTMLElement => {
@@ -97,7 +107,10 @@ export function findFlowSlotKeeper(shell: HTMLElement): HTMLElement | null {
     rect.top + rect.height / 2,
   );
   for (const el of hits) {
-    if (accept(el)) return el;
+    if (accept(el)) {
+      flowSlotKeepers.set(shell, el);
+      return el;
+    }
   }
   const shellStyle = getComputedStyle(shell);
   const fixedTop = parseFloat(shellStyle.top);
@@ -116,7 +129,10 @@ export function findFlowSlotKeeper(shell: HTMLElement): HTMLElement | null {
     containing,
   );
   for (let i = containing.length - 1; i >= 0; i--) {
-    if (accept(containing[i])) return containing[i];
+    if (accept(containing[i])) {
+      flowSlotKeepers.set(shell, containing[i]);
+      return containing[i];
+    }
   }
   return null;
 }

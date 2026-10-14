@@ -369,6 +369,7 @@ export function useSplitView({
     let wrapper: HTMLDivElement | null = null;
     let slotKeeper: HTMLElement | null = null;
     let slotKeeperDisplay = '';
+    let slotKeeperLiveH = 0;
     let layoutObserver: ResizeObserver | null = null;
     let layoutRaf = 0;
     let scheduleLayoutRecalc: () => void = () => {};
@@ -479,9 +480,10 @@ export function useSplitView({
       // scroll with the page.
       const shellOutOfFlow = playerComputedStyle.position === 'fixed'
         || playerComputedStyle.position === 'absolute';
-      if (shellOutOfFlow && !originalParentInOldWrapper) {
+      if (shellOutOfFlow) {
         slotKeeper = findFlowSlotKeeper(playerShell);
       }
+      if (shellOutOfFlow) slotKeeperLiveH = Math.round(playerRect.height);
       const insertParent = originalParentInOldWrapper
         ? oldWrapper!.parentElement!
         : slotKeeper?.parentElement ?? originalParent;
@@ -832,11 +834,14 @@ export function useSplitView({
                   // The keeper is display:none while we own its slot. Restore
                   // + measure + re-hide in one task — no paint runs between,
                   // and its rect still tracks the page-reserved slot height
-                  // across orientation changes.
+                  // across orientation changes. Hosts can collapse the keeper
+                  // to 0x0 while the shell is inside the stage (m.youtube
+                  // measures it FROM the shell) — keep the last good height.
                   slotKeeper!.style.display = slotKeeperDisplay;
                   const h = slotKeeper!.getBoundingClientRect().height;
                   slotKeeper!.style.display = 'none';
-                  return h;
+                  if (h > 1) slotKeeperLiveH = h;
+                  return slotKeeperLiveH;
                 }
               : undefined,
             clampVisiblePx: (px) => clampToVisibleViewport(px, rect.top),
@@ -1166,6 +1171,9 @@ export function useSplitView({
               originalParent.appendChild(playerShell);
             }
           }
+          // Sheet mode reparents the panel onto <body> — outside the wrapper —
+          // so wrapper.remove() alone leaves an orphaned fixed sheet.
+          panel.remove();
           wrapper?.remove();
           if (splitViewWrapperRef.current === wrapper) {
             splitViewWrapperRef.current = null;
