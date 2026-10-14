@@ -12,8 +12,13 @@ import { findPlayerContainer } from '@/shared/lib/dom/findPlayerContainer';
 import { waitForPlayerSettle } from '@/features/subtitle/logic/waitForPlayerSettle';
 import { saveScrollPosition, restoreScrollPosition } from '@/features/subtitle/logic/scrollPositionPreserve';
 import {
-  closeYoutubeSplitView,
+  applyYoutubeSplitViewCss,
   isYoutubePage,
+  removeYoutubeSplitViewCss,
+  youtubeFollowsParentSlot,
+  youtubeSplitViewLiveHeight,
+  youtubeSplitViewOwnsFill,
+  youtubeSplitViewWrapperCss,
 } from '@/features/subtitle/logic/youtubeSplitView';
 import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
@@ -418,10 +423,9 @@ export function useSplitView({
         childrenMoved: childrenToMove.length,
       });
       // YouTube CSS (object-fit, .ytp-chrome-bottom width, progress bar
-      // widths) is injected by the MAIN-world adapter. Dispatch the event
-      // directly — MAIN world listener only registers on YouTube (manifest
-      // matches), so off-YouTube this is a no-op (event into void).
-      document.dispatchEvent(new CustomEvent('__YT_SPLIT_VIEW_APPLY_CSS'));
+      // widths) is injected by the MAIN-world adapter. applyYoutubeSplitViewCss
+      // is self-gated — off YouTube it dispatches nothing.
+      applyYoutubeSplitViewCss();
     } else {
       // NORMAL: wrap playerShell in a flex row wrapper.
       wrapper = document.createElement('div');
@@ -508,18 +512,9 @@ export function useSplitView({
       // CSS based on video aspect ratio + available width, and updates on
       // resize. The old approach (parentPixelHeight px) froze the wrapper
       // at the initial size → empty space below after browser resize.
-      //
-      // height:100% is only meaningful when the insert parent hands the
-      // shell a real slot: a definite content-box height (>1px — rules out
-      // padding-driven aspect-ratio shells where 100% resolves against 0,
-      // e.g. m.youtube .player-size) that is roughly the player's own
-      // height (rules out body-level parents where 100% would tower over
-      // the video). Anything else takes the measured px path.
-      const insertParentComputedHeight = parseFloat(insertParentCs.height);
-      const youtubeFollowsParent = isYoutubePage()
-        && Number.isFinite(insertParentComputedHeight)
-        && insertParentComputedHeight > 1
-        && insertParent.getBoundingClientRect().height <= playerRect.height * 1.1;
+      // youtubeFollowsParentSlot decides when the insert parent hands the
+      // shell a real definite-height slot.
+      const youtubeFollowsParent = youtubeFollowsParentSlot(insertParent, playerRect.height);
       // position:fixed shells (e.g. m.youtube's sticky player sits directly
       // on <body>) have no meaningful DOM slot: an in-flow wrapper inserted
       // there lands at the parent's content top, covering fixed chrome
@@ -569,7 +564,7 @@ export function useSplitView({
       // (align-self:stretch in a flex parent would otherwise expand the
       // wrapper to the parent's full height, making the panel tower above
       // the video). Non-YouTube: keep flex stretch so tight shells fill.
-      const isYoutube = isYoutubePage();
+      const ytActive = isYoutubePage();
       const shellZIndexCss = shellOutOfFlow && playerComputedStyle.zIndex !== 'auto'
         ? `z-index:${playerComputedStyle.zIndex};`
         : '';
@@ -586,8 +581,8 @@ export function useSplitView({
           ? 'left:0;right:0'
           : `left:${Math.round(playerRect.left)}px;width:${Math.round(playerRect.width)}px`};${shellZIndexCss}`
         : 'position:relative;width:100%;';
-      wrapper.style.cssText = isYoutube
-        ? `display:flex;flex-direction:row;height:${wrapperHeightStyle}!important;flex:0 0 auto;overflow:hidden;${wrapperAnchorCss}`
+      wrapper.style.cssText = ytActive
+        ? youtubeSplitViewWrapperCss(wrapperHeightStyle, wrapperAnchorCss)
         : `display:flex;flex-direction:row;flex:${wrapperFlex};height:${wrapperHeightStyle};align-self:stretch;overflow:hidden;${wrapperAnchorCss}`;
 
       if (playerComputedStyle.position === 'fixed') {
@@ -629,7 +624,7 @@ export function useSplitView({
       // YouTube is skipped — its MAIN-world YT_SPLIT_CSS bridge owns the
       // same fill behavior plus .ytp-chrome specifics. Broad shells keep
       // video-driven height.
-      if (!isYoutube && !isBroadShell && videoEl) {
+      if (!youtubeSplitViewOwnsFill() && !isBroadShell && videoEl) {
         let node: HTMLElement | null = videoEl.parentElement;
         while (node && node !== playerShell && node !== document.body) {
           const values: Record<string, string> = {};
@@ -795,24 +790,15 @@ export function useSplitView({
             window.innerHeight,
             true,
           );
-        } else if (isYoutube) {
-          if (shellOutOfFlow) {
-            // The wrapper was re-anchored from the shell's fixed rect — the
-            // open-time px height goes stale on orientation change. Derive it
-            // from the live stage width + captured video aspect, capped to
-            // the visible viewport (the shell floats over the page; the page
-            // reserves no slot for it).
-            const stageW = stageTihoka.getBoundingClientRect().width;
-            liveHeight = `${clampToVisibleViewport(Math.round(stageW / stageAspect), rect.top)}px`;
-          } else {
-            // The wrapper keeps the shell's original height: the page reserves
-            // that slot for the player (m.youtube pads its scroll content), so
-            // shrinking leaves dead space below and growing covers neighbors.
-            // The video fills the stage via the YT_SPLIT_CSS bridge
-            // (object-fit:contain) — re-measuring the video would read back
-            // the same value anyway.
-            liveHeight = youtubeFollowsParent ? '100%' : wrapperHeightStyle;
-          }
+        } else if (ytActive) {
+          liveHeight = youtubeSplitViewLiveHeight({
+            shellOutOfFlow,
+            stageWidth: stageTihoka.getBoundingClientRect().width,
+            videoAspect: stageAspect,
+            followsParent: youtubeFollowsParent,
+            fallbackHeight: wrapperHeightStyle,
+            clampVisiblePx: (px) => clampToVisibleViewport(px, rect.top),
+          });
         } else {
           const keyChanged = !lastLayoutKey
             || Math.abs(rect.width - lastLayoutKey.w) > 1
@@ -913,11 +899,9 @@ export function useSplitView({
       });
       // YouTube: inject CSS overrides so video + controls fill the stage
       // via CSS (height:100%!important, object-fit:contain). The MAIN-world
-      // listener handles injection/removal. This replaces the old setSize
-      // approach which set hardcoded pixel sizes that froze on resize.
-      if (isYoutube) {
-        document.dispatchEvent(new CustomEvent('__YT_SPLIT_VIEW_APPLY_CSS'));
-      }
+      // listener handles injection/removal; applyYoutubeSplitViewCss is
+      // self-gated — off YouTube it dispatches nothing.
+      applyYoutubeSplitViewCss();
     }
 
     setSplitViewPortalTarget(panelInner);
@@ -1198,16 +1182,9 @@ export function useSplitView({
         TihokaRootTarget.appendChild(TihokaRootCleanup);
       }
       // Remove YouTube CSS overrides in both branches (normal + fullscreen).
-      // The MAIN-world listener removes the <style> tag.
-      document.dispatchEvent(new CustomEvent('__YT_SPLIT_VIEW_REMOVE_CSS'));
-      // setSize bridge is no longer used — CSS handles all player sizing.
-      // restoreYoutubeSplitView is a no-op; closeYoutubeSplitView cleared
-      // the storedSize which is never set now. Keep it for safety in case
-      // a stale MAIN-world listener still has a storedSize from a previous
-      // session.
-      if (!splitViewOpen) {
-        closeYoutubeSplitView();
-      }
+      // The MAIN-world listener removes the <style> tag; self-gated — no-op
+      // off YouTube.
+      removeYoutubeSplitViewCss();
       // YouTube JS sets inline px on <video> based on #movie_player size.
       // During split view, playerShell was narrower → YouTube set smaller
       // px. After restoring playerShell to its original parent + removing

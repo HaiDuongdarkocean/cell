@@ -27,7 +27,8 @@ const DEFAULT_DIMENSION_TOLERANCE = 0.10;
 export function findPlayerContainer(): HTMLElement | null {
   const video = findLargestPlayableVideo();
   if (!video) return null;
-  return liftToOverlayOwner(findFarthestSameSizeContainer(video));
+  return pickYoutubePlayerShell(video)
+    ?? liftToOverlayOwner(findFarthestSameSizeContainer(video));
 }
 
 // Hosts can mount their player chrome (controls/scrim overlays) as siblings
@@ -54,7 +55,7 @@ function liftToOverlayOwner(shell: HTMLElement): HTMLElement {
     // video sits inside stageTihoka and the panel must not lift us into the
     // wrapper.
     if (node.hasAttribute('data-tihoka-split-view')) break;
-    const parent = node.parentElement;
+    const parent: HTMLElement | null = node.parentElement;
     if (!parent) break;
     if (hasCoveringSibling(node, parent)) {
       const pr = parent.getBoundingClientRect();
@@ -94,28 +95,6 @@ export function findFarthestSameSizeContainer(
   video: HTMLVideoElement,
   tolerance: number = DEFAULT_DIMENSION_TOLERANCE,
 ): HTMLElement {
-  // YouTube: #movie_player is the player shell owning native controls + the
-  // video. The same-size walk overshoots to #player (outer layout wrapper with
-  // no controls), so the bounds effect walks #cinematics-container instead of
-  // .html5-video-container → video height collapses to 0. Short-circuit to the
-  // known shell when present. Ponytail ceiling: hardcoded YouTube selector;
-  // upgrade path = per-host adapter registry if more structured hosts appear.
-  //
-  // Structural escape: when movie_player's parent has no content-box height
-  // (padding-driven aspect-ratio shells like m.youtube .player-size set
-  // height:0 + padding-top:56.25%), the shell is a floating surface, not a
-  // flow box — wrapping it collapses the stage to h:0 and the outer same-size
-  // ancestor is the real shell. Let the walk continue instead.
-  const moviePlayer = document.querySelector('#movie_player');
-  if (moviePlayer instanceof HTMLElement && moviePlayer.contains(video)) {
-    const parent = moviePlayer.parentElement;
-    const parentHeight = parent ? parseFloat(getComputedStyle(parent).height) : 0;
-    const paddingDrivenParent = Number.isFinite(parentHeight) && parentHeight <= 1;
-    if (!paddingDrivenParent) {
-      return moviePlayer;
-    }
-  }
-
   const baseRect = video.getBoundingClientRect();
   const vw = Math.round(baseRect.width);
   const vh = Math.round(baseRect.height);
@@ -154,6 +133,7 @@ export function findFarthestSameSizeContainer(
 }
 
 import { findLargestPlayableVideo as findLargestPlayableVideoFromDom } from '@/shared/lib/dom/videoFinder';
+import { pickYoutubeOverlayMount, pickYoutubePlayerShell } from '@/shared/lib/dom/youtubePlayer';
 
 /** Find the largest <video> with a non-zero bounding rect.
  *
@@ -220,32 +200,11 @@ export function findVideoContainer(video: HTMLVideoElement): HTMLElement {
 }
 
 /** Mount container for Tihoka video-level UI (subtitle overlay host, toasts,
- *  drag hint). Usually the nearest sized ancestor (findVideoContainer), but
- *  when the host site keeps its own video overlays in a SIBLING subtree of
- *  the video, no z-index inside the video subtree can paint above them.
- *  m.youtube: #player-control-container (native controls + scrim) is a
- *  sibling of #player — mount into the shared parent #player-container-id so
- *  Tihoka UI, appended last with var(--z-overlay-video), wins the context.
- *  Tihoka's body-level surfaces (dictionary popup, universal panel, dialogs)
- *  still render above via their own stacking contexts, and portals via
- *  higher z-index. The same-size guard keeps `inset:0` anchored to the
- *  video box; any layout divergence falls back to the nearest container.
- *  ponytail: hardcoded m.youtube selectors — if more hosts keep overlays
- *  outside the video subtree, upgrade to a per-host adapter or generic
- *  "covering sibling" detection. */
+ *  drag hint). Host-specific picks live in the per-host modules (e.g.
+ *  pickYoutubeOverlayMount mounts into the shared ancestor because the
+ *  host's own overlays sit in a sibling subtree — no z-index inside the
+ *  video subtree can paint above them). The generic fallback is the
+ *  nearest sized ancestor (findVideoContainer). */
 export function findVideoOverlayContainer(video: HTMLVideoElement): HTMLElement {
-  const shell = document.getElementById('player-container-id');
-  if (shell && document.getElementById('player-control-container') && shell.contains(video)) {
-    const videoRect = video.getBoundingClientRect();
-    const shellRect = shell.getBoundingClientRect();
-    if (
-      videoRect.width > 0 &&
-      videoRect.height > 0 &&
-      Math.abs(shellRect.width - videoRect.width) / videoRect.width <= DEFAULT_DIMENSION_TOLERANCE &&
-      Math.abs(shellRect.height - videoRect.height) / videoRect.height <= DEFAULT_DIMENSION_TOLERANCE
-    ) {
-      return shell;
-    }
-  }
-  return findVideoContainer(video);
+  return pickYoutubeOverlayMount(video) ?? findVideoContainer(video);
 }

@@ -277,11 +277,16 @@ declare const __Tihoka_DEBUG__: string | undefined;
   }
   installTimedtextHooks();
 
-  interface CaptionsPlayerApi extends YoutubePlayerApi {
+  interface CaptionsPlayerApi {
     getOption?: (module: string, option: string) => unknown;
     setOption?: (module: string, option: string, value: unknown) => void;
     loadModule?: (name: string) => void;
     unloadModule?: (name: string) => void;
+  }
+
+  function getMoviePlayer(): CaptionsPlayerApi | null {
+    const el = document.getElementById('movie_player');
+    return el ? (el as unknown as CaptionsPlayerApi) : null;
   }
 
   interface PlayerCaptionTrack {
@@ -318,7 +323,7 @@ declare const __Tihoka_DEBUG__: string | undefined;
     const key = `${lang}|${kind ?? ''}`;
     const cached = timedtextBodies.get(key);
     if (cached) return cached;
-    const player = getYoutubePlayer() as CaptionsPlayerApi | null;
+    const player = getMoviePlayer();
     if (!player?.getOption || !player.setOption) return undefined;
     try {
       player.loadModule?.('captions');
@@ -452,64 +457,6 @@ declare const __Tihoka_DEBUG__: string | undefined;
     postTime: -1,
   };
   if (isDebug()) (window as unknown as Record<string, unknown>).__YT_DEBUG = debug;
-
-  // Split View size bridge (mirrors Netflix __NF_SEEK / __NF_PLAY).
-  // Isolated world cannot call #movie_player.setSize — YouTube player lives
-  // in MAIN world. Isolated world dispatches CustomEvents; we call setSize
-  // so video + .ytp-chrome-bottom reflow together.
-  // ponytail: storedSize restores on close. Ceiling: if YouTube removes
-  // setSize, the event no-ops and Split View falls back to CSS layout.
-  type YoutubePlayerApi = {
-    setSize?: (w: number, h: number) => void;
-    getPlayerSize?: () => { width?: number; height?: number } | [number, number];
-  };
-  let storedSize: { width: number; height: number } | null = null;
-
-  function getYoutubePlayer(): YoutubePlayerApi | null {
-    const el = document.getElementById('movie_player');
-    if (!el) return null;
-    return el as unknown as YoutubePlayerApi;
-  }
-
-  function readPlayerSize(player: YoutubePlayerApi): { width: number; height: number } | null {
-    const getter = player.getPlayerSize;
-    if (typeof getter !== 'function') return null;
-    try {
-      const size = getter.call(player);
-      if (Array.isArray(size) && typeof size[0] === 'number' && typeof size[1] === 'number') {
-        return { width: size[0], height: size[1] };
-      }
-      if (size && typeof size === 'object' && !Array.isArray(size)) {
-        const obj = size as { width?: unknown; height?: unknown };
-        if (typeof obj.width === 'number' && typeof obj.height === 'number') {
-          return { width: obj.width, height: obj.height };
-        }
-      }
-    } catch {
-      return null;
-    }
-    return null;
-  }
-
-  document.addEventListener('__YT_SET_SIZE', (e: Event) => {
-    const detail = (e as CustomEvent).detail as { width?: number; height?: number } | undefined;
-    if (typeof detail?.width !== 'number' || typeof detail.height !== 'number') return;
-    const player = getYoutubePlayer();
-    if (!player || typeof player.setSize !== 'function') return;
-    if (!storedSize) storedSize = readPlayerSize(player);
-    player.setSize(detail.width, detail.height);
-  });
-
-  document.addEventListener('__YT_RESTORE_SIZE', () => {
-    const player = getYoutubePlayer();
-    if (!player || typeof player.setSize !== 'function') return;
-    if (storedSize) player.setSize(storedSize.width, storedSize.height);
-  });
-
-  // Clear stored size only when Split View fully closes (not fullscreen transitions).
-  document.addEventListener('__YT_SPLIT_CLOSE', () => {
-    storedSize = null;
-  });
 
   // Split View CSS bridge: isolated world tells MAIN world to inject/remove
   // YouTube-specific CSS overrides for split view layout. These selectors

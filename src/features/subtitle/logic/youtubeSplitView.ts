@@ -1,75 +1,67 @@
-// YouTube Split View adapter — isolated-world event bridge (ADR-020 pattern).
-//
-// Mirror netflixPlayback.ts: isolated world MUST NOT touch YouTube's player
-// internals. YouTube JS writes inline pixel sizes on <video>,
-// .html5-video-container, and .ytp-chrome-bottom. Isolated-world CSS loses
-// to that JS. Isolated world dispatches CustomEvents; youtube-main-world.iife.ts
-// (MAIN world) calls #movie_player.setSize(w, h) so video + chrome reflow
-// together.
-//
-// ponytail: 3 thin wrappers. Off YouTube they no-op. Ceiling: if MAIN-world
-// listener isn't registered yet, the event no-ops for that one call.
+// YouTube Split View adapter — isolated-world host behavior (ADR-020).
+// youtube-main-world.iife.ts (MAIN world) owns YouTube-internal CSS and
+// player APIs; this module holds the isolated side: the hostname gate, the
+// split-view height policy, and the CustomEvents driving the bridge.
+// Off YouTube every export is a no-op / false — callers stay host-agnostic.
+import { isYoutubePage } from '@/shared/lib/dom/youtubePlayer';
 
-export function isYoutubePage(hostname: string = location.hostname): boolean {
-  return hostname === 'youtu.be' || hostname === 'youtube.com' || hostname.endsWith('.youtube.com');
+export { isYoutubePage };
+
+// The MAIN-world CSS bridge owns the video-fill chain inside the stage on
+// YouTube (.ytp-*, .player-size, .html5-video-container) — the generic
+// fill loop must not touch those intermediates.
+export function youtubeSplitViewOwnsFill(hostname: string = location.hostname): boolean {
+  return isYoutubePage(hostname);
 }
 
-/** Wrapper height = video height so the panel matches the player, not the tall watch page. */
-export function resolveYoutubeSplitViewWrapperHeight(
-  videoHeight: number,
+// The insert parent hands the shell a real definite height (~the player's
+// own box) → the wrapper may use height:100% so it follows resizes instead
+// of freezing at open-time px. Padding-driven parents (computed height ≤1)
+// and oversized parents (body-level columns) don't qualify.
+export function youtubeFollowsParentSlot(
+  insertParent: HTMLElement,
   playerHeight: number,
-): string {
-  const height = videoHeight > 0 ? videoHeight : playerHeight;
-  return `${Math.round(Math.max(height, 0))}px`;
-}
-
-/** Ask MAIN-world YouTube player to resize video + control chrome to `width`×`height`. */
-export function requestYoutubePlayerSize(
-  width: number,
-  height: number,
   hostname: string = location.hostname,
-): void {
-  if (!isYoutubePage(hostname)) return;
-  if (!(width > 0 && height > 0)) return;
-  document.dispatchEvent(new CustomEvent('__YT_SET_SIZE', {
-    detail: { width: Math.round(width), height: Math.round(height) },
-  }));
+): boolean {
+  if (!isYoutubePage(hostname)) return false;
+  const computedHeight = parseFloat(getComputedStyle(insertParent).height);
+  return (
+    Number.isFinite(computedHeight) &&
+    computedHeight > 1 &&
+    insertParent.getBoundingClientRect().height <= playerHeight * 1.1
+  );
 }
 
-/** Ask MAIN-world YouTube player to restore the pre-split size. */
-export function restoreYoutubePlayerSize(hostname: string = location.hostname): void {
-  if (!isYoutubePage(hostname)) return;
-  document.dispatchEvent(new CustomEvent('__YT_RESTORE_SIZE'));
+// Wrapper cssText variant: height needs !important so the flex parent can't
+// stretch the wrapper to full row height (panel would tower over the video);
+// flex:0 0 auto fixes the footprint instead of growing into it.
+export function youtubeSplitViewWrapperCss(wrapperHeightStyle: string, anchorCss: string): string {
+  return `display:flex;flex-direction:row;height:${wrapperHeightStyle}!important;flex:0 0 auto;overflow:hidden;${anchorCss}`;
 }
 
-/** Tell MAIN-world YouTube player Split View fully closed — clear stored size. */
-export function closeYoutubeSplitView(hostname: string = location.hostname): void {
-  if (!isYoutubePage(hostname)) return;
-  restoreYoutubePlayerSize(hostname);
-  document.dispatchEvent(new CustomEvent('__YT_SPLIT_CLOSE'));
+// Wrapper height for the live layout: fixed shells re-derive from the live
+// stage width + video aspect (the open-time px goes stale on orientation
+// change); in-flow shells keep the slot the page reserved.
+export function youtubeSplitViewLiveHeight(options: {
+  shellOutOfFlow: boolean;
+  stageWidth: number;
+  videoAspect: number;
+  followsParent: boolean;
+  fallbackHeight: string;
+  clampVisiblePx: (px: number) => number;
+}): string {
+  if (options.shellOutOfFlow) {
+    return `${options.clampVisiblePx(Math.round(options.stageWidth / options.videoAspect))}px`;
+  }
+  return options.followsParent ? '100%' : options.fallbackHeight;
 }
 
-/**
- * After Split View layout is in the DOM, measure `stage` and tell YouTube
- * to setSize to that box. Returns a restore that asks YouTube to undo it.
- * Uses double-rAF so flex layout settles before measuring (fullscreen
- * stageTihoka is 0px until flex resolves).
- */
-export function applyYoutubeSplitViewLayout(
-  stage: HTMLElement,
-  hostname: string = location.hostname,
-): () => void {
-  if (!isYoutubePage(hostname)) return () => undefined;
-  const sync = (): void => {
-    const rect = stage.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
-      requestYoutubePlayerSize(rect.width, rect.height, hostname);
-    }
-  };
-  // Double-rAF: first frame lays out flex children, second frame gives
-  // stable getBoundingClientRect (single rAF can still read pre-layout).
-  requestAnimationFrame(() => requestAnimationFrame(sync));
-  return () => {
-    restoreYoutubePlayerSize(hostname);
-  };
+export function applyYoutubeSplitViewCss(hostname: string = location.hostname): void {
+  if (!isYoutubePage(hostname)) return;
+  document.dispatchEvent(new CustomEvent('__YT_SPLIT_VIEW_APPLY_CSS'));
+}
+
+export function removeYoutubeSplitViewCss(hostname: string = location.hostname): void {
+  if (!isYoutubePage(hostname)) return;
+  document.dispatchEvent(new CustomEvent('__YT_SPLIT_VIEW_REMOVE_CSS'));
 }
