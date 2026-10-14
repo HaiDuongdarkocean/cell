@@ -221,7 +221,7 @@ export function useSplitView({
     const savedShellStyles: Record<string, string> = {};
     const shellStyleProps = isPlayerFullscreen
       ? ['display', 'flex-direction', 'padding']
-      : ['width'];
+      : ['width', 'height'];
     for (const property of shellStyleProps) {
       savedShellStyles[property] = playerShell.style.getPropertyValue(property);
     }
@@ -268,7 +268,9 @@ export function useSplitView({
 
     let layoutObserver: ResizeObserver | null = null;
     let layoutRaf = 0;
-    let scheduleLayoutSync: () => void = () => {};
+    let scheduleLayoutSync: (remeasure?: boolean) => void = () => {};
+    const onViewportResize = (): void => scheduleLayoutSync(true);
+    const onScroll = (): void => scheduleLayoutSync();
     let isSheetMode = false;
     // The strip is measured inside the shell's containing block — the same
     // box its width % resolves against, so shell + panel tile it exactly.
@@ -319,20 +321,47 @@ export function useSplitView({
       applyYoutubeSplitViewCss();
     } else {
       // NORMAL: shell keeps its DOM position — narrow it with width:% and
-      // glue the fixed panel onto the strip it frees.
-      playerShell.setAttribute('data-tihoka-split-shell', '');
+      // glue the fixed panel onto the strip it frees. Height is anchored to
+      // the shell's natural full-width height: hosts that derive height
+      // from width (m.youtube's .player-size %-padding) would otherwise
+      // shrink the video vertically and leave dead space — with a definite
+      // px height the CSS fill chain letterboxes the video instead.
       const shell = playerShell;
+      let shellH = 0;
+      // Measure with the marker off — the injected fill chain zeroes
+      // .player-size's %-padding, and with the shell back at height:auto
+      // that resolves to 0 (the same circular collapse the anchor exists
+      // to prevent). Marker off + inline props cleared in one sync task =
+      // a true natural-height read with no paint in between.
+      const measureNaturalHeight = (): void => {
+        shell.removeAttribute('data-tihoka-split-shell');
+        shell.style.removeProperty('width');
+        shell.style.removeProperty('height');
+        shellH = shell.getBoundingClientRect().height;
+        shell.setAttribute('data-tihoka-split-shell', '');
+      };
+      measureNaturalHeight();
+      playerShell.setAttribute('data-tihoka-split-shell', '');
 
-      const syncLayout = (): void => {
+      const syncLayout = (remeasure = false): void => {
         if (!panel.isConnected) return;
         const cbRect = shellBlock().getBoundingClientRect();
         const sheet = window.innerWidth < SPLIT_VIEW_COLUMN_BELOW;
         isSheetMode = sheet;
+        if (remeasure) measureNaturalHeight();
         const shellRect = shell.getBoundingClientRect();
         if (sheet) {
+          // Keep the height anchor even here — while the marker is set the
+          // fill chain gives .player-size height:100%, which needs a
+          // definite base or it collapses to 0 (width-%-padding disabled).
           shell.style.removeProperty('width');
           if (savedShellStyles.width) {
             shell.style.setProperty('width', savedShellStyles.width);
+          }
+          if (shellH > 1) {
+            shell.style.setProperty('height', `${Math.round(shellH)}px`, 'important');
+          } else if (savedShellStyles.height) {
+            shell.style.setProperty('height', savedShellStyles.height);
           }
           panel.style.left = '0';
           panel.style.right = '0';
@@ -354,6 +383,9 @@ export function useSplitView({
           const minPct = Math.min((200 / Math.max(cbRect.width, 1)) * 100, 50);
           const effectivePct = Math.min(Math.max(splitViewPctRef.current, minPct), 60);
           shell.style.setProperty('width', `${100 - effectivePct}%`, 'important');
+          if (shellH > 1) {
+            shell.style.setProperty('height', `${Math.round(shellH)}px`, 'important');
+          }
           const r = shell.getBoundingClientRect();
           panel.style.left = `${Math.round(r.right)}px`;
           panel.style.right = 'auto';
@@ -380,16 +412,16 @@ export function useSplitView({
       syncLayout();
       // Entry slide direction follows the mounted layout (up for sheet).
       panel.style.transform = isSheetMode ? 'translateY(100%)' : 'translateX(100%)';
-      scheduleLayoutSync = (): void => {
+      scheduleLayoutSync = (remeasure = false): void => {
         cancelAnimationFrame(layoutRaf);
-        layoutRaf = requestAnimationFrame(syncLayout);
+        layoutRaf = requestAnimationFrame(() => syncLayout(remeasure));
       };
-      layoutObserver = new ResizeObserver(scheduleLayoutSync);
+      layoutObserver = new ResizeObserver(() => scheduleLayoutSync());
       layoutObserver.observe(shell);
       const observedVideo = shell.querySelector('video');
       if (observedVideo) layoutObserver.observe(observedVideo);
-      window.addEventListener('scroll', scheduleLayoutSync, { passive: true, capture: true });
-      window.addEventListener('resize', scheduleLayoutSync);
+      window.addEventListener('scroll', onScroll, { passive: true, capture: true });
+      window.addEventListener('resize', onViewportResize);
       svLog('NORMAL mounted', { shellRect: rectLog(shell), panelRect: rectLog(panel), sheet: isSheetMode });
       applyYoutubeSplitViewCss();
     }
@@ -505,8 +537,8 @@ export function useSplitView({
     return () => {
       detachObserver.disconnect();
       layoutObserver?.disconnect();
-      window.removeEventListener('scroll', scheduleLayoutSync, true);
-      window.removeEventListener('resize', scheduleLayoutSync);
+      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('resize', onViewportResize);
       cancelAnimationFrame(layoutRaf);
       cancelAnimationFrame(panelWidthRaf);
       themeSyncCleanup();

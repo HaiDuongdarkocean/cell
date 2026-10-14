@@ -469,10 +469,8 @@ declare const __Tihoka_DEBUG__: string | undefined;
   const YT_SPLIT_STYLE_ID = '__yt_Tihoka_split_view_css';
   const YT_SPLIT_CSS = [
     // Shell-scoped rules — apply in both normal mode (shell narrowed in
-    // place) and fullscreen (children inside stageTihoka, still under the
-    // marked shell). The shell keeps its own box in normal mode, so the
-    // padding-driven size chain (.player-size %-padding) must stay intact —
-    // only letterbox fitting and the px-sized chrome need overriding.
+    // place, height anchored to its natural height) and fullscreen
+    // (children inside stageTihoka, still under the marked shell).
     '[data-tihoka-split-shell] video{object-fit:contain!important}',
     // YouTube sets left:12px inline on .ytp-chrome-bottom; width:100% would
     // overflow the shrunken shell by 12px. calc(100% - 24px) preserves 12px
@@ -495,16 +493,17 @@ declare const __Tihoka_DEBUG__: string | undefined;
     '[data-tihoka-split-shell] .ytp-progress-bar-padding,',
     '[data-tihoka-split-shell] .ytp-progress-list,',
     '[data-tihoka-split-shell] .ytp-progress-linear-live-buffer{width:100%!important}',
-    // Stage-scoped fill chain — fullscreen only. Inside stageTihoka the
-    // stage owns a definite height, so .player-size's %-padding (its in-flow
-    // height source) must be zeroed for the chain
-    // .player-size → #movie_player → .html5-video-container → video to fill
-    // the stage. In normal mode these MUST NOT touch the shell — the padding
-    // is what gives the shell its height; zeroing it collapses it to 0.
-    '[data-tihoka-split-view="stage"] .player-size{padding:0!important;height:100%!important}',
-    '[data-tihoka-split-view="stage"] #movie_player{height:100%!important;width:100%!important;inset:0!important}',
-    '[data-tihoka-split-view="stage"] .html5-video-container{height:100%!important;width:100%!important}',
-    '[data-tihoka-split-view="stage"] video{width:100%!important;height:100%!important;object-fit:contain!important;top:0!important;left:0!important}',
+    // Fill chain — zero .player-size's %-padding and let
+    // .player-size → #movie_player → .html5-video-container → video fill the
+    // shell instead. SAFE only because the shell's height is anchored:
+    // normal mode sets an explicit px height (natural full-width height) and
+    // the fullscreen shell fills the top layer — a percentage height inside
+    // resolves against a definite base. Without that anchor, height:100% on
+    // .player-size resolves against its own content (circular → 0).
+    '[data-tihoka-split-shell] .player-size{padding:0!important;height:100%!important}',
+    '[data-tihoka-split-shell] #movie_player{height:100%!important;width:100%!important;inset:0!important}',
+    '[data-tihoka-split-shell] .html5-video-container{height:100%!important;width:100%!important}',
+    '[data-tihoka-split-shell] video{width:100%!important;height:100%!important;object-fit:contain!important;top:0!important;left:0!important}',
   ].join('');
 
   document.addEventListener('__YT_SPLIT_VIEW_APPLY_CSS', () => {
