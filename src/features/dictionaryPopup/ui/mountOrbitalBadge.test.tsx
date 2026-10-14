@@ -3,6 +3,7 @@ import * as React from 'react';
 import { mountOrbitalBadge, type OrbitalBadgeMountController } from './mountOrbitalBadge';
 import type { PanelMountController } from '../controller/panelBridge';
 import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/TihokaUiHosts';
+import { setIframeVideo, IFRAME_PM_CHANGED_EVENT } from '@/shared/lib/dom/iframeVideoRegistry';
 import type { OrbitalBadgeHandle, OrbitalBadgeProps } from './OrbitalBadge';
 
 jest.mock('./OrbitalBadge', () => ({
@@ -232,5 +233,59 @@ describe('mountOrbitalBadge Player Mode host attach', () => {
     badge.reattach();
     expect(badgeHost().getRootNode()).toBe(document);
     expect(badgeHost().parentElement).toBe(document.body);
+  });
+});
+
+describe('mountOrbitalBadge iframe Player Mode dedupe', () => {
+  let badge: OrbitalBadgeMountController | undefined;
+  afterEach(() => {
+    badge?.destroy();
+    badge = undefined;
+    document.querySelectorAll('[data-tihoka-player-mode-host]').forEach((el) => {
+      el.querySelectorAll('iframe').forEach((f) => setIframeVideo(f, false));
+      el.remove();
+    });
+  });
+
+  function makeIframePmHost(): { host: HTMLElement; iframe: HTMLIFrameElement } {
+    const host = document.createElement('div');
+    const iframe = document.createElement('iframe');
+    host.appendChild(iframe);
+    host.setAttribute('data-tihoka-player-mode-host', '');
+    document.body.appendChild(host);
+    return { host, iframe };
+  }
+
+  const badgeHost = (): HTMLElement =>
+    document.querySelector<HTMLElement>('.js-Tihoka-orbital-badge-host')!;
+
+  it('hides the top badge when the PM host wraps a video-bearing iframe', () => {
+    const { iframe } = makeIframePmHost();
+    setIframeVideo(iframe, true);
+    badge = mountOrbitalBadge({});
+
+    window.dispatchEvent(new Event(IFRAME_PM_CHANGED_EVENT));
+    expect(badgeHost().style.display).toBe('none');
+  });
+
+  it('keeps the badge when the PM host iframe never announced a video', () => {
+    makeIframePmHost();
+    badge = mountOrbitalBadge({});
+
+    window.dispatchEvent(new Event(IFRAME_PM_CHANGED_EVENT));
+    expect(badgeHost().style.display).not.toBe('none');
+  });
+
+  it('restores the badge after the PM host is removed', () => {
+    const { host, iframe } = makeIframePmHost();
+    setIframeVideo(iframe, true);
+    badge = mountOrbitalBadge({});
+
+    window.dispatchEvent(new Event(IFRAME_PM_CHANGED_EVENT));
+    expect(badgeHost().style.display).toBe('none');
+
+    host.removeAttribute('data-tihoka-player-mode-host');
+    window.dispatchEvent(new Event(IFRAME_PM_CHANGED_EVENT));
+    expect(badgeHost().style.display).toBe('');
   });
 });

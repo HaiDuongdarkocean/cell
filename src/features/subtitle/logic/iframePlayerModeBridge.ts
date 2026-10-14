@@ -3,6 +3,7 @@ import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
 import { isResolvableHttpOrigin, resolveParentFrameOrigin, resolveIframeOrigin, isIframeContentWindow } from '@/shared/lib/dom/frameOrigin';
+import { setIframeVideo, IFRAME_MEDIA_CHANGED_EVENT, IFRAME_PM_CHANGED_EVENT } from '@/shared/lib/dom/iframeVideoRegistry';
 
 export { isChildFrame };
 
@@ -31,6 +32,8 @@ const ENTER_MSG = '__Tihoka_PLAYER_MODE_ENTER';
 const EXIT_MSG = '__Tihoka_PLAYER_MODE_EXIT';
 const ENTERED_MSG = '__Tihoka_PLAYER_MODE_ENTERED';
 const EXITED_MSG = '__Tihoka_PLAYER_MODE_EXITED';
+// Child → parent: the child document found/lost its playable <video>.
+const IFRAME_MEDIA_MSG = '__Tihoka_IFRAME_MEDIA';
 
 // Manager sheet — child iframe requests host page to render a bottom sheet.
 // The host page creates a portal on document.body and the child sends manager
@@ -129,6 +132,7 @@ async function enterTopFramePlayerMode(frameSrc: string): Promise<boolean> {
     // and enters ours in one step — same user gesture, no Chrome block.
     await host.requestFullscreen();
     topState = { host, fillStyle, fallbackStyle: null };
+    window.dispatchEvent(new Event(IFRAME_PM_CHANGED_EVENT));
     return true;
   } catch {
     // A child iframe's `postMessage` cannot carry the user's activation to the
@@ -155,6 +159,9 @@ async function enterTopFramePlayerMode(frameSrc: string): Promise<boolean> {
     host.setAttribute('data-tihoka-player-mode-host', '');
     document.head.appendChild(fallbackStyle);
     topState = { host, fillStyle, fallbackStyle };
+    // No fullscreenchange fires on the fallback path — notify listeners
+    // (orbital badge) to re-evaluate attachment now that PM is active.
+    window.dispatchEvent(new Event(IFRAME_PM_CHANGED_EVENT));
     return true;
   }
 }
@@ -172,6 +179,7 @@ async function exitTopFramePlayerMode(): Promise<boolean> {
   s.fallbackStyle?.remove();
   s.host.removeAttribute('data-tihoka-player-mode-host');
   s.fillStyle.remove();
+  window.dispatchEvent(new Event(IFRAME_PM_CHANGED_EVENT));
   return true;
 }
 
@@ -297,6 +305,69 @@ export function installIframePlayerModeBridge(): () => void {
     document.removeEventListener('fullscreenchange', onFullscreenChange);
     window.removeEventListener('keydown', onKeydown, true);
   };
+}
+
+/**
+ * Iframe media bridge — installed in EVERY frame (content scripts run
+ * all_frames). A frame with a playable video announces it upward; each
+ * intermediate frame forwards, so the top frame's registry ends up keyed by
+ * its direct-child iframes.
+ *
+ *   child → parent: { type: IFRAME_MEDIA_MSG, state: 'present' | 'absent' }
+ *
+ * Top frame marks the sending iframe in the registry and dispatches
+ * IFRAME_MEDIA_CHANGED_EVENT so the universal panel re-renders its Video
+ * toggle. A marked iframe that navigates is unmarked on its 'load' event —
+ * the new document re-announces if it still has a video.
+ */
+export function installIframeMediaBridge(): void {
+  const findIframeByWindow = (win: Window | null): HTMLIFrameElement | null => {
+    if (!win) return null;
+    for (const f of document.querySelectorAll('iframe')) {
+      if (f.contentWindow === win) return f;
+    }
+    return null;
+  };
+
+  const isTop = window.self === window.top;
+  const onMessage = (e: MessageEvent): void => {
+    const data = e.data;
+    if (!data || typeof data !== 'object' || data.type !== IFRAME_MEDIA_MSG) return;
+    if (!isIframeContentWindow(e.source as Window | null)) return;
+    if (!isResolvableHttpOrigin(e.origin)) return;
+    if (isTop) {
+      const iframe = findIframeByWindow(e.source as Window | null);
+      if (iframe) setIframeVideo(iframe, data.state === 'present');
+      window.dispatchEvent(new Event(IFRAME_MEDIA_CHANGED_EVENT));
+      return;
+    }
+    const parentOrigin = resolveParentFrameOrigin();
+    if (parentOrigin) {
+      try { window.parent.postMessage(data, parentOrigin); } catch { /* dead parent */ }
+    }
+  };
+  window.addEventListener('message', onMessage);
+
+  if (isTop) {
+    // A navigated iframe gets a fresh content script — unmark until the new
+    // document re-announces its video (or stays silent when there is none).
+    document.addEventListener('load', (e) => {
+      if (e.target instanceof HTMLIFrameElement) {
+        setIframeVideo(e.target, false);
+        window.dispatchEvent(new Event(IFRAME_MEDIA_CHANGED_EVENT));
+      }
+    }, true);
+  }
+}
+
+/** Child frame → parent: announce a playable video appeared/disappeared. */
+export function postIframeMediaState(present: boolean): void {
+  if (window.self === window.top) return;
+  const parentOrigin = resolveParentFrameOrigin();
+  if (!parentOrigin) return;
+  try {
+    window.parent.postMessage({ type: IFRAME_MEDIA_MSG, state: present ? 'present' : 'absent' }, parentOrigin);
+  } catch { /* cross-origin parent — best effort */ }
 }
 
 /**

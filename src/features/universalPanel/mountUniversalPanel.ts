@@ -30,6 +30,7 @@ import { addToOceanSrs } from '@/features/srs';
 import { createUniversalPanelController, type UniversalPanelMountController } from './UniversalPanelController';
 import { openSettingsSection } from './deepLink';
 import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/TihokaUiHosts';
+import { hasIframeVideo, IFRAME_MEDIA_CHANGED_EVENT } from '@/shared/lib/dom/iframeVideoRegistry';
 import { getSessionStorage, setSessionStorage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
@@ -298,10 +299,11 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
     if (isUnmounted) return;
     const open = mountController.isOpen();
     mount.host.style.pointerEvents = open ? 'auto' : 'none';
-    // ponytail: naive hasMedia detection via document.querySelector('video').
-    // Covers HTML5 players in the top-level document; does not detect videos
-    // inside cross-origin iframes or some custom players. Upgrade when needed.
-    const hasMedia = typeof document !== 'undefined' && document.querySelector('video') !== null;
+    // hasMedia = own document <video> OR a child iframe that announced one
+    // (__Tihoka_IFRAME_MEDIA bridge — cross-origin players like playembed/vidnest).
+    const hasMedia =
+      typeof document !== 'undefined' &&
+      (document.querySelector('video') !== null || hasIframeVideo());
     mount.root.render(
       createElement(
         ShadowThemeProvider,
@@ -360,6 +362,10 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
     tokenizeState = next;
     if (changed) render();
   }) ?? null;
+
+  // Re-render when a child iframe announces/loses its video so the Video
+  // half of the tokenize capsule flips enabled state live.
+  window.addEventListener(IFRAME_MEDIA_CHANGED_EVENT, render);
 
   // Initial render (closed; persisted tab loads in background and updates state).
   render();

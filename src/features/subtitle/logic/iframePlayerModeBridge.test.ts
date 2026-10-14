@@ -27,10 +27,12 @@ jest.mock('@/shared/lib/storage/settingsStore', () => ({
 
 import {
   installIframePlayerModeBridge,
+  installIframeMediaBridge,
   requestIframePlayerModeEnter,
   requestIframePlayerModeExit,
 } from './iframePlayerModeBridge';
 import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
+import { hasIframeVideo, iframeHasVideo, setIframeVideo } from '@/shared/lib/dom/iframeVideoRegistry';
 
 const mockIsChildFrame = isChildFrame as jest.MockedFunction<typeof isChildFrame>;
 
@@ -102,6 +104,68 @@ describe('iframePlayerModeBridge top-side listener', () => {
       expect.objectContaining({ type: '__Tihoka_PLAYER_MODE_ENTERED' }),
       CHILD_ORIGIN,
     );
+  });
+});
+
+describe('installIframeMediaBridge top-side', () => {
+  beforeEach(() => {
+    mockIsChildFrame.mockReturnValue(false);
+    installIframeMediaBridge();
+  });
+
+  afterEach(() => {
+    for (const iframe of document.querySelectorAll('iframe')) {
+      setIframeVideo(iframe, false);
+    }
+    document.body.innerHTML = '';
+    jest.restoreAllMocks();
+  });
+
+  function dispatchMedia(iframe: HTMLIFrameElement, state: string, origin = CHILD_ORIGIN): void {
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: { type: '__Tihoka_IFRAME_MEDIA', state },
+        origin,
+        source: iframe.contentWindow,
+      }),
+    );
+  }
+
+  it('marks the sending iframe when it announces a video', () => {
+    const iframe = addIframe(`${CHILD_ORIGIN}${CHILD_PATH}`);
+    dispatchMedia(iframe, 'present');
+    expect(iframeHasVideo(iframe)).toBe(true);
+    expect(hasIframeVideo()).toBe(true);
+  });
+
+  it('unmarks on absent and on iframe navigation load', () => {
+    const iframe = addIframe(`${CHILD_ORIGIN}${CHILD_PATH}`);
+    dispatchMedia(iframe, 'present');
+    dispatchMedia(iframe, 'absent');
+    expect(hasIframeVideo()).toBe(false);
+
+    dispatchMedia(iframe, 'present');
+    iframe.dispatchEvent(new Event('load'));
+    expect(hasIframeVideo()).toBe(false);
+  });
+
+  it('ignores messages whose source is not a child iframe window', () => {
+    addIframe(`${CHILD_ORIGIN}${CHILD_PATH}`);
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: { type: '__Tihoka_IFRAME_MEDIA', state: 'present' },
+        origin: CHILD_ORIGIN,
+        source: null,
+      }),
+    );
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: { type: '__Tihoka_IFRAME_MEDIA', state: 'present' },
+        origin: CHILD_ORIGIN,
+        source: window,
+      }),
+    );
+    expect(hasIframeVideo()).toBe(false);
   });
 });
 

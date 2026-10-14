@@ -1,5 +1,6 @@
 import { isVideoReady } from '@/shared/lib/dom/videoReady';
 import { findLargestPlayableVideo, hasVideo } from '@/shared/lib/dom/videoFinder';
+import { postIframeMediaState } from '@/features/subtitle/logic/iframePlayerModeBridge';
 import { runPageScan } from './mediaScan';
 
 // Find video element and init overlay (defer until DOM ready, observe SPA late mounts)
@@ -59,6 +60,7 @@ function finishVideoInit(video: HTMLVideoElement): void {
   currentPendingVideo = null;
   currentOverlayCleanup?.();
   currentVideo = video;
+  postIframeMediaState(true);
   void Promise.all([
     import('@/features/subtitle'),
     import('@/features/cardCreator/service/cardCreatorActionPorts'),
@@ -223,6 +225,7 @@ export function findAndInitOverlay(): void {
 }
 
 export function cleanupVideoOverlay(): void {
+  if (currentVideo) postIframeMediaState(false);
   currentOverlayCleanup?.();
   currentOverlayCleanup = null;
   currentVideo = null;

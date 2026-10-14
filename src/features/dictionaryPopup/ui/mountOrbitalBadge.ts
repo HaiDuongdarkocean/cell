@@ -6,6 +6,7 @@ import { OrbitalBadge, type OrbitalBadgeProps, type OrbitalBadgeHandle } from '.
 import type { PanelMountController } from '../controller/panelBridge';
 import type { PointerPreset, Point } from '@/features/dictionaryPopup/badgePointer/pointerPosition';
 import { Tihoka_PANEL_DISMISS_EXEMPT_SELECTORS } from '@/shared/lib/dom/TihokaUiHosts';
+import { iframeHasVideo, IFRAME_PM_CHANGED_EVENT } from '@/shared/lib/dom/iframeVideoRegistry';
 
 export interface OrbitalBadgeMountOptions {
   /** Badge diameter in px. */
@@ -175,6 +176,23 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
       mount.host.style.display = 'none';
       return;
     }
+    // Iframe Player Mode fullscreens a container DIV wrapping the <iframe>
+    // (findFarthestSameSizeContainer), not the iframe element itself. When
+    // that container holds a video-bearing iframe (announced via the media
+    // bridge), this document's badge can neither look up words inside the
+    // cross-origin iframe nor reach its video — the child's own badge mounts
+    // inside the iframe and is the functional one. Hide ours so exactly one
+    // badge shows. The PM fallback path (data-tihoka-player-mode-host, no
+    // fullscreenchange) resolves through the same check.
+    const pmHost = document.querySelector<HTMLElement>('[data-tihoka-player-mode-host]');
+    const coverHost = fsEl ?? pmHost;
+    if (
+      coverHost &&
+      Array.from(coverHost.querySelectorAll('iframe')).some(iframeHasVideo)
+    ) {
+      mount.host.style.display = 'none';
+      return;
+    }
     // Non-iframe fullscreen (e.g. Tihoka Player Mode container), a child-frame
     // Player Mode host, or exit: move the badge into that element so it stays
     // visible, or back to body when leaving. Restore display — unless the
@@ -191,6 +209,9 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
 
   document.addEventListener('fullscreenchange', onFullscreenChange);
   document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+  // PM fallback path sets data-tihoka-player-mode-host without fullscreen —
+  // the bridge dispatches this so the badge still re-evaluates.
+  window.addEventListener(IFRAME_PM_CHANGED_EVENT, onFullscreenChange);
 
   // If already in fullscreen or a child-frame Player Mode when mount is
   // called, attach into that element.
@@ -204,6 +225,7 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
     document.removeEventListener('pointerdown', onDocPointerDown, true);
     document.removeEventListener('fullscreenchange', onFullscreenChange);
     document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
+    window.removeEventListener(IFRAME_PM_CHANGED_EVENT, onFullscreenChange);
     mount.unmount();
   };
 

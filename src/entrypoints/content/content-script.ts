@@ -1,6 +1,6 @@
 import { clearAutoLoadCache } from '@/features/subtitle/logic/autoLoadCache';
 import { clearSubtitleBodyCache } from '@/features/subtitle/logic/subtitleResponseCache';
-import { installIframePlayerModeBridge } from '@/features/subtitle/logic/iframePlayerModeBridge';
+import { installIframePlayerModeBridge, installIframeMediaBridge } from '@/features/subtitle/logic/iframePlayerModeBridge';
 import { startWordStatusCrossTabRelay } from '@/features/dictionary/services/wordStatusCrossTab';
 import { startDictionaryCrossTabRelay } from '@/features/dictionary/services/dictionaryCrossTab';
 import { installHostManagerSheet } from './hostManagerSheet';
@@ -23,6 +23,9 @@ const loadFeatureInit = async (): Promise<FeatureInitModule> =>
 // Top-frame coordinator for Player Mode when the actual video is inside a
 // cross-origin iframe. Child frames request the host container via postMessage.
 installIframePlayerModeBridge();
+// Video-presence announce: child frames with a playable <video> notify the top
+// frame so the universal panel enables its Video (subtitle tokenize) toggle.
+installIframeMediaBridge();
 
 // Relay cross-tab word status changes into the local event bus so all tabs
 // sharing a video stay in sync.
