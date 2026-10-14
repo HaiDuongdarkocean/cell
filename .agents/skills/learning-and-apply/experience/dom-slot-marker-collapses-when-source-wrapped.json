@@ -1,0 +1,41 @@
+{
+  "id": "dom-slot-marker-collapses-when-source-wrapped",
+  "title": "Host slot markers measured FROM the element you wrap collapse to 0x0 — cache the marker element, not its geometry",
+  "category": [
+    "detection",
+    "rendering"
+  ],
+  "tags": [
+    "dom",
+    "placeholder",
+    "slot-keeper",
+    "probe",
+    "cache",
+    "elementsfrompoint",
+    "split-view",
+    "youtube"
+  ],
+  "trigger": "Wrapping a host element whose in-flow space is reserved by a placeholder that the host sizes FROM that element — after the wrap the marker stays 0x0 forever, so geometry probes (elementsFromPoint, rect containment) can never find it again",
+  "principle": "A slot marker's VALUE is its DOM position, not its current size. When the host derives the marker's box from the element being wrapped, the marker collapses permanently once wrapped — remember the marker element (WeakMap shell→marker) on first discovery and reuse it while connected; keep the last measured size separately.",
+  "cases": [
+    {
+      "context": "m.youtube .player-placeholder reserves the player's in-flow slot and is sized by YouTube JS from #player-container-id. Split-view wraps the shell into a stage; the placeholder stays 0x0, hit-test + doc-space probes both reject it, and the wrapper falls back to the shell's body-level DOM spot — video pulled above the masthead.",
+      "bad": "if (rect.width < 1) return null; const hits = elementsFromPoint(...); for (const el of hits) if (sameSize(el)) return el; return null;",
+      "good": "const cached = keepers.get(shell); if (cached?.isConnected) return cached; // probe as before; keepers.set(shell, found)"
+    }
+  ],
+  "applyFor": [
+    "wrapping any out-of-flow host element with a reserved in-flow slot",
+    "probing DOM by geometry where hosts zero out markers",
+    "sticky/fixed player detach patterns"
+  ],
+  "related": [
+    "async-deferred-cleanup-stale-timer-race",
+    "dom-snapshot-parent-detached-by-deferred-teardown",
+    "detection-size-match-per-dimension-not-area"
+  ],
+  "source": {
+    "commit": "b08a0c3a",
+    "date": "2026-10-28"
+  }
+}

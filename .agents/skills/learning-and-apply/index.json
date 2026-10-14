@@ -3680,6 +3680,26 @@
     },
     {
       "type": "experience",
+      "id": "dom-slot-marker-collapses-when-source-wrapped",
+      "title": "Host slot markers measured FROM the element you wrap collapse to 0x0 — cache the marker element, not its geometry",
+      "category": [
+        "detection",
+        "rendering"
+      ],
+      "tags": [
+        "dom",
+        "placeholder",
+        "slot-keeper",
+        "probe",
+        "cache",
+        "elementsfrompoint",
+        "split-view",
+        "youtube"
+      ],
+      "trigger": "Wrapping a host element whose in-flow space is reserved by a placeholder that the host sizes FROM that element — after the wrap the marker stays 0x0 forever, so geometry probes can never find it again"
+    },
+    {
+      "type": "experience",
       "id": "split-view-spamverify-gate",
       "title": "After touching split-view layout, the spamVerify flow is the committed regression gate",
       "category": [

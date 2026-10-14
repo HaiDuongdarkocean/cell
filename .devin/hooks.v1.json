@@ -24,6 +24,11 @@
           "type": "command",
           "command": "node scripts/hook-stage-guard.mjs",
           "timeout": 5
+        },
+        {
+          "type": "command",
+          "command": "node scripts/hook-lessons.mjs",
+          "timeout": 5
         }
       ]
     }

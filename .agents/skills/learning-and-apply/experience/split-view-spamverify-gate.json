@@ -1,0 +1,36 @@
+{
+  "id": "split-view-spamverify-gate",
+  "title": "The spamVerify debug flow is the committed regression gate for split-view changes",
+  "category": [
+    "testing"
+  ],
+  "tags": [
+    "split-view",
+    "regression-gate",
+    "flow-runner",
+    "youtube",
+    "spam-t",
+    "keeper"
+  ],
+  "trigger": "Any change to subtitleSplitView.ts / findPlayerContainer.ts / split-view layout — the slot-keeper regressions (body-top wrapper, collapsed height, orphaned sheet panel) only appear under rotate+rapid-t races that unit tests cannot reach",
+  "principle": "Race-window layout regressions need a deterministic browser gate, not manual probing. A named flow with hard asserts (assertSplit throws on body-top y<=1, collapsed height, duplicate/orphan panels) turns 'did it regress?' into a pass/fail run.",
+  "cases": [
+    {
+      "context": "After fixing split-view slot placement, repeated `t` toggles regressed again on reopen because m.youtube collapses .player-placeholder once the shell is staged — only visible under rapid-toggle timing.",
+      "bad": "Manual probe rectangles after each fix; the verdict lives in chat and is re-derived every session.",
+      "good": "probe.mjs --match youtube --ext --reload && run.mjs youtube spamVerify — 3 rotate+spam rounds, hard asserts, fails loudly."
+    }
+  ],
+  "applyFor": [
+    "any timing/race regression that unit tests cannot reach",
+    "flows that need pass/fail instead of log-reading",
+    "extension features verified only in a live host DOM"
+  ],
+  "related": [
+    "dom-slot-marker-collapses-when-source-wrapped"
+  ],
+  "source": {
+    "commit": "0d3a3c91",
+    "date": "2026-10-28"
+  }
+}
