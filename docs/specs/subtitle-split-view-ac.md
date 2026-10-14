@@ -91,3 +91,4 @@ toàn bộ nhóm AC liên quan. Chi tiết stress-test e2e: `split-view-stress-t
 | Short viewport video crop trên/dưới | Fluid `padding-top` giữ nguyên khi wrapper bị cap | AC-4.6, AC-4.10 |
 | Zero fluid padding → video collapse 24px | `.vjs-fluid` box = chính padding; phải constrain width theo aspect | AC-4.10 |
 | Panel max làm wrapper co theo video | Height recompute theo stage width → shrink; phải freeze theo viewport key | AC-4.9 |
+| m.youtube sheet mode: video letterbox, khoảng đen trên/dưới | `.player-size` size bằng `padding-bottom:56.25%` (không phải padding-top) — rule chỉ zero top, `#movie_player`+video dài gấp đôi stage | AC-3.4 |

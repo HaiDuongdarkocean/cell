@@ -22,4 +22,15 @@ describe('YouTube split-view injected CSS', () => {
       expect(SOURCE).not.toMatch(rule);
     },
   );
+
+  // m.youtube .player-size is a 0-height shell sized by %-padding
+  // (padding-bottom:56.25% today, padding-top in older markup). Inside the
+  // split-view stage the padding must be fully zeroed or #movie_player/video
+  // stretch to height+padding and object-fit:contain letterboxes the video.
+  it('zeroes all %-padding on .player-size inside the stage', () => {
+    const rule = SOURCE.match(/\.player-size\{[^}]*\}/)?.[0] ?? '';
+    const zeroed = /padding:\s*0/.test(rule)
+      || (/padding-top:\s*0/.test(rule) && /padding-bottom:\s*0/.test(rule));
+    expect(zeroed).toBe(true);
+  });
 });

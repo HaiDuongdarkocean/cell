@@ -520,14 +520,15 @@ declare const __Tihoka_DEBUG__: string | undefined;
   // CSS can target it.
   const YT_SPLIT_STYLE_ID = '__yt_Tihoka_split_view_css';
   const YT_SPLIT_CSS = [
-    // m.youtube: #player.player-size derives its box from
-    // padding-top:56.25% with content height 0 — % heights below it resolve
-    // against 0 and the video stays width-sized (letterboxed inside the
-    // stage). Kill the padding trick inside the stage so the chain
+    // m.youtube: #player.player-size derives its box from %-padding
+    // (padding-bottom:56.25%, older markup used padding-top) with content
+    // height 0 — % heights below it resolve against 0 and the video stays
+    // width-sized (letterboxed inside the stage). Kill the padding trick
+    // inside the stage so the chain
     // .player-size → #movie_player → .html5-video-container → video fills
     // the stage height; desktop YouTube has no .player-size in the stage,
     // so these rules no-op there.
-    '[data-tihoka-split-view="stage"] .player-size{padding-top:0!important;height:100%!important}',
+    '[data-tihoka-split-view="stage"] .player-size{padding:0!important;height:100%!important}',
     '[data-tihoka-split-view="stage"] #movie_player{height:100%!important;width:100%!important;inset:0!important}',
     '[data-tihoka-split-view="stage"] .html5-video-container{height:100%!important;width:100%!important}',
     '[data-tihoka-split-view="stage"] video{width:100%!important;height:100%!important;object-fit:contain!important;top:0!important;left:0!important}',
