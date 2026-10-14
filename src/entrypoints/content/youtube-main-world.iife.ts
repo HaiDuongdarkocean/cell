@@ -462,44 +462,49 @@ declare const __Tihoka_DEBUG__: string | undefined;
   // YouTube-specific CSS overrides for split view layout. These selectors
   // (.ytp-*, .html5-video-container) are YouTube-internal — they belong in
   // the YouTube adapter, not in generic React UI code (SubtitlePanels.tsx).
-  // The stage element ([data-tihoka-split-view="stage"]) is created by the
-  // isolated world React component but lives in the light DOM, so MAIN world
-  // CSS can target it.
+  // The marked shell ([data-tihoka-split-shell]) and fullscreen stage
+  // ([data-tihoka-split-view="stage"]) are created by the isolated-world
+  // React component but live in the light DOM, so MAIN world CSS can target
+  // them.
   const YT_SPLIT_STYLE_ID = '__yt_Tihoka_split_view_css';
   const YT_SPLIT_CSS = [
-    // m.youtube: #player.player-size derives its box from %-padding
-    // (padding-bottom:56.25%, older markup used padding-top) with content
-    // height 0 — % heights below it resolve against 0 and the video stays
-    // width-sized (letterboxed inside the stage). Kill the padding trick
-    // inside the stage so the chain
-    // .player-size → #movie_player → .html5-video-container → video fills
-    // the stage height; desktop YouTube has no .player-size in the stage,
-    // so these rules no-op there.
-    '[data-tihoka-split-view="stage"] .player-size{padding:0!important;height:100%!important}',
-    '[data-tihoka-split-view="stage"] #movie_player{height:100%!important;width:100%!important;inset:0!important}',
-    '[data-tihoka-split-view="stage"] .html5-video-container{height:100%!important;width:100%!important}',
-    '[data-tihoka-split-view="stage"] video{width:100%!important;height:100%!important;object-fit:contain!important;top:0!important;left:0!important}',
+    // Shell-scoped rules — apply in both normal mode (shell narrowed in
+    // place) and fullscreen (children inside stageTihoka, still under the
+    // marked shell). The shell keeps its own box in normal mode, so the
+    // padding-driven size chain (.player-size %-padding) must stay intact —
+    // only letterbox fitting and the px-sized chrome need overriding.
+    '[data-tihoka-split-shell] video{object-fit:contain!important}',
     // YouTube sets left:12px inline on .ytp-chrome-bottom; width:100% would
-    // overflow the stage by 12px. calc(100% - 24px) preserves 12px padding
-    // on both sides.
-    '[data-tihoka-split-view="stage"] .ytp-chrome-bottom{width:calc(100% - 24px)!important}',
-    // YouTube JS sizes these to movie_player width (full viewport), not
-    // stageTihoka width. Force 100% so they fit inside chromeBottom.
-    '[data-tihoka-split-view="stage"] .ytp-progress-bar-container,',
-    '[data-tihoka-split-view="stage"] .ytp-progress-bar,',
-    '[data-tihoka-split-view="stage"] .ytp-heat-map-container,',
-    '[data-tihoka-split-view="stage"] .ytp-chapters-container,',
-    '[data-tihoka-split-view="stage"] .ytp-timed-markers-container,',
-    '[data-tihoka-split-view="stage"] .ytp-chrome-controls{width:100%!important}',
+    // overflow the shrunken shell by 12px. calc(100% - 24px) preserves 12px
+    // padding on both sides.
+    '[data-tihoka-split-shell] .ytp-chrome-bottom{width:calc(100% - 24px)!important}',
+    // YouTube JS sizes these to movie_player width (full viewport), not the
+    // shrunken shell. Force 100% so they fit inside chromeBottom.
+    '[data-tihoka-split-shell] .ytp-progress-bar-container,',
+    '[data-tihoka-split-shell] .ytp-progress-bar,',
+    '[data-tihoka-split-shell] .ytp-heat-map-container,',
+    '[data-tihoka-split-shell] .ytp-chapters-container,',
+    '[data-tihoka-split-shell] .ytp-timed-markers-container,',
+    '[data-tihoka-split-shell] .ytp-chrome-controls{width:100%!important}',
     // Progress bar internals get explicit pixel widths from YouTube JS
     // (e.g. 2536px = movie_player width - 24). Override to 100% of parent.
     // Per-chapter segments (.ytp-heat-map-chapter, .ytp-chapter-hover-container)
     // must NOT be forced to 100%: YouTube sets inline px widths per chapter and
     // tiles them via float:left — at 100% each chapter wraps to its own line,
     // stacking into a striped block that overflows below the video.
-    '[data-tihoka-split-view="stage"] .ytp-progress-bar-padding,',
-    '[data-tihoka-split-view="stage"] .ytp-progress-list,',
-    '[data-tihoka-split-view="stage"] .ytp-progress-linear-live-buffer{width:100%!important}',
+    '[data-tihoka-split-shell] .ytp-progress-bar-padding,',
+    '[data-tihoka-split-shell] .ytp-progress-list,',
+    '[data-tihoka-split-shell] .ytp-progress-linear-live-buffer{width:100%!important}',
+    // Stage-scoped fill chain — fullscreen only. Inside stageTihoka the
+    // stage owns a definite height, so .player-size's %-padding (its in-flow
+    // height source) must be zeroed for the chain
+    // .player-size → #movie_player → .html5-video-container → video to fill
+    // the stage. In normal mode these MUST NOT touch the shell — the padding
+    // is what gives the shell its height; zeroing it collapses it to 0.
+    '[data-tihoka-split-view="stage"] .player-size{padding:0!important;height:100%!important}',
+    '[data-tihoka-split-view="stage"] #movie_player{height:100%!important;width:100%!important;inset:0!important}',
+    '[data-tihoka-split-view="stage"] .html5-video-container{height:100%!important;width:100%!important}',
+    '[data-tihoka-split-view="stage"] video{width:100%!important;height:100%!important;object-fit:contain!important;top:0!important;left:0!important}',
   ].join('');
 
   document.addEventListener('__YT_SPLIT_VIEW_APPLY_CSS', () => {

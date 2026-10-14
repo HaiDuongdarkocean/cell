@@ -29,7 +29,7 @@ export const toggleSplitView = async (env, waitMs = 1300) => {
 };
 
 export const isSplitOpen = (env) => env.page.evaluate(
-  () => !!document.querySelector('[data-tihoka-split-view="wrapper"]'),
+  () => !!document.querySelector('[data-tihoka-split-shell]'),
 );
 
 export const ensureSplit = async (env) => {
@@ -48,24 +48,36 @@ export const spamToggles = async (env, n = 4, waitMs = 220) => {
 };
 
 // Hard gate — throws (fails the flow) on the known regressions instead of
-// only logging geometry:
-//  open   — one wrapper with real height, not glued to page top (y<=minY is
-//           the body-top fallback when the flow-slot keeper probe misses),
-//           exactly one panel, stage fills the wrapper.
-//  closed — nothing left in the DOM (sheet panels reparented to <body> must
-//           be removed too, not just the wrapper).
+// only logging geometry. The shell never leaves the host tree: open state =
+// one marked shell shrunk beside one body-mounted panel (or bottom sheet on
+// narrow viewports); closed = neither exists.
 export const assertSplit = async (env, want = 'open', tag = '', minY = 1) => {
+  // Geometry assertions only mean anything once the slide-in transition has
+  // settled — getBoundingClientRect includes the in-flight translate, so a
+  // sample taken mid-entry reads the start offset (e.g. +100% panel width).
+  if (want === 'open') {
+    await env.page.waitForFunction(() => {
+      const p = document.querySelector('[data-tihoka-split-view="panel"]');
+      if (!p) return true;
+      const t = getComputedStyle(p).transform;
+      return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
+    }, null, { timeout: 2500 }).catch(() => {});
+  }
   const s = await env.page.evaluate(() => {
     const r = (el) => el ? {
       w: Math.round(el.getBoundingClientRect().width),
       h: Math.round(el.getBoundingClientRect().height),
+      x: Math.round(el.getBoundingClientRect().x),
       y: Math.round(el.getBoundingClientRect().y),
+      right: Math.round(el.getBoundingClientRect().right),
     } : null;
-    const w = document.querySelector('[data-tihoka-split-view="wrapper"]');
+    const shell = document.querySelector('[data-tihoka-split-shell]');
+    const panel = document.querySelector('[data-tihoka-split-view="panel"]');
     return {
-      wrapper: w ? { ...r(w), parent: w.parentElement.tagName } : null,
-      stage: r(document.querySelector('[data-tihoka-split-view="stage"]')),
-      wrappers: document.querySelectorAll('[data-tihoka-split-view="wrapper"]').length,
+      inner: { w: innerWidth, h: innerHeight },
+      shell: shell ? { ...r(shell), parent: shell.parentElement.tagName, tag: shell.tagName, id: shell.id || null } : null,
+      shells: document.querySelectorAll('[data-tihoka-split-shell]').length,
+      panel: panel ? { ...r(panel), parent: panel.parentElement.tagName, pos: panel.style.position, vis: panel.style.visibility } : null,
       panels: document.querySelectorAll('[data-tihoka-split-view="panel"]').length,
       video: r(document.querySelector('video')),
     };
@@ -74,14 +86,24 @@ export const assertSplit = async (env, want = 'open', tag = '', minY = 1) => {
     throw new Error(`assertSplit(${want}) ${tag}: ${msg} — ${JSON.stringify(s)}`);
   };
   if (want === 'open') {
-    if (!s.wrapper) fail('wrapper missing');
-    if (s.wrappers !== 1) fail(`${s.wrappers} wrappers mounted`);
-    if (s.wrapper.h < 100) fail('wrapper height collapsed');
-    if (s.wrapper.y <= minY) fail(`wrapper at page top (y=${s.wrapper.y}) — slot keeper missed`);
+    if (!s.shell) fail('marked shell missing');
+    if (s.shells !== 1) fail(`${s.shells} marked shells`);
+    if (s.shell.h < 100) fail('shell height collapsed');
+    if (s.shell.y <= minY) fail(`shell at page top (y=${s.shell.y}) — host slot lost`);
+    if (!s.panel) fail('panel missing');
     if (s.panels !== 1) fail(`${s.panels} panels mounted`);
-    if (!s.stage || s.stage.h < s.wrapper.h - 2) fail('stage does not fill wrapper');
+    const sheetMode = s.inner.w < 600;
+    if (!sheetMode) {
+      if (s.panel.parent !== 'BODY') fail(`panel parent ${s.panel.parent} — must mount on body`);
+      if (Math.abs(s.panel.x - s.shell.right) > 8) fail(`panel not docked to shell (panel.x=${s.panel.x}, shell.right=${s.shell.right})`);
+      if (Math.abs(s.panel.y - s.shell.y) > 8) fail(`panel not top-aligned with shell (panel.y=${s.panel.y}, shell.y=${s.shell.y})`);
+      if (s.panel.h < s.shell.h - 8) fail('panel shorter than shell');
+    } else {
+      if (s.panel.h < 100) fail('sheet height collapsed');
+    }
+    if (!s.video || s.video.w < 1 || s.video.h < 1) fail('video has no box');
   } else if (want === 'closed') {
-    if (s.wrapper) fail('wrapper still mounted');
+    if (s.shell) fail('shell marker still set');
     if (s.panels !== 0) fail(`${s.panels} orphan panels left in DOM`);
   } else {
     throw new Error(`assertSplit: unknown want "${want}"`);
@@ -97,16 +119,16 @@ const dumpFn = (t) => {
     x: Math.round(el.getBoundingClientRect().x),
     y: Math.round(el.getBoundingClientRect().y),
   } : null;
-  const w = document.querySelector('[data-tihoka-split-view="wrapper"]');
+  const sh = document.querySelector('[data-tihoka-split-shell]');
   const st = document.querySelector('[data-tihoka-split-view="stage"]');
   const pa = document.querySelector('[data-tihoka-split-view="panel"]');
   return {
     tag: t,
     inner: { w: innerWidth, h: innerHeight },
     bodyW: document.body.clientWidth,
-    wrapper: w ? { rect: r(w), pos: w.style.position, flexDir: w.style.flexDirection } : null,
+    shell: sh ? { rect: r(sh), width: sh.style.width, parent: sh.parentElement.tagName } : null,
     stage: r(st),
-    panel: pa ? { rect: r(pa), parent: pa.parentElement.tagName, pos: pa.style.position } : null,
+    panel: pa ? { rect: r(pa), parent: pa.parentElement.tagName, pos: pa.style.position, vis: pa.style.visibility } : null,
     video: r(document.querySelector('video')),
     TihokaRoot: r(document.getElementById('Tihoka-subtitle-root')),
   };

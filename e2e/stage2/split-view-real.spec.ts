@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 import { test } from '../fixtures/TihokaEnvironment.fixture';
 
-const WRAPPER = '[data-tihoka-split-view="wrapper"]';
+const WRAPPER = '[data-tihoka-split-shell]';
 
 const KISSKH_URL =
   'https://kisskh.co/Drama/Perfect-Crown/Episode-1?id=11923&ep=207851&page=0&pageSize=100';
@@ -31,20 +31,20 @@ const gotoOrSkip = async (
 
 const splitViewState = (page: Page) =>
   page.evaluate(() => {
-    const wrapper = document.querySelector('[data-tihoka-split-view="wrapper"]');
+    const shell = document.querySelector('[data-tihoka-split-shell]');
     const panel = document.querySelector('[data-tihoka-split-view="panel"]');
     const video = document.querySelector('video');
     const vr = video?.getBoundingClientRect();
     const pr = panel?.getBoundingClientRect();
-    const wr = wrapper?.getBoundingClientRect();
+    const sr = shell?.getBoundingClientRect();
     return {
-      wrappers: document.querySelectorAll('[data-tihoka-split-view="wrapper"]').length,
+      shells: document.querySelectorAll('[data-tihoka-split-shell]').length,
       panels: document.querySelectorAll('[data-tihoka-split-view="panel"]').length,
       handles: document.querySelectorAll('[data-tihoka-split-view="handle"]').length,
-      total: document.querySelectorAll('[data-tihoka-split-view]').length,
+      total: document.querySelectorAll('[data-tihoka-split-view],[data-tihoka-split-shell]').length,
       video: vr ? { w: Math.round(vr.width), h: Math.round(vr.height) } : null,
       panel: pr ? { w: Math.round(pr.width), h: Math.round(pr.height) } : null,
-      wrapper: wr ? { w: Math.round(wr.width), h: Math.round(wr.height) } : null,
+      shell: sr ? { w: Math.round(sr.width), h: Math.round(sr.height) } : null,
       fullscreen: !!document.fullscreenElement,
     };
   });
@@ -76,12 +76,12 @@ test.describe('Stage 2: Split View on real sites', () => {
       await page.waitForTimeout(1000);
 
       const state = await splitViewState(page);
-      expect(state.wrappers).toBe(1);
+      expect(state.shells).toBe(1);
       expect(state.video!.h).toBeGreaterThan(0);
       expect(state.panel!.w).toBeGreaterThan(0);
-      // Wrapper should not take the whole row when siblings exist — panel
+      // Shell should not take the whole row when siblings exist — panel
       // + video share the original column footprint.
-      expect(state.wrapper!.w).toBeLessThanOrEqual(Math.max(before.w + 20, 320));
+      expect(state.shell!.w).toBeLessThanOrEqual(Math.max(before.w + 20, 320));
 
       await page.keyboard.press('t');
       await page.waitForTimeout(1500);
@@ -114,7 +114,7 @@ test.describe('Stage 2: Split View on real sites', () => {
       await page.waitForTimeout(1000);
 
       const opened = await splitViewState(page);
-      expect(opened.wrappers).toBe(1);
+      expect(opened.shells).toBe(1);
       expect(opened.video!.h).toBeGreaterThan(0);
 
       // Enter native fullscreen on the movie player.
@@ -137,7 +137,7 @@ test.describe('Stage 2: Split View on real sites', () => {
       await page.waitForTimeout(2500);
 
       const afterFs = await splitViewState(page);
-      expect(afterFs.wrappers).toBe(1);
+      expect(afterFs.shells).toBe(1);
       expect(afterFs.video!.h).toBeGreaterThan(0);
     } finally {
       await page.close();
@@ -160,7 +160,7 @@ test.describe('Stage 2: Split View on real sites', () => {
       await page.waitForTimeout(1000);
 
       const state = await splitViewState(page);
-      expect(state.wrappers).toBe(1);
+      expect(state.shells).toBe(1);
       expect(state.video!.h).toBeGreaterThan(0);
       expect(state.panel!.h).toBeGreaterThan(0);
 

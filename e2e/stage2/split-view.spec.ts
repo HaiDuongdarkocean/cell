@@ -8,7 +8,7 @@ test.describe('Stage 2: Split View on StreamFlix', () => {
     expect(before).not.toBeNull();
 
     await streamFlixPage.keyboard.press('t');
-    const wrapper = streamFlixPage.locator('[data-tihoka-split-view="wrapper"]');
+    const wrapper = streamFlixPage.locator('[data-tihoka-split-shell]');
     const panel = streamFlixPage.locator('[data-tihoka-split-view="panel"]');
     await expect(wrapper).toBeVisible({ timeout: 10_000 });
     await expect(panel).toBeVisible();

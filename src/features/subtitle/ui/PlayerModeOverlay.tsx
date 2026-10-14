@@ -257,16 +257,16 @@ function PlayerModeOverlayInner({
 
     const originalParent = player.parentElement;
     const originalNextSibling = player.nextSibling;
-    // If the player still sits inside a split-view stage Tihoka, the split view's
-    // deferred teardown (410ms after the playerMode state flip) will detach the
-    // wrapper — including this Tihoka — AFTER we snapshot it. Record the
-    // wrapper's live parent + sibling so the exit-restore can fall back to a
-    // connected anchor instead of inserting the player into a detached subtree
-    // (which would remove the video from the page permanently).
+    // If the player still sits inside a split-view stage (fullscreen branch
+    // only — the normal branch never reparents the shell), the split view's
+    // deferred teardown will dissolve that stage AFTER we snapshot it. The
+    // stage's parent (the fullscreen shell) stays connected through teardown
+    // — record it plus the stage's own position so the exit-restore can fall
+    // back to a connected anchor instead of inserting the player into a
+    // detached subtree (which would remove the video from the page permanently).
     const svStage = player.closest('[data-tihoka-split-view="stage"]');
-    const svWrapper = svStage ? svStage.closest('[data-tihoka-split-view="wrapper"]') : null;
-    const liveAnchorParent = svWrapper ? svWrapper.parentElement : null;
-    const liveAnchorSibling = svWrapper ? svWrapper.nextSibling : null;
+    const liveAnchorParent = svStage ? svStage.parentElement : null;
+    const liveAnchorSibling = svStage ? svStage.nextSibling : null;
     const savedStyle = {
       width: player.style.width,
       height: player.style.height,

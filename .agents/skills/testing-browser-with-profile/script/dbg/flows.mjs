@@ -19,9 +19,8 @@ export const flows = {
     ['capture', '02-landscape', LANDSCAPE],
     ['capture', '03-back', PORTRAIT],
   ],
-  // Race repro: rotate + spam split-view toggles — catches transient slot
-  // misses where the wrapper lands at the shell's DOM spot (body top)
-  // instead of the flow slot keeper.
+  // Race repro: rotate + spam split-view toggles — catches transient
+  // mount/restore races around rapid open/close.
   spamRotate: [
     'open',
     'waitOverlay',
@@ -42,10 +41,8 @@ export const flows = {
     ['capture', 'spam-04-shot'],
   ],
   // Regression gate: the spamRotate cycle repeated 3× with HARD assertions
-  // after every burst — body-top fallback, collapsed wrapper height, and
-  // orphaned sheet panels all fail the run. m.youtube collapses
-  // .player-placeholder to 0x0 once the shell is inside the stage, so each
-  // reopen depends on the remembered keeper; three rounds prove it holds.
+  // after every burst — collapsed shell, undocked/duplicated panels, and
+  // orphaned panels after close all fail the run.
   spamVerify: [
     'open',
     'waitOverlay',

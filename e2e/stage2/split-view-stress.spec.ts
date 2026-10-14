@@ -1,7 +1,9 @@
 import { expect } from '@playwright/test';
 import { test } from '../fixtures/TihokaEnvironment.fixture';
 
-const WRAPPER = '[data-tihoka-split-view="wrapper"]';
+// "Split view is mounted" = the host shell carries the marker attr — the
+// architecture no longer wraps the shell, it only narrows it in place.
+const WRAPPER = '[data-tihoka-split-shell]';
 const PANEL = '[data-tihoka-split-view="panel"]';
 const HANDLE = '[data-tihoka-split-view="handle"]';
 const VIDEO = '#player-wrapper video';
@@ -130,12 +132,11 @@ test.describe('Stage 2: Split View stress — page lifecycle', () => {
 
     // Contract: no split-view artifacts survive the host removing the player
     // subtree — the MutationObserver self-closes the session.
-    expect(await streamFlixPage.locator('[data-tihoka-split-view]').count()).toBe(0);
+    expect(await streamFlixPage.locator('[data-tihoka-split-view],[data-tihoka-split-shell]').count()).toBe(0);
 
-    // Known ceiling: React removes #player-wrapper from the parent it
-    // expects while the node lives inside our stageTihoka → NotFoundError →
-    // host root unmount (content scripts cannot patch main-world DOM
-    // methods). Record it; the contract above still must hold.
+    // The shell never leaves its host parent, so host teardown removes it
+    // cleanly — record any stray pageerror for the report; the contract
+    // above still must hold.
     const appAlive = await streamFlixPage.locator('#root > *').count();
     test.info().annotations.push({
       type: 'host-react-removal',

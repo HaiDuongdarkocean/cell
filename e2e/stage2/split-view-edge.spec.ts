@@ -1,18 +1,19 @@
 import { expect } from '@playwright/test';
 import { test } from '../fixtures/TihokaEnvironment.fixture';
 
-const WRAPPER = '[data-tihoka-split-view="wrapper"]';
+const WRAPPER = '[data-tihoka-split-shell]';
 const PANEL = '[data-tihoka-split-view="panel"]';
 const HANDLE = '[data-tihoka-split-view="handle"]';
 // Player Mode renders the same data-tihoka-split-view contract INSIDE the
 // subtitle shadow root, and Playwright locators pierce shadow — assertions
 // about page-DOM split-view chrome must query the light DOM directly.
 const lightDomSplitCount = (page: import('@playwright/test').Page) =>
-  page.evaluate(() => document.querySelectorAll('[data-tihoka-split-view]').length);
-const lightDomWrapperCount = (page: import('@playwright/test').Page) =>
   page.evaluate(
-    () => document.querySelectorAll('[data-tihoka-split-view="wrapper"]').length,
+    () =>
+      document.querySelectorAll('[data-tihoka-split-view],[data-tihoka-split-shell]').length,
   );
+const lightDomWrapperCount = (page: import('@playwright/test').Page) =>
+  page.evaluate(() => document.querySelectorAll('[data-tihoka-split-shell]').length);
 const VIDEO = '#player-wrapper video';
 const CUE_ITEM = '[data-tihoka-id="cue-item"]';
 const CUE_LIST = '[data-tihoka-id="cue-list-scroll"]';
@@ -51,7 +52,7 @@ test.describe('Stage 2: Split View edge — fullscreen', () => {
     await streamFlixPage.waitForFunction(() => !document.fullscreenElement, null, { timeout: 5_000 });
     await streamFlixPage.waitForTimeout(1500);
 
-    // Back to normal: wrapper rebuilt around the player shell.
+    // Back to normal: shell re-marked + narrowed in place, panel re-docked.
     await expect(streamFlixPage.locator(WRAPPER)).toBeVisible({ timeout: 10_000 });
     const video = await streamFlixPage.locator(VIDEO).boundingBox();
     expect(video!.height).toBeGreaterThan(0);
@@ -89,9 +90,15 @@ test.describe('Stage 2: Split View edge — fullscreen', () => {
     await streamFlixPage.keyboard.press('t');
     await streamFlixPage.waitForTimeout(1500);
     const remaining = await streamFlixPage.evaluate(() =>
-      Array.from(document.querySelectorAll('[data-tihoka-split-view]'))
-        .map((el) => el.getAttribute('data-tihoka-split-view'))
-        .join(',')
+      Array.from(
+        document.querySelectorAll('[data-tihoka-split-view],[data-tihoka-split-shell]'),
+      )
+        .map(
+          (el) =>
+            el.getAttribute('data-tihoka-split-view') ??
+            (el.hasAttribute('data-tihoka-split-shell') ? 'shell' : '?'),
+        )
+        .join(','),
     );
     console.log('--- svlog ---\n' + logs.join('\n') + '\n--- remaining: ' + remaining);
     expect(await streamFlixPage.locator(PANEL).count()).toBe(0);
@@ -102,8 +109,10 @@ test.describe('Stage 2: Split View edge — fullscreen', () => {
     await streamFlixPage.evaluate(() => document.exitFullscreen().catch(() => undefined));
     await streamFlixPage.waitForFunction(() => !document.fullscreenElement, null, { timeout: 5_000 });
     await streamFlixPage.waitForTimeout(2000);
-    // No resurrect AND no zombie wrapper/stage left behind.
-    expect(await streamFlixPage.locator('[data-tihoka-split-view]').count()).toBe(0);
+    // No resurrect AND no zombie shell marker/stage left behind.
+    expect(
+      await streamFlixPage.locator('[data-tihoka-split-view],[data-tihoka-split-shell]').count(),
+    ).toBe(0);
     const video = await streamFlixPage.locator(VIDEO).boundingBox();
     expect(video!.height).toBeGreaterThan(0);
   });
@@ -152,29 +161,37 @@ test.describe('Stage 2: Split View edge — player mode interplay', () => {
     await streamFlixPage.waitForTimeout(1500);
     await streamFlixPage.keyboard.press('g');
     await streamFlixPage.waitForTimeout(1500);
-    // querySelectorAll does not pierce shadow roots — PM's own wrapper/stage
+    // querySelectorAll does not pierce shadow roots — PM's own chrome
     // (inside #Tihoka-subtitle-root) are excluded; only leaked page-DOM nodes count.
     const lightDomNodes = await streamFlixPage.evaluate(
-      () => document.querySelectorAll('[data-tihoka-split-view]').length,
+      () =>
+        document.querySelectorAll('[data-tihoka-split-view],[data-tihoka-split-shell]').length,
     );
     expect(lightDomNodes).toBe(0);
   });
 });
 
 test.describe('Stage 2: Split View edge — layout integrity', () => {
-  test('SV-62: wrapper holds only stage + panel; resize handle is an invisible panel-edge strip', async ({
+  test('SV-62: shell marked in place; panel mounts on body and docks to shell edge', async ({
     streamFlixPage,
   }) => {
     await openSplitView(streamFlixPage);
 
-    // AC-1.1 DOM contract: the wrapper is a clean two-child row — the resize
-    // affordance is a feature of the panel edge, not a visible divider bar.
-    const wrapperChildren = await streamFlixPage
-      .locator(WRAPPER)
-      .evaluate((el) =>
-        Array.from(el.children).map((c) => c.getAttribute('data-tihoka-split-view')),
-      );
-    expect(wrapperChildren).toEqual(['stage', 'panel']);
+    // AC-1.1/AC-3.2 DOM contract: the shell stays in the host tree (only its
+    // width changes) and the panel is a fixed body-level element docked to
+    // the strip the shell freed — no wrapper reparents anything.
+    const dom = await streamFlixPage.evaluate(() => {
+      const shell = document.querySelector<HTMLElement>('[data-tihoka-split-shell]')!;
+      const panel = document.querySelector<HTMLElement>('[data-tihoka-split-view="panel"]')!;
+      return {
+        parentIsBody: panel.parentElement === document.body,
+        panelFixed: getComputedStyle(panel).position === 'fixed',
+        shellInlineWidth: shell.style.width,
+      };
+    });
+    expect(dom.parentIsBody).toBe(true);
+    expect(dom.panelFixed).toBe(true);
+    expect(dom.shellInlineWidth).toMatch(/%$/);
 
     // The handle lives inside the panel shadow at the left edge: finger-sized
     // hit zone, col-resize cursor, no painted surface.
@@ -196,17 +213,18 @@ test.describe('Stage 2: Split View edge — layout integrity', () => {
     expect(handleInfo!.cursor).toBe('col-resize');
     expect(['rgba(0, 0, 0, 0)', 'transparent']).toContain(handleInfo!.background);
 
-    // No divider lane between stage and panel — the panel border is the seam.
+    // No gap between shell right edge and panel left — the panel docks
+    // flush into the strip the shell freed.
     const seam = await streamFlixPage.evaluate(() => {
-      const stage = document
-        .querySelector('[data-tihoka-split-view="stage"]')!
+      const shell = document
+        .querySelector('[data-tihoka-split-shell]')!
         .getBoundingClientRect();
       const panel = document
         .querySelector('[data-tihoka-split-view="panel"]')!
         .getBoundingClientRect();
-      return panel.left - stage.right;
+      return panel.left - shell.right;
     });
-    expect(seam).toBeLessThanOrEqual(2);
+    expect(Math.abs(seam)).toBeLessThanOrEqual(2);
   });
 
   test('SV-60: opening does not shift page scroll', async ({ streamFlixPage }) => {
@@ -234,9 +252,9 @@ test.describe('Stage 2: Split View edge — layout integrity', () => {
     await openSplitView(streamFlixPage);
     const wrapperBox = await streamFlixPage.locator(WRAPPER).boundingBox();
     const videoBox = await streamFlixPage.locator(VIDEO).boundingBox();
-    // Sheet mode: the panel leaves the page flow and docks to the viewport
-    // bottom so the video keeps its natural slot instead of sharing the
-    // wrapper height with an inline panel. Measure the light-DOM host —
+    // Sheet mode: the panel leaves the side strip and docks to the viewport
+    // bottom so the video keeps its natural full-width slot. Measure the
+    // light-DOM host —
     // MobileCueChrome renders an inner data-tihoka-split-view="panel" in the
     // sheet shadow that locator() would also match.
     const panelState = await streamFlixPage.evaluate(() => {
@@ -311,7 +329,14 @@ test.describe('Stage 2: Split View edge — layout integrity', () => {
     const backPanel = await lightPanel();
     expect(backVideo!.width).toBeGreaterThan(0);
     expect(backPanel!.width).toBeGreaterThan(0);
-    expect(backPanel!.parentIsBody).toBe(false);
+    // Docked mode: panel stays body-mounted but re-docks to the shell's
+    // right edge — fixed position in both modes now.
+    expect(backPanel!.parentIsBody).toBe(true);
+    expect(backPanel!.position).toBe('fixed');
+    const shellRight = await streamFlixPage.evaluate(
+      () => document.querySelector('[data-tihoka-split-shell]')!.getBoundingClientRect().right,
+    );
+    expect(Math.abs(backPanel!.x - shellRight)).toBeLessThanOrEqual(2);
     expect(Math.abs(backVideo!.width - wideVideo!.width)).toBeLessThanOrEqual(4);
   });
 });
