@@ -116,27 +116,30 @@ emulation — `Emulation.setDeviceMetricsOverride` from
 a script fights it; close device mode or accept
 overrides bouncing.
 
-## Per-site scenarios (`script/sites/`)
+## Flow runner (`script/run.mjs`) — divide and conquer
 
-Shared steps live in `script/dbg/` and every site
-script composes them instead of re-writing probes:
+`node script/run.mjs <site> [flow|--list|all] [--url u] [--settle ms]`
 
-- `dbg/browser.mjs` — `connectBrowser()` (session +
-  CDP ctx), `openPage(ctx, match, {url, settleMs})`,
-  `shot(page, session, name)`, `evalJson`.
-- `dbg/emulate.mjs` — `emulate(ctx, page, dims)` with
-  `PORTRAIT`/`LANDSCAPE` presets + `MOBILE_UA`;
-  `clearEmulation`.
-- `dbg/steps.mjs` — `waitForOverlay`, `toggleSplitView`,
-  `isSplitViewOpen`, `dumpLayout` (wrapper/stage/panel/
-  video/TihokaRoot rect snapshot).
+Three layers, resolved site-first then global:
 
-Convention: one file per site, `script/sites/<domain>.mjs`
-(`youtube.mjs`, `kisskh.mjs`, `wikipedia.mjs`); accepts
-`--url <override>`; screenshots written as
-`tmp/debug-brave-<id>/<slug>-<NN>-<label>.png` where
-NN is the ordered step. New site → add a file that only
-composes dbg steps; new shared behaviour → dbg/steps.mjs.
+- **Primitives** `script/dbg/` — `browser.mjs`
+  (connectBrowser/openPage/shot/evalJson), `emulate.mjs`
+  (`emulate` + `PORTRAIT`/`LANDSCAPE` + `MOBILE_UA`).
+- **Steps** — named fns `(env, ...args)`. Global ones in
+  `dbg/steps.mjs` (open, settle, emulateDims, waitOverlay,
+  toggleSplitView, ensureSplit, dump, capture); a site adds
+  or overrides via `export const steps` in `sites/<slug>.mjs`.
+- **Flows** — ordered step lists: `'name'` or
+  `['name', ...args]`. Global in `dbg/flows.mjs`
+  (`sanity`, `rotate`); a site adds/overrides via
+  `export const flows`. `env` = `{site, match, url,
+  settleMs, session, ctx, page}` — `open` fills `page`.
+
+Site file = config + optional overrides only:
+`export const match/url/settleMs/steps/flows`.
+Screenshots: `tmp/debug-brave-<id>/<slug>-<NN>-<label>.png`.
+New site → config-only file inherits every global flow;
+new quirk → one `steps` entry; new procedure → one `flows` entry.
 
 ## Safety
 

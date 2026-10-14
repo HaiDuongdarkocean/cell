@@ -36,6 +36,7 @@ export async function openPage(ctx, match, { url, settleMs = 0 } = {}) {
 
 export async function shot(page, session, name) {
   const file = path.join(outDir(session), name);
+  await page.bringToFront().catch(() => {});
   await page.screenshot({ path: file });
   return file;
 }
