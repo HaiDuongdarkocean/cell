@@ -32,7 +32,7 @@
 - KHI item có owner khác → không mutate state, không đụng files của nó; cần chuyển hướng → `request-handoff`.
 - KHI thấy dirty/uncommitted file không phải mình tạo → in-flight work của agent khác — không stash/commit/edit đè.
 - KHI worktree có `.Tihoka-owner` khác mình → tuyệt đối không ghi vào.
-- KHI cần context → đọc theo nhu cầu: `docs/1-share-language.md` cho thuật ngữ, `docs/0-wiki.md` cho map repo.
+- KHI cần context → đọc theo nhu cầu: `docs/1-share-language.md` cho thuật ngữ, `git log`/`ls` cho map repo.
 - KHI thấy `LESSONS matched` (hook-lessons inject) → đọc `.agents/skills/learning-and-apply/experience/<id>.json` TRƯỚC khi sửa.
 - KHI fix bug verify xong và root cause tái dùng được → viết atom `experience/<id>.json` + entry `index.json` + chạy `learning-and-apply/scripts/validate.cjs`.
 - KHI sửa bug → tái hiện end-to-end trên môi trường thật trước — chưa thấy bug chạy thì chưa sửa.
@@ -69,7 +69,7 @@
 - KHI file lạ ở root → dời/xóa, KHÔNG vá `.gitignore` cho one-off.
 - KHI file lạ không phải mình tạo → check `git ls-files` + imports trước khi đụng.
 - Skill chỉ sống ở `.agents/skills/`.
-- KHI tạo thư mục con mới trong `docs/`, `tasks/`, `tests/` → check canon hiện có trước; KHÔNG tạo nhóm mới ngoài canon (map đầy đủ ở `docs/0-wiki.md`).
+- KHI tạo thư mục con mới trong `docs/`, `tasks/`, `tests/` → check nhóm hiện có trước; KHÔNG tạo nhóm mới ngoài canon.
 
 ## Environment quirks
 
@@ -89,7 +89,6 @@
 - KHI thêm dependency → kiểm bundle size trước.
 - KHI sửa `manifest.json` → test trên Chrome thật.
 - KHI dùng Chrome API → cite developer.chrome.com/docs/extensions/reference/.
-- KHI đổi `docs/` → update `docs/0-wiki.md`.
 - KHI quyết định kiến trúc → ghi `docs/adr/`.
 - Ship: `npm run build && npm run ship:dist` → Google Drive (`scripts/ship.config.json`).
 - Commit message sạch — CẤM attribution AI trong commit của Anh.

@@ -64,7 +64,7 @@ All mutations require ownership: `owner` is claimed at `init`/`activate`/first m
 5. **Ship** —
    - interactive: business sign-off record → `docs/reviews/<slug>-signoff.md` `VERDICT: SIGN_OFF`; `shipping-and-launch` for rollout concerns.
    - `all` mode: sign-off deferred async — `transition` itself re-runs the four npm gates at call time (no cache trust); loop report lists commits for human veto later.
-   - Backlog row → `shipped` + commit hash; `docs/0-wiki.md` changelog line.
+   - Backlog row → `shipped` + commit hash.
 
 ## Ship validation (enforced by `pipeline-state.mjs transition`)
 

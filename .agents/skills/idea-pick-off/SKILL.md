@@ -86,7 +86,7 @@ One item per run by default. `/idea-pick-off all` drains the queue — see **Loo
 ### Step 6 — DELIVER (invoke `pipeline-deliver`)
 
 - Plan → build (engine: `autonomous-pipeline` for M+ lanes, in-session for XS/S) → gates → fresh-context verify → ship.
-- `transition --to shipped`; backlog `Status: shipped` + commit hash; `docs/0-wiki.md` changelog.
+- `transition --to shipped`; backlog `Status: shipped` + commit hash.
 
 **Guard:** any gate red that survives a real fix → stop and report — never commit red. Never silently drop a plan task; blocked → `awaiting` + message user.
 

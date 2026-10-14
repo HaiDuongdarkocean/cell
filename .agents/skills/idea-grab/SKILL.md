@@ -31,7 +31,7 @@ The human picks. The skill never self-approves candidates into the backlog.
 ## Source policy
 
 Every candidate answered from **both**:
-1. **Codebase** — `docs/ideas/product-backlog.md` (SSOT of what exists/planned), `docs/0-wiki.md` changelog (what shipped), `docs/audits/` (what's weak), `src/features/` dirs (what infra is leverageable).
+1. **Codebase** — `docs/ideas/product-backlog.md` (SSOT of what exists/planned), `git log` (what shipped), `docs/audits/` (what's weak), `src/features/` dirs (what infra is leverageable).
 2. **Internet** — via `/inquiry-creativity`: competitor changelogs, Chrome Web Store listings, GitHub issues/roadmaps of similar OSS, r/languagelearning threads. SIFT-rank sources; cite URL per candidate.
 
 ## Steps
@@ -42,7 +42,7 @@ Every candidate answered from **both**:
 
 **Actions:**
 - Read `docs/ideas/product-backlog.md` fully — collect every existing `Slug` + `Nhóm`.
-- Skim last ~10 `docs/0-wiki.md` changelog lines — what shipped recently.
+- Skim `git log --oneline -20` — what shipped recently.
 - Grep `src/features/` dir names — the capability inventory.
 
 **Guard:** if backlog file missing/corrupt → stop, tell user, don't recreate silently.
@@ -95,7 +95,7 @@ Every candidate answered from **both**:
 - Insert each picked candidate as a new row at the position matching its cost/value ordering (queue stays cheap→expensive, value tiebreak).
 - `Status: icebox`, `Spec: —`. Renumber `#`s.
 - If the insert changes wave grouping materially, note it in the wave table.
-- Update `docs/0-wiki.md` changelog line. Commit: `docs(backlog): grab <n> candidates — <names>`.
+- Commit: `docs(backlog): grab <n> candidates — <names>`.
 
 **Guard:** never touch `Status`/`Spec` of existing rows; never reorder during an in-flight build.
 
@@ -126,7 +126,7 @@ Every candidate answered from **both**:
 - [ ] Duplicates rejected, not duplicated
 - [ ] Only user-picked items inserted
 - [ ] Queue still sorted cost-asc, value tiebreak; `#` renumbered
-- [ ] `docs/0-wiki.md` changelog updated; committed
+- [ ] Committed
 
 ## Router boomerang
 
