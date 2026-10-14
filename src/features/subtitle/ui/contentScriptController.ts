@@ -1,6 +1,6 @@
 import { sendMessage, onMessage, onStorageChanged, removeOnMessageListener, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
-import { findVideoOverlayContainer } from '@/shared/lib/dom/findPlayerContainer';
+import { findVideoOverlayContainer, videoOverlayMountNeedsMove } from '@/shared/lib/dom/findPlayerContainer';
 import { findLargestPlayableVideo } from '@/shared/lib/dom/videoFinder';
 import type { SubtitleApiKey } from '@/entities/settings';
 import { getActiveStudyMode, subscribeToStudyMode } from '@/features/studyModes';
@@ -92,20 +92,25 @@ export function init(
   // appended to the old container — re-resolve and move it so it stays
   // anchored to the video instead of leaking to wherever it first landed.
   let lastVideoParent = video.isConnected ? video.parentElement : null;
+  // Host control overlays can mount after init (m.youtube builds the controls
+  // subtree asynchronously) — when the host-preferred mount becomes available
+  // the Tihoka host upgrades from the fallback container to the shared parent,
+  // keeping it above the host's own overlay for hit-testing.
   const reparentObserver = new MutationObserver(() => {
     const videoGone = !video.isConnected;
-    if (!videoGone && video.parentElement === lastVideoParent) return;
+    const parentChanged = !videoGone && video.parentElement !== lastVideoParent;
     lastVideoParent = videoGone ? null : video.parentElement;
     const anchorVideo = videoGone ? findLargestPlayableVideo() : video;
     if (!anchorVideo) return;
+    const host = document.getElementById('Tihoka-subtitle-root');
+    if (!parentChanged && !videoOverlayMountNeedsMove(anchorVideo, host)) return;
     const next = findVideoOverlayContainer(anchorVideo);
-    if (next === container) return;
+    if (!host || next === host.parentElement || host.closest('[data-tihoka-split-view]')) return;
     container = next;
     anchorContainer();
     themeTokensCleanup();
     themeTokensCleanup = injectThemeTokens(container, [navClusterModuleCss]);
-    const host = document.getElementById('Tihoka-subtitle-root');
-    if (host) container.appendChild(host);
+    container.appendChild(host);
   });
   reparentObserver.observe(document.documentElement, { childList: true, subtree: true });
 

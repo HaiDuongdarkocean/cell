@@ -102,11 +102,10 @@ describe('youtubePlayer', () => {
       expect(pickYoutubeOverlayMount(video)).toBeNull();
     });
 
-    it('returns null when the control container is absent', () => {
+    it('still returns the shell before the controls subtree mounts (late controls lose to the root z-index anyway)', () => {
       const { shell, video } = createMwebDom();
       document.getElementById('player-control-container')?.remove();
-      expect(pickYoutubeOverlayMount(video)).toBeNull();
-      expect(shell.isConnected).toBe(true);
+      expect(pickYoutubeOverlayMount(video)).toBe(shell);
     });
   });
 });

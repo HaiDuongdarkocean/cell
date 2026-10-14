@@ -164,7 +164,7 @@ export function findFarthestSameSizeContainer(
 }
 
 import { findLargestPlayableVideo as findLargestPlayableVideoFromDom } from '@/shared/lib/dom/videoFinder';
-import { pickYoutubeOverlayMount, pickYoutubePlayerShell } from '@/shared/lib/dom/youtubePlayer';
+import { isYoutubePage, pickYoutubeOverlayMount, pickYoutubePlayerShell } from '@/shared/lib/dom/youtubePlayer';
 
 /** Find the largest <video> with a non-zero bounding rect.
  *
@@ -238,4 +238,22 @@ export function findVideoContainer(video: HTMLVideoElement): HTMLElement {
  *  nearest sized ancestor (findVideoContainer). */
 export function findVideoOverlayContainer(video: HTMLVideoElement): HTMLElement {
   return pickYoutubeOverlayMount(video) ?? findVideoContainer(video);
+}
+
+// True when the overlay host sits somewhere other than the host-preferred
+// mount — e.g. the Tihoka root still inside #movie_player because m.youtube
+// had not laid out #player-container-id yet at init (the pick can only win
+// once the shell resolves to the video's box). Host elements currently owned
+// by a Tihoka surface (inside the split-view wrapper) don't count — the
+// surface decides their anchor. Cheap on non-YouTube: the pick short-circuits
+// on a missing element id before any layout reads.
+export function videoOverlayMountNeedsMove(
+  video: HTMLVideoElement,
+  host: HTMLElement | null,
+  hostname: string = location.hostname,
+): boolean {
+  if (!host || !isYoutubePage(hostname)) return false;
+  if (host.closest('[data-tihoka-split-view]')) return false;
+  const pick = pickYoutubeOverlayMount(video);
+  return pick !== null && host.parentElement !== pick;
 }

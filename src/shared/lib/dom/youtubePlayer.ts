@@ -27,14 +27,17 @@ export function pickYoutubePlayerShell(video: HTMLVideoElement): HTMLElement | n
 
 // m.youtube keeps native controls + scrim as siblings of #player inside
 // #player-container-id — no z-index inside the video subtree can paint
-// above them, so Tihoka video-level UI must mount into the shared parent
-// (appended last it wins the context). The same-size guard keeps inset:0
-// anchored to the video box; divergence falls back to the nearest container.
+// above them (#movie_player is a z:0 stacking context, so a z:10000 root
+// inside it still loses hit-testing to the control overlay siblings). The
+// Tihoka root must be a direct child of the shared parent: its z-overlay-video
+// beats every control sibling regardless of mount order, even when the
+// controls subtree mounts later. The same-size guard keeps inset:0 anchored
+// to the video box; divergence falls back to the nearest container.
 const OVERLAY_MOUNT_TOLERANCE = 0.1;
 
 export function pickYoutubeOverlayMount(video: HTMLVideoElement): HTMLElement | null {
   const shell = document.getElementById('player-container-id');
-  if (!shell || !document.getElementById('player-control-container') || !shell.contains(video)) {
+  if (!shell || !shell.contains(video)) {
     return null;
   }
   const videoRect = video.getBoundingClientRect();

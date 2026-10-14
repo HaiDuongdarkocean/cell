@@ -4,6 +4,7 @@ import {
   findLargestPlayableVideo,
   findPlayerContainer,
   findVideoOverlayContainer,
+  videoOverlayMountNeedsMove,
 } from './findPlayerContainer';
 
 function setBoundingClientRect(el: HTMLElement, w: number, h: number): void {
@@ -277,6 +278,47 @@ describe('findPlayerContainer', () => {
       setBoundingClientRect(figure, 256, 273);
 
       expect(findVideoOverlayContainer(video)).toBe(figure);
+    });
+  });
+
+  describe('videoOverlayMountNeedsMove', () => {
+    function createShellDom(): { shell: HTMLElement; video: HTMLVideoElement } {
+      const shell = document.createElement('div');
+      shell.id = 'player-container-id';
+      const player = document.createElement('div');
+      player.id = 'player';
+      const video = document.createElement('video');
+      document.body.appendChild(shell);
+      shell.appendChild(player);
+      player.appendChild(video);
+      setBoundingClientRect(video, 361, 203);
+      setBoundingClientRect(player, 361, 203);
+      setBoundingClientRect(shell, 361, 203);
+      return { shell, video };
+    }
+
+    it('is true when the host still sits inside the video subtree while the pick resolves to the outer shell', () => {
+      const { shell, video } = createShellDom();
+      const host = document.createElement('div');
+      video.parentElement!.appendChild(host);
+
+      expect(videoOverlayMountNeedsMove(video, host, 'm.youtube.com')).toBe(true);
+      shell.appendChild(host);
+      expect(videoOverlayMountNeedsMove(video, host, 'm.youtube.com')).toBe(false);
+    });
+
+    it('is false when the host is inside a split-view surface or off YouTube', () => {
+      const { video } = createShellDom();
+      const host = document.createElement('div');
+      video.parentElement!.appendChild(host);
+
+      expect(videoOverlayMountNeedsMove(video, host, 'kisskh.do')).toBe(false);
+
+      const stage = document.createElement('div');
+      stage.setAttribute('data-tihoka-split-view', 'stage');
+      stage.appendChild(host);
+      document.body.appendChild(stage);
+      expect(videoOverlayMountNeedsMove(video, host, 'm.youtube.com')).toBe(false);
     });
   });
 
