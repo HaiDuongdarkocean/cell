@@ -10,7 +10,7 @@ import type { WebTextDictionaryController } from '@/features/dictionaryPopup/con
 import { createWebTokenizeController } from '@/features/tokenize/controller/webTokenizeController';
 import type { WebTokenizeController } from '@/features/tokenize/controller/webTokenizeController';
 import { mountUniversalPanel, type UniversalPanelMountController } from '@/features/universalPanel';
-import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl, setSubtitleTokenizeEnabledForUrl, saveTokenizeSettings } from '@/features/tokenize/services/tokenizeSettingsStore';
+import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl, isSubtitleTokenizeEnabledForOrigin, setSubtitleTokenizeEnabledForUrl, saveTokenizeSettings } from '@/features/tokenize/services/tokenizeSettingsStore';
 import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import { modifierMatches, type LookupRequest, type TriggerMode } from '@/entities/dictionary';
 import { findAndInitOverlay } from './videoOverlay';
@@ -44,10 +44,11 @@ let cachedSubtitleEnabled = false;
 /** Subtitle tokenize enablement keys the top-level page — inside a player
  *  iframe the href is the embed domain, so also honor the top frame origin. */
 function isSubtitleTokenizeEnabled(ts: Parameters<typeof isSubtitleTokenizeEnabledForUrl>[0]): boolean {
-  if (isSubtitleTokenizeEnabledForUrl(ts, window.location.href)) return true;
-  if (window.self === window.top) return false;
+  if (window.self === window.top) return isSubtitleTokenizeEnabledForUrl(ts, window.location.href);
   const top = resolveTopFrameOrigin();
-  return top !== undefined && isSubtitleTokenizeEnabledForUrl(ts, top);
+  return top !== undefined
+    ? isSubtitleTokenizeEnabledForOrigin(ts, top)
+    : isSubtitleTokenizeEnabledForUrl(ts, window.location.href);
 }
 
 /** Build a TokenizePanelState snapshot from current webTokenizeCtrl + cachedSubtitleEnabled. */

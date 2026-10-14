@@ -99,6 +99,14 @@ export function isSubtitleTokenizeEnabledForUrl(settings: TokenizeSettings, url:
   }
 }
 
+/** Check whether subtitle tokenize is enabled for an origin — embed child
+ *  frames read the top page's toggle context, which is only known at origin
+ *  level (page-specific subtitleUrls entries for other top pages must not
+ *  leak through). */
+export function isSubtitleTokenizeEnabledForOrigin(settings: TokenizeSettings, origin: string): boolean {
+  return settings.subtitleOrigins[origin] ?? false;
+}
+
 /** Return a new settings object with the subtitle URL enable state set. Also
  *  records the value at origin level so sibling pages on the same site inherit it. */
 export function setSubtitleTokenizeEnabledForUrl(

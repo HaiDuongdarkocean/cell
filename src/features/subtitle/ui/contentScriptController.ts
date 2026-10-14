@@ -26,7 +26,7 @@ import { onNavigableCuesChanged } from '@/features/subtitle/logic/navigableCues'
 import { ReactSubtitleController } from '@/features/subtitle/ui/reactSubtitleController';
 import { SubtitleSyncController } from '@/features/subtitle/ui/subtitleSyncController';
 import { type SubtitleCueEngineUpdate, type CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';
-import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl, sentenceContextForSpan } from '@/features/tokenize';
+import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl, isSubtitleTokenizeEnabledForOrigin, sentenceContextForSpan } from '@/features/tokenize';
 import { resolveTopFrameOrigin } from '@/shared/lib/dom/frameOrigin';
 import { SPLIT_VIEW_PANEL_SELECTOR } from '@/features/subtitle/logic/scrollPositionPreserve';
 import type { SubtitleTokenizeController } from '@/features/tokenize';
@@ -410,8 +410,9 @@ export function init(
       // Player iframes key off the page the user toggled (top origin), not
       // the embed domain — location.href here is e.g. playembed.vip.
       const topOrigin = window.top === window ? undefined : resolveTopFrameOrigin();
-      const enabled = isSubtitleTokenizeEnabledForUrl(ts, url)
-        || (topOrigin !== undefined && isSubtitleTokenizeEnabledForUrl(ts, topOrigin));
+      const enabled = topOrigin !== undefined
+        ? isSubtitleTokenizeEnabledForOrigin(ts, topOrigin)
+        : isSubtitleTokenizeEnabledForUrl(ts, url);
       subtitleTokenizeActive = enabled;
       if (enabled) {
         if (!subtitleTokenizeCtrl) {

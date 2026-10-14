@@ -77,6 +77,7 @@ jest.mock('@/features/tokenize', () => {
     loadFrequencyBandOptions: jest.fn(async () => ({ thresholds: frequencyBand.DEFAULT_BAND_THRESHOLDS })),
     loadTokenizeSettings: jest.fn(),
     isSubtitleTokenizeEnabledForUrl: jest.fn().mockReturnValue(false),
+    isSubtitleTokenizeEnabledForOrigin: jest.fn().mockReturnValue(false),
   };
 });
 

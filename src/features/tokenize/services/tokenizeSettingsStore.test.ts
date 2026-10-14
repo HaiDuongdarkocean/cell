@@ -6,6 +6,7 @@ import {
   setTokenizeEnabledForUrl,
   setTokenizeEnabledForOrigin,
   isSubtitleTokenizeEnabledForUrl,
+  isSubtitleTokenizeEnabledForOrigin,
   setSubtitleTokenizeEnabledForUrl,
   DEFAULT_TOKENIZE_SETTINGS,
 } from './tokenizeSettingsStore';
@@ -98,6 +99,23 @@ describe('tokenizeSettingsStore', () => {
     );
     expect(isTokenizeEnabledForUrl(settings, 'https://www.youtube.com/watch?v=other')).toBe(true);
     expect(isTokenizeEnabledForUrl(settings, 'https://example.com/')).toBe(false);
+  });
+
+  it('subtitle origin read ignores embed-domain url entries', () => {
+    const settings = setSubtitleTokenizeEnabledForUrl(
+      DEFAULT_TOKENIZE_SETTINGS,
+      'https://onflix.lat/watch/movie',
+      false,
+    );
+    const stale = {
+      ...settings,
+      subtitleOrigins: { ...settings.subtitleOrigins, 'https://playembed.vip': true },
+      subtitleUrls: { ...settings.subtitleUrls, 'https://playembed.vip/player': true },
+    };
+    expect(isSubtitleTokenizeEnabledForOrigin(stale, 'https://onflix.lat')).toBe(false);
+    expect(isSubtitleTokenizeEnabledForUrl(stale, 'https://playembed.vip/player?x=1')).toBe(true);
+    expect(isSubtitleTokenizeEnabledForOrigin(stale, 'https://playembed.vip')).toBe(true);
+    expect(isSubtitleTokenizeEnabledForOrigin(stale, 'https://other.example')).toBe(false);
   });
 
   it('subtitle read falls back to legacy raw-href key', () => {
