@@ -36,6 +36,60 @@ export const ensureSplit = async (env) => {
   if (!await isSplitOpen(env)) await toggleSplitView(env);
 };
 
+// Race repro — presses `t` n times with gaps tighter than the slide-out
+// teardown window (ANIM_MS ≈ 410ms). Always pair with ensureSplit after:
+// an even n ends closed, an odd one ends open.
+export const spamToggles = async (env, n = 4, waitMs = 220) => {
+  for (let i = 0; i < n; i++) {
+    await env.page.evaluate(() => document.body.focus());
+    await env.page.keyboard.press('t');
+    await env.page.waitForTimeout(waitMs);
+  }
+};
+
+// Hard gate — throws (fails the flow) on the known regressions instead of
+// only logging geometry:
+//  open   — one wrapper with real height, not glued to page top (y<=minY is
+//           the body-top fallback when the flow-slot keeper probe misses),
+//           exactly one panel, stage fills the wrapper.
+//  closed — nothing left in the DOM (sheet panels reparented to <body> must
+//           be removed too, not just the wrapper).
+export const assertSplit = async (env, want = 'open', tag = '', minY = 1) => {
+  const s = await env.page.evaluate(() => {
+    const r = (el) => el ? {
+      w: Math.round(el.getBoundingClientRect().width),
+      h: Math.round(el.getBoundingClientRect().height),
+      y: Math.round(el.getBoundingClientRect().y),
+    } : null;
+    const w = document.querySelector('[data-tihoka-split-view="wrapper"]');
+    return {
+      wrapper: w ? { ...r(w), parent: w.parentElement.tagName } : null,
+      stage: r(document.querySelector('[data-tihoka-split-view="stage"]')),
+      wrappers: document.querySelectorAll('[data-tihoka-split-view="wrapper"]').length,
+      panels: document.querySelectorAll('[data-tihoka-split-view="panel"]').length,
+      video: r(document.querySelector('video')),
+    };
+  });
+  const fail = (msg) => {
+    throw new Error(`assertSplit(${want}) ${tag}: ${msg} — ${JSON.stringify(s)}`);
+  };
+  if (want === 'open') {
+    if (!s.wrapper) fail('wrapper missing');
+    if (s.wrappers !== 1) fail(`${s.wrappers} wrappers mounted`);
+    if (s.wrapper.h < 100) fail('wrapper height collapsed');
+    if (s.wrapper.y <= minY) fail(`wrapper at page top (y=${s.wrapper.y}) — slot keeper missed`);
+    if (s.panels !== 1) fail(`${s.panels} panels mounted`);
+    if (!s.stage || s.stage.h < s.wrapper.h - 2) fail('stage does not fill wrapper');
+  } else if (want === 'closed') {
+    if (s.wrapper) fail('wrapper still mounted');
+    if (s.panels !== 0) fail(`${s.panels} orphan panels left in DOM`);
+  } else {
+    throw new Error(`assertSplit: unknown want "${want}"`);
+  }
+  console.log(`  assertSplit ${tag || want} OK`, JSON.stringify(s));
+  return s;
+};
+
 const dumpFn = (t) => {
   const r = (el) => el ? {
     w: Math.round(el.getBoundingClientRect().width),

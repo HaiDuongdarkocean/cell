@@ -127,13 +127,23 @@ Three layers, resolved site-first then global:
   (`emulate` + `PORTRAIT`/`LANDSCAPE` + `MOBILE_UA`).
 - **Steps** — named fns `(env, ...args)`. Global ones in
   `dbg/steps.mjs` (open, settle, emulateDims, waitOverlay,
-  toggleSplitView, ensureSplit, dump, capture); a site adds
-  or overrides via `export const steps` in `sites/<slug>.mjs`.
+  toggleSplitView, ensureSplit, spamToggles, assertSplit,
+  dump, capture); a site adds or overrides via
+  `export const steps` in `sites/<slug>.mjs`.
 - **Flows** — ordered step lists: `'name'` or
   `['name', ...args]`. Global in `dbg/flows.mjs`
-  (`sanity`, `rotate`); a site adds/overrides via
-  `export const flows`. `env` = `{site, match, url,
-  settleMs, session, ctx, page}` — `open` fills `page`.
+  (`sanity`, `rotate`, `spamRotate`, `spamVerify`); a site
+  adds/overrides via `export const flows`. `env` = `{site,
+  match, url, settleMs, session, ctx, page}` — `open` fills
+  `page`.
+
+`spamVerify` is the hard gate for the m.youtube split-view
+slot regression: rotate + rapid `t` bursts ×3 rounds,
+`assertSplit` throws on body-top wrapper, collapsed height,
+or orphaned sheet panels. Run after any change touching
+`subtitleSplitView.ts`/`findPlayerContainer.ts`:
+
+`node script/run.mjs youtube spamVerify`
 
 Site file = config + optional overrides only:
 `export const match/url/settleMs/steps/flows`.
