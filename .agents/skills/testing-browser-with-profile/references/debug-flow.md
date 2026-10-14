@@ -116,6 +116,28 @@ emulation — `Emulation.setDeviceMetricsOverride` from
 a script fights it; close device mode or accept
 overrides bouncing.
 
+## Per-site scenarios (`script/sites/`)
+
+Shared steps live in `script/dbg/` and every site
+script composes them instead of re-writing probes:
+
+- `dbg/browser.mjs` — `connectBrowser()` (session +
+  CDP ctx), `openPage(ctx, match, {url, settleMs})`,
+  `shot(page, session, name)`, `evalJson`.
+- `dbg/emulate.mjs` — `emulate(ctx, page, dims)` with
+  `PORTRAIT`/`LANDSCAPE` presets + `MOBILE_UA`;
+  `clearEmulation`.
+- `dbg/steps.mjs` — `waitForOverlay`, `toggleSplitView`,
+  `isSplitViewOpen`, `dumpLayout` (wrapper/stage/panel/
+  video/TihokaRoot rect snapshot).
+
+Convention: one file per site, `script/sites/<domain>.mjs`
+(`youtube.mjs`, `kisskh.mjs`, `wikipedia.mjs`); accepts
+`--url <override>`; screenshots written as
+`tmp/debug-brave-<id>/<slug>-<NN>-<label>.png` where
+NN is the ordered step. New site → add a file that only
+composes dbg steps; new shared behaviour → dbg/steps.mjs.
+
 ## Safety
 
 Playwright `browser.close()` over connectOverCDP only
