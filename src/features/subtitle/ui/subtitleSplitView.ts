@@ -343,8 +343,32 @@ export function useSplitView({
       measureNaturalHeight();
       playerShell.setAttribute('data-tihoka-split-shell', '');
 
+      // A fixed shell over a scrolled page is host takeover (YouTube's pin/
+      // miniplayer) — release our geometry and hide the panel until it
+      // returns to flow. At scrollY≈0 a pinned shell is still visually
+      // in-flow, so the split dock keeps working.
+      let hostPinned = false;
+
       const syncLayout = (remeasure = false): void => {
         if (!panel.isConnected) return;
+        const shellPos = getComputedStyle(shell).position;
+        if (shellPos === 'fixed' && window.scrollY > 8) {
+          shell.style.removeProperty('width');
+          shell.style.removeProperty('height');
+          for (const [prop, val] of Object.entries(savedShellStyles)) {
+            if (val) shell.style.setProperty(prop, val);
+          }
+          shell.removeAttribute('data-tihoka-split-shell');
+          panel.style.visibility = 'hidden';
+          hostPinned = true;
+          return;
+        }
+        if (hostPinned) {
+          hostPinned = false;
+          shell.setAttribute('data-tihoka-split-shell', '');
+          panel.style.visibility = 'visible';
+          remeasure = true;
+        }
         const cbRect = shellBlock().getBoundingClientRect();
         const sheet = window.innerWidth < SPLIT_VIEW_COLUMN_BELOW;
         isSheetMode = sheet;
@@ -363,6 +387,8 @@ export function useSplitView({
           } else if (savedShellStyles.height) {
             shell.style.setProperty('height', savedShellStyles.height);
           }
+          panel.style.position = 'fixed';
+          panel.style.zIndex = 'var(--z-overlay-video, 10000)';
           panel.style.left = '0';
           panel.style.right = '0';
           panel.style.top = 'auto';
@@ -387,9 +413,21 @@ export function useSplitView({
             shell.style.setProperty('height', `${Math.round(shellH)}px`, 'important');
           }
           const r = shell.getBoundingClientRect();
-          panel.style.left = `${Math.round(r.right)}px`;
+          // Dock in document space while the shell is in flow — scrolling
+          // then carries the panel in the same paint pass as the video,
+          // where a fixed panel lags a frame behind and looks detached.
+          // Pinned shells (fixed/sticky) keep viewport coordinates.
+          const docSpace = shellPos !== 'fixed' && shellPos !== 'sticky';
+          const offX = docSpace ? window.scrollX : 0;
+          const offY = docSpace ? window.scrollY : 0;
+          panel.style.position = docSpace ? 'absolute' : 'fixed';
+          // In doc-space the panel must not cover page chrome it scrolls
+          // past — sit in normal stacking so the host masthead stays on
+          // top. Pinned/sheet overlays keep the video-overlay layer.
+          panel.style.zIndex = docSpace ? 'auto' : 'var(--z-overlay-video, 10000)';
+          panel.style.left = `${Math.round(r.right + offX)}px`;
           panel.style.right = 'auto';
-          panel.style.top = `${Math.round(r.top)}px`;
+          panel.style.top = `${Math.round(r.top + offY)}px`;
           panel.style.bottom = 'auto';
           panel.style.width = `${Math.max(Math.round(cbRect.right - r.right), 0)}px`;
           panel.style.height = `${Math.round(r.height)}px`;

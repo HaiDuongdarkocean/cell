@@ -5,11 +5,13 @@ normal page và fullscreen. Implementation: `src/features/subtitle/ui/subtitleSp
 
 Kiến trúc (sau rewrite): **shell không bao giờ rời cây DOM của host**. Normal mode chỉ
 set `width:(100−pct)%` trên `playerShell` (đánh dấu `[data-tihoka-split-shell]`) và mount
-panel `position:fixed` lên `document.body`, ghim vào strip mà shell giải phóng — sync qua
-ResizeObserver + scroll + resize. Không wrapper, không reparent, không slot keeper —
-mọi mount/unmount là atomic. Fullscreen là ngoại lệ duy nhất: panel phải nằm trong
-top-layer element nên children của shell move vào `[data-tihoka-split-view="stage"]`
-và shell thành flex row.
+panel lên `document.body`, ghim vào strip mà shell giải phóng — sync qua
+ResizeObserver + scroll + resize. Panel position đi theo positioning của shell:
+in-flow → `absolute` tọa độ document (scroll mang theo cùng paint pass — không lag/float);
+pinned (`fixed`/`sticky`) → `fixed` theo viewport. Không wrapper, không reparent, không
+slot keeper — mọi mount/unmount là atomic. Fullscreen là ngoại lệ duy nhất: panel phải
+nằm trong top-layer element nên children của shell move vào
+`[data-tihoka-split-view="stage"]` và shell thành flex row.
 
 DOM: `[data-tihoka-split-shell]` = playerShell được mark (cả 2 nhánh) → `panel`
 (shadow root chứa `SubtitlePanel` + `handle` + `sheet-handle`). `handle` là hit-strip
@@ -46,7 +48,7 @@ toàn bộ nhóm AC liên quan. Chi tiết stress-test e2e: `split-view-stress-t
 | ID | AC |
 |---|---|
 | AC-3.1 | Shell giữ nguyên vị trí — `width:(100−pct)%` + `height:<natural>px` (`!important`). Height anchor = chiều cao tự nhiên full-width của shell, đo lúc mount + re-đo trên viewport resize (khi đo phải gỡ marker — fill chain làm `%`-height của `.player-size` vòng tròn về 0 nếu đo lúc CSS đang áp). Video letterbox BÊN TRONG shell qua fill chain — video giữ chiều cao, drag panel chỉ co ngang, video không bao giờ bị che |
-| AC-3.2 | Panel `position:fixed` trên `document.body`: `top/left/height` = shell rect sau-khi-shrink; `width` = `cbRect.right − shell.right` (cb = containing block của shell — cùng box mà width% của shell resolve). Shell `position:fixed` → cb = `document.documentElement` (offsetParent null) |
+| AC-3.2 | Panel trên `document.body`: `top/left/height` = shell rect sau-khi-shrink (+`scrollX/Y` khi doc-space); `width` = `cbRect.right − shell.right` (cb = containing block của shell — cùng box mà width% của shell resolve). `position` theo shell: in-flow → `absolute` (doc-space), `fixed`/`sticky` → `fixed` (viewport). Shell `position:fixed` → cb = `document.documentElement` (offsetParent null) |
 | AC-3.3 | Strip hẹp → `effectivePct` clamp để strip ≥ `min(200px, 50% cbW)`; pct lưu vẫn ghi intent của user — display clamp không ghi đè stored value |
 | AC-3.4 | Panel `visibility:hidden` khi shell rect < 2px (host giấu subtree — engagement panel, re-render) — co lại theo host thay vì nổi trên takeover; hiện lại khi shell quay về |
 | AC-3.5 | `#Tihoka-subtitle-root` không bao giờ được reparent — overlay fill shell theo anchor sẵn có của nó |
@@ -61,7 +63,7 @@ toàn bộ nhóm AC liên quan. Chi tiết stress-test e2e: `split-view-stress-t
 | AC-4.4 | Sync debounced qua `requestAnimationFrame`; observer disconnect + cancel rAF + remove listener trong cleanup — không leak |
 | AC-4.5 | Re-open sau resize: geometry đo live từ đầu — không cache rect session trước |
 | AC-4.6 | Mọi kích thước browser: panel dock trong vùng strip shell giải phóng; video letterbox qua `object-fit:contain` (shell-scoped CSS bridge) — không crop |
-| AC-4.8 | Scroll trang (nested scroller — listener `capture:true`): shell pin/float theo host (m.youtube sticky-player) → panel follow cùng rect; shell scroll khỏi viewport thì panel lệch theo đúng shell chứ không pin lại |
+| AC-4.8 | Scroll trang (nested scroller — listener `capture:true`): shell in-flow → panel `absolute` doc-space nên cuộn cùng paint pass (không lag trễ frame, không float); shell `fixed`+`scrollY>8` = host takeover (pin/miniplayer) → disengage: restore width/height + gỡ marker + panel `visibility:hidden`, re-engage khi shell về flow; shell `fixed`/`sticky` ở scrollY≈0 → panel `fixed` viewport follow rect |
 | AC-4.9 | **Mở panel / drag không đổi shell height** — height anchored px, chỉ width% đổi theo pct — video re-letterbox trong shell, không bao giờ bị panel che |
 | AC-4.11 | **Sheet mode = `window.innerWidth < 600`** (viewport mobile): shell restore width tự nhiên, panel `fixed` bottom edge-to-edge (`left/right/bottom:0`) theo convention `Sheet` atom (`radius-element` bo 2 góc trên, `surface-popover`, `z-overlay-video` — trên host UI, dưới Tihoka system surface), height `min(50dvh, 460px)` qua `splitViewSheetHeightPx`, enter/exit `translateY`. Handle `display:none`, drag tắt (`isSheetMode` guard). Round-trip sheet↔docked: shell width + panel geometry + radius/background reset đúng |
 
