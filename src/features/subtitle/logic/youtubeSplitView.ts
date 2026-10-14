@@ -39,19 +39,27 @@ export function youtubeSplitViewWrapperCss(wrapperHeightStyle: string, anchorCss
   return `display:flex;flex-direction:row;height:${wrapperHeightStyle}!important;flex:0 0 auto;overflow:hidden;${anchorCss}`;
 }
 
-// Wrapper height for the live layout: fixed shells re-derive from the live
-// stage width + video aspect (the open-time px goes stale on orientation
-// change); in-flow shells keep the slot the page reserved.
+// Wrapper height for the live layout. AC-4.9: the slot height is the one the
+// page reserved BEFORE the panel ate width — never re-derive it from the
+// post-panel stage width (that shrinks the slot and pulls the feed up).
+// Out-of-flow shells measure their live flow-slot keeper (m.youtube's
+// .player-placeholder reflows on rotation); without a keeper, re-derive from
+// live stage width + video aspect so orientation changes still re-fit.
 export function youtubeSplitViewLiveHeight(options: {
   shellOutOfFlow: boolean;
   stageWidth: number;
   videoAspect: number;
   followsParent: boolean;
   fallbackHeight: string;
+  measureSlotHeight?: () => number;
   clampVisiblePx: (px: number) => number;
 }): string {
   if (options.shellOutOfFlow) {
-    return `${options.clampVisiblePx(Math.round(options.stageWidth / options.videoAspect))}px`;
+    const slotHeight = options.measureSlotHeight?.() ?? 0;
+    const px = slotHeight > 0
+      ? slotHeight
+      : options.stageWidth / options.videoAspect;
+    return `${options.clampVisiblePx(Math.round(px))}px`;
   }
   return options.followsParent ? '100%' : options.fallbackHeight;
 }

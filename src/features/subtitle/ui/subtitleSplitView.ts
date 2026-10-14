@@ -807,6 +807,18 @@ export function useSplitView({
             videoAspect: stageAspect,
             followsParent: youtubeFollowsParent,
             fallbackHeight: wrapperHeightStyle,
+            measureSlotHeight: slotKeeper
+              ? () => {
+                  // The keeper is display:none while we own its slot. Restore
+                  // + measure + re-hide in one task — no paint runs between,
+                  // and its rect still tracks the page-reserved slot height
+                  // across orientation changes.
+                  slotKeeper!.style.display = slotKeeperDisplay;
+                  const h = slotKeeper!.getBoundingClientRect().height;
+                  slotKeeper!.style.display = 'none';
+                  return h;
+                }
+              : undefined,
             clampVisiblePx: (px) => clampToVisibleViewport(px, rect.top),
           });
         } else {

@@ -66,6 +66,19 @@ describe('youtubeSplitView', () => {
   });
 
   describe('youtubeSplitViewLiveHeight', () => {
+    it('keeps the page-reserved slot height for out-of-flow shells (AC-4.9)', () => {
+      const h = youtubeSplitViewLiveHeight({
+        shellOutOfFlow: true,
+        stageWidth: 452,
+        videoAspect: 16 / 9,
+        followsParent: false,
+        fallbackHeight: '211px',
+        measureSlotHeight: () => 271,
+        clampVisiblePx: (px) => px,
+      });
+      expect(h).toBe('271px');
+    });
+
     it('re-derives fixed-shell height from the live stage width and aspect', () => {
       const h = youtubeSplitViewLiveHeight({
         shellOutOfFlow: true,
