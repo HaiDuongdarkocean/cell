@@ -221,7 +221,7 @@ export function useSplitView({
     const savedShellStyles: Record<string, string> = {};
     const shellStyleProps = isPlayerFullscreen
       ? ['display', 'flex-direction', 'padding']
-      : ['width', 'height', 'display'];
+      : ['width', 'height', 'display', 'margin-left', 'margin-right'];
     for (const property of shellStyleProps) {
       savedShellStyles[property] = playerShell.style.getPropertyValue(property);
     }
@@ -334,6 +334,12 @@ export function useSplitView({
         if (getComputedStyle(shell).display === 'inline') {
           shell.style.setProperty('display', 'block', 'important');
         }
+        // Hosts that center the player (margin:auto — ArtPlayer
+        // .art-video-player) split the freed strip into left+right gutters;
+        // the docked panel then only gets the right half. Pin the shell to
+        // the left edge so the whole strip lands on the panel side.
+        shell.style.setProperty('margin-left', '0', 'important');
+        shell.style.setProperty('margin-right', 'auto', 'important');
       };
       normalizeShellDisplay();
       let shellH = 0;
@@ -436,7 +442,10 @@ export function useSplitView({
           // .mat-drawer-content z1 — DOM order wins the tie) yet below
           // host chrome (kisskh toolbar z2, youtube topbar z4) so the
           // panel slides under it while scrolling instead of covering it.
-          panel.style.zIndex = docSpace
+          // Child frames have no host chrome to pass under — the whole doc
+          // IS the player, and its wrapper (e.g. ArtPlayer z-10) would
+          // swallow every click aimed at a z1 panel.
+          panel.style.zIndex = docSpace && !childFrame
             ? 'var(--z-overlay-content, 1)'
             : 'var(--z-overlay-video, 10000)';
           panel.style.left = `${Math.round(r.right + offX)}px`;
