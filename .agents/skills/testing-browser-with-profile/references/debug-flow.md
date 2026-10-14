@@ -96,6 +96,26 @@ service worker, waits 1.5s, then reloads the matched
 page so fresh content scripts re-inject. `--ext` or
 `--reload` alone work too.
 
+Do NOT `Browser.close` for a rebuild — the browser
+stays up; ext reload + page reload is enough (full
+close is only for worktree switches, which the launch
+script handles itself). After the page reloads, give
+YouTube ~5s before probing or toggling split view:
+SW cold start + InnerTube caption detect + overlay
+mount are slow, and an early `t` lands before the
+extension is listening. If `#Tihoka-subtitle-root`
+never mounts after ~10s, check `/json` for the
+extension service worker before concluding it died.
+
+Patch-verify CSS live with `--eval` (inject a `<style>`
+or set inline styles, re-measure rects) — same job as
+DevTools Elements inspect/edit, without driving the
+DevTools UI. One caveat: if the user has DevTools
+device toolbar open on the same page, it owns the
+emulation — `Emulation.setDeviceMetricsOverride` from
+a script fights it; close device mode or accept
+overrides bouncing.
+
 ## Safety
 
 Playwright `browser.close()` over connectOverCDP only
