@@ -5,10 +5,10 @@
 - Format bắt buộc: `KHI <điều kiện nhận diện được> → <hành động cụ thể>`.
 - KHI rule cần signature nhận diện → ghi kèm signature (vd `wrapper y=0 + parent BODY = keeper miss`).
 - Cấm mệnh đề trừu tượng không chỉ ra hành động ("nên cẩn thận", "ưu tiên chất lượng").
-- KHI một dòng chứa nhiều ý/mệnh đề → tách thành nhiều dòng, mỗi dòng đúng một ý.
-- KHI rule check được bằng máy → viết hook (`.devin/hooks.v1.json` + `scripts/hook-*.mjs`), không ghi text ở đây.
+- KHI một dòng chứa nhiều ý/mệnh đề → tách thành nhiều dòng, mỗi dòng đúng một ý, mỗi dòng tối đa 200 ký tự.
+- KHI rule check được bằng máy → viết hook (`.devin/hooks.v1.json` + `scripts/hook-*.mjs`) phải test lại xem hook có hoạt động đúng không, không ghi text ở đây.
 - KHI thêm rule → gộp hoặc xóa rule cũ bị trùng/mờ.
-- File này tối đa 100 dòng — vượt thì chuyển chi tiết sang file con, file này chỉ giữ rule + pointer.
+- KHI vượt điều kiện → gọt trước khi ghi: đặt 5 câu hỏi (5 Whys) cho nội dung sắp ghi và nội dung đang có, xóa phần ít giá trị nhất theo tư duy nguyên bản — cấm nhồi.
 
 ## Mandate
 
@@ -40,7 +40,7 @@
 - KHI đụng shared hàm/type/field → grep hết callers + trace blast radius trước; đổi contract → migrate tất cả producers/consumers trong cùng commit.
 - KHI xong code → `npm run typecheck && npm run test:unit && npm run build` → verify Chrome thật → commit.
 - KHI UI đổi hình thái/tương tác → bắt buộc ảnh chụp before/after hoặc pixel-scan (DOM rect/computed không đủ — element đúng rect vẫn có thể không paint).
-- KHI đụng `subtitleSplitView.ts`, `findPlayerContainer.ts`, `mountSubtitle.tsx`, `SubtitlePanel*.tsx` → re-verify `docs/specs/subtitle-split-view-ac.md` + `run.mjs youtube spamVerify` sau build (hook commit-gate nhắc).
+- KHI đụng `subtitleSplitView.ts`, `findPlayerContainer.ts`, `mountSubtitle.tsx`, `SubtitlePanel*.tsx` → re-verify `docs/specs/subtitle-split-view-ac.md` + `run.mjs youtube spamVerify` sau build.
 
 ## Debug sai đường — signature đã trả giá
 
@@ -69,7 +69,7 @@
 - KHI file lạ ở root → dời/xóa, KHÔNG vá `.gitignore` cho one-off.
 - KHI file lạ không phải mình tạo → check `git ls-files` + imports trước khi đụng.
 - Skill chỉ sống ở `.agents/skills/`.
-- `docs/` canon: `0,1,2` + `adr|audits|context|design-system|ideas|intent|knowledge-base|mockups|research|reviews|specs`; `tasks/` = `pipeline-state.json` + `plan|todo|reports`; `tests/` = `unit|integration|data-test|mocks`.
+- KHI tạo thư mục con mới trong `docs/`, `tasks/`, `tests/` → check canon hiện có trước; KHÔNG tạo nhóm mới ngoài canon (map đầy đủ ở `docs/0-wiki.md`).
 
 ## Environment quirks
 
