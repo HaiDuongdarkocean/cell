@@ -5,6 +5,7 @@
 // <flow>  = a named step list — site flows win over dbg/flows.mjs globals.
 //           No flow → runs all flows visible to that site.
 // Steps   = named fns (env, ...args) — site `steps` win over dbg/steps.mjs.
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { connectBrowser } from './dbg/browser.mjs';
 import * as dbgSteps from './dbg/steps.mjs';
 import { flows as dbgFlows } from './dbg/flows.mjs';
@@ -61,6 +62,14 @@ for (const name of names) {
     }
     await fn(env, ...args);
   }
+  // Green-flow marker for the commit gate (scripts/hook-commit-gates.mjs):
+  // committing protected paths without a fresh marker warns at commit time.
+  try {
+    mkdirSync('tmp', { recursive: true });
+    writeFileSync(`tmp/gate-${name}.ok`, JSON.stringify({
+      ts: Date.now(), flow: `${site}/${name}`, session: env.session,
+    }));
+  } catch { /* marker is advisory — never fail the flow on write */ }
 }
 console.log('DONE');
 process.exit(0);

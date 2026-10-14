@@ -31,6 +31,16 @@
           "timeout": 5
         }
       ]
+    },
+    {
+      "matcher": "^exec$",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node scripts/hook-commit-gates.mjs",
+          "timeout": 5
+        }
+      ]
     }
   ],
   "PostToolUse": [
