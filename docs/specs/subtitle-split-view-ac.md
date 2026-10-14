@@ -42,6 +42,7 @@ toàn bộ nhóm AC liên quan. Chi tiết stress-test e2e: `split-view-stress-t
 | AC-3.3 | Flex-row insert parent có siblings (kisskh `.row`): wrapper basis `0 0 {px}` giữ footprint cột video — cột info/episode KHÔNG collapse về 0 |
 | AC-3.4 | `playerShell` overrides: `width/height:100%!important`, `aspect-ratio:auto`, `margin:0`, `box-sizing:border-box`, `overflow:visible` (jwplayer/megaplay clip control bar nếu hidden) |
 | AC-3.5 | `#Tihoka-subtitle-root` luôn nằm trong `stageTihoka` (position:relative), overlay fill video stage — không lọt sang panel, không escape ra viewport khi playerShell position:static |
+| AC-3.6 | `playerShell` phải chứa CẢ video + host overlays/controls: `findPlayerContainer` lift lên shared parent khi một ancestor có positioned sibling (absolute\|fixed) phủ ≥80% box của nó (m.youtube: `.player-controls-background`/`#player-control-overlay` là sibling của `#player` trong `#player-container-id`). Wrap chỉ inner shell → host overlay ở lại trong container fixed, phủ stage + panel, chặn tap vào panel. Guard: parent chỉ được lift khi ≤ `innerWidth+1` và ≤ `innerHeight×1.2` — reject page-column ancestor |
 
 ## AC-4 · Responsive layout (resize / sidebar / zoom)
 
@@ -93,3 +94,4 @@ toàn bộ nhóm AC liên quan. Chi tiết stress-test e2e: `split-view-stress-t
 | Panel max làm wrapper co theo video | Height recompute theo stage width → shrink; phải freeze theo viewport key | AC-4.9 |
 | m.youtube sheet mode: video letterbox, khoảng đen trên/dưới | `.player-size` size bằng `padding-bottom:56.25%` (không phải padding-top) — rule chỉ zero top, `#movie_player`+video dài gấp đôi stage | AC-3.4 |
 | m.youtube rotate ngang: wrapper co lại, nửa phải màn hình đen | Fixed shell anchor `top/left/width` đóng băng px lúc mở + `liveHeight` nhánh YouTube giữ px cũ — shell full-width phải anchor `left:0;right:0` và height = `stageW/stageAspect` mỗi recalc | AC-4.1, AC-4.6 |
+| m.youtube: host overlay (controls/scrim) phủ cả stage + panel, chặn tap panel | Same-size walk trả inner shell `#player` khi `#player-container-id` rộng hơn video >10% (landscape) — overlay siblings không được wrap, container fixed 652px trải qua panel; lift-to-overlay-owner wrap shared parent | AC-3.6 |

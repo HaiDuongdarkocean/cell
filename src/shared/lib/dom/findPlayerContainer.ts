@@ -27,7 +27,60 @@ const DEFAULT_DIMENSION_TOLERANCE = 0.10;
 export function findPlayerContainer(): HTMLElement | null {
   const video = findLargestPlayableVideo();
   if (!video) return null;
-  return findFarthestSameSizeContainer(video);
+  return liftToOverlayOwner(findFarthestSameSizeContainer(video));
+}
+
+// Hosts can mount their player chrome (controls/scrim overlays) as siblings
+// NEXT TO the video subtree instead of inside it — m.youtube keeps
+// .player-controls-background / #player-control-overlay as siblings of
+// #player inside #player-container-id. The same-size walk may stop at the
+// inner shell when the outer container exceeds the dimension tolerance
+// (landscape stretches the fixed container wider than the video), leaving
+// those overlays floating over the split-view stage AND panel — they paint
+// above and swallow pointer hits. The real stage shell is the shared parent
+// of the covered subtree: climb ancestors while one owns a positioned
+// sibling covering ≥80% of it, and lift the shell to that parent.
+const OVERLAY_COVER_RATIO = 0.8;
+
+function liftToOverlayOwner(shell: HTMLElement): HTMLElement {
+  // A lift must stay inside the visible slot — reject page-column parents
+  // that dwarf the viewport (height cap keeps room for the masthead).
+  const maxH = window.innerHeight * 1.2;
+  const maxW = window.innerWidth + 1;
+  let lifted = shell;
+  let node: HTMLElement | null = shell;
+  while (node && node !== document.body && node !== document.documentElement) {
+    // Never treat our own split-view elements as evidence — on a re-open the
+    // video sits inside stageTihoka and the panel must not lift us into the
+    // wrapper.
+    if (node.hasAttribute('data-tihoka-split-view')) break;
+    const parent = node.parentElement;
+    if (!parent) break;
+    if (hasCoveringSibling(node, parent)) {
+      const pr = parent.getBoundingClientRect();
+      if (pr.width === 0 || pr.height === 0 || pr.height > maxH || pr.width > maxW) break;
+      lifted = parent;
+    }
+    node = parent;
+  }
+  return lifted;
+}
+
+function hasCoveringSibling(candidate: HTMLElement, parent: HTMLElement): boolean {
+  const rect = candidate.getBoundingClientRect();
+  const area = rect.width * rect.height;
+  if (area === 0) return false;
+  for (const sib of Array.from(parent.children)) {
+    if (sib === candidate || !(sib instanceof HTMLElement)) continue;
+    if (sib.id.startsWith('Tihoka') || sib.hasAttribute('data-tihoka-split-view')) continue;
+    const cs = getComputedStyle(sib);
+    if (cs.position !== 'absolute' && cs.position !== 'fixed') continue;
+    const s = sib.getBoundingClientRect();
+    const iw = Math.min(s.right, rect.right) - Math.max(s.left, rect.left);
+    const ih = Math.min(s.bottom, rect.bottom) - Math.max(s.top, rect.top);
+    if (iw > 0 && ih > 0 && (iw * ih) / area >= OVERLAY_COVER_RATIO) return true;
+  }
+  return false;
 }
 
 /**

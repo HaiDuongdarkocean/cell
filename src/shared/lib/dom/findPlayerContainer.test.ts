@@ -333,6 +333,66 @@ describe('findPlayerContainer', () => {
     });
   });
 
+  describe('findPlayerContainer — overlay-sibling lift', () => {
+    function createCoveredDom(coverPosition: 'absolute' | 'fixed' | 'static' = 'absolute'): {
+      container: HTMLElement;
+      player: HTMLElement;
+      cover: HTMLElement;
+      video: HTMLVideoElement;
+    } {
+      const container = document.createElement('div');
+      container.id = 'player-container-id';
+      const player = document.createElement('div');
+      player.id = 'player';
+      const cover = document.createElement('div');
+      cover.className = 'player-controls-background';
+      cover.style.position = coverPosition;
+      const video = document.createElement('video');
+      Object.defineProperty(video, 'videoWidth', { value: 640, configurable: true });
+      Object.defineProperty(video, 'videoHeight', { value: 360, configurable: true });
+      Object.defineProperty(video, 'readyState', { value: 2, configurable: true });
+
+      document.body.appendChild(container);
+      container.appendChild(player);
+      player.appendChild(video);
+      container.appendChild(cover);
+      return { container, player, cover, video };
+    }
+
+    it('lifts to the shared parent when a positioned sibling covers the inner shell (m.youtube landscape)', () => {
+      // Landscape: #player-container-id stretches wider than the video so the
+      // same-size walk rejects it and returns #player — but YouTube's control
+      // overlays are siblings of #player and would float over stage + panel.
+      const { container, player, cover, video } = createCoveredDom();
+      setBoundingClientRect(video, 452, 263);
+      setBoundingClientRect(player, 452, 263);
+      setBoundingClientRect(container, 652, 271);
+      setBoundingClientRect(cover, 652, 271);
+
+      expect(findPlayerContainer()).toBe(container);
+    });
+
+    it('keeps the inner shell when no positioned sibling covers it', () => {
+      const { container, player, cover, video } = createCoveredDom('static');
+      setBoundingClientRect(video, 452, 263);
+      setBoundingClientRect(player, 452, 263);
+      setBoundingClientRect(container, 652, 271);
+      setBoundingClientRect(cover, 652, 271);
+
+      expect(findPlayerContainer()).toBe(player);
+    });
+
+    it('refuses to lift into a page-column parent larger than the viewport', () => {
+      const { container, player, cover, video } = createCoveredDom();
+      setBoundingClientRect(video, 452, 263);
+      setBoundingClientRect(player, 452, 263);
+      setBoundingClientRect(container, 652, 2000); // taller than 120% of viewport
+      setBoundingClientRect(cover, 652, 2000);
+
+      expect(findPlayerContainer()).toBe(player);
+    });
+  });
+
   describe('findPlayerContainer', () => {
     it('returns the player container for a direct video', () => {
       const video = createVideo(640, 360);
