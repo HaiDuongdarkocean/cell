@@ -5,7 +5,7 @@
 1. Read `docs/context/project-context.md` → extract the design story (palette, shape, motion, persona, platform, constraints). It is SSOT — if it states a design story, use it; don't re-ask the user about style.
 2. Read `docs/design-system/DESIGN.md` + `src/shared/styles/README.md` for tokens and audit rules.
 3. Read `src/shared/styles/tokens.json` for the color/spacing/radius/shadow/motion vocabulary. **Do not read `src/shared/ui/*` yet.**
-4. If the topic touches shared language/architecture, read `docs/1-share-language.md` + `docs/2-architecture-system.md`.
+4. If the topic touches shared language, read `docs/1-share-language.md`.
 5. If an `audit-ui-ux-then-redesign` brief exists, read it — every P0/P1 finding is a hard constraint.
 6. Read the related feature code (`src/features/[topic]/*`, real panel, hooks) for *function*, not UI.
 

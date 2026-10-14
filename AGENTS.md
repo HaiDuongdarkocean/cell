@@ -13,7 +13,7 @@
 - Mọi task → route qua skill `using-agent-skills` (skills ở `.agents/skills/`); task đổi → re-route.
 - Feature work chạy stage pipeline `analyze → specify → design (UI only) → deliver` qua skills `pipeline-*`; stage truth = `tasks/pipeline-state.json`, mutate chỉ qua `scripts/pipeline-state.mjs` (transitions enforce evidence — không nhảy stage tay). Backlog items vào qua `idea-pick-off`.
 - **Pipeline ownership (multi-agent):** item có `owner` — chỉ owner được `set`/`gates`/`resolve`/`transition`/`activate` item đó. Định danh qua `Tihoka_AGENT_ID` env (set 1 lần đầu session, vd `export Tihoka_AGENT_ID="devin-$PPID-$(date +%s)"`) hoặc `--owner <id>` trên mọi lệnh mutate; không có id = `human` (override cho Anh). **Session binding:** `--owner <id>` trên lệnh `pipeline-state.mjs` gắn `owner.sessionId` = session hiện tại qua `hook-owner-bind` — chỉ session bound mới nhận prime/resume, gate pressure (stop-gate), stage-guard và gates-tracker; session khác chỉ thấy info line. Item của agent khác → KHÔNG mutate state, KHÔNG đụng files của nó; cần chuyển hướng → `request-handoff <slug> --note`, owner/human quyết `handoff --to`/`release --force --note`. Worktree `Tihoka-worktrees/*` có `.Tihoka-owner` ở root — owner khác mình thì tuyệt đối không ghi vào (kể cả "chỉ thêm test"). Dirty/uncommitted files không phải mình tạo = in-flight work của agent khác → không stash/commit/edit đè; merge cần shield thì chỉ stash `wip-shield:<agent-id>` của chính mình.
-- Context theo nhu cầu, không đọc trước toàn bộ: `docs/2-architechture-system.md` khi đụng `src/`; `docs/1-share-language.md` khi gặp thuật ngữ domain lạ; `docs/0-wiki.md` khi cần map repo hoặc changelog. Trước khi viết logic mới: grep `.agents/skills/learning-and-apply/index.json` theo tags.
+- Context theo nhu cầu, không đọc trước toàn bộ: `docs/1-share-language.md` khi gặp thuật ngữ domain lạ; `docs/0-wiki.md` khi cần map repo hoặc changelog. Trước khi viết logic mới: grep `.agents/skills/learning-and-apply/index.json` theo tags.
 - Sửa bug: tái hiện end-to-end trên môi trường thật trước — chưa thấy bug chạy thì chưa sửa. Test/verify viết sau reproduce và phải fail khi bug còn đó.
 - **Debug sai đường:** mỗi lần giả định/phép đo/bước debug hóa ra sai → ghi ĐÚNG 1 dòng ngắn vào file này để không tái phạm; file tối đa 5000 từ — vượt thì gom/trim dòng cũ.
   - Shell out-of-flow (`fixed`/`absolute`/`sticky`) → wrapper Split View phải chiếm **in-flow slot** host đã reserve (`.player-placeholder`…), không được `position:fixed` (phá scroll) và không cắm vào DOM spot của shell (body-top → đè masthead).
@@ -57,6 +57,6 @@
 ## Boundaries & updates
 
 - Không thêm dependency mà không kiểm bundle size; không sửa `manifest.json` mà không test Chrome thật. Chrome API: cite https://developer.chrome.com/docs/extensions/reference/
-- Đổi `src/` → update `docs/2-architechture-system.md`; đổi `docs/` → update `docs/0-wiki.md`; quyết định kiến trúc → `docs/adr/`.
+- Đổi `docs/` → update `docs/0-wiki.md`; quyết định kiến trúc → `docs/adr/`.
 - Ship: `npm run build && npm run ship:dist` → release Google Drive (config: `scripts/ship.config.json`).
 - Commit message sạch — CẤM trailer `Generated with Devin`/`Co-Authored-By` hay bất kỳ attribution nào vào commit của Anh; không commit/in secrets; không xóa/force-push/drop khi chưa được phép rõ.

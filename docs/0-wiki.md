@@ -10,7 +10,6 @@
 docs/           # Tài liệu dự án
 ├── 0-wiki.md                          # File này — mục lục tổng quan
 ├── 1-share-language.md                # Glossary human ↔ system language
-├── 2-architechture-system.md          # Architecture chi tiết (src/ + tests/ + dependency + function index + data flows; Player Mode transparent/click-through overlay; host-CSS defenses; top-frame guard cho Cloudflare challenge iframe)
 ├── player-support.md                  # Live subtitle-list audit — player-side evidence for 9 sites; separates direct/metadata/encrypted entries, auth replay, and extension-delivery gaps; includes generic architecture constraints
 ├── adr/                                 # Architecture Decision Records (per AGENTS.md: quyết định kiến trúc → docs/adr/<tên>.md)
 │   ├── native-fullscreen-iframe-player-mode.md  # Child-iframe Player Mode dùng native Fullscreen API và project player vào videoStage thay vì top-frame bridge
@@ -112,9 +111,9 @@ docs/           # Tài liệu dự án
 │   └── reader-adversarial-2.md        # UX/security/accessibility/scope review
 └── shortcut-for-tw/                   # (deprecated — removed from public tree)
 
-src/            # Source code (chi tiết trong 2-architechture-system.md)
-tests/          # Test files (chi tiết trong 2-architechture-system.md)
-e2e/            # Playwright E2E specs (chi tiết trong 2-architechture-system.md)
+src/            # Source code
+tests/          # Test files
+e2e/            # Playwright E2E specs
 .agents/        # Agent skills
   skills/         # 39 skills (Define→Plan→Build→Verify→Review→Ship) + router using-agent-skills + orchestrator autonomous-pipeline — interview-me đã gộp elicitation mode
                   # index.json = catalog SSOT, regen bằng `node scripts/update-skill-index.mjs` (cover cả .devin/skills/)

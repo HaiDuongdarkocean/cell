@@ -88,7 +88,7 @@ All mutations require ownership: `owner` is claimed at `init`/`activate`/first m
 - [ ] Plan + todo exist with per-task AC traced to `## Success Criteria`
 - [ ] All required gates `pass` fresh (or npm re-run green in `all` mode)
 - [ ] Verify artifact verdict `PASS`, written by fresh-context lane
-- [ ] Mockup dir deleted if it existed; `docs/2-architechture-system.md` updated if `src/` changed
+- [ ] Mockup dir deleted if it existed
 - [ ] `transition --to shipped` exits 0 and `active` cleared; backlog row → `shipped` + commit hash; wiki changelog line
 
 ## Router boomerang
