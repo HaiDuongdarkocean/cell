@@ -27,20 +27,16 @@
 
 - KHI nhận task → route qua skill `using-agent-skills`; task đổi → re-route.
 - KHI feature work → pipeline `analyze → specify → design (UI) → deliver` qua skills `pipeline-*`.
-- KHI đụng `tasks/pipeline-state.json` → chỉ qua `scripts/pipeline-state.mjs`, không sửa tay.
 - KHI định danh pipeline → `Tihoka_AGENT_ID` env hoặc `--owner <id>`.
 - KHI item có owner khác → không mutate state, không đụng files của nó; cần chuyển hướng → `request-handoff`.
 - KHI thấy dirty/uncommitted file không phải mình tạo → in-flight work của agent khác — không stash/commit/edit đè.
 - KHI worktree có `.Tihoka-owner` khác mình → tuyệt đối không ghi vào.
 - KHI cần context → đọc theo nhu cầu: `docs/1-share-language.md` cho thuật ngữ, `git log`/`ls` cho map repo.
-- KHI thấy `LESSONS matched` (hook-lessons inject) → đọc `.agents/skills/learning-and-apply/experience/<id>.json` TRƯỚC khi sửa.
-- KHI fix bug verify xong và root cause tái dùng được → viết atom `experience/<id>.json` + entry `index.json` + chạy `learning-and-apply/scripts/validate.cjs`.
 - KHI sửa bug → tái hiện end-to-end trên môi trường thật trước — chưa thấy bug chạy thì chưa sửa.
 - KHI viết test cho bug → viết sau reproduce và test phải fail khi bug còn đó.
 - KHI đụng shared hàm/type/field → grep hết callers + trace blast radius trước; đổi contract → migrate tất cả producers/consumers trong cùng commit.
 - KHI xong code → `npm run typecheck && npm run test:unit && npm run build` → verify Chrome thật → commit.
 - KHI UI đổi hình thái/tương tác → bắt buộc ảnh chụp before/after hoặc pixel-scan (DOM rect/computed không đủ — element đúng rect vẫn có thể không paint).
-- KHI đụng `subtitleSplitView.ts`, `findPlayerContainer.ts`, `mountSubtitle.tsx`, `SubtitlePanel*.tsx` → re-verify `docs/specs/subtitle-split-view-ac.md` + `run.mjs youtube spamVerify` sau build.
 
 ## Debug sai đường — signature đã trả giá
 

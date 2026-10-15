@@ -11,9 +11,9 @@ import { emitContext, readPayload, ROOT } from './hook-pipeline-common.mjs';
 
 const GATES = [
   {
-    re: /src\/features\/subtitle\/(ui\/subtitleSplitView|logic\/youtubeSplitView)|findPlayerContainer/,
+    re: /src\/features\/subtitle\/(ui\/(subtitleSplitView|mountSubtitle|SubtitlePanel)|logic\/youtubeSplitView)|findPlayerContainer/,
     flow: 'spamVerify',
-    cmd: 'probe.mjs --match youtube --ext --reload && run.mjs youtube spamVerify (in .agents/skills/testing-browser-with-profile/script/)',
+    cmd: 're-read docs/specs/subtitle-split-view-ac.md, then probe.mjs --match youtube --ext --reload && run.mjs youtube spamVerify (in .agents/skills/testing-browser-with-profile/script/)',
   },
 ];
 
