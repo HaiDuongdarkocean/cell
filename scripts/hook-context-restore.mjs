@@ -11,7 +11,7 @@ readPayload((payload) => {
     if (summary) {
       emitContext(
         'PostCompaction',
-        `${summary} Post-compaction restore: re-read AGENTS.md mandate and tasks/pipeline-state.json before continuing.`,
+        `${summary} Post-compaction restore: re-read AGENTS.md mandate and tasks/pipeline-state.json, then invoke skill context-engineering to rebuild task context.`,
       );
     }
     process.exit(0);
@@ -25,7 +25,7 @@ readPayload((payload) => {
   if (snap.recent.length) parts.push(`recent: ${snap.recent.join(' | ')}`);
   emitContext(
     'PostCompaction',
-    `Post-compaction restore (ad-hoc, no pipeline item): ${parts.join(' · ')}. Re-read the files being edited before continuing.`,
+    `Post-compaction restore (ad-hoc, no pipeline item): ${parts.join(' · ')}. Invoke skill context-engineering and re-read the files being edited before continuing.`,
   );
   process.exit(0);
 });
