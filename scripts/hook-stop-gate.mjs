@@ -1,13 +1,20 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
-import { emitBlock, loadState, newestSrcMtime, readPayload, ROOT } from './hook-pipeline-common.mjs';
+import { emitBlock, emitContext, gitSnapshot, loadState, newestSrcMtime, readPayload, ROOT } from './hook-pipeline-common.mjs';
 
 readPayload((payload) => {
   if (payload?.stop_hook_active) process.exit(0);
   const state = loadState();
   const slug = state.active;
   const item = slug && state.items[slug];
-  if (!item || item.stage !== 'deliver' || item.awaiting) process.exit(0);
+  if (!item || item.stage !== 'deliver' || item.awaiting) {
+    // Ad-hoc path: uncommitted work at stop is worth one reminder, never a block.
+    const snap = gitSnapshot();
+    if (snap && snap.dirtyCount) {
+      emitContext('Stop', `${snap.dirtyCount} uncommitted change(s) remain (${snap.dirtySample.slice(0, 4).join(', ')}…) — commit or discard if this work should persist.`);
+    }
+    process.exit(0);
+  }
 
   // Only the bound owner session carries gate pressure — other sessions must
   // never be drafted into this item's work.

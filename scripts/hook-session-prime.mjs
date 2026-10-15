@@ -1,11 +1,19 @@
 #!/usr/bin/env node
-import { activeSummary, emitContext, loadState, readPayload, stagePointer } from './hook-pipeline-common.mjs';
+import { activeSummary, emitContext, gitSnapshot, loadState, readPayload, stagePointer } from './hook-pipeline-common.mjs';
 
 readPayload((payload) => {
   const state = loadState();
   const slug = state.active;
   const item = slug && state.items[slug];
-  if (!item) process.exit(0);
+  if (!item) {
+    const snap = gitSnapshot();
+    if (!snap || !snap.dirtyCount) process.exit(0);
+    emitContext(
+      'SessionStart',
+      `Ad-hoc session (no pipeline item). Branch ${snap.branch}, ${snap.dirtyCount} dirty: ${snap.dirtySample.join(', ')} — possible in-flight work, verify before touching.`,
+    );
+    process.exit(0);
+  }
 
   const sid = payload?.session_id;
   const owner = item.owner;

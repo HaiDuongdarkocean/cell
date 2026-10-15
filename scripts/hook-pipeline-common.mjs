@@ -61,6 +61,20 @@ function mtimeOf(abs) {
   }
 }
 
+export function gitSnapshot() {
+  const br = spawnSync('git', ['branch', '--show-current'], { cwd: ROOT, encoding: 'utf8' });
+  if (br.status !== 0) return null;
+  const st = spawnSync('git', ['status', '--porcelain'], { cwd: ROOT, encoding: 'utf8' });
+  const dirty = (st.stdout ?? '').split('\n').filter(Boolean);
+  const lg = spawnSync('git', ['log', '--oneline', '-3'], { cwd: ROOT, encoding: 'utf8' });
+  return {
+    branch: br.stdout.trim(),
+    dirtyCount: dirty.length,
+    dirtySample: dirty.slice(0, 8),
+    recent: (lg.stdout ?? '').trim().split('\n').filter(Boolean),
+  };
+}
+
 export function newestSrcMtime() {
   const st = spawnSync('git', ['status', '--porcelain', 'src/'], { cwd: ROOT, encoding: 'utf8' });
   if (st.status !== 0) return 0;
