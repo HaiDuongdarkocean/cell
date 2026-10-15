@@ -44,5 +44,19 @@ readPayload((payload) => {
   if (warnings.length) {
     emitContext('PreToolUse', `COMMIT GATE: ${warnings.join(' | ')}`);
   }
+
+  // Lesson gate: a fix commit is the end of a debug loop — AGENTS.md requires
+  // an experience atom when the root cause is reusable. Warn unless a new atom
+  // is staged/untracked or was added in the last 10 commits.
+  if (/\bfix[:(]/i.test(cmd)) {
+    const atomDir = '.agents/skills/learning-and-apply/experience';
+    const work = spawnSync('git', ['status', '--porcelain', '--', atomDir], { cwd: ROOT, encoding: 'utf8' });
+    const pendingAtom = (work.stdout ?? '').split('\n').some((l) => l.endsWith('.json'));
+    const recent = spawnSync('git', ['log', '--diff-filter=A', '--name-only', '-n', '10', '--', atomDir], { cwd: ROOT, encoding: 'utf8' });
+    const recentAtom = (recent.stdout ?? '').includes(`${atomDir}/`);
+    if (!pendingAtom && !recentAtom) {
+      emitContext('PreToolUse', 'LESSON GATE: fix commit with no new learning atom — if the root cause is reusable, write experience/<id>.json + index.json entry + run validate.cjs; if trivial/one-off, ignore.');
+    }
+  }
   process.exit(0);
 });
