@@ -46,6 +46,16 @@
 
 - `wrapper y=0 + parent BODY` = slot keeper miss → shell out-of-flow thì wrapper chiếm in-flow slot host reserve, không `position:fixed`, không cắm DOM spot của shell.
 - Overlay đúng z-index vẫn bị chặn hit-test = kẹt trong stacking context thấp → mount lên shared parent, không vá z-index.
+- Mental model: extension = nhiều **context** độc lập (SW, content script mỗi frame, pages, main-world iife) + web security model (origin → rào document, OOPIF → process riêng, world → rào trong một document).
+- `page.frames()` không list OOPIF + `evaluate` page-level không chạm frame cross-origin → attach CDP browser-level `Target.attachToTarget` vào target của iframe, hoặc `iframeEl.contentFrame()` trong Playwright.
+- Cần evaluate trong content-script world của frame → lọc `Runtime.executionContextCreated` theo `name==='Tihoka'` + `auxData.frameId`; context list trộn mọi frame nếu không filter.
+- Element probe trả "không tồn tại" → check creator ghi `id` hay `tagName` trước khi kết luận (`#Tihoka-subtitle-root` là id — tag selector false-negative, đã phí một session debug).
+- Iframe render + video play mà zero Tihoka artifact → injection cho frame tạo-động lazy; poll marker (`#Tihoka-subtitle-root`, `native-caption-hide`) trước khi kết luận inject fail.
+- Frame `ep_id` tự rotate → frame handle + context stale giữa chừng; re-query handle mỗi iteration, không cache.
+- Sau `build` + ext reload mà trang cũ báo `ERR_FILE_NOT_FOUND assets/*loader*` → trang giữ loader hash cũ; reload page, không phải bug code mới.
+- Per-site setting đọc trong child frame → key theo `ancestorOrigins` top origin; `location.href` trong iframe = embed domain → key sai vĩnh viễn, user toggle không bao giờ ăn.
+- Gate OR nhiều level key (`frameUrl || topOrigin`) → entry stale ở level xa override toggle hiện tại; chọn priority tường minh (child → top origin độc quyền, frameUrl chỉ fallback).
+- Child frame cần top page identity → `location.ancestorOrigins[last]` hoặc `document.referrer` đủ; không cần postMessage hỏi top.
 
 ## Code conventions
 
