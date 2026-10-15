@@ -3715,6 +3715,90 @@
       ],
       "trigger": "Any change to subtitleSplitView.ts / findPlayerContainer.ts / split-view layout — the slot-keeper regressions (body-top wrapper, collapsed height, orphaned sheet panel) only appear under rotate+rapid-t races that unit tests cannot reach",
       "fix": "After npm run build: probe.mjs --match youtube --ext --reload, then run.mjs youtube spamVerify — rotate + spam t x3 rounds with hard assertSplit gates (fails on body-top, 0-height, orphan panels). Green before commit."
+    },
+    {
+      "type": "experience",
+      "id": "iframe-settings-key-top-origin-exclusive",
+      "title": "Per-site settings in a child frame key to the top origin and read it exclusively — location.href is the embed domain, and OR-ing levels lets stale entries override the toggle",
+      "category": [
+        "state",
+        "messaging"
+      ],
+      "tags": [
+        "iframe",
+        "cross-origin",
+        "ancestorOrigins",
+        "settings",
+        "per-site",
+        "tokenize",
+        "chrome-storage",
+        "embed-domain",
+        "toggle",
+        "stale-key"
+      ],
+      "trigger": "A per-site toggle read inside a cross-origin iframe ignores the user's top-page toggle or auto-enables — stale embed-domain entries win through an OR gate over key levels"
+    },
+    {
+      "type": "experience",
+      "id": "oopif-cdp-probe-browser-target-attach",
+      "title": "Probing a cross-origin iframe needs browser-level CDP Target.attachToTarget or contentFrame() — page.frames() skips OOPIFs and page sessions only surface top-frame contexts",
+      "category": [
+        "testing",
+        "detection"
+      ],
+      "tags": [
+        "iframe",
+        "oopif",
+        "cross-origin",
+        "cdp",
+        "target-attach",
+        "execution-context",
+        "isolated-world",
+        "content-script",
+        "playwright",
+        "frameid"
+      ],
+      "trigger": "Live verify on an iframe-hosted player: page.frames() never lists it while it visibly plays, or the content-script isolated world is unreachable from a page-scoped session"
+    },
+    {
+      "type": "experience",
+      "id": "probe-selector-must-match-id-or-tag",
+      "title": "A 'not found' DOM probe can be a selector-shape miss — check whether the marker is an id, attribute, or custom tag before concluding the feature never ran",
+      "category": [
+        "testing",
+        "detection"
+      ],
+      "tags": [
+        "probe",
+        "queryselector",
+        "id-vs-tag",
+        "false-negative",
+        "mount-marker",
+        "debug"
+      ],
+      "trigger": "A probe reports the mount target missing while sibling signals say the feature initialized (e.g. querySelector('Tihoka-subtitle-root') on an element created via host.id)"
+    },
+    {
+      "type": "experience",
+      "id": "split-view-iframe-centered-shell-and-z",
+      "title": "Split view inside iframes fails twice: margin:auto shells re-center and halve the freed strip; doc-space z1 sinks under the host player wrapper and eats no clicks",
+      "category": [
+        "css",
+        "ux"
+      ],
+      "tags": [
+        "split-view",
+        "iframe",
+        "margin-auto",
+        "centering",
+        "dock",
+        "strip",
+        "z-index",
+        "hit-test",
+        "player-shell",
+        "artplayer"
+      ],
+      "trigger": "Docked panel in an embed iframe renders as a thin edge strip, or renders full-size but is completely unclickable — hit-test returns the host player wrapper"
     }
   ]
 }

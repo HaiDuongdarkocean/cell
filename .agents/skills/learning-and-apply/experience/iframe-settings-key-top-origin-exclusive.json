@@ -1,0 +1,42 @@
+{
+  "id": "iframe-settings-key-top-origin-exclusive",
+  "title": "Per-site settings in a child frame must key to the top page origin and read it exclusively — location.href inside an iframe is the embed domain, and OR-ing both levels lets stale entries override the toggle forever",
+  "category": [
+    "state",
+    "messaging"
+  ],
+  "tags": [
+    "iframe",
+    "cross-origin",
+    "ancestorOrigins",
+    "settings",
+    "per-site",
+    "tokenize",
+    "chrome-storage",
+    "embed-domain",
+    "toggle",
+    "stale-key"
+  ],
+  "trigger": "A per-site/per-URL toggle (tokenize, enabled flags) is read inside a cross-origin iframe — the user toggles on the top page but the iframe keeps the old state, or auto-enables regardless of the toggle",
+  "principle": "Two failure layers: (1) location.href in a child frame is the embed domain (playembed.vip), not the page the user sees — resolve the top origin via location.ancestorOrigins[last] or document.referrer; (2) an OR gate over key levels (frameUrl || topOrigin) resurrects stale entries at any level — the embed domain entry can pin the feature on after the user turns it off. Child frames: read the top origin's flag exclusively (origin-level, not page-level keys — other top pages' subtitleUrls entries also leak through an isEnabled(topOrigin) URL check); fall back to frameUrl only when the top origin is unresolvable.",
+  "cases": [
+    {
+      "context": "Onflix embeds playembed.vip; tokenize toggle writes subtitleOrigins['onflix.lat']. An older build had written subtitleOrigins['playembed.vip']=true + subtitleUrls['playembed.vip/player']=true. User toggles OFF → onflix.lat=false, but the OR gate over frameUrl keeps enabled=true forever — 'auto tokenize, ignores my toggle'.",
+      "bad": "enabled = isEnabled(ts, location.href) || isEnabled(ts, topOrigin)  // stale playembed:true wins",
+      "good": "enabled = topOrigin !== undefined ? ts.subtitleOrigins[topOrigin] ?? false : isEnabled(ts, location.href)"
+    }
+  ],
+  "applyFor": [
+    "any per-site flag read inside embed iframes (tokenize, subtitles, features)",
+    "multi-level settings keys where a lower-priority level can hold stale data",
+    "child-frame code that needs the embedding page's identity — ancestorOrigins/referrer suffice, no postMessage needed"
+  ],
+  "related": [
+    "portal-ownerdocument-iframe-tree",
+    "messaging-receiver-announces-readiness-handshake"
+  ],
+  "source": {
+    "commit": "2055077b",
+    "date": "2026-10-30"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "oopif-cdp-probe-browser-target-attach",
+  "title": "Probing a cross-origin iframe needs the browser-level CDP session attached to its own target — page.frames() skips OOPIFs and page-scoped sessions only surface the top frame's contexts",
+  "category": [
+    "testing",
+    "detection"
+  ],
+  "tags": [
+    "iframe",
+    "oopif",
+    "cross-origin",
+    "cdp",
+    "target-attach",
+    "execution-context",
+    "isolated-world",
+    "content-script",
+    "playwright",
+    "frameid"
+  ],
+  "trigger": "Debug verify on an iframe-hosted player (playembed, video embeds): page.frames() lists only top+about:blank while the iframe clearly renders and plays, or f.evaluate in the frame silently targets the wrong world",
+  "principle": "Cross-origin iframes run as OOPIFs (separate renderer process) — page.frames() and page-scoped CDP sessions don't enumerate them. Options: (a) iframeEl.contentFrame() in Playwright gets a usable handle for main-world evaluate; (b) for the content-script isolated world, connect the raw browser webSocket (json/version → webSocketDebuggerUrl), Target.getTargets → find the iframe target by URL → Target.attachToTarget(flatten) → Runtime.enable → filter executionContextCreated by name ('Tihoka') AND auxData.frameId — contexts from every frame interleave without the frameId filter. chrome.storage and all extension APIs are callable inside that isolated world. Companion traps: iframe hosts like onflix rotate ep_id → frame handles/contexts go stale mid-loop, re-query per iteration; after npm run build + ext reload, pages holding the old hashed loader die on ERR_FILE_NOT_FOUND assets/*-loader — reload the PAGE too, not just the extension; iframe content-script injection for dynamically created frames is lazy — poll mount markers before declaring injection failed.",
+  "cases": [
+    {
+      "context": "Onflix → playembed.vip OOPIF after extension rebuild: page.frames() never listed it, Target.getTargets showed it, attaching via the page session only returned top-frame contexts; browser-level attach exposed the 'Tihoka' isolated world where videos:1 and all state were probeable.",
+      "bad": "const f = page.frames().find(fr => fr.url().includes('playembed')); f.evaluate(...)  // undefined forever",
+      "good": "const f = await (await page.$('iframe[src*=playembed]')).contentFrame();  // or browser-CDP attach to the target"
+    }
+  ],
+  "applyFor": [
+    "any live verification inside cross-origin embed iframes",
+    "reading content-script state (chrome.storage, module-side DOM) in an OOPIF",
+    "post-build browser sessions where stale loader hashes masquerade as code bugs"
+  ],
+  "related": [
+    "unpacked-ext-sw-stale-bytecode",
+    "playwright-Tihoka-extension-id-service-worker-loader",
+    "portal-ownerdocument-iframe-tree"
+  ],
+  "source": {
+    "commit": "2055077b",
+    "date": "2026-10-30"
+  }
+}

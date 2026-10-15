@@ -1,0 +1,38 @@
+{
+  "id": "probe-selector-must-match-id-or-tag",
+  "title": "A DOM probe that returns 'not found' can be a selector-shape miss — check whether the creator assigns an id, attribute, or custom tag before concluding the feature never ran",
+  "category": [
+    "testing",
+    "detection"
+  ],
+  "tags": [
+    "probe",
+    "queryselector",
+    "id-vs-tag",
+    "false-negative",
+    "mount-marker",
+    "debug"
+  ],
+  "trigger": "An evaluate/querySelector probe reports the target missing while every other signal (sibling artifacts, suppressor styles, video state) says the feature initialized",
+  "principle": "querySelector('X') matches TAG X, not id X. Verifying a mount marker by tag name when the code sets host.id = 'X' yields a permanent false negative that costs the whole debug session chasing phantom injection failures. Before trusting a not-found probe, grep the creation site for how the marker is emitted (id=, dataset, custom element tag) and probe exactly that.",
+  "cases": [
+    {
+      "context": "Onflix iframe: probing document.querySelector('Tihoka-subtitle-root') returned null for ~10 minutes of debugging while nativeHide:true and a playing video proved init ran — the host is created via host.id = 'Tihoka-subtitle-root' (an id attribute, not a tag).",
+      "bad": "document.querySelector('Tihoka-subtitle-root')  // always null",
+      "good": "document.getElementById('Tihoka-subtitle-root')  // true"
+    }
+  ],
+  "applyFor": [
+    "any mount/injection verification by DOM marker",
+    "extending probe scripts that assert on element existence",
+    "reading CSS/feature flags emitted as attributes vs elements"
+  ],
+  "related": [
+    "oopif-cdp-probe-browser-target-attach",
+    "signal-absence-is-not-absence-of-signal"
+  ],
+  "source": {
+    "commit": "2055077b",
+    "date": "2026-10-30"
+  }
+}

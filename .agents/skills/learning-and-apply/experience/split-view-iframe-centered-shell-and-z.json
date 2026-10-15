@@ -1,0 +1,43 @@
+{
+  "id": "split-view-iframe-centered-shell-and-z",
+  "title": "Docking split view inside an iframe fails twice: margin:auto shells re-center and halve the freed strip, and doc-space z1 sinks under the host player wrapper so the panel swallows no clicks",
+  "category": [
+    "css",
+    "ux"
+  ],
+  "tags": [
+    "split-view",
+    "iframe",
+    "margin-auto",
+    "centering",
+    "dock",
+    "strip",
+    "z-index",
+    "hit-test",
+    "player-shell",
+    "artplayer"
+  ],
+  "trigger": "Docked subtitle panel inside an embed iframe renders as a thin strip at the container edge, or renders full-size but is completely unclickable (hit-test returns the player wrapper, resize handle dead)",
+  "principle": "Strip math assumes the shrunken shell pins to the left edge — a shell with margin:auto (ArtPlayer .art-video-player) re-centers after width shrink, splitting the freed space into left+right gutters and leaving the panel half its expected width; pin margin-left:0 + margin-right:auto on the shell (save/restore like width/height). Separately, doc-space z1 exists to slide under top-level host chrome while scrolling — a child frame has no masthead, so z1 drops the panel below the player's z-10 wrapper and every click is eaten; child frames keep --z-overlay-video. Verify interactivity via elementsFromPoint (top hit must be the panel) plus a real pointer drag, not rects alone.",
+  "cases": [
+    {
+      "context": "Onflix/playembed iframe: shell .art-video-player 980px container shrunk to 79.6% width but stayed centered (x100 w780) → panel got x880 w100 instead of w200, then z1 put it under the z-10 wrapper → zero interaction.",
+      "bad": "shell.style.width = pct; /* shell still centered */ ... panel z=1",
+      "good": "shell: width + marginLeft:'0' + marginRight:'auto' (restored on teardown); docSpace && !childFrame ? z1 : --z-overlay-video"
+    }
+  ],
+  "applyFor": [
+    "docking panels in iframe-hosted players (ArtPlayer, embeds)",
+    "any width-shrink + freed-strip layout where the shell self-centers",
+    "z-index layering that differs between top-document and child-frame contexts"
+  ],
+  "related": [
+    "overlay-stacking-context-sibling-host-overlays",
+    "split-view-spamverify-gate",
+    "host-css-overrides-injected-elements"
+  ],
+  "source": {
+    "commit": "161f8b09",
+    "date": "2026-10-30"
+  }
+}
