@@ -25,7 +25,7 @@ import type { Token, TermProbe, LanguagePlugin } from '../plugins/languagePlugin
 import { pluginRegistry } from '../plugins/pluginRegistry';
 import {
   findDictionaryByTerm,
-  findDictionaryByResource,
+  findDictionaryTermsByResource,
 } from '@/features/dictionary';
 import { findFrequencyByTerm } from '@/features/dictionary';
 import { getAllResources } from '@/features/dictionary';
@@ -35,7 +35,7 @@ import {
   getPhraseIndex,
 } from '@/features/dictionary';
 import {
-  deserializePhraseIndex,
+  openLazyPhraseIndex,
   type PhraseIndex,
 } from '@/features/dictionary';
 import {
@@ -164,7 +164,38 @@ function schedulePhraseIndexRebuild(langCode: string, resourceId: number): void 
   const key = `${langCode}:${resourceId}`;
   if (phraseIndexRebuilds.has(key)) return;
   phraseIndexRebuilds.add(key);
-  void buildPhraseIndexForResource(langCode, resourceId).catch(() => undefined);
+  // Defer so the triggering lookup finishes before the rebuild's IDB churn
+  // starts; if the SW dies first, the next lookup simply re-schedules it.
+  setTimeout(() => {
+    void buildPhraseIndexForResource(langCode, resourceId).catch(() => undefined);
+  }, 1000);
+}
+
+/** Warm the phrase-index cache after SW start so the first lookup skips the
+ *  IDB read + lazy open. Fire-and-forget; the lookup path repeats the load on
+ *  demand, so failures are silent. */
+export function prewarmPhraseIndexes(): void {
+  void (async () => {
+    const settings = await loadSettingsCached();
+    const langCode = getActiveProfileSettings(settings)?.resourceLangCode;
+    if (!langCode) return;
+    const context = await getCachedResourceContext(langCode);
+    let langCache = phraseIndexCache.get(langCode);
+    if (!langCache) {
+      langCache = new Map<number, PhraseIndex | null>();
+      phraseIndexCache.set(langCode, langCache);
+    }
+    for (const r of context.dictionaryResources) {
+      if (r.id === undefined || langCache.has(r.id)) continue;
+      const s = await getPhraseIndex(langCode, r.id).catch(() => undefined);
+      if (!s) continue;
+      try {
+        langCache.set(r.id, openLazyPhraseIndex(s.blob));
+      } catch {
+        // leave uncached — the lookup path handles stale/corrupt blobs
+      }
+    }
+  })().catch(() => undefined);
 }
 
 /** Runtime context for resource filtering + priority across a single lookup.
@@ -283,15 +314,17 @@ export async function createDictionaryProbeAsync(
   const { dictionaryResources } = resolvedContext;
   const terms = new Set<string>();
 
-  // Load all dictionary terms. For CEDICT this is ~120k entries.
-  const entryLists = await Promise.all(
+  // Load all dictionary terms. For CEDICT this is ~120k entries — the terms
+  // fast path reads the compact terms record on blob-backed resources instead
+  // of decoding every chunk.
+  const termLists = await Promise.all(
     dictionaryResources.map((r) =>
-      r.id === undefined ? Promise.resolve([]) : findDictionaryByResource(langCode, r.id),
+      r.id === undefined ? Promise.resolve([]) : findDictionaryTermsByResource(langCode, r.id),
     ),
   );
-  for (const entries of entryLists) {
-    for (const e of entries) {
-      terms.add(e.term.trim().toLowerCase());
+  for (const termList of termLists) {
+    for (const t of termList) {
+      terms.add(t.trim().toLowerCase());
     }
   }
 
@@ -526,9 +559,9 @@ async function assembleLookupResult(
   const { allowedResourceIds, resourcePriority, priorityMap } = resourceContext;
 
   const readDict = (term: string) =>
-    memoize(memo.dict, memoKey(langCode, term), () => findDictionaryByTerm(langCode, term));
+    memoize(memo.dict, memoKey(langCode, term), () => findDictionaryByTerm(langCode, term, allowedResourceIds));
   const readFreq = (term: string) =>
-    memoize(memo.freq, memoKey(langCode, term), () => findFrequencyByTerm(langCode, term));
+    memoize(memo.freq, memoKey(langCode, term), () => findFrequencyByTerm(langCode, term, allowedResourceIds));
   const readStatus = (term: string) =>
     memoize(memo.status, memoKey(langCode, term), () => getWordStatus(langCode, term));
   const readPosStatuses = (term: string) =>
@@ -985,7 +1018,7 @@ async function tryEnglishPhraseMatchAll(
           continue;
         }
         try {
-          const index = deserializePhraseIndex(s.blob);
+          const index = openLazyPhraseIndex(s.blob);
           langCache.set(rid, index);
           indexes.push({ resourceId: rid, index });
         } catch {

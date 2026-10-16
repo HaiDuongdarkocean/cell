@@ -45,8 +45,10 @@ export interface MountPopupDictionaryOptions {
   readonly onClose?: () => void;
   /** Called when a new result arrives. */
   readonly onResult?: (winner: LookupResult, candidates: readonly LookupResult[], contextSentence: string) => void;
-  /** Called when the popup size or sheet height changes. */
-  readonly onSizeChange?: (size: PopupSize, sheetHeight: number) => void;
+  /** Called when the popup size or sheet height changes. `viewportHeight` is
+   *  set by remote mounts — the host frame's innerHeight, not the
+   *  (possibly iframe-sized) local viewport. */
+  readonly onSizeChange?: (size: PopupSize, sheetHeight: number, viewportHeight?: number) => void;
   /** Called when the user chooses to send a prefill to the card creator. */
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   /** Called when the user triggers a quick add. */
@@ -105,8 +107,12 @@ export interface PopupDictionaryMountController {
   readonly setStatus: (term: string, status: WordStatus) => void;
   /** Update mutable options (sourceLang, targetLang, size, sheetHeight, term, context, defaultActiveTab, dismiss policy) without re-mounting. */
   readonly setOptions: (options: Partial<Pick<MountPopupDictionaryOptions, 'sourceLang' | 'targetLang' | 'initialSize' | 'initialSheetHeight' | 'initialTerm' | 'contextSentence' | 'cursorOffset' | 'defaultActiveTab' | 'trail' | 'dismissOnOutsideClick'>>) => void;
-  /** Move the popup to a new anchor without re-mounting (same-level re-lookup). */
-  readonly setAnchor: (anchor: PopupAnchor, pointer?: PopupPointerHint, lineRect?: PopupLineRect | null) => void;
+  /** Move the popup to a new anchor without re-mounting (same-level re-lookup).
+   *  `topCoords` marks anchors already in top-frame space (remote mount). */
+  readonly setAnchor: (anchor: PopupAnchor, pointer?: PopupPointerHint, lineRect?: PopupLineRect | null, topCoords?: boolean) => void;
+  /** Remote mounts can't accept host.style writes — route z-index through the
+   *  bridge instead. Local mounts leave this undefined. */
+  readonly setZIndex?: (zIndex: string) => void;
 }
 
 function isInsideHost(host: HTMLElement, e: PointerEvent): boolean {

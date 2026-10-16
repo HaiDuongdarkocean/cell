@@ -1,5 +1,7 @@
 import { useCallback } from 'react';
 import { ManagerLayer } from './ManagerLayer';
+import { useIsMobile } from '@/shared/ui/useIsMobile';
+import { BREAKPOINTS } from '@/shared/lib/tokens';
 import type { AppearanceState, ManagerState } from './subtitlePanelsTypes';
 import type { SubtitleApiKey } from '@/entities/settings';
 import type {
@@ -48,6 +50,7 @@ function buildAppearance(
  * Spec: docs/specs/subtitle-panels-atom-decomposition.md (Decision D1, Task 8)
  */
 export function HostManagerSheet({ state, onAction, onClose }: HostManagerSheetProps): React.JSX.Element {
+  const isMobile = useIsMobile(BREAKPOINTS.medium);
   const handleBackdropClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget) onClose();
   }, [onClose]);
@@ -77,10 +80,11 @@ export function HostManagerSheet({ state, onAction, onClose }: HostManagerSheetP
 
   return (
     <>
-      <div className={styles.backdrop} onClick={handleBackdropClick} />
+      {/* Desktop ManagerLayer carries its own .panelLayer backdrop. */}
+      {isMobile && <div className={styles.backdrop} onClick={handleBackdropClick} />}
       <ManagerLayer
         manager={manager}
-        isMobile={true}
+        isMobile={isMobile}
         onClose={onClose}
         generateNativeEnabled={!state.generateNativeDisabled}
       />

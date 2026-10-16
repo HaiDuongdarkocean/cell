@@ -16,7 +16,6 @@ import type { ManagerState, OffsetState } from './subtitlePanelsTypes';
 
 export interface ManagerHostDelegationParams {
   managerOpen: boolean;
-  isMobile: boolean;
   manager: ManagerState | undefined;
   offset: OffsetState | undefined;
   generateNativeEnabled: boolean;
@@ -29,7 +28,6 @@ export interface ManagerHostDelegation {
 
 export function useManagerHostDelegation({
   managerOpen,
-  isMobile,
   manager,
   offset,
   generateNativeEnabled,
@@ -37,15 +35,12 @@ export function useManagerHostDelegation({
 }: ManagerHostDelegationParams): ManagerHostDelegation {
   const [managerOpenOnHost, setManagerOpenOnHost] = useState(false);
 
-  // Child-iframe mobile: delegate manager panel rendering to the host frame.
-  // Serialize state + ask host to mount the panel; on success skip the
-  // in-iframe portal so we don't render two copies. On failure, fall back to
-  // rendering in-iframe as normal (managerOpenOnHost stays false).
-  // Re-runs when isMobile changes → viewport-responsive reparenting:
-  //   desktop→mobile: delegate to host (sheet escapes iframe bounds).
-  //   mobile→desktop: handled by the host-close effect below.
+  // Child-iframe (any viewport): delegate manager rendering to the host
+  // frame — the manager is viewport-sized, so inside the iframe it clips to
+  // the embed bounds. Serialize state + ask host to mount; on success skip
+  // the in-iframe portal. On failure, fall back to in-iframe rendering.
   useEffect(() => {
-    if (!managerOpen || !isChildFrame() || !isMobile) return;
+    if (!managerOpen || !isChildFrame()) return;
     if (!manager) return;
 
     let cancelled = false;
@@ -57,23 +52,14 @@ export function useManagerHostDelegation({
     });
 
     return () => { cancelled = true; };
-  }, [managerOpen, manager, offset, generateNativeEnabled, isMobile]);
-
-  // Viewport-responsive reparenting: when viewport grows to desktop while
-  // the sheet is on the host page, close the host sheet so the in-iframe
-  // portal (inside the video container) can resume rendering.
-  useEffect(() => {
-    if (!managerOpenOnHost || isMobile) return;
-    confirmManagerClosed();
-    setManagerOpenOnHost(false);
-  }, [managerOpenOnHost, isMobile]);
+  }, [managerOpen, manager, offset, generateNativeEnabled]);
 
   // Map host-forwarded manager actions to the local manager callbacks.
   // Guard: ignore actions after close (managerOpen false).
   useEffect(() => {
     if (!managerOpenOnHost || !manager) return;
     const cleanup = onManagerAction((action, args) => {
-      if (!managerOpen) return;
+      if (!managerOpen) return false;
       const role = args.role as 'target' | 'native';
       const index = args.index as number;
       const ms = args.ms as number;
@@ -93,6 +79,7 @@ export function useManagerHostDelegation({
         case 'resetStyle': manager.appearance?.onResetStyle(role); break;
         case 'previewTextChange': manager.appearance?.onPreviewTextChange(role, args.text as string); break;
       }
+      return true;
     });
     return cleanup;
   }, [managerOpenOnHost, manager, managerOpen]);

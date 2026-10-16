@@ -1,0 +1,509 @@
+/* Mockup stage + redesigned SubtitleManagerPanel tracks view.
+   Design-time only — tokens from --*, no product files touched. */
+
+/* ─── Stage: fake video backdrop so the glass panel reads honestly ─── */
+.page {
+  min-height: 100vh;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  padding: var(--space-6) var(--space-4) var(--space-10);
+}
+
+.pageHeader {
+  max-width: 860px;
+  margin: 0 auto var(--space-4);
+}
+
+.pageTitle {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.pageSubtitle {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  max-width: 70ch;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.seg {
+  display: inline-flex;
+  gap: var(--space-0-5);
+  padding: var(--space-0-5);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-hover);
+}
+
+.seg button {
+  border: 0;
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-2-5);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.seg button[aria-pressed='true'] {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+/* ─── Frame: video container simulation ─── */
+.stage {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-container);
+  background:
+    radial-gradient(120% 90% at 20% 10%, #274b73 0%, transparent 55%),
+    radial-gradient(90% 80% at 85% 85%, #173a2e 0%, transparent 50%),
+    linear-gradient(160deg, #101820 0%, #05070a 100%);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+}
+
+.frame[data-viewport='desktop'] {
+  height: 680px;
+  justify-content: flex-end;
+  align-items: stretch;
+}
+
+.frame[data-viewport='mobile'] {
+  width: 360px;
+  height: 640px;
+  margin: 0 auto;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.videoLabel {
+  position: absolute;
+  inset-inline-start: var(--space-3);
+  inset-block-start: var(--space-3);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* ─── Panel — dark glass overlay (grammar unchanged: right card / bottom sheet) ─── */
+.panel {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  overflow: hidden;
+  backdrop-filter: blur(var(--blur-lg));
+  -webkit-backdrop-filter: blur(var(--blur-lg));
+}
+
+.frame[data-viewport='desktop'] .panel {
+  /* CHANGE vs product: height hugs content up to the frame cap — kills the
+     ~300px dead band. Right edge stays flush, left corners rounded. */
+  width: min(100%, var(--dialog-max-width-sm));
+  height: fit-content;
+  max-height: 100%;
+  align-self: center;
+  margin-block: var(--space-3);
+  border-radius: var(--radius-element) 0 0 var(--radius-element);
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  box-shadow: var(--shadow-modal);
+}
+
+.frame[data-viewport='mobile'] .panel {
+  width: 100%;
+  max-height: 75vh;
+  border-radius: var(--radius-container) var(--radius-container) 0 0;
+  background: color-mix(in srgb, var(--color-surface-popover) 88%, transparent);
+}
+
+/* ─── Header (unchanged) ─── */
+.header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--space-11);
+  padding: var(--space-1-5) var(--space-3);
+  border-bottom: var(--border-width-hairline) solid var(--color-divider);
+}
+
+.header .title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.headerIcon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--iconbutton-size-md);
+  height: var(--iconbutton-size-md);
+  color: var(--color-text-secondary);
+}
+
+/* ─── Tracks body — top-aligned scroll region; dead space killed by
+   fit-content panel height ─── */
+.tracksBody {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-width: none;
+}
+
+/* Scroll affordance: fade only while content continues below the fold —
+   lifted content stays readable, the fade is the "scroll for more" cue. */
+.tracksBody[data-more='true'] {
+  mask-image: linear-gradient(to bottom, black calc(100% - var(--space-8)), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - var(--space-8)), transparent 100%);
+}
+
+.tracksBody::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─── Section bar — sticky tabs + actions (InkTabs kept) ─── */
+.sectionBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: var(--space-1) var(--space-3);
+  border-bottom: var(--border-width-hairline) solid var(--color-divider);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  /* 96% surface + blur — scrolled content must not read through (was 60%,
+     ghost text bled under the tabs; 92% still showed faint traces). */
+  background: color-mix(in srgb, var(--color-surface-popover) 96%, transparent);
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
+}
+
+/* Tab count — plain secondary "· N", no badge pill. */
+.tabCount {
+  margin-inline-start: var(--space-1);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-normal);
+}
+
+.inkTabs {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.inkTabs [role='tab'] {
+  padding-top: var(--space-1-5);
+  min-height: var(--space-9);
+}
+
+.sectionActions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* ─── Tab content — proximity zones: each section = one card, children
+   inside are flat rows (ref-2: no per-child borders). ─── */
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Zone card — glass fill + hairline; padding space-1 so inner rows keep
+   their own space-2 inset (text lands 12px from the card edge). */
+.sectionCard {
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-radius: var(--radius-container);
+  background: color-mix(in srgb, var(--color-surface-card) 55%, transparent);
+  padding: var(--space-1);
+}
+
+/* Auto-load card lives outside tabContent (global). Inline padding space-3
+   puts label + row text at the same 12px inset as track/cue rows. */
+.autoCard {
+  margin: 0 var(--space-3) var(--space-2);
+  padding-inline: var(--space-3);
+}
+
+/* Disabled dependency chain — dim the whole row, not just the toggle.
+   The switch keeps its own disabled opacity (no double-dim). */
+.rowDisabled {
+  opacity: var(--opacity-disabled);
+  transition: opacity var(--duration-150) var(--ease-out);
+}
+
+.rowDisabled [role='switch'] {
+  opacity: 1;
+}
+
+.trackList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+/* Flat row inside the Tracks card — selected state = primary-subtle tint
+   + solid icon tile (ref-2 selector grammar). */
+.trackRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--space-12);
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-element);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--duration-150) var(--ease-out);
+}
+
+.trackRow:hover {
+  background: color-mix(in srgb, var(--color-surface-hover) 70%, transparent);
+}
+
+.trackRow:focus-visible {
+  outline: var(--border-width-thick) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+.trackRowActive,
+.trackRowActive:hover {
+  background: var(--color-primary-subtle);
+}
+
+.offRow {
+  min-height: var(--space-10);
+  color: var(--color-text-secondary);
+}
+
+.offLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-tight);
+}
+
+/* Icon tile — ref-2 (car-wash) grammar: tinted squircle is the selected
+   indicator; selected = solid primary + primary-foreground glyph. */
+.trackTile {
+  flex: 0 0 var(--space-10);
+  width: var(--space-10);
+  height: var(--space-10);
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* radius-lg (8) — concentric rule: card 16 → row 12 → tile 8. */
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+  transition:
+    background-color var(--duration-150) var(--ease-out),
+    color var(--duration-150) var(--ease-out);
+}
+
+.trackTileActive {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+.trackCopy {
+  min-width: 0;
+  flex: 1;
+}
+
+.trackName {
+  display: block;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-tight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trackRowActive .trackName {
+  color: var(--color-text-accent-strong);
+}
+
+.trackMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+  margin-top: var(--space-0-5);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.tag {
+  color: var(--color-text-secondary);
+}
+
+.tag + .tag::before {
+  content: '·';
+  margin-right: var(--space-1);
+  color: var(--color-border-emphasized);
+}
+
+.tagInfo {
+  color: var(--color-info);
+}
+
+.tagSuccess {
+  color: var(--color-success);
+}
+
+.trackActions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  align-self: center;
+  gap: var(--space-1);
+}
+
+/* ─── Auto-load — CHANGE: settings move in from Settings dialog. Rows are
+   flat (divider hairlines only — `child` left borders removed per
+   feedback); the enclosing .sectionCard provides the grouping. ─── */
+
+/* ─── Latency (StepperSection molecule kept) ─── */
+.pillGroup {
+  flex: 1 1 auto;
+}
+
+.valueField {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: stretch;
+  border-left: var(--border-width-hairline) solid var(--color-divider);
+  border-right: var(--border-width-hairline) solid var(--color-divider);
+  background: transparent;
+}
+
+.valueField .valueInput {
+  width: 100%;
+  height: var(--space-10);
+  padding: 0 var(--space-2);
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  outline: none;
+}
+
+.valueField .valueInput:hover,
+.valueField .valueInput:focus-visible {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* ─── Dock — CHANGE: pinned cluster is now just Generate primary CTA +
+   4-slot FooterBar. Cue display moved into the Playback card (it is a
+   per-view display setting, not a nav-level action — frees dock height
+   for content). ─── */
+.dock {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3) 0;
+  border-top: var(--border-width-hairline) solid var(--color-divider);
+}
+
+/* Playback card inner wrapper — normalizes the stepper's own space-1-5
+   padding so all card text lands at the shared 12px inset
+   (card 4 + this 2 + stepper 6 = 12). */
+.playBody {
+  padding-inline: var(--space-0-5);
+}
+
+/* Cue display inside the Playback card — hairline separates it from
+   Latency; text sits at the shared 12px inset. */
+.cueRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+  padding: var(--space-2) var(--space-1-5) var(--space-1-5);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
+}
+
+.cueLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.cueSeg {
+  width: 100%;
+}
+
+/* 40px segments — chip-height 32px is under the mobile touch floor. */
+.cueSeg [role='radio'] {
+  min-height: var(--space-10);
+}
+
+/* DS gap preview: proposed `solid` variant — active segment = solid
+   primary + primary-foreground (reference grammar). Mockup simulates via
+   attribute selector; deliver adds variant="solid" to SegmentedControl. */
+.cueSeg [role='radio'][aria-checked='true'] {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+.cueSeg [role='radio'][aria-checked='true']:hover {
+  background: var(--color-primary);
+}
+
+.generateCta {
+  width: 100%;
+}
+
+/* FooterBar sits inside .dock — stretch edge-to-edge over the dock's
+   horizontal padding (its own hairline stays as the bar's top edge). */
+.footerBar {
+  margin-inline: calc(var(--space-3) * -1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trackRow {
+    transition: none;
+  }
+}

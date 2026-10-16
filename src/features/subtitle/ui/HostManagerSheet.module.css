@@ -6,6 +6,7 @@
   position: fixed;
   inset: 0;
   background: var(--dialog-overlay-bg);
-  /* max-int: intentional top-most overlay */
-  z-index: 2147483646;
+  /* Below the sheet (--z-overlay-top = 10003) — a higher value dims and
+     hit-tests over the sheet surface it accompanies. */
+  z-index: var(--z-overlay-secondary);
 }

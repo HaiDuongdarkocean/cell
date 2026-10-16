@@ -1,3 +1,4 @@
+import { runOncePerDocument } from '@/shared/lib/dom/claimSingletonInstall';
 import {
   installManagerSheetBridge,
   setHostSheetCallbacks,
@@ -19,6 +20,10 @@ interface SheetRenderDeps {
 // when a cross-origin child iframe requests it (mobile scenario where the
 // iframe cannot expand its own overlay beyond its viewport).
 export function installHostManagerSheet(): void {
+  runOncePerDocument('host-manager-sheet', installHostManagerSheetOnce);
+}
+
+function installHostManagerSheetOnce(): void {
   let depsPromise: Promise<SheetRenderDeps> | null = null;
   const loadDeps = (): Promise<SheetRenderDeps> =>
     (depsPromise ??= Promise.all([

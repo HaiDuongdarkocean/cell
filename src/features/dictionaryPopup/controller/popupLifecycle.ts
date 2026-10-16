@@ -16,6 +16,9 @@ import {
   type MountPopupDictionaryOptions,
   type PopupDictionaryMountController,
 } from '../ui/mountPopupDictionary';
+import { mountPopupDictionaryRemote } from '../bridge/iframePopupBridgeChild';
+import { isTopAnchoredTarget } from '@/shared/lib/dom/topAnchoredTarget';
+import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
 import type { WebTriggerPointer } from '@/features/dictionaryPopup/trigger/webTriggerController';
 import { createWordHighlight, type HighlightTarget } from '@/features/dictionaryPopup/ui/wordHighlight';
 import { emitWordStatusChanged } from '@/features/dictionary';
@@ -230,7 +233,9 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
 
   function applyLevelZIndex(level: PopupLevel): void {
     if (level.mount) {
-      level.mount.host.style.zIndex = level.abovePanel ? POPUP_Z_INDEX : POPUP_BELOW_PANEL_Z_INDEX;
+      const zIndex = level.abovePanel ? POPUP_Z_INDEX : POPUP_BELOW_PANEL_Z_INDEX;
+      if (level.mount.setZIndex) level.mount.setZIndex(zIndex);
+      else level.mount.host.style.zIndex = zIndex;
     }
   }
 
@@ -258,7 +263,21 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
   function mountPopupLevel(level: PopupLevel, options: MountPopupDictionaryOptions): void {
     const viewLevel = (): PopupLevel =>
       popupStack[popupStack.length - 1] ?? level;
-    level.mount = mountPopupDictionary({
+    const mountFn: (o: MountPopupDictionaryOptions) => PopupDictionaryMountController =
+      isChildFrame()
+        // Cross-origin player iframe: mount the surface on the top document —
+        // position:fixed in here is clipped to the iframe's viewport.
+        ? (o) => mountPopupDictionaryRemote(
+            o,
+            deps.getDpSettings().popupSheetHeightVh,
+            level.hostAnchored,
+            // Host can't render (no CS, shadow-DOM iframe, fullscreen embed):
+            // swap in a local mount so the lookup still shows — clipped but
+            // functional.
+            () => { level.mount = mountPopupDictionary(o); },
+          ) ?? mountPopupDictionary(o)
+        : mountPopupDictionary;
+    level.mount = mountFn({
       ...options,
       trail: popupStack.map((l) => l.lookupTerm ?? ''),
       onTrailNavigate: (index) => closeFromLevel(index + 1),
@@ -279,8 +298,14 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     applyLevelZIndex(level);
   }
 
-  function handlePopupSizeChange(size: PopupSize, sheetHeight: number): void {
-    const sheetHeightVh = Math.round((sheetHeight / window.innerHeight) * 100);
+  function handlePopupSizeChange(
+    size: PopupSize,
+    sheetHeight: number,
+    viewportHeight?: number,
+  ): void {
+    // Remote (top-frame) mounts report the host's innerHeight — dividing by
+    // the child iframe's innerHeight would blow past the 95vh clamp.
+    const sheetHeightVh = Math.round((sheetHeight / (viewportHeight ?? window.innerHeight)) * 100);
     const current = deps.getDpSettings();
     deps.setDpSettings({
       ...current,
@@ -398,7 +423,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
         defaultActiveTab: defaultTab,
       });
       if (!isResponseUpdate && !(level.highlightTarget && levelIndexForTarget(popupStack, level.highlightTarget) >= 0)) {
-        viewMount.setAnchor(anchor, pointerHint, lineRect);
+        viewMount.setAnchor(anchor, pointerHint, lineRect, level.hostAnchored);
       }
     } else {
       mountPopupLevel(level, {
@@ -494,6 +519,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
 
     level.highlightTarget = highlightTarget;
     level.originalHighlightTarget = highlightTarget;
+    level.hostAnchored = isTopAnchoredTarget(highlightTarget);
     // A new lookup is taking over this level — drop the previous term so 1-4
     // keys can't hit the stale word while the new result is loading.
     level.term = null;
@@ -572,7 +598,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
         defaultActiveTab: defaultTab,
       });
       if (!popupInternal) {
-        viewMount.setAnchor(anchor, pointerHint, lineRect);
+        viewMount.setAnchor(anchor, pointerHint, lineRect, level.hostAnchored);
       }
     } else {
       mountPopupLevel(level, {

@@ -9,6 +9,10 @@ export interface PanelMountController {
   getHosts(): readonly HTMLElement[];
   sendToCard(prefill: DictionaryPanelPrefill): Promise<void>;
   onOpenChange?(listener: (open: boolean) => void): () => void;
+  /** Deep-link to a settings section. Remote (cross-frame) controllers
+   *  implement this — the local fallback in openSettingsSection polls
+   *  getHosts() which is empty on a remote mount. */
+  openSection?(sectionId: string): Promise<void>;
 }
 
 /** How long to wait for the settings tab to finish its async settings load. */
@@ -28,6 +32,10 @@ export async function openSettingsSection(
   sectionId: string,
 ): Promise<void> {
   if (!controller) return;
+  if (controller.openSection) {
+    await controller.openSection(sectionId);
+    return;
+  }
   await controller.open('settings');
 
   const deadline = Date.now() + NAV_ITEM_WAIT_MS;

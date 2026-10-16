@@ -10,6 +10,8 @@ import {
 } from '@/shared/config/config';
 import { init } from './contentScriptController';
 import { ReactSubtitleController } from './reactSubtitleController';
+import { BackgroundPrefillController } from '@/features/translate';
+import type { SrtCue } from '@/entities/media';
 import { findVideoOverlayContainer } from '@/shared/lib/dom/findPlayerContainer';
 import { getActiveStudyMode, subscribeToStudyMode } from '@/features/studyModes';
 import {
@@ -81,7 +83,7 @@ jest.mock('@/features/tokenize', () => {
   };
 });
 
-jest.mock('@/features/translate/logic/translatePrefill', () => ({
+jest.mock('@/features/translate', () => ({
   BackgroundPrefillController: jest.fn().mockImplementation(() => ({
     isRunning: false,
     clear: jest.fn(),
@@ -551,6 +553,48 @@ describe('contentScriptController', () => {
     );
     expect(blockController.setHasSearchKeys).toHaveBeenCalledWith(false);
     expect(blockController.setSearchApiKeys).toHaveBeenCalledWith([]);
+
+    cleanup!();
+    cleanupCalled = true;
+  });
+
+  it('toggling auto-translate off stops a running prefill and reverts the translated slot', async () => {
+    cleanup = init(video);
+    await flushPromises();
+
+    const targetCues: SrtCue[] = [{ index: 1, start: 0, end: 5000, text: 'Hello' }];
+    for (const cb of onMessageCallbacks) {
+      void cb(
+        {
+          type: MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
+          payload: {
+            tabId: 1,
+            target: { url: 'http://x/en.vtt', language: 'en', format: 'vtt' },
+            native: null,
+          },
+        },
+        {},
+        jest.fn(),
+      );
+    }
+    await flushPromises();
+
+    const deps = mockHandleAutoLoadSubtitles.mock.calls.at(-1)?.[1] as AutoLoadDeps;
+    deps.onStartTranslatePrefill!(targetCues);
+
+    const prefill = jest.mocked(BackgroundPrefillController).mock.results.at(-1)?.value as {
+      clear: jest.Mock;
+      start: jest.Mock;
+    };
+    expect(prefill.start).toHaveBeenCalled();
+
+    onStorageChangedCallback!(
+      { settings: { newValue: { ...DEFAULT_SETTINGS, subtitleOverlayAutoTranslate: false } } },
+      'local',
+    );
+
+    expect(prefill.clear).toHaveBeenCalled();
+    expect(blockController.loadBilingualCues).toHaveBeenCalledWith([], []);
 
     cleanup!();
     cleanupCalled = true;

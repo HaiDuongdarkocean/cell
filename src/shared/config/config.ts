@@ -415,10 +415,14 @@ export const STORAGE_KEYS = {
   SPLIT_VIEW_PCT: 'splitViewPct',
   /** Split View mobile sheet height % of viewport (clamped to min px + viewport). Survives reload + re-toggle. */
   SPLIT_VIEW_SHEET_HEIGHT_VH: 'splitViewSheetHeightVh',
+  /** Universal panel Dictionary tab right pane width % (25-75). Survives reload + reopen. */
+  DICT_TAB_PANE_PCT: 'dictTabPanePct',
   /** Cue difficulty filter mode ('all'|'i1'|'hasUnknown'|'allKnown'|'dense'|'tracking'). Survives reload + surface switch. */
   CUE_FILTER_MODE: 'cueFilterMode',
   /** Subtitle manager mobile sheet height % of viewport (20-95). Survives close/reopen. */
   SUBTITLE_MANAGER_SHEET_HEIGHT_VH: 'subtitleManagerSheetHeightVh',
+  /** Host cue panel ('t') mobile sheet height % of viewport (20-95). Survives close/reopen. */
+  CUE_PANEL_SHEET_HEIGHT_VH: 'cuePanelSheetHeightVh',
   /** Per-key subtitle quota ledger in session storage (spec subtitle-search.md).
    *  Session-only: per-profile, not synced, survives SW restart. */
   SUBTITLE_KEY_LEDGER: 'subtitleKeyLedger',

@@ -34,7 +34,6 @@
 /* === Tab content — padding, scrollable but scrollbar hidden === */
 .tabContent {
   composes: hide from '@/shared/ui/Scrollable.module.css';
-  padding: var(--space-3) var(--space-4) var(--space-4);
   flex: 1;
   overflow-y: auto;
   min-height: 0;

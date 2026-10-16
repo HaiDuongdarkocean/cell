@@ -35,6 +35,8 @@ export interface UniversalPanelProps {
   readonly activeProfileId?: string | null;
   /** Called when user switches active profile. */
   readonly onProfileChange?: (profileId: string) => void;
+  /** Pointer entering the text-tokenize half — prewarms the SW before the click. */
+  readonly onHoverTokenizeText?: () => void;
   /** Content for the Dictionary tab. */
   readonly dictionaryPanel: ReactNode;
   /** Content for the Vocabulary tab. */
@@ -92,6 +94,7 @@ export function UniversalPanel({
   languageProfiles = [],
   activeProfileId = null,
   onProfileChange = () => {},
+  onHoverTokenizeText,
   dictionaryPanel,
   vocabularyPanel,
   studyModesPanel,
@@ -238,6 +241,7 @@ export function UniversalPanel({
             languageProfiles={languageProfiles}
             activeProfileId={activeProfileId}
             onProfileChange={onProfileChange}
+            onHoverTokenizeText={onHoverTokenizeText}
           />
 
           <div className={styles.content} data-tihoka-id={`universal-panel-content-${activeTab}`}>

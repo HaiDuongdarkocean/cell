@@ -27,6 +27,8 @@ import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { buildClusterCssVars } from './subtitleUI';
 import styles from './SubtitlePanels.module.css';
 import { useManagerHostDelegation } from './subtitleManagerHost';
+import { useCuePanelHostDelegation } from './useCuePanelHostDelegation';
+import { cuePanelRemoteCapable } from '@/features/subtitle/logic/iframeCuePanelBridgeChild';
 import { t } from '@/shared/i18n';
 import type { SubtitlePracticeMode } from '@/features/studyModes';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
@@ -209,27 +211,27 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     }, [onPlaybackSpeedChange]);
     // Sync prop → state when cues change after mount (e.g. subtitle loaded later).
     useEffect(() => { setCues(initialCues ?? []); }, [initialCues]);
+
+    // Child iframe with a resolvable parent: the 't' panel renders on the
+    // top document (an iframe's position:fixed is clipped to its own
+    // viewport). useSplitView skips all in-document layout when delegated.
+    // remotePanel skips the local dock surgery — only when the remote would
+    // actually render (mobile viewport). A desktop child frame must keep the
+    // in-container split view, so gate it the same as cuePanelOnHost.
+    const cuePanelRemote = cuePanelRemoteCapable() && isMobile;
     const {
       splitViewOpen,
       splitViewPortalTarget,
       handleToggleSplitView,
       setSplitViewOpen,
       drainPendingRestore,
-    } = useSplitView({ playerMode, onSplitViewChange, fallbackPlayerContainerRef });
+    } = useSplitView({ playerMode, onSplitViewChange, fallbackPlayerContainerRef, remotePanel: cuePanelRemote });
     // <600px the split-view panel floats as a full cue-chrome sheet — its
     // transport/actions subsume the on-video overlay layers.
     const mobileSheetOpen = splitViewOpen && isMobile;
 
-    // timeupdate (~4Hz) only feeds the cue-highlight consumers — keep the
-    // latest value in a ref and pay the overlay re-render only while
-    // PlayerModeLayer or the split-view panel is mounted.
-    const hasTimeConsumer = playerMode || Boolean(splitViewOpen && splitViewPortalTarget && onSeek);
     const currentTimeMsRef = useRef(currentTimeMs);
-    const hasTimeConsumerRef = useRef(hasTimeConsumer);
-    hasTimeConsumerRef.current = hasTimeConsumer;
-    if (hasTimeConsumer && currentTimeMs !== currentTimeMsRef.current) {
-      setCurrentTimeMs(currentTimeMsRef.current);
-    }
+    const hasTimeConsumerRef = useRef(false);
     useEffect(() => {
       const ms = initialCurrentTimeMs ?? 0;
       currentTimeMsRef.current = ms;
@@ -248,7 +250,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
 
     const { managerOpenOnHost } = useManagerHostDelegation({
       managerOpen,
-      isMobile,
       manager,
       offset,
       generateNativeEnabled,
@@ -267,6 +268,60 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const handleToggleInteractionLock = useCallback((): void => {
       setInteractionLocked((value) => !value);
     }, []);
+
+    const { cuePanelOnHost } = useCuePanelHostDelegation({
+      splitViewOpen,
+      isMobile,
+      cues,
+      currentTimeMs,
+      offsetMs: offsetMs ?? 0,
+      isPlaying,
+      repeatActive,
+      repeatIcon,
+      repeatLabel,
+      playbackSpeed,
+      practiceMode,
+      activeModeId,
+      customModes,
+      tokenize,
+      panelBlurred,
+      ocrEnabled: ocrEnabledState,
+      generateNativeEnabled,
+      interactionLocked,
+      filename,
+      onClose: () => setSplitViewOpen(false),
+      onToggle: handleToggleSplitView,
+      onSeek,
+      onPrev,
+      onNext,
+      onRepeat,
+      onRewind,
+      onForward,
+      onPlayPause,
+      onPreviousCue,
+      onReplayCue,
+      onContinueCue,
+      onPracticeModeChange: handlePracticeModeChange,
+      onPlaybackSpeedChange: handlePlaybackSpeedChange,
+      onStudyModeChange: handleStudyModeChange,
+      onSaveCue: handleSaveCue,
+      onQuickAdd,
+      onEditCard,
+      onToggleOcr,
+      onGenerateNative,
+      onToggleManager,
+      onToggleInteractionLock: handleToggleInteractionLock,
+    });
+
+    // timeupdate (~4Hz) only feeds the cue-highlight consumers — keep the
+    // latest value in a ref and pay the overlay re-render only while
+    // PlayerModeLayer or the split-view panel is mounted (locally or remote).
+    const hasTimeConsumer =
+      playerMode || Boolean(splitViewOpen && onSeek && (splitViewPortalTarget || cuePanelOnHost));
+    hasTimeConsumerRef.current = hasTimeConsumer;
+    if (hasTimeConsumer && currentTimeMs !== currentTimeMsRef.current) {
+      setCurrentTimeMs(currentTimeMsRef.current);
+    }
 
     const handleTogglePlayerMode = usePlayerMode({
       playerMode,

@@ -1,6 +1,7 @@
 declare const __Tihoka_FAST_BUILD__: boolean;
 
 import { onStorageChanged } from '@/shared/lib/chrome-apis';
+import { dedupeGlobalKeydown, isCurrentWorld } from '@/shared/lib/dom/claimSingletonInstall';
 import { STORAGE_KEYS, DEFAULT_CARD_CREATOR_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { getActiveProfileSettings } from '@/entities/settings';
@@ -8,8 +9,11 @@ import type { TokenizePanelState } from '@/features/tokenize/types';
 import { createWebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
 import type { WebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
 import { createWebTokenizeController } from '@/features/tokenize/controller/webTokenizeController';
+import { warmEspeakIpa } from '@/features/pronunciation';
+import { pingTokenizeMeta } from '@/features/dictionary';
 import type { WebTokenizeController } from '@/features/tokenize/controller/webTokenizeController';
 import { mountUniversalPanel, type UniversalPanelMountController } from '@/features/universalPanel';
+import { createRemotePanelController } from '@/features/universalPanel/iframePanelBridge';
 import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl, isSubtitleTokenizeEnabledForOrigin, setSubtitleTokenizeEnabledForUrl, saveTokenizeSettings } from '@/features/tokenize/services/tokenizeSettingsStore';
 import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import { modifierMatches, type LookupRequest, type TriggerMode } from '@/entities/dictionary';
@@ -130,6 +134,7 @@ const PANEL_SHORTCUT_ACTIONS = new Set<ShortcutAction>([
 export function installUniversalPanelShortcut(): void {
   void refreshPageShortcuts();
   panelShortcutKeydown = (e) => {
+    if (!isCurrentWorld()) return;
     if (e.repeat || e.isComposing) return;
     const key = e.key.toLowerCase();
     const binding = pageShortcuts.find(
@@ -146,6 +151,7 @@ export function installUniversalPanelShortcut(): void {
     // (the panel autofocuses its search input). Bare keys and Shift combos do
     // type characters, so they stay editable-guarded.
     if (!binding.ctrl && !binding.alt && isEditableTarget(realTarget)) return;
+    if (!dedupeGlobalKeydown(e)) return;
     e.preventDefault();
     e.stopImmediatePropagation();
     if (binding.action === 'toggle-universal-panel') toggleUniversalPanel();
@@ -225,8 +231,11 @@ export function ensureWebTextCtrl(): WebTextDictionaryController {
         webTokenizeCtrl?.applyStatusForTerm(term, status);
       },
       getTokenStatus: (term) => webTokenizeCtrl?.getStatusForTerm(term) ?? 'unknown',
-      // ADR-065: generic universal panel controller toggled by the orbital badge.
-      panelController: ensureUniversalPanelMount(),
+      // ADR-065: generic universal panel controller toggled by the orbital
+      // badge. In a cross-origin child frame the panel must mount on the top
+      // document — a full-viewport surface inside an iframe clips to the
+      // embed bounds.
+      panelController: createRemotePanelController() ?? ensureUniversalPanelMount(),
     });
   }
   return webTextCtrl;
@@ -265,6 +274,10 @@ export async function initTokenize(): Promise<void> {
     const readingDisplay = settings.readingDisplay ?? 'off';
     const glossDisplay = settings.glossDisplay ?? 'off';
     const glossTargetLanguage = settings.subtitleOverlayNativeLanguage ?? '';
+    // Warm the eSpeak WASM at init so the IPA fallback is hot before the first
+    // flush — cold init (~500-900ms) would otherwise land on the reading leg.
+    if (readingDisplay !== 'off') warmEspeakIpa(langCode);
+    pingTokenizeMeta(langCode);
     if (webTokenizeCtrl && tokenizeLang === langCode) {
       // Settings change mid-session: push the annotation modes into the live
       // controller instead of rebuilding it (same path local-player takes).

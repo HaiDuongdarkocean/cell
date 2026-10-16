@@ -49,10 +49,15 @@ export function resolveIframeOrigin(iframe: HTMLIFrameElement | null | undefined
 
 /** True when `source` is the contentWindow of an iframe present in this document. */
 export function isIframeContentWindow(source: Window | null): source is Window {
-  if (!source) return false;
+  return findIframeByWindow(source) !== null;
+}
+
+/** The iframe element whose contentWindow is `source`, or null. */
+export function findIframeByWindow(source: Window | null): HTMLIFrameElement | null {
+  if (!source) return null;
   const iframes = document.querySelectorAll('iframe');
   for (const f of iframes) {
-    if (f.contentWindow === source) return true;
+    if (f.contentWindow === source) return f;
   }
-  return false;
+  return null;
 }

@@ -4,6 +4,11 @@ import { installIframePlayerModeBridge, installIframeMediaBridge } from '@/featu
 import { startWordStatusCrossTabRelay } from '@/features/dictionary/services/wordStatusCrossTab';
 import { startDictionaryCrossTabRelay } from '@/features/dictionary/services/dictionaryCrossTab';
 import { installHostManagerSheet } from './hostManagerSheet';
+import { installIframePopupBridge } from '@/features/dictionaryPopup/bridge/iframePopupBridgeHost';
+import { installHostCuePanel } from './hostCuePanel';
+import { installHostUniversalPanel } from './hostUniversalPanel';
+import { installIframeToastBridge } from '@/shared/ui/iframeToastBridge';
+import { stampWorldGeneration } from '@/shared/lib/dom/claimSingletonInstall';
 import {
   installDebugFrameMessageListener,
   markContentScriptInjected,
@@ -47,8 +52,20 @@ clearAutoLoadCache();
 clearSubtitleBodyCache();
 
 installHostManagerSheet();
+// Remote popup bridge — child iframes mount dictionary popups on the top
+// document (iframe-clipped otherwise); every frame forwards/translates.
+installIframePopupBridge();
+// Remote cue panel ('t') — same iframe-clipping escape for the cue list.
+installHostCuePanel();
+// Remote universal panel — settings/dictionary/sendToCard from child frames.
+installHostUniversalPanel();
+// Remote toasts — child-frame toast hosts render on the top document.
+installIframeToastBridge();
 
 const csInjectTime = markContentScriptInjected();
+// Latest-injection gate: stale worlds from a previous extension reload must
+// not consume relayed actions (their handlers run dead bundles).
+stampWorldGeneration();
 installDebugFrameMessageListener();
 
 // Functional ADR-020/028/029 handshakes — MAIN-world scripts re-post subtitle

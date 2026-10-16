@@ -13,6 +13,8 @@ export interface TokenizeControlsProps {
   readonly hasMedia: boolean;
   /** Called when the user toggles a half. */
   readonly onToggle: (mode: 'text' | 'media') => void;
+  /** Pointer entering the text half — used to prewarm the SW before the click lands. */
+  readonly onHoverText?: () => void;
 }
 
 /**
@@ -28,10 +30,11 @@ interface TokenizeHalfProps {
   readonly label: string;
   readonly caption: string;
   readonly onClick: () => void;
+  readonly onPointerEnter?: () => void;
   readonly testId: string;
 }
 
-function TokenizeHalf({ active, disabled = false, icon, label, caption, onClick, testId }: TokenizeHalfProps): React.JSX.Element {
+function TokenizeHalf({ active, disabled = false, icon, label, caption, onClick, onPointerEnter, testId }: TokenizeHalfProps): React.JSX.Element {
   return (
     <Button
       shape="pill"
@@ -41,6 +44,7 @@ function TokenizeHalf({ active, disabled = false, icon, label, caption, onClick,
       title={disabled ? t('panel.tokenize.noMedia') : t('panel.tokenize.state', [label, active ? t('common.state.on') : t('common.state.off')])}
       disabled={disabled}
       onClick={onClick}
+      onPointerEnter={onPointerEnter}
       onPointerDown={(e): void => { e.currentTarget.blur(); }}
       data-pressed={String(active)}
       data-tihoka-id={testId}
@@ -57,6 +61,7 @@ export function TokenizeControls({
   media,
   hasMedia,
   onToggle,
+  onHoverText,
 }: TokenizeControlsProps): ReactElement {
   const mediaDisabled = !hasMedia;
 
@@ -80,6 +85,7 @@ export function TokenizeControls({
         label={t('panel.tokenize.text')}
         caption={t('panel.tokenize.text.short')}
         onClick={() => onToggle('text')}
+        onPointerEnter={onHoverText}
         testId="universal-panel-header-tokenize-text"
       />
       <TokenizeHalf

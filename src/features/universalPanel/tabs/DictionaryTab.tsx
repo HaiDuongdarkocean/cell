@@ -1,7 +1,10 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Dictionary } from '@/features/dictionaryPopup/ui/Dictionary';
 import type { PopupCardCreatorPrefill } from '@/entities/dictionary';
 import type { DictionaryPanelPrefill } from '@/features/universalPanel/types';
+import { ResizeHandle } from '@/shared/ui/ResizeHandle';
+import { usePaneResize } from '@/shared/ui/usePaneResize';
+import { STORAGE_KEYS } from '@/shared/config/config';
 import { CardCreatorPanel } from './CardCreatorPanel';
 import styles from './DictionaryTab.module.css';
 
@@ -72,8 +75,17 @@ export function DictionaryTab({
     setSearchTerm(term);
   }, []);
 
+  const splitRef = useRef<HTMLDivElement>(null);
+  const { pct, handleProps } = usePaneResize({
+    containerRef: splitRef,
+    storageKey: STORAGE_KEYS.DICT_TAB_PANE_PCT,
+    defaultPct: 50,
+    minPct: 25,
+    maxPct: 75,
+  });
+
   return (
-    <div className={styles.dictionaryTab} data-tihoka-id="dictionary-tab">
+    <div className={styles.dictionaryTab} data-tihoka-id="dictionary-tab" ref={splitRef}>
       <div className={styles.leftPane}>
         <Dictionary
           variant="integrated"
@@ -90,9 +102,15 @@ export function DictionaryTab({
           onOpenSettings={onOpenSettings}
         />
       </div>
+      <ResizeHandle
+        className={styles.paneDivider}
+        data-tihoka-id="dictionary-tab-resize"
+        {...handleProps}
+      />
       <div
         className={`${styles.rightPane} ${styles.dictionaryTab__sheet}`}
         data-tihoka-id="dictionary-tab-sheet"
+        style={{ '--dict-pane-pct': `${pct}%` } as React.CSSProperties}
       >
         <CardCreatorPanel
           sourceLang={sourceLang}

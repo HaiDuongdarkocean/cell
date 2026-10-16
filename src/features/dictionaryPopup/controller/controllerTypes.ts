@@ -50,6 +50,9 @@ export interface PopupLevel {
    *  position when re-materializing after the source token is gone. */
   anchor: PopupAnchor | null;
   abovePanel: boolean;
+  /** Anchor geometry already expressed in top-frame coordinates — set when
+   *  the lookup target is a host-rendered stand-in (remote cue panel). */
+  hostAnchored: boolean;
   highlight: WordHighlight;
 }
 
@@ -70,6 +73,7 @@ export function createPopupLevel(): PopupLevel {
     candidates: [],
     anchor: null,
     abovePanel: true,
+    hostAnchored: false,
     highlight: createWordHighlight(),
   };
 }

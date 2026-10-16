@@ -24,6 +24,8 @@ export interface UniversalPanelHeaderProps {
   readonly activeProfileId?: string | null;
   /** Called when user switches active profile. */
   readonly onProfileChange?: (profileId: string) => void;
+  /** Pointer entering the text-tokenize half — prewarms the SW before the click. */
+  readonly onHoverTokenizeText?: () => void;
 }
 
 /**
@@ -40,6 +42,7 @@ export function UniversalPanelHeader({
   languageProfiles = [],
   activeProfileId = null,
   onProfileChange,
+  onHoverTokenizeText,
 }: UniversalPanelHeaderProps): ReactElement {
   const profileTriggerRef = useRef<HTMLButtonElement>(null);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -100,6 +103,7 @@ export function UniversalPanelHeader({
         media={tokenizeState.subtitleEnabled}
         hasMedia={hasMedia}
         onToggle={handleToggle}
+        onHoverText={onHoverTokenizeText}
       />
 
       <Button shape="circle"

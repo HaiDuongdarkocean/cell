@@ -12,7 +12,6 @@ import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { getActiveProfileSettings, type DictionaryPopupSettings, type Settings } from '@/entities/settings';
 import { modifierMatches } from '@/entities/dictionary';
-import { logger } from '@/shared/lib/logger';
 import {
   DEFAULT_CARD_CREATOR_SETTINGS,
   DEFAULT_DICTIONARY_POPUP_SETTINGS,
@@ -23,6 +22,9 @@ import type { WebTextDictionaryController } from '@/features/dictionaryPopup/con
 import type { LookupRequest, ClickModifierState } from '@/entities/dictionary';
 import type { CueListTokenize } from '@/features/subtitle/ui/CueList';
 import { createSubtitleTokenizeController, type SubtitleTokenizeController } from '@/features/tokenize';
+import { findVideoOverlayContainer } from '@/shared/lib/dom/findPlayerContainer';
+import { injectThemeTokens } from '@/features/theme';
+import { showToast } from '@/features/subtitle';
 import { SPLIT_VIEW_PANEL_SELECTOR } from '@/features/subtitle/logic/scrollPositionPreserve';
 import { createCardCreatorActionPorts } from '@/features/cardCreator/service/cardCreatorActionPorts';
 import { handleCardCreatorAction } from '@/features/subtitle/actions/cardActions';
@@ -248,13 +250,26 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
   }, [targetCues]);
 
   /** Build SubtitleActionContext from current state. */
+  const toastContainerRef = useRef<HTMLElement | null>(null);
+  const themeCleanupRef = useRef<(() => void) | null>(null);
+  useEffect(() => () => themeCleanupRef.current?.(), []);
   const buildContext = useCallback((): SubtitleActionContext => {
     const video = videoRef.current;
     if (!video) throw new Error('useSubtitleActions: video ref is null');
 
+    const container = findVideoOverlayContainer(video);
+    if (container !== toastContainerRef.current) {
+      if (getComputedStyle(container).position === 'static') {
+        container.style.position = 'relative';
+      }
+      themeCleanupRef.current?.();
+      themeCleanupRef.current = injectThemeTokens(container);
+      toastContainerRef.current = container;
+    }
+
     return {
       video,
-      container: document.body,
+      container,
       webTextCtrl: webTextCtrlRef.current ?? undefined,
       getTargetCues: () => useCuesStore.getState().targetCues,
       getNativeCues: () => useCuesStore.getState().nativeCues,
@@ -269,12 +284,7 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
         return findCurrentCueText(cues, currentMs);
       },
       getOffsetMs: () => offsetMs,
-      showToast: (message, options) => {
-        // ponytail: simple console toast for now — local-player doesn't have
-        // the subtitle toast system. Can be upgraded to a real toast later.
-        const variant = options?.variant ?? 'info';
-        logger.info(`[local-player] ${variant}: ${message}`);
-      },
+      showToast: (message, options) => showToast(message, container, options),
       loadSettingsOrToast: async (_container: HTMLElement) => {
         try {
           return await loadSettings();

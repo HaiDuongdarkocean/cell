@@ -13,6 +13,7 @@ import {
   createTranslateFunction,
   broadcastCues,
 } from '@/features/subtitle';
+import { dedupeGlobalKeydown, isCurrentWorld } from '@/shared/lib/dom/claimSingletonInstall';
 import { shouldDedupeCueSeek } from './contentScriptShared';
 import { t } from '@/shared/i18n';
 import type { ContentScriptContext } from './contentScriptContext';
@@ -36,6 +37,7 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
   // play/pause) and can block them via stopImmediatePropagation when the key
   // matches a configured action. See ADR-034 (listener on window, not document).
   const onKeydown = (e: KeyboardEvent) => {
+    if (!isCurrentWorld()) return;
     const offsetController = ctx.getOffsetController();
     const shortcuts = ctx.getShortcuts();
     // Rule: when focus is inside Tihoka UI (shadow DOM), block ALL host shortcuts
@@ -58,7 +60,14 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
     // fullscreen completes, but the re-open keeps it visible.
     // ponytail ceiling: only covers 'f' key, not UI fullscreen button click.
     // Upgrade: if Chrome exposes a "keep visible in fullscreen" flag, drop this.
+    // Stacked content-script worlds each run this handler for the SAME
+    // physical keypress — claim the event once per acting branch so only one
+    // world performs the action. Memoized: once this world owns the claim,
+    // later branches in the same handler must still see it.
+    let claimed: boolean | null = null;
+    const claim = (): boolean => (claimed ??= dedupeGlobalKeydown(e));
     if (!isEditableEvent(e) && key === 'f' && ctx.isSidePanelOpen()) {
+      if (!claim()) return;
       void sendMessage({
         type: MESSAGE_TYPES.OPEN_SIDE_PANEL,
         payload: { tabId: undefined },
@@ -71,6 +80,7 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
     if (!isEditableEvent(e) && !insideTihokaUi) {
       if (key === '[' || key === ']' || key === '{' || key === '}' || key === '\\') {
         if (offsetController) {
+          if (!claim()) return;
           e.preventDefault();
           switch (key) {
             case '[': // -0.5s (accumulate)
@@ -105,6 +115,7 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
     // prevented, and the host page scrolls. Enter is left alone so focused
     // popup controls can still be activated.
     if (key === ' ' && !isEditableEvent(e) && sharedWebTextCtrl?.hasOpenPopup()) {
+      if (!claim()) return;
       e.preventDefault();
       e.stopImmediatePropagation();
       ctx.togglePlay();
@@ -134,6 +145,7 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
             )
           : undefined;
       if (vocabNavShift) {
+        if (!claim()) return;
         e.preventDefault();
         e.stopImmediatePropagation();
         if (vocabNavShift.action === 'next-vocab-token') ctx.nextVocabToken(true);
@@ -143,7 +155,9 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
       // Status shortcuts 1-4: route through the tokenize controllers. They are
       // handled here on window capture so the host page (e.g. YouTube seeking
       // on digit keys) cannot override them.
-      if (!isEditableEvent(e) && ctx.handleSubtitleStatusKey(e.key)) {
+      // Status keys '1'-'4' mutate word state inside the call — claim before
+      // invoking so stacked worlds can't double-apply.
+      if (!isEditableEvent(e) && e.key >= '1' && e.key <= '4' && claim() && ctx.handleSubtitleStatusKey(e.key)) {
         e.preventDefault();
         e.stopImmediatePropagation();
         return;
@@ -151,6 +165,8 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
       if (
         !blockController.isPlayerModeActive &&
         !isEditableEvent(e) &&
+        e.key >= '1' && e.key <= '4' &&
+        claim() &&
         ctx.handleWebStatusKey?.(e.key)
       ) {
         e.preventDefault();
@@ -185,6 +201,7 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
 
     // Block YouTube's own shortcuts (e.g. 't' = theater mode) + other
     // same-target listeners so only our action runs.
+    if (!claim()) return;
     e.preventDefault();
     e.stopImmediatePropagation();
 

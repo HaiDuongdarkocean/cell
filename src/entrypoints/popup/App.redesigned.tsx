@@ -111,17 +111,16 @@ export function AppRedesigned(): React.JSX.Element {
     void check();
   }, []);
 
-  // Auto-select: when autoSelectEnabled is ON and media is loaded, auto-check best match
+  // Auto-select: once settings + media are loaded, auto-check best match
   useEffect(() => {
     if (!isSettingsLoaded) return;
-    if (!settings.autoSelectEnabled) return;
     if (videos.length === 0 && subtitles.length === 0) return;
 
     const result = selectBestMedia(videos, subtitles, settings);
     if (result) {
       setSelectedIds(new Set([result.videoId, ...result.subtitleIds]));
     }
-  }, [settings, settings.autoSelectEnabled, settings.preferredVideoFormat, settings.defaultQuality, settings.selectedSubtitleLanguages, isSettingsLoaded, videos, subtitles]);
+  }, [settings, settings.preferredVideoFormat, settings.defaultQuality, settings.selectedSubtitleLanguages, isSettingsLoaded, videos, subtitles]);
 
   // Default quality auto-apply: when user changes defaultQuality in settings,
   // update all video cards' first variant to match (if the quality exists).
@@ -224,9 +223,7 @@ export function AppRedesigned(): React.JSX.Element {
         setIsAutoDownloadActive(true);
         // Turning AD ON for the current tab also triggers an immediate
         // auto-select + download of the best-matching media already detected
-        // on this tab (not just whitelisting for future revisits). AD implies
-        // auto-select for the purpose of downloading, so this runs regardless
-        // of the `autoSelectEnabled` setting.
+        // on this tab (not just whitelisting for future revisits).
         if (isSettingsLoaded && (videos.length > 0 || subtitles.length > 0)) {
           const result = selectBestMedia(videos, subtitles, settings);
           if (result) {

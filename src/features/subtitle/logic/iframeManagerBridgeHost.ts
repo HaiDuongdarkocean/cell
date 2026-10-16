@@ -44,6 +44,10 @@ function postToIframe(origin: string, message: Record<string, unknown>): void {
   } catch { /* cross-origin — best effort */ }
 }
 
+// Unique per send — stacked child worlds dedupe by rid so exactly one acts.
+let relaySeq = 0;
+const nextRid = (): string => `${Date.now()}-${++relaySeq}`;
+
 export function sendManagerActionToChild(
   frameSrc: string,
   action: ManagerAction,
@@ -51,14 +55,14 @@ export function sendManagerActionToChild(
 ): void {
   try {
     const origin = new URL(frameSrc).origin;
-    postToIframe(origin, { type: MGR_ACTION_MSG, action, ...args });
+    postToIframe(origin, { type: MGR_ACTION_MSG, action, rid: nextRid(), ...args });
   } catch { /* invalid frameSrc */ }
 }
 
 export function sendManagerCloseToChild(frameSrc: string): void {
   try {
     const origin = new URL(frameSrc).origin;
-    postToIframe(origin, { type: MGR_CLOSE_MSG, frameSrc });
+    postToIframe(origin, { type: MGR_CLOSE_MSG, frameSrc, rid: nextRid() });
   } catch { /* invalid frameSrc */ }
 }
 

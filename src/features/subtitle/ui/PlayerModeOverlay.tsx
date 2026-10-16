@@ -4,7 +4,8 @@
 // <slot> projects it into the shadow DOM video stage. The container is restored
 // to its original parent on unmount.
 
-import { memo, useEffect, useRef, useState, useCallback } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
+import { dedupeGlobalKeydown, isCurrentWorld } from '@/shared/lib/dom/claimSingletonInstall';
 import type { Dispatch, SetStateAction } from 'react';
 import type { BilingualCue, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
@@ -23,7 +24,7 @@ import { findPlayerContainer } from '@/shared/lib/dom/findPlayerContainer';
 import { videoAncestorChain } from '@/shared/lib/dom/videoAncestorChain';
 import { pinLayerInsideStage } from '@/shared/lib/dom/pinLayerInsideStage';
 import { startHostOverlayHoist } from '@/shared/lib/dom/hostOverlayHoist';
-import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
+import { usePaneResize } from '@/shared/ui/usePaneResize';
 import { useSubtitleBlockDrag } from './subtitleDrag';
 import { hasEscapeLayers } from '@/shared/ui/escapeLayerStack';
 import { MobileCueChrome } from './MobileCueChrome';
@@ -33,9 +34,6 @@ import { buildClusterCssVars } from './subtitleUI';
 import styles from './PlayerModeOverlay.module.css';
 import panelStyles from './SubtitlePanels.module.css';
 
-const CONTENT_PCT_MIN = 20;
-const CONTENT_PCT_MAX = 60;
-const CONTENT_PCT_DEFAULT = 30;
 const PLAYER_CHAIN_SAVED_PROPS = [
   'width',
   'height',
@@ -207,12 +205,16 @@ function PlayerModeOverlayInner({
 
   // Content panel width % in split layout (>480px). Default 30%. Clamp 20-60%.
   // Persisted to chrome.storage.local — survives reload + re-enter Player Mode.
-  const [contentPct, setContentPct] = useState(CONTENT_PCT_DEFAULT);
-  const contentPctLoadedRef = useRef(false);
   const rafRef = useRef<number | null>(null);
   const videoStageRef = useRef<HTMLDivElement>(null);
   const splitRef = useRef<HTMLDivElement>(null);
-  const dragState = useRef<{ startX: number; startPct: number; splitWidth: number } | null>(null);
+  const { pct: contentPct, handleProps: resizeHandleProps } = usePaneResize({
+    containerRef: splitRef,
+    storageKey: STORAGE_KEYS.PLAYER_MODE_CONTENT_PCT,
+    defaultPct: 30,
+    minPct: 20,
+    maxPct: 60,
+  });
 
   useEffect(() => {
     const onResize = (): void => {
@@ -525,6 +527,8 @@ function PlayerModeOverlayInner({
       if (e.key.toLowerCase() === 't' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         const target = e.target as HTMLElement | null;
         if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+        if (!isCurrentWorld()) return;
+        if (!dedupeGlobalKeydown(e)) return;
         e.preventDefault();
         e.stopPropagation();
         onCueListOpenChange(!cueListOpen);
@@ -533,73 +537,6 @@ function PlayerModeOverlayInner({
     window.addEventListener('keydown', onWindowKeyDown, true);
     return () => window.removeEventListener('keydown', onWindowKeyDown, true);
   }, [onExit, cueListOpen, onCueListOpenChange]);
-
-  // Load persisted contentPct on mount (survives reload + re-enter Player Mode).
-  useEffect(() => {
-    let cancelled = false;
-    getStorage<Record<string, number>>(STORAGE_KEYS.PLAYER_MODE_CONTENT_PCT)
-      .then((data) => {
-        const stored = data[STORAGE_KEYS.PLAYER_MODE_CONTENT_PCT];
-        if (cancelled || typeof stored !== 'number' || !Number.isFinite(stored)) return;
-        const clamped = Math.min(Math.max(stored, CONTENT_PCT_MIN), CONTENT_PCT_MAX);
-        contentPctLoadedRef.current = true;
-        setContentPct(clamped);
-      })
-      .catch(() => undefined);
-    return () => { cancelled = true; };
-  }, []);
-
-  // Resize drag: content panel width % in split layout (>480px).
-  // Drag handle is on the left border of content (between video and content).
-  // K kéo phải → content rộng hơn; kéo trái → content hẹp hơn.
-  const onResizePointerDown = useCallback((e: React.PointerEvent): void => {
-    e.preventDefault();
-    const split = splitRef.current;
-    if (!split) return;
-    dragState.current = {
-      startX: e.clientX,
-      startPct: contentPct,
-      splitWidth: split.getBoundingClientRect().width,
-    };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-  }, [contentPct]);
-
-  const onResizePointerMove = useCallback((e: React.PointerEvent): void => {
-    const ds = dragState.current;
-    if (!ds || ds.splitWidth <= 0) return;
-    // Content is on the right. Dragging left (negative delta) → content wider.
-    // deltaPct = -(deltaX / splitWidth) * 100
-    const deltaPx = e.clientX - ds.startX;
-    const deltaPct = -(deltaPx / ds.splitWidth) * 100;
-    const next = Math.min(Math.max(ds.startPct + deltaPct, CONTENT_PCT_MIN), CONTENT_PCT_MAX);
-    setContentPct(next);
-  }, []);
-
-  const onResizePointerUp = useCallback((e: React.PointerEvent): void => {
-    dragState.current = null;
-    try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* noop */ }
-    // Persist contentPct so it survives reload + re-enter Player Mode.
-    setContentPct((pct) => {
-      setStorage({ [STORAGE_KEYS.PLAYER_MODE_CONTENT_PCT]: pct }).catch(() => undefined);
-      return pct;
-    });
-  }, []);
-
-  // Keyboard resize (WAI-ARIA window-splitter): ArrowLeft/Right, 5%/step,
-  // Home/End → min/max. Left arrow widens content (handle is on content's left edge).
-  const onResizeKeyDown = useCallback((e: React.KeyboardEvent): void => {
-    const STEP = 5;
-    let next: number | null = null;
-    if (e.key === 'ArrowLeft') next = contentPct + STEP;
-    else if (e.key === 'ArrowRight') next = contentPct - STEP;
-    else if (e.key === 'Home') next = CONTENT_PCT_MIN;
-    else if (e.key === 'End') next = CONTENT_PCT_MAX;
-    if (next === null) return;
-    e.preventDefault();
-    const clamped = Math.min(Math.max(next, CONTENT_PCT_MIN), CONTENT_PCT_MAX);
-    setContentPct(clamped);
-    setStorage({ [STORAGE_KEYS.PLAYER_MODE_CONTENT_PCT]: clamped }).catch(() => undefined);
-  }, [contentPct]);
 
   if (isMobilePm) {
     return (
@@ -703,18 +640,11 @@ function PlayerModeOverlayInner({
             <div
               className={styles.resizeHandle}
               data-tihoka-split-view="handle"
-              onPointerDown={onResizePointerDown}
-              onPointerMove={onResizePointerMove}
-              onPointerUp={onResizePointerUp}
-              onPointerCancel={onResizePointerUp}
-              onKeyDown={onResizeKeyDown}
               role="separator"
               aria-orientation="vertical"
               aria-label={t('subtitle.playerMode.resizeList')}
-              aria-valuenow={Math.round(contentPct)}
-              aria-valuemin={CONTENT_PCT_MIN}
-              aria-valuemax={CONTENT_PCT_MAX}
               tabIndex={0}
+              {...resizeHandleProps}
             />
             <div
               className={styles.contentOther}

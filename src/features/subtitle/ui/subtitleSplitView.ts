@@ -47,6 +47,9 @@ export interface SplitViewParams {
   playerMode: boolean;
   onSplitViewChange?: (open: boolean) => void;
   fallbackPlayerContainerRef?: RefObject<HTMLElement | null>;
+  /** Child iframe delegating the panel to the top document — skip all
+   *  in-document layout work (shell narrowing, portal target). */
+  remotePanel?: boolean;
 }
 
 export interface SplitView {
@@ -61,6 +64,7 @@ export function useSplitView({
   playerMode,
   onSplitViewChange,
   fallbackPlayerContainerRef,
+  remotePanel = false,
 }: SplitViewParams): SplitView {
   const [splitViewOpen, setSplitViewOpenState] = useState(false);
   // Ref not state: pct is only consumed inside the split-view effect. State
@@ -157,6 +161,12 @@ export function useSplitView({
   useEffect(() => {
     if (!splitViewOpen || playerMode) {
       svLog('effect SKIP', { splitViewOpen, playerMode });
+      return;
+    }
+    if (remotePanel) {
+      // The surface renders on the top document — nothing to do in here.
+      setSplitViewPortalTarget(null);
+      svLog('effect SKIP — remotePanel');
       return;
     }
     const pendingRestore = splitViewPendingRestoreRef.current;
@@ -654,7 +664,7 @@ export function useSplitView({
         restoreNow();
       }, ANIM_MS);
     };
-  }, [splitViewOpen, playerMode, isFullscreen, fallbackPlayerContainerRef]);
+  }, [splitViewOpen, playerMode, isFullscreen, remotePanel, fallbackPlayerContainerRef]);
 
   useEffect(() => {
     let cancelled = false;

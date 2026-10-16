@@ -77,6 +77,12 @@
   padding: var(--space-3);
 }
 
+/* Sheet mode: the Sheet atom owns no inset (content surfaces pad
+   themselves), so the dictionary panel provides its own. */
+.sheetInset {
+  padding: 0 var(--space-3);
+}
+
 .resize {
   position: absolute;
   right: 0;

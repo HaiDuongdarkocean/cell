@@ -1,4 +1,5 @@
 import { isChildFrame } from './iframePlayerModeBridge';
+import { claimRelayNonce, isCurrentWorld } from '@/shared/lib/dom/claimSingletonInstall';
 import { resolveParentFrameOrigin } from '@/shared/lib/dom/frameOrigin';
 import {
   MGR_OPEN_MSG, MGR_CLOSE_MSG, MGR_STATE_MSG, MGR_ACTION_MSG,
@@ -76,15 +77,23 @@ export function confirmManagerClosed(): void {
   } catch { /* cross-origin — best effort */ }
 }
 
+// Stacked worlds each see the same post. The rid claim happens AFTER the
+// handler reports it acted — a stale world whose handler no-ops can't eat
+// the action ahead of the live world (message delivery is synchronous per
+// world, so the claim is still atomic).
 export function onManagerAction(
-  handler: (action: ManagerAction, args: Record<string, unknown>) => void,
+  handler: (action: ManagerAction, args: Record<string, unknown>) => boolean,
 ): () => void {
   if (!isChildFrame()) return () => {};
   const parentOrigin = resolveParentFrameOrigin();
+  if (!parentOrigin) return () => {};
   const onMessage = (e: MessageEvent): void => {
     if (e.data?.type === MGR_ACTION_MSG && e.data?.action && e.origin === parentOrigin) {
+      if (!isCurrentWorld()) return;
       const { action, ...args } = e.data;
-      handler(action as ManagerAction, args as Record<string, unknown>);
+      if (handler(action as ManagerAction, args as Record<string, unknown>)) {
+        claimRelayNonce('manager-action', e.data.rid);
+      }
     }
   };
   window.addEventListener('message', onMessage);
@@ -94,9 +103,12 @@ export function onManagerAction(
 export function onManagerCloseFromHost(handler: () => void): () => void {
   if (!isChildFrame()) return () => {};
   const parentOrigin = resolveParentFrameOrigin();
+  if (!parentOrigin) return () => {};
   const onMessage = (e: MessageEvent): void => {
     if (e.data?.type === MGR_CLOSE_MSG && e.origin === parentOrigin) {
+      if (!isCurrentWorld()) return;
       handler();
+      claimRelayNonce('manager-close', e.data.rid);
     }
   };
   window.addEventListener('message', onMessage);

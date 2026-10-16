@@ -43,6 +43,7 @@ import { createContentScriptMessageHandlers } from './contentScriptMessages';
 import { createProcessImportedFiles, wireContainerDragImport } from './contentScriptFileImport';
 import { createSubtitleSelectionHandlers } from './contentScriptSelection';
 import { createContentScriptLifecycleHandlers } from './contentScriptLifecycle';
+import { useCuesStore } from '../cuesStore';
 import { t } from '@/shared/i18n';
 
 import type { DictionaryBridge } from '../logic/dictionaryBridge';
@@ -624,7 +625,24 @@ export function init(
       if (area !== 'local') return;
       const newSettings = changes.settings?.newValue as Settings | undefined;
       if (newSettings) {
+        const wasAutoTranslate = currentSettings?.subtitleOverlayAutoTranslate;
         currentSettings = newSettings;
+        // Toggled "translate when native missing" OFF mid-session: stop the
+        // running prefill and drop the translated slot so native reverts to
+        // whatever the site actually provides (nothing new translates).
+        if (wasAutoTranslate === true && newSettings.subtitleOverlayAutoTranslate === false) {
+          translatePrefill?.clear();
+          translatePrefill = null;
+          if (syncController.activeNativeSource === 'translated') {
+            clearTranslatedNativeState();
+            syncController.activeNativeSource = 'auto';
+            blockController?.loadBilingualCues(syncController.latestTargetCues, []);
+            bilingualCues = mergeCuesForPanel(syncController.latestTargetCues, []);
+            broadcastCues(bilingualCues);
+            refreshPanel('native');
+          }
+          useCuesStore.getState().setLoadStatus('native', { state: 'idle' });
+        }
         // Live-update search keys state when settings change externally.
         const keys = newSettings.subtitleApiKeys ?? [];
         blockController?.setHasSearchKeys(keys.length > 0);

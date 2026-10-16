@@ -1,4 +1,5 @@
 import { handleShortcutKey, isEditableEvent } from '@/features/subtitle/ui/subtitleShortcuts';
+import { dedupeGlobalKeydown, isCurrentWorld } from '@/shared/lib/dom/claimSingletonInstall';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
@@ -284,6 +285,7 @@ export function installIframePlayerModeBridge(): () => void {
     if (settings.keyboardShortcuts?.length) shortcuts = settings.keyboardShortcuts;
   });
   const onKeydown = (e: KeyboardEvent): void => {
+    if (!isCurrentWorld()) return;
     if (isEditableEvent(e)) return;
     if (document.querySelector('video')) return;
     if (!document.querySelector('iframe')) return;
@@ -294,6 +296,7 @@ export function installIframePlayerModeBridge(): () => void {
       alt: e.altKey,
     });
     if (action !== 'toggle-player-mode') return;
+    if (!dedupeGlobalKeydown(e)) return;
     e.preventDefault();
     e.stopImmediatePropagation();
     void toggleTopFramePlayerMode();

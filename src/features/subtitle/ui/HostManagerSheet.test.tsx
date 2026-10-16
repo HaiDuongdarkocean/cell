@@ -15,6 +15,12 @@ jest.mock('@/shared/lib/chrome-apis', () => ({
   setStorage: jest.fn().mockResolvedValue(undefined),
 }));
 
+// jsdom defaults to a desktop viewport — these tests cover the mobile sheet
+// branch (backdrop + Sheet + handle).
+jest.mock('@/shared/ui/useIsMobile', () => ({
+  useIsMobile: () => true,
+}));
+
 import { SubtitleManagerPanel } from './SubtitleManagerPanel';
 const mockPanel = jest.mocked(SubtitleManagerPanel);
 

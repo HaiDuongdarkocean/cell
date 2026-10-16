@@ -178,9 +178,6 @@ export const usePopupStore = create<PopupState>((set) => ({
       if (settings.preferredVideoFormat === undefined) {
         settings = { ...settings, preferredVideoFormat: 'm3u8' };
       }
-      if (settings.autoSelectEnabled === undefined) {
-        settings = { ...settings, autoSelectEnabled: false };
-      }
       if (!settings.selectedSubtitleLanguages) {
         settings = { ...settings, selectedSubtitleLanguages: ['all'] };
       }

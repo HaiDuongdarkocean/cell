@@ -404,7 +404,12 @@ function SubtitlePanelImpl({
             onModeChange={handleFilterModeChange}
             variant="neutralSubtle"
             size="md"
-            menuContainer={fabPortalTarget.closest('[data-tihoka-id="player-mode-overlay"]')}
+            // The menu must portal inside the enclosing high-z surface — in
+            // Player Mode that's the overlay, on the host/local sheet it's
+            // the .sheet dialog itself (z-overlay-top > z-popover).
+            menuContainer={fabPortalTarget.closest(
+              '[data-tihoka-id="player-mode-overlay"], [role="dialog"]',
+            )}
           />,
           fabPortalTarget,
         )

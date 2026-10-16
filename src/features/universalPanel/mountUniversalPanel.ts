@@ -27,6 +27,7 @@ import {
 } from '@/features/miningQueue';
 import { showToast } from '@/features/subtitle';
 import { addToOceanSrs } from '@/features/srs';
+import { pingTokenizeMeta } from '@/features/dictionary';
 import { createUniversalPanelController, type UniversalPanelMountController } from './UniversalPanelController';
 import { openSettingsSection } from './deepLink';
 import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/TihokaUiHosts';
@@ -320,6 +321,9 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
           onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled') => {
             options.panel?.onToggle(key);
           },
+          // Hover precedes the click — the ping wakes a suspended SW and kicks
+          // the freq-index prewarm so the toggle's meta request lands hot.
+          onHoverTokenizeText: () => pingTokenizeMeta(dictionaryLangCode),
           languageProfiles,
           activeProfileId,
           onProfileChange: (id: string) => {
