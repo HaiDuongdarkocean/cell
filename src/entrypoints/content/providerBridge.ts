@@ -189,6 +189,16 @@ async function ask(
     return { success: false, error: 'busy', provider: adapter.id };
   }
 
+  /** Provider-side error notices (rate-limit toast, capacity banner) — a
+   *  prompt that can't be accepted is 'rateLimit', not a dom failure. */
+  const providerErrorKind = (): string | null => {
+    const bodyText = document.body?.innerText ?? '';
+    if (/(too many|rate.?limit|try again later|capacity|whoa, slow down)/i.test(bodyText)) {
+      return 'rateLimit';
+    }
+    return null;
+  };
+
   const baseline = assistantTurnCount(adapter, document);
   inFlightAskId = askId ?? null;
   const reply = waitForAssistantReply(
@@ -224,7 +234,7 @@ async function ask(
   cancelInFlight = null;
   inFlightAskId = null;
   if (text === '__noturn__') {
-    return { success: false, error: 'domError', provider: adapter.id };
+    return { success: false, error: providerErrorKind() ?? 'domError', provider: adapter.id };
   }
   if (text === '__cancelled__') {
     return { success: false, error: 'cancelled', provider: adapter.id };

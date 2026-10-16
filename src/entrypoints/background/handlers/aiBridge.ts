@@ -27,7 +27,7 @@ import {
   type AiAskFailureKind,
   type AiProviderAdapter,
 } from '@/features/aiBridge/providers';
-import { createTab, getTab, queryTabs, sendTabMessage, updateTab } from '@/shared/lib/chrome-apis/tabs';
+import { createTab, getTab, queryTabs, reloadTab, sendTabMessage, updateTab } from '@/shared/lib/chrome-apis/tabs';
 import { updateWindow } from '@/shared/lib/chrome-apis/windows';
 
 const BRIDGE_READY_TIMEOUT_MS = 30_000;
@@ -176,21 +176,8 @@ async function askOnProvider(
     const ping = await awaitComposer(tabId, adapter, await awaitBridgeReady(tabId));
     if (isAborted()) return { ok: false, error: 'cancelled' };
     if (!ping.composer) return { ok: false, error: 'loginRequired', loginTabId: tabId };
-    const reply = await withTimeout(
-      sendTabMessage<BridgeReply>(tabId, {
-        type: MESSAGE_TYPES.AI_ASK,
-        payload: { prompt, askId },
-      }),
-      ATTEMPT_TIMEOUT_MS,
-      'AI_ASK',
-    );
-    if (reply?.success && reply.text) return { ok: true, text: reply.text };
-    const error = classifyAskError(reply?.error ?? 'noAnswer');
-    // 'busy' right after a cancelled ask is transient — the provider page is
-    // still unwinding its stopped generation. One grace retry absorbs it.
-    if (error === 'busy') {
-      await sleep(1_500);
-      const retry = await withTimeout(
+    const sendOnce = () =>
+      withTimeout(
         sendTabMessage<BridgeReply>(tabId, {
           type: MESSAGE_TYPES.AI_ASK,
           payload: { prompt, askId },
@@ -198,8 +185,30 @@ async function askOnProvider(
         ATTEMPT_TIMEOUT_MS,
         'AI_ASK',
       );
+    const reply = await sendOnce();
+    if (reply?.success && reply.text) return { ok: true, text: reply.text };
+    let error = classifyAskError(reply?.error ?? 'noAnswer');
+    // 'busy' right after a cancelled ask is transient — the provider page is
+    // still unwinding its stopped generation. One grace retry absorbs it.
+    if (error === 'busy') {
+      await sleep(1_500);
+      const retry = await sendOnce();
       if (retry?.success && retry.text) return { ok: true, text: retry.text };
-      return { ok: false, error: classifyAskError(retry?.error ?? 'noAnswer') };
+      error = classifyAskError(retry?.error ?? 'noAnswer');
+    }
+    // A page that drops the prompt or wedges mid-ask may be recoverable —
+    // reload the bridge tab once and resend. 'busy'/'loginRequired' mean
+    // the page is alive; don't reload those.
+    if ((error === 'domError' || error === 'noAnswer') && !isAborted()) {
+      dbg(`ask ${askId} reload+retry after ${error}`);
+      await reloadTab(tabId).catch(() => {});
+      await awaitBridgeReady(tabId);
+      if (isAborted()) return { ok: false, error: 'cancelled' };
+      const ping2 = await awaitComposer(tabId, adapter, (await pingBridge(tabId)) ?? {});
+      if (!ping2.composer) return { ok: false, error: 'loginRequired', loginTabId: tabId };
+      const retry = await sendOnce();
+      if (retry?.success && retry.text) return { ok: true, text: retry.text };
+      error = classifyAskError(retry?.error ?? 'noAnswer');
     }
     return { ok: false, error };
   } catch (err) {
