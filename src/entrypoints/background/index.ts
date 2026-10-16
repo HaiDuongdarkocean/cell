@@ -74,6 +74,7 @@ import { registerYouTubeFallbackHandlers } from './handlers/youtubeDetection';
 import { registerDetectionDispatchHandlers } from './handlers/detectionDispatch';
 import { registerTranslateHandlers } from './handlers/translate';
 import { registerTranslateTermsHandlers } from './handlers/translateTerms';
+import { registerAiBridgeHandlers } from './handlers/aiBridge';
 import { registerCardCreatorHandlers } from './handlers/cardCreator';
 import { registerLookupHandlers } from './handlers/lookup';
 import { registerWordStatusHandlers } from './handlers/wordStatus';
@@ -299,6 +300,7 @@ export class BackgroundService implements BackgroundContext {
     registerYouTubeFallbackHandlers(this);
     registerTranslateHandlers(this);
     registerTranslateTermsHandlers(this);
+    registerAiBridgeHandlers(this);
     registerCardCreatorHandlers(this);
     registerLookupHandlers(this);
     registerWordStatusHandlers(this);

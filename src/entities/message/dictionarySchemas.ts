@@ -502,6 +502,12 @@ export const TranslateTermsPayloadSchema = z.object({
   terms: z.array(z.string().min(1).max(200)).max(500),
 });
 
+// === AI bridge PoC (AI_ASK — chatgpt.com web-session relay) ===
+
+export const AiAskPayloadSchema = z.object({
+  prompt: z.string().min(1).max(20000),
+});
+
 // === Quick Add (spec §9.4 B — QUICK_ADD) ===
 
 export const QuickAddPayloadMessageSchema = QuickAddPayloadSchema.extend({

@@ -76,6 +76,8 @@ export type MessageType =
   | 'FETCH_REQUEST'
   | 'TRANSLATE'
   | 'TRANSLATE_TERMS'
+  | 'AI_PING'
+  | 'AI_ASK'
   | 'CARD_CREATOR_REQUEST'
   | 'FETCH_COMMUNITY_AUDIO'
   | 'FETCH_LOCAL_AUDIO'
