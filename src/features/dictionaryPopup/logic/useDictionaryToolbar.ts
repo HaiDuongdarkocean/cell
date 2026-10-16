@@ -16,6 +16,7 @@ import { composePrompt } from '@/features/aiBridge';
 import { useAiAsk, type AiAnswer, type AiAskState } from './useAiAsk';
 import type { AiBridgeSettings, AiFeature, AiProviderId } from '@/entities/settings';
 import { getLocale } from '@/shared/i18n';
+import { isoCodeToLabel } from '@/shared/config/languageRegistry';
 import type { MessageResponse } from '@/entities/message/types';
 import type {
   LookupResult,
@@ -237,15 +238,20 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
   const composeAiPrompt = useCallback(
     (feature: AiFeature, cfg: AiBridgeSettings): string => {
       const interfaceName = getLocale() === 'vi' ? 'Vietnamese' : 'English';
+      // 'native' answer = the learner's mother tongue (targetLang), not the
+      // extension UI language — prompts read a language name, not an ISO code.
+      const cap = (s: string) => s.replace(/^./, (c) => c.toUpperCase());
+      const sourceName = cap(isoCodeToLabel(sourceLang) ?? sourceLang);
+      const nativeName = cap(isoCodeToLabel(targetLang) ?? targetLang);
       // Translate always lands in the native language — the native/target
       // pick only applies to explain + breakdown prompts.
       const toTarget = feature !== 'sentenceTranslate' && (cfg.answerLanguage ?? 'native') === 'target';
       return composePrompt(feature, cfg.prompts, {
         word: result?.term,
         sentence: contextSentence.trim() || undefined,
-        targetLang,
+        targetLang: nativeName,
         interfaceLang: interfaceName,
-        answerLang: toTarget ? sourceLang : interfaceName,
+        answerLang: toTarget ? sourceName : nativeName,
       });
     },
     [result?.term, contextSentence, sourceLang, targetLang],
