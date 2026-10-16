@@ -6,16 +6,23 @@
     <style>
       body { font-family: system-ui, sans-serif; margin: 24px; max-width: 720px; }
       textarea { width: 100%; box-sizing: border-box; font: inherit; padding: 8px; }
-      button { font: inherit; padding: 6px 14px; margin: 8px 8px 8px 0; }
+      button, select { font: inherit; padding: 6px 14px; margin: 8px 8px 8px 0; }
       #status { color: #555; margin: 8px 0; }
       #out { background: #f4f4f4; padding: 12px; white-space: pre-wrap; min-height: 80px; }
     </style>
   </head>
   <body>
     <h1>AI bridge lab (PoC)</h1>
-    <p>Drives the ChatGPT session in the browser tab. Log into chatgpt.com first.</p>
+    <p>Drives your logged-in provider session in a browser tab. Log into the provider site first.</p>
     <textarea id="prompt" rows="4">Translate to Vietnamese and explain briefly: "It's raining cats and dogs."</textarea>
     <div>
+      <select id="provider">
+        <option value="">Default order</option>
+        <option value="chatgpt">ChatGPT</option>
+        <option value="gemini">Gemini</option>
+        <option value="deepseek">DeepSeek</option>
+        <option value="claude">Claude</option>
+      </select>
       <button id="ping">Ping bridge tab</button>
       <button id="ask">Ask</button>
     </div>

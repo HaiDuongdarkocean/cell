@@ -72,6 +72,7 @@ import {
 } from './schema';
 import {
   AiAskPayloadSchema,
+  AiPingPayloadSchema,
   DictionaryChangedPayloadSchema,
   FetchCommunityAudioPayloadSchema,
   FetchImagesPayloadSchema,
@@ -437,7 +438,7 @@ export const MESSAGE_REGISTRY = {
   },
   [MESSAGE_TYPES.AI_PING]: {
     type: MESSAGE_TYPES.AI_PING,
-    schema: EmptyPayloadSchema,
+    schema: AiPingPayloadSchema,
     direction: 'panel->bg',
     owner: 'background/handlers/aiBridge',
   },

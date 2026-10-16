@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { Icon } from '@/shared/ui/Icon';
 import '@/shared/styles/tokens.css';
