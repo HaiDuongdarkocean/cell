@@ -93,6 +93,9 @@ export function useAiAsk(): {
   /** Bumped on every ask/cancel/reset — stale resolutions no-op. */
   const generationRef = useRef(0);
   const streamListenerRef = useRef<((message: unknown) => void) | null>(null);
+  /** askId of the in-flight ask — AI_CANCEL is scoped to it so a stale
+   *  broadcast can't kill the newer ask that already took the slot. */
+  const askIdRef = useRef<string | null>(null);
 
   const cancel = useCallback((): void => {
     generationRef.current += 1;
@@ -101,7 +104,11 @@ export function useAiAsk(): {
       removeOnMessageListener(streamListenerRef.current);
       streamListenerRef.current = null;
     }
-    void sendMessage({ type: MESSAGE_TYPES.AI_CANCEL, payload: {} }).catch(() => {});
+    void sendMessage({
+      type: MESSAGE_TYPES.AI_CANCEL,
+      payload: { askId: askIdRef.current ?? undefined },
+    }).catch(() => {});
+    askIdRef.current = null;
     setState((prev) => (prev.phase === 'loading' ? { ...prev, phase: 'idle', answer: null } : prev));
   }, []);
 
@@ -146,6 +153,7 @@ export function useAiAsk(): {
       // Streamed partials carry our askId — render them as the answer grows;
       // the terminal AI_ASK response stays authoritative.
       const askId = `ai-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      askIdRef.current = askId;
       const onStream = (message: unknown): void => {
         if (gen !== generationRef.current) return;
         const msg = message as {
@@ -225,6 +233,7 @@ export function useAiAsk(): {
         }));
       } finally {
         if (gen === generationRef.current) inFlightRef.current = false;
+        if (askIdRef.current === askId) askIdRef.current = null;
         if (streamListenerRef.current === onStream) streamListenerRef.current = null;
         removeOnMessageListener(onStream);
       }

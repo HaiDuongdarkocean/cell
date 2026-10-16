@@ -552,6 +552,9 @@ export const AiStreamPayloadSchema = z.object({
 export const AiCancelPayloadSchema = z
   .object({
     provider: AiProviderIdSchema.optional(),
+    /** Scope the cancel to one ask — a stale broadcast must not kill a
+     *  newer ask that already took the provider slot. */
+    askId: z.string().optional(),
   })
   .optional();
 

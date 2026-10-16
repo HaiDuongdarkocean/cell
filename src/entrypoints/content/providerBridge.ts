@@ -58,6 +58,7 @@ function streamPartials(
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const SUBMIT_CONFIRM_MS = 15_000;
 
 interface AskReply {
   success: boolean;
@@ -159,8 +160,10 @@ async function submitPrompt(adapter: AiProviderAdapter, composer: HTMLElement): 
 }
 
 /** Cancels the running ask: clicks the provider's stop button and resolves
- *  the wait early so the tab frees immediately for the next ask. */
+ *  the wait early so the tab frees immediately for the next ask. Scoped by
+ *  inFlightAskId — a stale AI_CANCEL must not kill a newer ask. */
 let cancelInFlight: (() => void) | null = null;
+let inFlightAskId: string | null = null;
 
 function clickStop(adapter: AiProviderAdapter): void {
   for (const selector of adapter.stopButtonSelectors) {
@@ -187,6 +190,7 @@ async function ask(
   }
 
   const baseline = assistantTurnCount(adapter, document);
+  inFlightAskId = askId ?? null;
   const reply = waitForAssistantReply(
     adapter,
     document,
@@ -205,11 +209,23 @@ async function ask(
   await sleep(600);
   if (!(await submitPrompt(adapter, composer))) {
     cancelInFlight = null;
+    inFlightAskId = null;
     return { success: false, error: 'domError', provider: adapter.id };
   }
 
-  const text = await Promise.race([reply, cancelled]);
+  // Submission-confirmation window: if no new assistant turn mounts within
+  // 15s, the provider silently dropped the prompt (rate limit, unsent
+  // composer) — fail fast instead of waiting the full 90s.
+  const dropped = waitFor(
+    () => assistantTurnCount(adapter, document) > baseline,
+    SUBMIT_CONFIRM_MS,
+  ).then((ok) => (ok ? new Promise<string>(() => {}) : '__noturn__'));
+  const text = await Promise.race([reply, cancelled, dropped]);
   cancelInFlight = null;
+  inFlightAskId = null;
+  if (text === '__noturn__') {
+    return { success: false, error: 'domError', provider: adapter.id };
+  }
   if (text === '__cancelled__') {
     return { success: false, error: 'cancelled', provider: adapter.id };
   }
@@ -235,6 +251,11 @@ if (adapter) {
       return false;
     }
     if (msg?.type === MESSAGE_TYPES.AI_CANCEL) {
+      const cancelAskId = (msg?.payload as { askId?: unknown } | undefined)?.askId;
+      if (typeof cancelAskId === 'string' && inFlightAskId !== null && cancelAskId !== inFlightAskId) {
+        sendResponse({ ok: true, provider: adapter.id, ignored: true });
+        return false;
+      }
       cancelInFlight?.();
       sendResponse({ ok: true, provider: adapter.id });
       return false;

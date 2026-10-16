@@ -57,9 +57,45 @@ interface AskAttempt {
 
 let askInFlight = false;
 let askSeq = 0;
+/** askId of the chain currently holding the askInFlight slot — a new ask
+ *  with a different askId supersedes it (cancel + unwind) instead of being
+ *  rejected. */
+let currentAskId: string | undefined;
+/** askIds whose chains must abort — a superseded chain can be stuck in
+ *  bridge setup (tab create/composer wait) where the page-side cancel
+ *  can't reach; each awaitable step re-checks and exits early. */
+const abortedAskIds = new Set<string>();
 /** askId -> the popup's host tab; AI_STREAM partials from provider tabs are
  *  relayed there. Set on AI_ASK entry, cleared in its finally. */
 const pendingStreams = new Map<string, number>();
+
+/** Debug ring buffer — read via sw.evaluate(() => globalThis.__aiBridgeLog). */
+const g = globalThis as Record<string, unknown>;
+g.__aiBridgeLog ??= [];
+const DBG = g.__aiBridgeLog as string[];
+const dbg = (msg: string): void => {
+  DBG.push(`${((Date.now() / 1000) % 1000).toFixed(1)} ${msg}`);
+  if (DBG.length > 60) DBG.shift();
+};
+
+/** Broadcast AI_CANCEL to every provider bridge tab — the live one resolves
+ *  its in-flight wait with 'cancelled' and clicks the page's stop button.
+ *  askId scopes the kill so a stale broadcast can't hit a newer ask. */
+async function broadcastCancel(askId?: string, provider?: AiProviderId): Promise<void> {
+  const adapters = Object.values(AI_PROVIDERS).filter(
+    (a) => provider === undefined || a.id === provider,
+  );
+  for (const adapter of adapters) {
+    const tabs = await queryTabs({ url: adapter.tabUrlPatterns }).catch(() => []);
+    for (const tab of tabs) {
+      if (tab.id === undefined) continue;
+      void sendTabMessage(tab.id, {
+        type: MESSAGE_TYPES.AI_CANCEL,
+        payload: { askId, provider },
+      }).catch(() => {});
+    }
+  }
+}
 
 async function ensureBridgeTabId(adapter: AiProviderAdapter): Promise<number> {
   const tabs = await queryTabs({ url: adapter.tabUrlPatterns });
@@ -133,9 +169,12 @@ async function askOnProvider(
   prompt: string,
   askId?: string,
 ): Promise<{ ok: true; text: string } | { ok: false; error: AiAskFailureKind; loginTabId?: number }> {
+  const isAborted = () => askId !== undefined && abortedAskIds.has(askId);
   try {
     const tabId = await ensureBridgeTabId(adapter);
+    if (isAborted()) return { ok: false, error: 'cancelled' };
     const ping = await awaitComposer(tabId, adapter, await awaitBridgeReady(tabId));
+    if (isAborted()) return { ok: false, error: 'cancelled' };
     if (!ping.composer) return { ok: false, error: 'loginRequired', loginTabId: tabId };
     const reply = await withTimeout(
       sendTabMessage<BridgeReply>(tabId, {
@@ -146,12 +185,84 @@ async function askOnProvider(
       'AI_ASK',
     );
     if (reply?.success && reply.text) return { ok: true, text: reply.text };
-    return { ok: false, error: classifyAskError(reply?.error ?? 'noAnswer') };
+    const error = classifyAskError(reply?.error ?? 'noAnswer');
+    // 'busy' right after a cancelled ask is transient — the provider page is
+    // still unwinding its stopped generation. One grace retry absorbs it.
+    if (error === 'busy') {
+      await sleep(1_500);
+      const retry = await withTimeout(
+        sendTabMessage<BridgeReply>(tabId, {
+          type: MESSAGE_TYPES.AI_ASK,
+          payload: { prompt, askId },
+        }),
+        ATTEMPT_TIMEOUT_MS,
+        'AI_ASK',
+      );
+      if (retry?.success && retry.text) return { ok: true, text: retry.text };
+      return { ok: false, error: classifyAskError(retry?.error ?? 'noAnswer') };
+    }
+    return { ok: false, error };
   } catch (err) {
     return {
       ok: false,
       error: classifyAskError(err instanceof Error ? err.message : String(err)),
     };
+  }
+}
+
+type AskPayload = {
+  prompt: string;
+  provider?: AiProviderId;
+  feature?: string;
+  askId?: string;
+  tabId?: number;
+};
+type AskResult = MessageResponse<{ text: string; provider: AiProviderId } | { attempts: AskAttempt[] }>;
+
+/** One pending (queued) ask — replaced when a newer askId arrives, so N
+ *  rapid asks coalesce into: abort current + run the last one once. */
+let pendingAsk: { payload: AskPayload; resolve: (r: AskResult) => void } | null = null;
+
+async function runAskChain(ctx: BackgroundContext, data: AskPayload): Promise<AskResult> {
+  const seq = ++askSeq;
+  const { prompt, askId } = data;
+  askInFlight = true;
+  currentAskId = askId;
+  if (askId !== undefined && data.tabId !== undefined) {
+    pendingStreams.set(askId, data.tabId);
+  }
+  try {
+    const configured = providerOrderFromSettings(await ctx.loadSettings());
+    // No failover: the picked/configured provider is the only one asked.
+    // On failure the popup shows the terminal state — the user retries or
+    // switches source manually.
+    const provider = resolveProviderOrder(configured, data.provider)[0];
+    const outcome = await askOnProvider(AI_PROVIDERS[provider], prompt, askId);
+    dbg(`ask seq=${seq} outcome ok=${outcome.ok} ${outcome.ok ? '' : `err=${outcome.error}`}`);
+    if (outcome.ok) {
+      return { success: true, data: { text: outcome.text, provider } };
+    }
+    if (outcome.error === 'cancelled') {
+      return { success: false, error: 'cancelled' };
+    }
+    if (outcome.error === 'loginRequired' && outcome.loginTabId !== undefined) {
+      void focusBridgeTab(outcome.loginTabId);
+    }
+    return {
+      success: false,
+      error: 'all_failed',
+      data: { attempts: [{ provider, error: outcome.error }] },
+    };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : String(err) };
+  } finally {
+    askInFlight = false;
+    currentAskId = undefined;
+    dbg(`ask seq=${seq} slot freed`);
+    if (askId !== undefined) {
+      pendingStreams.delete(askId);
+      abortedAskIds.delete(askId);
+    }
   }
 }
 
@@ -175,51 +286,36 @@ export function registerAiBridgeHandlers(ctx: BackgroundContext): void {
 
   ctx.on(
     MESSAGE_TYPES.AI_ASK,
-    async (
-      request,
-    ): Promise<MessageResponse<{ text: string; provider: AiProviderId } | { attempts: AskAttempt[] }>> => {
+    async (request): Promise<AskResult> => {
       const parsed = AiAskPayloadSchema.safeParse(request.payload);
       if (!parsed.success) {
         return { success: false, error: `Invalid AI_ASK payload: ${parsed.error.message}` };
       }
-      const seq = ++askSeq;
-      // A re-ask right after a client-side cancel can race the old chain
-      // unwinding — give it a short window to release before rejecting.
-      for (let i = 0; askInFlight && i < 20; i++) await sleep(250);
-      if (askInFlight) return { success: false, error: `AI ask already in flight (seq=${seq})` };
-      askInFlight = true;
-      const { prompt, askId } = parsed.data;
-      const streamTab = parsed.data.tabId;
-      if (askId !== undefined && streamTab !== undefined) {
-        pendingStreams.set(askId, streamTab);
+      const data = parsed.data as AskPayload;
+      dbg(`ask in id=${data.askId} inFlight=${askInFlight} cur=${currentAskId} pending=${pendingAsk?.payload.askId}`);
+      if (askInFlight) {
+        // Duplicate of the running ask — reject, never queue.
+        if (data.askId === undefined || data.askId === currentAskId) {
+          return { success: false, error: 'AI ask already in flight' };
+        }
+        // New askId supersedes: abort the running chain (setup-phase checks
+        // + scoped provider cancel) and coalesce into the pending slot —
+        // the newest pending wins, its promise resolves when it finally runs.
+        if (currentAskId !== undefined) abortedAskIds.add(currentAskId);
+        void broadcastCancel(currentAskId);
+        return new Promise<AskResult>((resolve) => {
+          pendingAsk?.resolve({ success: false, error: 'cancelled' });
+          pendingAsk = { payload: data, resolve };
+          dbg(`ask queued id=${data.askId}`);
+        });
       }
-      try {
-        const configured = providerOrderFromSettings(await ctx.loadSettings());
-        // No failover: the picked/configured provider is the only one asked.
-        // On failure the popup shows the terminal state — the user retries or
-        // switches source manually.
-        const provider = resolveProviderOrder(configured, parsed.data.provider)[0];
-        const outcome = await askOnProvider(AI_PROVIDERS[provider], prompt, askId);
-        if (outcome.ok) {
-          return { success: true, data: { text: outcome.text, provider } };
-        }
-        if (outcome.error === 'cancelled') {
-          return { success: false, error: 'cancelled' };
-        }
-        if (outcome.error === 'loginRequired' && outcome.loginTabId !== undefined) {
-          void focusBridgeTab(outcome.loginTabId);
-        }
-        return {
-          success: false,
-          error: 'all_failed',
-          data: { attempts: [{ provider, error: outcome.error }] },
-        };
-      } catch (err) {
-        return { success: false, error: err instanceof Error ? err.message : String(err) };
-      } finally {
-        askInFlight = false;
-        if (askId !== undefined) pendingStreams.delete(askId);
+      const res = await runAskChain(ctx, data);
+      while (pendingAsk) {
+        const next = pendingAsk;
+        pendingAsk = null;
+        next.resolve(await runAskChain(ctx, next.payload));
       }
+      return res;
     },
   );
 
@@ -230,17 +326,12 @@ export function registerAiBridgeHandlers(ctx: BackgroundContext): void {
       if (!parsed.success) {
         return { success: false, error: `Invalid AI_CANCEL payload: ${parsed.error.message}` };
       }
-      const provider = parsed.data?.provider;
-      const adapters = Object.values(AI_PROVIDERS).filter(
-        (a) => provider === undefined || a.id === provider,
-      );
-      for (const adapter of adapters) {
-        const tabs = await queryTabs({ url: adapter.tabUrlPatterns }).catch(() => []);
-        for (const tab of tabs) {
-          if (tab.id === undefined) continue;
-          void sendTabMessage(tab.id, { type: MESSAGE_TYPES.AI_CANCEL }).catch(() => {});
-        }
+      const { askId, provider } = parsed.data ?? {};
+      if (askId !== undefined && pendingAsk?.payload.askId === askId) {
+        pendingAsk.resolve({ success: false, error: 'cancelled' });
+        pendingAsk = null;
       }
+      await broadcastCancel(askId, provider);
       return { success: true };
     },
   );
