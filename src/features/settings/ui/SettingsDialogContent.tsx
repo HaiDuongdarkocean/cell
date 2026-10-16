@@ -10,8 +10,6 @@ import {
   DEFAULT_PRONUNCIATION_SETTINGS,
   DEFAULT_TTS_SETTINGS,
 } from '@/shared/config/config';
-import { SUBTITLE_LANGUAGES } from '@/shared/config/languageRegistry';
-import { MultiSelect } from '@/shared/ui/MultiSelect';
 import { DictionaryPopupSettingsPanel } from './DictionaryPopupSettingsPanel';
 import { WordBadgeSettingsPanel } from './WordBadgeSettingsPanel';
 import { AudioPanel } from '@/features/audio';
@@ -38,7 +36,9 @@ import { Surface } from '@/shared/ui/Surface';
 import { NavItem } from '@/shared/ui/NavItem';
 import { Navigation } from '@/shared/ui/Navigation';
 import { Sidebar } from '@/shared/ui/Sidebar';
-import { VStack } from '@/shared/ui/Stack';
+import { SegmentedControl } from '@/shared/ui/SegmentedControl';
+import { Stepper } from '@/shared/ui/Stepper';
+import { StepperValue } from '@/shared/ui/StepperSection';
 import { observeScrollDirection } from '@/shared/lib/dom/observeScrollDirection';
 
 import styles from './SettingsDialog.module.css';
@@ -73,7 +73,13 @@ const PARALLEL_LABEL_KEYS: Record<ParallelConversionMode, MessageKey> = {
   manual: 'settings.download.parallel.manual',
 };
 
-const WORKER_OPTIONS = [2, 3, 4, 5, 6];
+const CONVERT_SHORT_LABEL_KEYS: Record<ConvertToMp4Mode, MessageKey> = {
+  always: 'settings.download.convert.always.short',
+  'small-only': 'settings.download.convert.smallOnly.short',
+  never: 'settings.download.convert.never.short',
+};
+
+const CONCURRENT_OPTIONS = [1, 2, 3, 5, 10];
 
 const FILENAME_SOURCE_OPTIONS: readonly FilenameSource[] = ['title-fallback', 'title-only', 'url-only'];
 const FILENAME_SOURCE_LABEL_KEYS: Record<FilenameSource, MessageKey> = {
@@ -86,6 +92,10 @@ const PREFERRED_FORMAT_OPTIONS: readonly ('mp4' | 'm3u8')[] = ['m3u8', 'mp4'];
 const PREFERRED_FORMAT_LABEL_KEYS: Record<'mp4' | 'm3u8', MessageKey> = {
   m3u8: 'settings.download.format.m3u8',
   mp4: 'settings.download.format.mp4',
+};
+const PREFERRED_FORMAT_SHORT_LABEL_KEYS: Record<'mp4' | 'm3u8', MessageKey> = {
+  m3u8: 'settings.download.format.m3u8.short',
+  mp4: 'settings.download.format.mp4.short',
 };
 
 const ANNOTATION_DISPLAY_MODES: readonly { value: AnnotationDisplayMode; label: MessageKey }[] = [
@@ -206,7 +216,6 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
     { id: 'wordDisplay', label: t('settings.nav.wordDisplay'), icon: 'eye' },
     { id: 'languageProfile', label: t('settings.nav.languageProfile'), icon: 'languages' },
     { id: 'resources', label: t('settings.nav.resources'), icon: 'library' },
-    { id: 'media', label: t('settings.nav.media'), icon: 'video' },
     { id: 'block', label: t('settings.nav.block'), icon: 'captions' },
     { id: 'dictionaryPopup', label: t('settings.nav.dictionaryPopup'), icon: 'bookOpen' },
     { id: 'wordBadge', label: t('settings.nav.wordBadge'), icon: 'move' },
@@ -272,7 +281,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                   disabled: hoverTaken && m.value === 'hover',
                 }));
                 return (
-                  <>
+                  <SettingsGroup>
                     <SettingsRow
                       dense
                       stacked
@@ -318,7 +327,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                         </Button>
                       </SettingsRow>
                     )}
-                  </>
+                  </SettingsGroup>
                 );
               })()}
             </SettingsSection>
@@ -381,73 +390,6 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               )}
             </SettingsSection>
 
-            {/* === Media Selection === */}
-            <SettingsSection
-              ref={sectionRef('media')}
-              headingLevel={3}
-              title={t('settings.media.title')}
-              data-section="media"
-            >
-              <SettingsRow
-                dense
-                title={t('settings.media.autoSelect')}
-                description={t('settings.media.autoSelect.hint')}
-              >
-                <Toggle
-                  checked={settings.autoSelectEnabled}
-                  onChange={(next) => update('autoSelectEnabled', next)}
-                  ariaLabel={t('settings.media.autoSelect')}
-                />
-              </SettingsRow>
-
-              {settings.autoSelectEnabled && (
-                <SettingsRow
-                  dense
-                  divider
-                  stacked
-                  child
-                  title={t('settings.media.subtitleLanguages')}
-                  labelFor="subtitle-lang-multiselect"
-                >
-                  <MultiSelect
-                    id="subtitle-lang-multiselect"
-                    testId="subtitle-lang-multiselect"
-                    options={SUBTITLE_LANGUAGES}
-                    selectedValues={settings.selectedSubtitleLanguages}
-                    onChange={(values) => update('selectedSubtitleLanguages', values)}
-                    exclusiveValues={['all']}
-                    popularValues={['en', 'vi', 'ja', 'ko', 'zh', 'es', 'fr', 'de']}
-                  />
-                </SettingsRow>
-              )}
-
-              <SettingsGroup label={t('settings.localPlayer.title')}>
-                <SettingsRow
-                  dense
-                  title={t('settings.localPlayer.subtitleMatch')}
-                  description={t('settings.localPlayer.subtitleMatch.hint')}
-                >
-                  <Toggle
-                    checked={settings.localPlayerSettings.subtitleMatchEnabled}
-                    onChange={(next) => onChange({ ...settings, localPlayerSettings: { ...settings.localPlayerSettings, subtitleMatchEnabled: next } })}
-                    ariaLabel={t('settings.localPlayer.subtitleMatch')}
-                  />
-                </SettingsRow>
-                <SettingsRow
-                  dense
-                  divider
-                  title={t('settings.localPlayer.resumePrompt')}
-                  description={t('settings.localPlayer.resumePrompt.hint')}
-                >
-                  <Toggle
-                    checked={settings.localPlayerSettings.resumePromptEnabled}
-                    onChange={(next) => onChange({ ...settings, localPlayerSettings: { ...settings.localPlayerSettings, resumePromptEnabled: next } })}
-                    ariaLabel={t('settings.localPlayer.resumePrompt')}
-                  />
-                </SettingsRow>
-              </SettingsGroup>
-            </SettingsSection>
-
             {/* === Subtitle Block === */}
             <SettingsSection
               ref={sectionRef('block')}
@@ -455,6 +397,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               title={t('settings.block.title')}
               data-section="block"
             >
+              <SettingsGroup>
               <SettingsRow
                 dense
                 title={t('settings.block.autoLoad')}
@@ -493,6 +436,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                   disabled={!settings.subtitleOverlayAutoLoad}
                 />
               </SettingsRow>
+              </SettingsGroup>
 
             </SettingsSection>
 
@@ -503,6 +447,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               title={t('settings.dictionaryPopup.title')}
               data-section="dictionaryPopup"
             >
+              <SettingsGroup>
               <SettingsRow
                 dense
                 title={t('settings.dictionaryPopup.enabled')}
@@ -517,6 +462,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                   ariaLabel={t('settings.dictionaryPopup.enabled')}
                 />
               </SettingsRow>
+              </SettingsGroup>
               <DictionaryPopupSettingsPanel
                 settings={settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS}
                 onChange={(dp) => onChange({ ...settings, dictionaryPopup: dp })}
@@ -563,96 +509,114 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               headingLevel={3}
               title={t('settings.download.title')}
               data-section="download"
+              className={styles.downloadSection}
             >
               <SettingsGroup label={t('settings.download.group.concurrency')}>
-                <SettingsRow dense stacked title={t('settings.download.concurrent')} labelFor="set-concurrent">
-                  <Select
-                    id="set-concurrent"
-                    className={styles.select}
+                <SettingsRow dense className={styles.dlRow} title={t('settings.download.concurrent')}>
+                  <SegmentedControl
+                    variant="raised"
+                    className={styles.segmented}
+                    ariaLabel={t('settings.download.concurrent')}
                     data-tihoka-id="concurrent-select"
+                    options={CONCURRENT_OPTIONS.map((n) => ({ value: String(n), label: String(n) }))}
                     value={String(settings.concurrentDownloads)}
-                    options={[1, 2, 3, 5, 10].map((n) => ({ value: String(n), label: String(n) }))}
                     onChange={(val) => update('concurrentDownloads', Number(val))}
-                  />
-                </SettingsRow>
-              </SettingsGroup>
-
-              <SettingsGroup label={t('settings.download.group.formatQuality')}>
-                <VStack columns={2} responsive gapResponsive={{ mobile: '2', desktop: '4' }}>
-                  <SettingsRow dense stacked title={t('settings.download.format')} labelFor="set-format">
-                    <Select
-                      id="set-format"
-                      className={styles.select}
-                      data-tihoka-id="format-select"
-                      value={settings.preferredVideoFormat}
-                      options={PREFERRED_FORMAT_OPTIONS.map((f) => ({ value: f, label: t(PREFERRED_FORMAT_LABEL_KEYS[f]) }))}
-                      onChange={(val) => update('preferredVideoFormat', val as 'mp4' | 'm3u8')}
-                    />
-                  </SettingsRow>
-                  <SettingsRow dense stacked title={t('settings.download.quality')} labelFor="set-quality">
-                    <Select
-                      id="set-quality"
-                      className={styles.select}
-                      data-tihoka-id="quality-select"
-                      value={settings.defaultQuality}
-                      options={QUALITY_OPTIONS.map((q) => ({ value: q, label: QUALITY_LABEL_KEYS[q] ? t(QUALITY_LABEL_KEYS[q]!) : q }))}
-                      onChange={(val) => update('defaultQuality', val as VideoQuality)}
-                    />
-                  </SettingsRow>
-                </VStack>
-              </SettingsGroup>
-
-              <SettingsGroup label={t('settings.download.group.conversion')}>
-                <SettingsRow dense stacked title={t('settings.download.convert')} labelFor="set-convert">
-                  <Select
-                    id="set-convert"
-                    className={styles.select}
-                    data-tihoka-id="convert-select"
-                    value={settings.convertToMp4}
-                    options={CONVERT_OPTIONS.map((m) => ({
-                      value: m,
-                      label: m === 'small-only'
-                        ? t(CONVERT_LABEL_KEYS[m], [Math.round(MAX_CONVERT_BYTES / 1024 / 1024)])
-                        : t(CONVERT_LABEL_KEYS[m]),
-                    }))}
-                    onChange={(val) => update('convertToMp4', val as ConvertToMp4Mode)}
                   />
                 </SettingsRow>
                 <SettingsRow
                   dense
-                  stacked
+                  className={styles.dlRow}
                   title={t('settings.download.parallel')}
-                  description={t('settings.download.parallel.hint')}
-                  labelFor="set-parallel"
+                  hint={t('settings.download.parallel.hint')}
+                  hintAriaLabel={t('settings.hint.aria', [t('settings.download.parallel')])}
                 >
-                  <Select
-                    id="set-parallel"
-                    className={styles.select}
+                  <SegmentedControl
+                    variant="raised"
+                    className={styles.segmented}
+                    ariaLabel={t('settings.download.parallel')}
                     data-tihoka-id="parallel-select"
-                    value={settings.parallelConversion}
                     options={PARALLEL_OPTIONS.map((m) => ({ value: m, label: t(PARALLEL_LABEL_KEYS[m]) }))}
-                    onChange={(val) => update('parallelConversion', val as ParallelConversionMode)}
+                    value={settings.parallelConversion}
+                    onChange={(val) => update('parallelConversion', val)}
                   />
                 </SettingsRow>
                 {settings.parallelConversion === 'manual' && (
-                  <SettingsRow dense stacked child title={t('settings.download.workers')} labelFor="set-workers">
-                    <Select
-                      id="set-workers"
-                      className={styles.select}
-                      data-tihoka-id="workers-select"
-                      value={String(settings.manualWorkerCount)}
-                      options={WORKER_OPTIONS.map((n) => ({ value: String(n), label: String(n) }))}
-                      onChange={(val) => update('manualWorkerCount', Math.max(MIN_PARALLEL_WORKERS, Math.min(MAX_PARALLEL_WORKERS, Number(val))))}
-                    />
+                  <SettingsRow dense child className={styles.dlRow} title={t('settings.download.workers')}>
+                    <Stepper
+                      className={styles.dlStepper}
+                      dataTihokaId="workers-select"
+                      decreaseLabel={<Icon name="minus" size="xs" />}
+                      increaseLabel={<Icon name="plus" size="xs" />}
+                      decreaseAriaLabel={t('settings.download.workers.decrease')}
+                      increaseAriaLabel={t('settings.download.workers.increase')}
+                      decreaseDisabled={settings.manualWorkerCount <= MIN_PARALLEL_WORKERS}
+                      increaseDisabled={settings.manualWorkerCount >= MAX_PARALLEL_WORKERS}
+                      onDecrease={() =>
+                        update('manualWorkerCount', Math.max(MIN_PARALLEL_WORKERS, settings.manualWorkerCount - 1))
+                      }
+                      onIncrease={() =>
+                        update('manualWorkerCount', Math.min(MAX_PARALLEL_WORKERS, settings.manualWorkerCount + 1))
+                      }
+                    >
+                      <StepperValue dataTihokaId="workers-value">{settings.manualWorkerCount}</StepperValue>
+                    </Stepper>
                   </SettingsRow>
                 )}
               </SettingsGroup>
 
-              <SettingsGroup label={t('settings.download.group.filename')}>
-                <SettingsRow dense stacked title={t('settings.download.filenameSource')} labelFor="set-filename-source">
+              <SettingsGroup label={t('settings.download.group.output')}>
+                <SettingsRow dense className={styles.dlRow} title={t('settings.download.format')}>
+                  <SegmentedControl
+                    variant="raised"
+                    className={styles.segmented}
+                    ariaLabel={t('settings.download.format')}
+                    data-tihoka-id="format-select"
+                    options={PREFERRED_FORMAT_OPTIONS.map((f) => ({
+                      value: f,
+                      label: t(PREFERRED_FORMAT_SHORT_LABEL_KEYS[f]),
+                      ariaLabel: t(PREFERRED_FORMAT_LABEL_KEYS[f]),
+                      title: t(PREFERRED_FORMAT_LABEL_KEYS[f]),
+                    }))}
+                    value={settings.preferredVideoFormat}
+                    onChange={(val) => update('preferredVideoFormat', val)}
+                  />
+                </SettingsRow>
+                <SettingsRow dense className={styles.dlRow} title={t('settings.download.quality')} labelFor="set-quality">
+                  <Select
+                    id="set-quality"
+                    className={styles.dlSelect}
+                    data-tihoka-id="quality-select"
+                    value={settings.defaultQuality}
+                    options={QUALITY_OPTIONS.map((q) => ({ value: q, label: QUALITY_LABEL_KEYS[q] ? t(QUALITY_LABEL_KEYS[q]!) : q }))}
+                    onChange={(val) => update('defaultQuality', val as VideoQuality)}
+                  />
+                </SettingsRow>
+                <SettingsRow dense className={styles.dlRow} title={t('settings.download.convert')}>
+                  <SegmentedControl
+                    variant="raised"
+                    className={styles.segmented}
+                    ariaLabel={t('settings.download.convert')}
+                    data-tihoka-id="convert-select"
+                    options={CONVERT_OPTIONS.map((m) => ({
+                      value: m,
+                      label: t(CONVERT_SHORT_LABEL_KEYS[m]),
+                      ariaLabel:
+                        m === 'small-only'
+                          ? t(CONVERT_LABEL_KEYS[m], [Math.round(MAX_CONVERT_BYTES / 1024 / 1024)])
+                          : t(CONVERT_LABEL_KEYS[m]),
+                      title:
+                        m === 'small-only'
+                          ? t(CONVERT_LABEL_KEYS[m], [Math.round(MAX_CONVERT_BYTES / 1024 / 1024)])
+                          : t(CONVERT_LABEL_KEYS[m]),
+                    }))}
+                    value={settings.convertToMp4}
+                    onChange={(val) => update('convertToMp4', val)}
+                  />
+                </SettingsRow>
+                <SettingsRow dense className={styles.dlRow} title={t('settings.download.filenameSource')} labelFor="set-filename-source">
                   <Select
                     id="set-filename-source"
-                    className={styles.select}
+                    className={styles.dlSelect}
                     data-tihoka-id="filename-source-select"
                     value={settings.filenameSource}
                     options={FILENAME_SOURCE_OPTIONS.map((m) => ({ value: m, label: t(FILENAME_SOURCE_LABEL_KEYS[m]) }))}
@@ -740,6 +704,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               title={t('settings.theme.title')}
               data-section="theme"
             >
+              <SettingsGroup>
               <SettingsRow
                 dense
                 stacked
@@ -761,6 +726,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                   aria-label={t('settings.uiLanguage.label')}
                 />
               </SettingsRow>
+              </SettingsGroup>
               <ThemePanel />
             </SettingsSection>
 

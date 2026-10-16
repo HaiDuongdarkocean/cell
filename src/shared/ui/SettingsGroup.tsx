@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Heading } from './Heading';
 import { Text } from './Text';
 import styles from './SettingsGroup.module.css';
 
@@ -31,9 +32,9 @@ export function SettingsGroup({ label, description, action, children, 'data-tiho
         <div className={styles.header}>
           {label != null && (
             <div className={styles.lead}>
-              <Text as="div" variant="label" color="secondary" className={styles.label}>
+              <Heading level={4} size={4} className={styles.heading}>
                 {label}
-              </Text>
+              </Heading>
               {description && (
                 <Text as="p" variant="supporting" color="secondary" className={styles.description}>
                   {description}
@@ -44,7 +45,7 @@ export function SettingsGroup({ label, description, action, children, 'data-tiho
           {action}
         </div>
       )}
-      {children}
+      {children != null && <div className={styles.content}>{children}</div>}
     </div>
   );
 }

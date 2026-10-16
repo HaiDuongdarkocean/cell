@@ -26,12 +26,18 @@
 .body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-6);
   min-width: 0;
   background: var(--card-background);
   border: var(--card-border);
   border-radius: var(--card-radius);
   padding: var(--space-4);
+}
+
+@container (max-width: 479px) {
+  .body {
+    padding: var(--space-3);
+  }
 }
 
 @keyframes sectionEnter {

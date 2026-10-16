@@ -27,6 +27,14 @@
   scroll-padding-top: var(--space-3);
 }
 
+/* Compact frame: reclaim inset for content; card inset still wins the
+   ladder (space-3 < section-body space-4 → space-3 under its own query). */
+@container (max-width: 479px) {
+  .mainCol {
+    padding: var(--space-3);
+  }
+}
+
 /* Select inside a settings row — allow the root and its trigger to shrink so
    long values (e.g. "Auto (browser)") truncate with ellipsis instead of
    being clipped by the row. */
@@ -37,6 +45,63 @@
 
 .select > button {
   min-width: 0;
+}
+
+/* === Download section — label-left / control-right rows; stacked full-width
+   under the section's own container query (compact <600px). === */
+.downloadSection {
+  container-type: inline-size;
+}
+
+.downloadSection .dlRow {
+  padding-block: var(--space-0);
+}
+
+.downloadSection .segmented {
+  width: auto;
+  min-width: calc(var(--space-10) * 4);
+  min-height: var(--size-element-lg);
+  background: var(--color-field);
+}
+
+.downloadSection .segmented [aria-checked="true"] {
+  background: var(--color-primary-subtle);
+  color: var(--color-text-accent-strong);
+}
+
+.downloadSection .dlSelect {
+  min-width: calc(var(--space-10) * 4);
+  width: auto;
+  max-width: 50%;
+}
+
+.downloadSection .dlStepper {
+  min-width: calc(var(--space-10) * 4);
+}
+
+.downloadSection .dlSelect > button {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@container (max-width: 599px) {
+  .downloadSection .dlRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .downloadSection .segmented {
+    width: 100%;
+  }
+
+  .downloadSection .dlSelect {
+    width: 100%;
+    max-width: none;
+  }
+
+  .downloadSection .dlStepper {
+    width: 100%;
+  }
 }
 
 .shortcutSection {

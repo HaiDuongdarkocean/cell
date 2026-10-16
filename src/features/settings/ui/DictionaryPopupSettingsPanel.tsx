@@ -12,6 +12,8 @@ import { Text } from '@/shared/ui/Text';
 import { Icon } from '@/shared/ui/Icon';
 import { SegmentedControl } from '@/shared/ui/SegmentedControl';
 import { SettingsRow } from '@/shared/ui/SettingsRow';
+import { SettingsGroup } from '@/shared/ui/SettingsGroup';
+import { SettingsPanel } from '@/shared/ui/SettingsPanel';
 import { t, type MessageKey } from '@/shared/i18n';
 import { DictLinksManager } from './DictLinksManager';
 import styles from './DictionaryPopupSettingsPanel.module.css';
@@ -124,8 +126,8 @@ export function DictionaryPopupSettingsPanel({
   };
 
   return (
-    <div className={styles.panel}>
-      <div className={styles.timeline}>
+    <SettingsPanel>
+      <SettingsGroup>
         {STEPS.map((step) => {
           const value = step.valueKey === 'defaultActiveTab'
             ? (settings.defaultActiveTab ?? '')
@@ -139,6 +141,7 @@ export function DictionaryPopupSettingsPanel({
             <SettingsRow key={step.valueKey} dense stacked title={t(step.labelKey)}>
               <SegmentedControl
                 variant="chips"
+                size="lg"
                 options={step.options.map((o) => ({ value: o.value, label: t(o.labelKey) }))}
                 value={value}
                 onChange={(nextValue) => {
@@ -155,8 +158,9 @@ export function DictionaryPopupSettingsPanel({
             </SettingsRow>
           );
         })}
-      </div>
+      </SettingsGroup>
 
+      <div className={styles.tabsBlock}>
       <div className={styles.surfaceTabs} role="tablist" aria-label={t('settings.dictionaryPopup.links.tabsAria')}>
         {SURFACE_TABS.map((tab) => (
           <button
@@ -187,17 +191,18 @@ export function DictionaryPopupSettingsPanel({
       )}
 
       {surface === 'translate' && (
-        <div className={styles.tabBody}>
+        <SettingsGroup>
           <SettingsRow dense stacked title={t('settings.dictionaryPopup.translations')}>
             <SegmentedControl
               variant="chips"
+              size="lg"
               options={TRANSLATION_OPTIONS.map((o) => ({ value: o, label: t(TRANSLATION_LABEL_KEYS[o]) }))}
               value={settings.translationVisibility ?? 'hidden'}
               onChange={(nextValue) => update({ translationVisibility: nextValue as 'hidden' | 'shown' })}
               ariaLabel={t('settings.dictionaryPopup.translations')}
             />
           </SettingsRow>
-        </div>
+        </SettingsGroup>
       )}
 
       {surface === 'audio' && (
@@ -212,7 +217,8 @@ export function DictionaryPopupSettingsPanel({
         </Text>
       )}
       </div>
+      </div>
 
-    </div>
+    </SettingsPanel>
   );
 }

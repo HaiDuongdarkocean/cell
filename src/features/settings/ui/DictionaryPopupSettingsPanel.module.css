@@ -1,14 +1,7 @@
-.panel {
+.tabsBlock {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-2) 0;
-}
-
-.timeline {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 /* Surface tabs — mirror the popup's DictionaryToolbar (32px icon+label pills). */
@@ -18,6 +11,14 @@
   align-items: center;
   overflow-x: auto;
   padding: var(--space-1) 0;
+}
+
+/* Compact: scrolling hides most tabs — wrap the pills to a second row. */
+@container (max-width: 479px) {
+  .surfaceTabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
 }
 
 .surfaceTab {
@@ -57,13 +58,6 @@
 .surfaceTabActive:hover {
   background: var(--color-primary-subtle);
   color: var(--color-text-accent-strong);
-}
-
-.tabBody {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding-top: var(--space-1);
 }
 
 .tabEmpty {

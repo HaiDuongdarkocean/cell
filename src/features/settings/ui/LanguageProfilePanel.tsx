@@ -7,6 +7,7 @@ import { SelectableCard } from '@/shared/ui/SelectableCard';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Dialog } from '@/shared/ui/Dialog';
 import { SettingsGroup } from '@/shared/ui/SettingsGroup';
+import { SettingsPanel } from '@/shared/ui/SettingsPanel';
 import { SettingsRow } from '@/shared/ui/SettingsRow';
 import { OVERLAY_LANGUAGE_OPTIONS, toIso6391, baseLangCode } from '@/shared/config/languageRegistry';
 import { t } from '@/shared/i18n';
@@ -170,10 +171,11 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
   const canAdd = profiles.length === 0 || active !== null;
 
   return (
-    <div className={styles.panel}>
+    <SettingsPanel>
       {/* Universal native — global setting shared by every profile. The select
           applies immediately (no draft/save gate): click → menu with search
           focused → pick. */}
+      <SettingsGroup>
       <SettingsRow
         dense
         stacked
@@ -191,6 +193,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
           placeholder={t('settings.profiles.form.search')}
         />
       </SettingsRow>
+      </SettingsGroup>
 
       {profiles.length === 0 && form?.mode !== 'add' ? (
         <EmptyState
@@ -350,6 +353,6 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
           {t('settings.profiles.delete.body')}
         </Text>
       </Dialog>
-    </div>
+    </SettingsPanel>
   );
 }

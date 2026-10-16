@@ -3,11 +3,6 @@
    springs. Remaining motion: menu mount keyframes, gated by
    prefers-reduced-motion. */
 
-.panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
 
 /* === Profile cards === */
 .list {
@@ -287,6 +282,19 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--space-2);
+}
+
+/* Compact: cardText can shrink to nothing beside radio + flags + menu, so
+   it takes the full first line — the dot and flags wrap below. */
+@container (max-width: 479px) {
+  .card {
+    flex-wrap: wrap;
+  }
+
+  .cardText {
+    flex: 1 1 100%;
+    order: -1;
+  }
 }
 
 /* === Motion === */

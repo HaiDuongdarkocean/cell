@@ -1,9 +1,10 @@
 import type React from 'react';
 import { useMemo } from 'react';
 import { Select } from '@/shared/ui/Select';
-import { Slider } from '@/shared/ui/Slider';
+import { SliderRow } from '@/shared/ui/SliderRow';
 import { SettingsRow } from '@/shared/ui/SettingsRow';
-import { Text } from '@/shared/ui/Text';
+import { SettingsGroup } from '@/shared/ui/SettingsGroup';
+import { SettingsPanel } from '@/shared/ui/SettingsPanel';
 import { t, type MessageKey } from '@/shared/i18n';
 import type { BadgePointerTriggerSettings } from '@/entities/settings/types';
 import styles from './WordBadgeSettingsPanel.module.css';
@@ -54,13 +55,14 @@ export function WordBadgeSettingsPanel({
   }, [size, position, pointerSize]);
 
   return (
-    <div className={styles.panel}>
+    <SettingsPanel>
       <div className={styles.previewBox}>
         <div className={styles.previewBadge} style={{ width: size, height: size }}>
           <span className={styles.previewPointer} style={pointerStyle} />
         </div>
       </div>
 
+      <SettingsGroup>
       <SettingsRow dense stacked title={t('settings.wordBadge.position')} labelFor="word-badge-position">
         <Select
           id="word-badge-position"
@@ -70,41 +72,28 @@ export function WordBadgeSettingsPanel({
         />
       </SettingsRow>
 
-      <SettingsRow
-        dense
-        title={t('settings.wordBadge.size')}
-        labelFor="word-badge-size"
-      >
-        <Text as="span" variant="label" color="secondary" className={styles.value}>{size}px</Text>
-      </SettingsRow>
-      <Slider
-        id="word-badge-size"
+      <SliderRow
+        label={t('settings.wordBadge.size')}
         value={size}
         min={SIZE_MIN}
         max={SIZE_MAX}
         step={1}
+        formatValue={(v) => `${v}px`}
         aria-label={t('settings.wordBadge.buttonSize.aria')}
-        data-tihoka-id="word-badge-size"
         onChange={(value) => onChange({ ...badgePointerTrigger, size: value })}
       />
 
-      <SettingsRow
-        dense
-        title={t('settings.wordBadge.pointerScale')}
-        labelFor="word-badge-scale"
-      >
-        <Text as="span" variant="label" color="secondary" className={styles.value}>{Math.round(pointerScale * 100)}%</Text>
-      </SettingsRow>
-      <Slider
-        id="word-badge-scale"
+      <SliderRow
+        label={t('settings.wordBadge.pointerScale')}
         value={pointerScale}
         min={SCALE_MIN}
         max={SCALE_MAX}
         step={0.05}
+        formatValue={(v) => `${Math.round(v * 100)}%`}
         aria-label={t('settings.wordBadge.pointerScale')}
-        data-tihoka-id="word-badge-scale"
         onChange={(value) => onChange({ ...badgePointerTrigger, pointerScale: value })}
       />
-    </div>
+      </SettingsGroup>
+    </SettingsPanel>
   );
 }

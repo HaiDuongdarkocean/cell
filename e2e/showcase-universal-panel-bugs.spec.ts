@@ -56,7 +56,7 @@ test.describe('Universal Panel — regression bugs from atomic design + visual a
     // Click each Settings nav item (inner sidebar).
     await showcasePage.click('[data-tihoka-id="universal-panel-tab-settings"]');
     await expect(showcasePage.locator('[data-tihoka-id="settings-tab"]')).toBeVisible();
-    const sectionIds = ['media', 'block', 'languageProfile', 'shortcuts', 'download', 'cardCreator', 'dictionaryPopup', 'pronunciation', 'localPronunciation', 'localPlayer', 'theme', 'tts', 'resources'];
+    const sectionIds = ['block', 'languageProfile', 'shortcuts', 'download', 'cardCreator', 'dictionaryPopup', 'pronunciation', 'localPronunciation', 'localPlayer', 'theme', 'tts', 'resources'];
     for (const sectionId of sectionIds) {
       const item = showcasePage.locator(`[data-tihoka-id="settings-tab"] [data-section-id="${sectionId}"]`);
       if ((await item.count()) === 0) continue;
