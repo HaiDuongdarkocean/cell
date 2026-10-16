@@ -133,7 +133,7 @@ export class TokenizeScheduler {
       this.scheduledFrameKind = 'idle';
       this.scheduledFrameId = requestIdleCallback((deadline) => {
         void this.runLoop({ timeRemaining: () => deadline.timeRemaining() }, Number.MAX_SAFE_INTEGER);
-      });
+      }, { timeout: 1000 });
     } else {
       const start = performance.now();
       const budget = 50; // ms fallback budget per chunk (idle-but-responsive)

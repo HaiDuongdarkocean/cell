@@ -2,7 +2,7 @@ import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import type { FrequencyEntry } from '@/entities/dictionary';
 
 const getWordStatuses = jest.fn() as jest.MockedFunction<(langCode: string, terms: readonly string[]) => Promise<Map<string, string>>>;
-const getFrequencyEntries = jest.fn() as jest.MockedFunction<(langCode: string, terms: readonly string[]) => Promise<Map<string, FrequencyEntry[]>>>;
+const getTokenizeMeta = jest.fn() as jest.MockedFunction<(langCode: string, terms: readonly string[]) => Promise<{ statuses: Map<string, string>; frequencyEntries: Map<string, FrequencyEntry[]> }>>;
 const setWordStatus = jest.fn() as jest.MockedFunction<(langCode: string, term: string, status: string) => Promise<void>>;
 const getSrsCardTerms = jest.fn() as jest.MockedFunction<(langCode: string) => Promise<Set<string>>>;
 
@@ -15,8 +15,9 @@ jest.mock('@/features/srs/services/addToOceanSrs', () => ({
   getSrsCardTerms,
 }));
 
-jest.mock('@/features/dictionary/services/frequencyClient', () => ({
-  getFrequencyEntries,
+jest.mock('@/features/dictionary/services/tokenizeMetaClient', () => ({
+  getTokenizeMeta,
+  pingTokenizeMeta: jest.fn(),
 }));
 
 import { createSubtitleTokenizeController } from './subtitleTokenizeController';
@@ -26,7 +27,7 @@ import type { SrtCue } from '@/entities/media';
 
 beforeEach(() => {
   getWordStatuses.mockResolvedValue(new Map<string, string>());
-  getFrequencyEntries.mockResolvedValue(new Map<string, FrequencyEntry[]>());
+  getTokenizeMeta.mockResolvedValue({ statuses: new Map<string, string>(), frequencyEntries: new Map<string, FrequencyEntry[]>() });
   setWordStatus.mockResolvedValue(undefined);
   resetSrsCardTermSetForTest();
   getSrsCardTerms.mockReset();
@@ -96,7 +97,7 @@ describe('createSubtitleTokenizeController', () => {
   });
 
   it('updates status of hovered token with 1-4 keys', async () => {
-    getWordStatuses.mockResolvedValue(new Map([['hello', 'unknown']]));
+    getTokenizeMeta.mockResolvedValue({ statuses: new Map([['hello', 'unknown']]), frequencyEntries: new Map() });
 
     const { target, cues, controller } = setup();
 
@@ -121,7 +122,7 @@ describe('createSubtitleTokenizeController', () => {
   });
 
   it('does not update status when focus is in an input (shadow retargeting)', async () => {
-    getWordStatuses.mockResolvedValue(new Map([['hello', 'unknown']]));
+    getTokenizeMeta.mockResolvedValue({ statuses: new Map([['hello', 'unknown']]), frequencyEntries: new Map() });
 
     const { target, cues, controller } = setup();
     const input = document.createElement('input');

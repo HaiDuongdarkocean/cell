@@ -76,9 +76,13 @@ import { registerTranslateHandlers } from './handlers/translate';
 import { registerTranslateTermsHandlers } from './handlers/translateTerms';
 import { registerCardCreatorHandlers } from './handlers/cardCreator';
 import { registerLookupHandlers } from './handlers/lookup';
+import { prewarmPhraseIndexes } from '@/features/dictionaryPopup/logic/lookupOrchestrator';
+import { migrateEntriesToBlobs } from '@/features/dictionary/repositories/entryBlobStore';
+import { resolveProfile } from '@/entities/settings/lib/profileResolution';
 import { registerWordStatusHandlers } from './handlers/wordStatus';
 import { registerFrequencyHandlers } from './handlers/frequency';
 import { registerReadingsHandlers } from './handlers/readings';
+import { registerTokenizeMetaHandlers } from './handlers/tokenizeMeta';
 import { registerResourceHandlers } from './handlers/resources';
 import { registerTtsHandlers } from './handlers/tts';
 import { registerLocalTtsHandlers } from './handlers/localTts';
@@ -269,6 +273,27 @@ export class BackgroundService implements BackgroundContext {
     } catch {
       // SW may be shutting down — leave previous value
     }
+
+    // 9. Warm phrase indexes in the background so the first dictionary lookup
+    // after this wake skips the IDB read + lazy open. Fire-and-forget.
+    prewarmPhraseIndexes();
+
+    // 10. Blob migration (ADR-118): compile any row-backed finished resource
+    //     into immutable entry chunks. Deferred past prewarm so first-lookup
+    //     latency wins the early event-loop slots; the migration itself only
+    //     reads ENTRY + writes chunk stores — it never blocks a lookup.
+    setTimeout(() => {
+      void (async () => {
+        const settings = await loadSettings();
+        const langs = new Set<string>();
+        for (const p of settings.languageProfiles ?? []) {
+          langs.add(resolveProfile(p, settings.universalNativeLanguage).resourceLangCode);
+        }
+        for (const lang of langs) {
+          await migrateEntriesToBlobs(lang).catch(() => 0);
+        }
+      })().catch(() => undefined);
+    }, 3000);
   }
 
   /** Tear down the background service: stop listeners and unsubscribe events. */
@@ -304,6 +329,7 @@ export class BackgroundService implements BackgroundContext {
     registerWordStatusHandlers(this);
     registerFrequencyHandlers(this);
     registerReadingsHandlers(this);
+    registerTokenizeMetaHandlers(this);
     registerResourceHandlers(this);
     registerTtsHandlers(this);
     registerLocalTtsHandlers(this);

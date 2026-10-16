@@ -6,7 +6,7 @@ import type { FrequencyEntry } from '@/entities/dictionary';
 const loadTokenizeSettings = jest.fn() as jest.MockedFunction<() => Promise<TokenizeSettings>>;
 const saveTokenizeSettings = jest.fn() as jest.MockedFunction<(settings: TokenizeSettings) => Promise<void>>;
 const getWordStatuses = jest.fn() as jest.MockedFunction<(langCode: string, terms: readonly string[]) => Promise<Map<string, string>>>;
-const getFrequencyEntries = jest.fn() as jest.MockedFunction<(langCode: string, terms: readonly string[]) => Promise<Map<string, FrequencyEntry[]>>>;
+const getTokenizeMeta = jest.fn() as jest.MockedFunction<(langCode: string, terms: readonly string[]) => Promise<{ statuses: Map<string, string>; frequencyEntries: Map<string, FrequencyEntry[]> }>>;
 const setWordStatus = jest.fn() as jest.MockedFunction<(langCode: string, term: string, status: string) => Promise<void>>;
 
 jest.mock('@/features/tokenize/services/tokenizeSettingsStore', () => ({
@@ -28,8 +28,9 @@ jest.mock('@/features/dictionary/services/wordStatusClient', () => ({
   setWordStatus,
 }));
 
-jest.mock('@/features/dictionary/services/frequencyClient', () => ({
-  getFrequencyEntries,
+jest.mock('@/features/dictionary/services/tokenizeMetaClient', () => ({
+  getTokenizeMeta,
+  pingTokenizeMeta: jest.fn(),
 }));
 
 const getReadings = jest.fn() as jest.MockedFunction<(langCode: string, terms: readonly string[]) => Promise<Map<string, string>>>;
@@ -46,12 +47,19 @@ import { createWebTokenizeController } from './webTokenizeController';
 import { emitWordStatusChanged, emitWordStatusesReload } from '@/features/dictionary';
 
 class MockIntersectionObserver {
-  static callbacks = new Map<Element, () => void>();
+  // Multiple observers (bind ring + prefetch ring) register per element —
+  // every registered callback must fire on trigger, like a real IO dispatch.
+  static callbacks = new Map<Element, Set<() => void>>();
 
   constructor(private callback: (entries: { target: Element; isIntersecting: boolean }[]) => void) {}
 
   observe(element: Element): void {
-    MockIntersectionObserver.callbacks.set(element, () => {
+    let set = MockIntersectionObserver.callbacks.get(element);
+    if (!set) {
+      set = new Set();
+      MockIntersectionObserver.callbacks.set(element, set);
+    }
+    set.add(() => {
       this.callback([{ target: element, isIntersecting: true }]);
     });
   }
@@ -60,7 +68,7 @@ class MockIntersectionObserver {
   disconnect(): void { /* no-op */ }
 
   static trigger(element: Element): void {
-    MockIntersectionObserver.callbacks.get(element)?.();
+    for (const cb of MockIntersectionObserver.callbacks.get(element) ?? []) cb();
   }
 }
 
@@ -120,7 +128,7 @@ beforeEach(() => {
   loadTokenizeSettings.mockResolvedValue({ schemaVersion: 1, origins: {}, urls: {}, subtitleOrigins: {}, subtitleUrls: {} });
   saveTokenizeSettings.mockResolvedValue(undefined);
   getWordStatuses.mockResolvedValue(new Map<string, string>());
-  getFrequencyEntries.mockResolvedValue(new Map<string, FrequencyEntry[]>());
+  getTokenizeMeta.mockResolvedValue({ statuses: new Map<string, string>(), frequencyEntries: new Map<string, FrequencyEntry[]>() });
   setWordStatus.mockResolvedValue(undefined);
   getReadings.mockResolvedValue(new Map<string, string>());
   getWordTranslations.mockResolvedValue(new Map<string, string>());
@@ -344,8 +352,10 @@ describe('createWebTokenizeController', () => {
     root.appendChild(paragraph);
     document.body.appendChild(root);
 
-    getWordStatuses.mockResolvedValue(new Map([['hello', 'known']]));
-    getFrequencyEntries.mockResolvedValue(new Map([['hello', [{ resourceId: 1, term: 'hello', reading: '', frequency: 100 } as FrequencyEntry]]]));
+    getTokenizeMeta.mockResolvedValue({
+      statuses: new Map([['hello', 'known']]),
+      frequencyEntries: new Map([['hello', [{ resourceId: 1, term: 'hello', reading: '', frequency: 100 } as FrequencyEntry]]]),
+    });
 
     const controller = await createWebTokenizeController({
       url: 'https://example.com/',
@@ -570,8 +580,11 @@ describe('createWebTokenizeController', () => {
     // Background read resolves after a real delay so the flush is mid-await
     // when the shortcut key fires. Returns the OLD status ('unknown') to
     // simulate a snapshot taken before the user pressed the key.
-    getWordStatuses.mockImplementation(() => new Promise<Map<string, string>>((resolve) => {
-      setTimeout(() => resolve(new Map<string, string>([['hello', 'unknown'], ['world', 'unknown']])), 80);
+    getTokenizeMeta.mockImplementation(() => new Promise<{ statuses: Map<string, string>; frequencyEntries: Map<string, FrequencyEntry[]> }>((resolve) => {
+      setTimeout(() => resolve({
+        statuses: new Map<string, string>([['hello', 'unknown'], ['world', 'unknown']]),
+        frequencyEntries: new Map<string, FrequencyEntry[]>(),
+      }), 80);
     }));
 
     const controller = await createWebTokenizeController({
@@ -581,7 +594,7 @@ describe('createWebTokenizeController', () => {
 
     controller.enable();
     MockIntersectionObserver.trigger(paragraph);
-    // Let the metadata flush schedule + start awaiting getWordStatuses.
+    // Let the metadata flush schedule + start awaiting getTokenizeMeta.
     await new Promise((resolve) => setTimeout(resolve, 20));
     // Flush is now blocked on the 80ms background read.
 
@@ -867,13 +880,12 @@ describe('createWebTokenizeController', () => {
         root,
       });
 
-      // Before load: nothing bound yet.
-      expect(paragraph.querySelectorAll('.js-Tihoka-token').length).toBe(0);
+      // Interactive documents bind viewport blocks immediately — waiting for
+      // window.load would delay paint on ad/slow-asset pages.
+      expect(paragraph.querySelectorAll('.js-Tihoka-token').length).toBeGreaterThan(0);
 
       window.dispatchEvent(new Event('load'));
 
-      // FR4: viewport blocks bind immediately after load, before the 500ms
-      // hydration quiet window fires the full activate (observe + mutation).
       const spansAfterLoad = paragraph.querySelectorAll('.js-Tihoka-token');
       expect(spansAfterLoad.length).toBeGreaterThan(0);
 
@@ -881,6 +893,9 @@ describe('createWebTokenizeController', () => {
       expect(MockIntersectionObserver.callbacks.has(paragraph)).toBe(false);
 
       await jest.advanceTimersByTimeAsync(500);
+      // Activation defers the full offscreen scan 300ms past the quiet
+      // boundary so it cannot compete with the first metadata window.
+      await jest.advanceTimersByTimeAsync(301);
 
       // After quiet: full activate → observe connected.
       expect(MockIntersectionObserver.callbacks.has(paragraph)).toBe(true);

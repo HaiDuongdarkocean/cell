@@ -27,22 +27,25 @@ export function normalizeTranslationInput(text: string): string {
 }
 
 /**
- * Build the Google Translate unofficial request URL.
+ * Build the Google Translate unofficial POST request.
  *
- * @param text - Text to translate (multi-line joined cues, ≤ 1500 chars per chunk).
+ * `q` goes in the body so payloads are not bounded by GET URL length — larger
+ * chunks mean fewer requests, which is what keeps us under the per-IP
+ * rate-limit (bursts of ~50 req/min trigger a 429 "unusual traffic" block).
+ *
+ * @param text - Text to translate (multi-line joined cues, ≤ 4500 chars per chunk).
  * @param sl - Source language ISO 639-1 code (e.g. 'en'). Use 'auto' for detection.
  * @param tl - Target language ISO 639-1 code (e.g. 'vi').
- * @returns Full URL with query params (client=gtx, dt=t, sl, tl, q).
+ * @returns `{ url, body }` — POST `url` with `application/x-www-form-urlencoded` body.
  */
-export function buildTranslateUrl(text: string, sl: string, tl: string): string {
-  const params = new URLSearchParams({
-    client: 'gtx',
-    sl,
-    tl,
-    dt: 't',
-    q: normalizeTranslationInput(text),
-  });
-  return `${GOOGLE_TRANSLATE_ENDPOINT}?${params.toString()}`;
+export function buildTranslateRequest(
+  text: string,
+  sl: string,
+  tl: string,
+): { url: string; body: string } {
+  const params = new URLSearchParams({ client: 'gtx', sl, tl, dt: 't' });
+  const body = new URLSearchParams({ q: normalizeTranslationInput(text) });
+  return { url: `${GOOGLE_TRANSLATE_ENDPOINT}?${params.toString()}`, body: body.toString() };
 }
 
 /**
@@ -62,50 +65,6 @@ export function parseGoogleResponse(response: unknown): string[] {
   return segments
     .filter((seg: unknown): seg is unknown[] => Array.isArray(seg))
     .map((seg: unknown[]) => (typeof seg[0] === 'string' ? seg[0] : ''));
-}
-
-/** MyMemory Translate API endpoint (free, no key, rate-limited). */
-const MYMEMORY_TRANSLATE_ENDPOINT = 'https://api.mymemory.translated.net/get';
-
-/**
- * Build the MyMemory Translate request URL.
- *
- * @param text - Text to translate.
- * @param sl - Source language ISO 639-1 code (e.g. 'en'). Use 'en' if 'auto'.
- * @param tl - Target language ISO 639-1 code (e.g. 'vi').
- * @returns `https://api.mymemory.translated.net/get?q=<text>&langpair=<sl>|<tl>`
- */
-export function buildMyMemoryUrl(text: string, sl: string, tl: string): string {
-  const sourceLang = sl === 'auto' ? 'en' : sl;
-  const params = new URLSearchParams({
-    q: normalizeTranslationInput(text),
-    langpair: `${sourceLang}|${tl}`,
-  });
-  return `${MYMEMORY_TRANSLATE_ENDPOINT}?${params.toString()}`;
-}
-
-/**
- * Parse a MyMemory Translate JSON response into translated text segments.
- *
- * Response shape: `{ responseData: { translatedText: string },
- * responseStatus: number, quotaFinished: boolean | null }`.
- *
- * @param response - Parsed JSON from MyMemory.
- * @returns Array with a single translated segment, or empty on failure/quota.
- */
-export function parseMyMemoryResponse(response: unknown): string[] {
-  const typed = response as
-    | {
-        responseData?: { translatedText?: unknown };
-        responseStatus?: unknown;
-        quotaFinished?: unknown;
-      }
-    | undefined;
-  if (typed?.quotaFinished === true) return [];
-  if (typed?.responseStatus !== 200) return [];
-  const text = typed?.responseData?.translatedText;
-  if (typeof text !== 'string' || text.length === 0) return [];
-  return [text];
 }
 
 /**

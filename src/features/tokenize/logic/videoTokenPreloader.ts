@@ -4,10 +4,11 @@ import type { TokenFrequencyBand } from '@/features/tokenize/types';
 import type { VideoTokenMap } from './videoTokenMap';
 import type { TokenizeScheduler } from './tokenizeScheduler';
 import { PRIORITY_VIEWPORT, PRIORITY_PREPARE, PRIORITY_IDLE } from './tokenizeScheduler';
-import { getWordStatuses } from '@/features/dictionary';
-import { getFrequencyEntries } from '@/features/dictionary';
+import { getTokenizeMeta } from '@/features/dictionary';
 import { getReadings } from '@/features/dictionary';
 import { getWordTranslations } from '@/features/translate';
+import { warmEspeakIpa } from '@/features/pronunciation';
+import { getSrsCardTermSet } from '@/features/srs';
 import { resolveEspeakReadings } from './espeakReadings';
 import {
   entriesToBand,
@@ -80,7 +81,9 @@ export function createVideoTokenPreloader(
   let cues: readonly SrtCue[] = [];
   const prepared = new Set<number>();
   const resolvedTerms = new Set<string>();
+  const pendingViewport = new Set<string>();
   const pendingTerms = new Set<string>();
+  const flushRetries = new Map<string, number>();
   let isPaused = false;
   let isFlushing = false;
   let activeIndex = -1;
@@ -112,31 +115,78 @@ export function createVideoTokenPreloader(
   }
 
   async function flushPendingTerms(): Promise<void> {
-    if (isFlushing || isPaused || pendingTerms.size === 0) return;
+    if (isFlushing || isPaused || (pendingViewport.size === 0 && pendingTerms.size === 0)) return;
     isFlushing = true;
 
-    const terms = [...pendingTerms].slice(0, chunkSize);
+    const terms = [...pendingViewport].slice(0, chunkSize);
     for (const term of terms) {
+      pendingViewport.delete(term);
+    }
+    for (const term of pendingTerms) {
+      if (terms.length >= chunkSize) break;
       pendingTerms.delete(term);
+      terms.push(term);
     }
 
     const tl = glossTargetLanguage;
+    // Glosses ride their own promises — provider latency must not hold back
+    // statuses/readings, and a hung leg cannot trip the flush watchdog. The
+    // cacheOnly leg paints already-cached glosses instantly; the full leg
+    // follows with provider misses.
+    const glossLegs: Array<Promise<Map<string, string> | null>> = showGlosses && tl
+      ? [
+          getWordTranslations(langCode, tl, terms, { cacheOnly: true }),
+          getWordTranslations(langCode, tl, terms),
+        ].map((p) =>
+          // Drop results that resolve after a target-language switch —
+          // writing them would persist the old language's glosses.
+          p.then((g) => (glossTargetLanguage === tl ? g : null)).catch(() => null),
+        )
+      : [];
+    // Dictionary readings detach too — blob lookups can cost ~1.5s on large
+    // corpora. eSpeak IPA fills uncovered terms eagerly; the merged dict map
+    // stays authoritative once it lands.
+    const dictReadingsPromise = showReadings
+      ? getReadings(langCode, terms).catch(() => null)
+      : Promise.resolve(null);
+    const espeakAccum = new Map<string, string>();
+    let mergedReadings: Map<string, string> | null = null;
+    // Latched until the fast legs land — resolveTerms writes statuses too,
+    // so an early IPA patch must wait for them or it would regress status.
+    let applyIpa: () => void = () => {};
+    // Glosses buffer until the fast legs apply too — an early patch would run
+    // resolveCue with empty status/frequency maps and regress live values.
+    const pendingGlosses = new Map<string, string>();
+    let applyGlosses: () => void = () => {};
+    for (const leg of glossLegs) {
+      void leg.then((g) => {
+        if (!g || g.size === 0) return;
+        for (const [term, gloss] of g) pendingGlosses.set(term, gloss);
+        applyGlosses();
+      });
+    }
+    if (showReadings) {
+      void resolveEspeakReadings(
+        langCode,
+        terms,
+        // Live lookup: once the dictionary merge lands, covered terms are
+        // pruned from later slices instead of paying WASM calls for them.
+        (term) => mergedReadings?.get(term) || undefined,
+        undefined,
+        (batch) => {
+          for (const [term, ipa] of batch) espeakAccum.set(term, ipa);
+          applyIpa();
+        },
+        () => dictReadingsPromise,
+      ).catch(() => {});
+    }
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     try {
-      const [statusMap, freqMaps, bandOpts, dictReadings, termGlosses] = await Promise.race([
+      const [statusMap, freqMaps, bandOpts] = await Promise.race([
         Promise.all([
-        getWordStatuses(langCode, terms),
-        getFrequencyEntries(langCode, terms),
+        getTokenizeMeta(langCode, terms),
         loadBandOptions(),
-        showReadings ? getReadings(langCode, terms).catch(() => null) : Promise.resolve(null),
-        showGlosses && tl
-          ? getWordTranslations(langCode, tl, terms)
-              // Drop results that resolve after a target-language switch —
-              // writing them would persist the old language's glosses.
-              .then((g) => (glossTargetLanguage === tl ? g : null))
-              .catch(() => null)
-          : Promise.resolve(null),
-        ]),
+        ]).then(([meta, bandOpts]) => [meta.statuses, meta.frequencyEntries, bandOpts] as const),
         new Promise<never>((_, reject) => {
           timeoutId = setTimeout(() => reject(new Error('metadata flush timed out')), METADATA_FLUSH_TIMEOUT_MS);
         }),
@@ -153,34 +203,52 @@ export function createVideoTokenPreloader(
       }
       const statuses = new Map<string, WordStatus>(statusMap);
 
-      // null = fetch failed → pass undefined so existing readings survive;
-      // a resolved map is authoritative, with frequency rows as fallback.
-      // Every fetched term is marked ('' = covered, no reading) so chunked
-      // passes clear stale readings without wiping other chunks' results.
-      let readings: Map<string, string> | undefined;
-      if (dictReadings) {
-        readings = new Map(dictReadings);
-        for (const term of terms) {
-          if (!readings.has(term)) {
-            readings.set(term, pickFrequencyReading(term, freqMaps.get(term) ?? []) ?? '');
-          }
-        }
-        const espeakReadings = await resolveEspeakReadings(
-          langCode,
-          terms,
-          (term) => readings!.get(term) || undefined,
-        );
-        for (const [term, ipa] of espeakReadings) readings.set(term, ipa);
-      }
-
       for (const term of terms) {
         resolvedTerms.add(term);
+        flushRetries.delete(term);
       }
 
-      map.resolveTerms(new Set(terms), statuses, frequencies, readings, termGlosses ?? undefined);
+      map.resolveTerms(new Set(terms), statuses, frequencies);
+
+      applyIpa = () => {
+        const patch = new Map<string, string>();
+        for (const [term, ipa] of espeakAccum) {
+          if (!mergedReadings?.get(term)) patch.set(term, ipa);
+        }
+        if (patch.size > 0) {
+          map.resolveTerms(new Set(patch.keys()), statuses, frequencies, patch);
+        }
+      };
+      applyIpa();
+      applyGlosses = () => {
+        if (pendingGlosses.size === 0) return;
+        map.resolveTerms(new Set(pendingGlosses.keys()), statuses, frequencies, undefined, pendingGlosses);
+        pendingGlosses.clear();
+      };
+      applyGlosses();
+
+      if (showReadings) {
+        void dictReadingsPromise.then((dictReadings) => {
+          if (dictReadings === null) return;
+          // dict > frequency-row > eager IPA, '' still marks covered-empty.
+          mergedReadings = new Map(dictReadings);
+          for (const term of terms) {
+            if (!mergedReadings.has(term)) {
+              mergedReadings.set(
+                term,
+                pickFrequencyReading(term, freqMaps.get(term) ?? []) ?? espeakAccum.get(term) ?? '',
+              );
+            }
+          }
+          map.resolveTerms(new Set(terms), statuses, frequencies, mergedReadings);
+        }).catch(() => {});
+      }
     } catch (err) {
       for (const term of terms) {
-        if (!resolvedTerms.has(term)) {
+        if (resolvedTerms.has(term)) continue;
+        const attempts = (flushRetries.get(term) ?? 0) + 1;
+        if (attempts <= 3) {
+          flushRetries.set(term, attempts);
           pendingTerms.add(term);
         }
       }
@@ -188,28 +256,44 @@ export function createVideoTokenPreloader(
     } finally {
       clearTimeout(timeoutId);
       isFlushing = false;
-      if (pendingTerms.size > 0) {
+      if (pendingViewport.size > 0) {
+        scheduleViewportFlush();
+      } else if (pendingTerms.size > 0) {
         scheduler.schedule(() => flushPendingTerms(), PRIORITY_IDLE);
       }
     }
   }
 
-  function scheduleResolve(terms: ReadonlySet<string>, priority: number): void {
-    let hasNew = false;
-    for (const term of terms) {
-      if (resolvedTerms.has(term)) continue;
-      pendingTerms.add(term);
-      hasNew = true;
-    }
-    if (!hasNew) return;
-
-    scheduler.schedule(() => flushPendingTerms(), priority);
-
-    if (priority === PRIORITY_VIEWPORT && !pendingFlushTimer) {
+  function scheduleViewportFlush(): void {
+    scheduler.schedule(() => flushPendingTerms(), PRIORITY_VIEWPORT);
+    if (!pendingFlushTimer) {
       pendingFlushTimer = setTimeout(() => {
         pendingFlushTimer = null;
         void flushPendingTerms();
       }, 0);
+    }
+  }
+
+  function scheduleResolve(terms: ReadonlySet<string>, priority: number): void {
+    const urgent = priority === PRIORITY_VIEWPORT;
+    let hasNew = false;
+    for (const term of terms) {
+      if (resolvedTerms.has(term) || pendingViewport.has(term)) continue;
+      if (urgent) {
+        pendingViewport.add(term);
+        pendingTerms.delete(term);
+      } else {
+        if (pendingTerms.has(term)) continue;
+        pendingTerms.add(term);
+      }
+      hasNew = true;
+    }
+    if (!hasNew) return;
+
+    if (urgent) {
+      scheduleViewportFlush();
+    } else {
+      scheduler.schedule(() => flushPendingTerms(), priority);
     }
   }
 
@@ -254,13 +338,20 @@ export function createVideoTokenPreloader(
     prepareRange(idleStart, idleEnd, PRIORITY_IDLE);
   }
 
+  if (showReadings) warmEspeakIpa(langCode);
+  // The card-term set fetches cold once per session — start it here so the
+  // memoized promise has already landed by the first cue resolution.
+  void getSrsCardTermSet(langCode).catch(() => null);
+
   return {
     setCues(next: readonly SrtCue[]): void {
       cues = next;
       activeIndex = -1;
       prepared.clear();
       resolvedTerms.clear();
+      pendingViewport.clear();
       pendingTerms.clear();
+      flushRetries.clear();
       map.clear();
       scheduler.clear();
       if (pendingFlushTimer) {
@@ -286,7 +377,9 @@ export function createVideoTokenPreloader(
     resume(): void {
       isPaused = false;
       scheduler.start();
-      if (pendingTerms.size > 0) {
+      if (pendingViewport.size > 0) {
+        scheduleViewportFlush();
+      } else if (pendingTerms.size > 0) {
         scheduler.schedule(() => flushPendingTerms(), PRIORITY_IDLE);
       }
     },
@@ -300,13 +393,16 @@ export function createVideoTokenPreloader(
       }
       prepared.clear();
       resolvedTerms.clear();
+      pendingViewport.clear();
       pendingTerms.clear();
+      flushRetries.clear();
     },
 
     setShowReadings(show: boolean): void {
       if (show === showReadings) return;
       showReadings = show;
       if (!show) return;
+      warmEspeakIpa(langCode);
       resolvedTerms.clear();
       scheduleResolve(map.terms(), PRIORITY_IDLE);
     },
@@ -325,13 +421,17 @@ export function createVideoTokenPreloader(
       map.clearGlosses();
       if (!showGlosses) return;
       resolvedTerms.clear();
+      pendingViewport.clear();
       pendingTerms.clear();
+      flushRetries.clear();
       scheduleResolve(map.terms(), PRIORITY_IDLE);
     },
 
     invalidate(): void {
       resolvedTerms.clear();
+      pendingViewport.clear();
       pendingTerms.clear();
+      flushRetries.clear();
       scheduleResolve(map.terms(), PRIORITY_IDLE);
     },
   };

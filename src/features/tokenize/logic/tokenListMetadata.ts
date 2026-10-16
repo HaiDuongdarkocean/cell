@@ -1,10 +1,10 @@
 import type { WordStatus } from '@/entities/dictionary';
 import type { Token } from '@/features/tokenize/types';
 import { tokenizeTextBlock } from '@/features/tokenize/logic/textTokenizer';
-import { getWordStatuses } from '@/features/dictionary';
-import { getFrequencyEntries } from '@/features/dictionary';
+import { getTokenizeMeta } from '@/features/dictionary';
 import { getReadings } from '@/features/dictionary';
 import { getSrsCardTermSet } from '@/features/srs';
+import { warmEspeakIpa } from '@/features/pronunciation';
 import { resolveEspeakReadings } from './espeakReadings';
 import {
   entriesToBand,
@@ -63,9 +63,9 @@ export async function resolveTokenListMetadata(
 
   const termList = [...terms];
   try {
-    const [statusMap, freqMaps, bandOpts, dictReadings, cardTerms] = await Promise.all([
-      getWordStatuses(langCode, termList),
-      getFrequencyEntries(langCode, termList),
+    if (options?.includeReadings) warmEspeakIpa(langCode);
+    const [meta, bandOpts, dictReadings, cardTerms] = await Promise.all([
+      getTokenizeMeta(langCode, termList),
       loadFrequencyBandOptions(langCode),
       options?.includeReadings
         ? getReadings(langCode, termList).catch(() => null)
@@ -73,6 +73,8 @@ export async function resolveTokenListMetadata(
       getSrsCardTermSet(langCode).catch(() => null),
     ]);
 
+    const statusMap = meta.statuses;
+    const freqMaps = meta.frequencyEntries;
     const espeakReadings = dictReadings
       ? await resolveEspeakReadings(
           langCode,

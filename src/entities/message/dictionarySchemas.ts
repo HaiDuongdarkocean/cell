@@ -349,6 +349,20 @@ export const ReadingsGetPayloadSchema = z.object({
   terms: z.array(z.string().min(1).max(200)).min(1).max(1000),
 });
 
+// === Tokenize metadata fast lane (TOKENIZE_META_GET) — one roundtrip for the
+// lanes the first paint needs: word statuses + frequency entries. ===
+
+export const TokenizeMetaGetPayloadSchema = z.object({
+  tabId: z.number().int(),
+  langCode: z.string().length(2),
+  terms: z.array(z.string().min(1).max(200)).min(1).max(1000),
+});
+
+export const TokenizePingPayloadSchema = z.object({
+  tabId: z.number().int(),
+  langCode: z.string().length(2).optional(),
+});
+
 /** bg→cs broadcast: dictionary corpus changed (import/delete/toggle/reorder) —
  *  consumers re-resolve readings. `reason` is diagnostic only. */
 export const DictionaryChangedPayloadSchema = z.object({
@@ -500,6 +514,7 @@ export const TranslateTermsPayloadSchema = z.object({
   sl: z.string().min(1).max(10),
   tl: z.string().length(2),
   terms: z.array(z.string().min(1).max(200)).max(500),
+  cacheOnly: z.boolean().optional(),
 });
 
 // === Quick Add (spec §9.4 B — QUICK_ADD) ===

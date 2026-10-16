@@ -1,8 +1,7 @@
 /**
  * TRANSLATE_TERMS handler — batched per-term glosses for the subtitle overlay
  * (spec word-translation REQ-1). Terms are wrapped in `⟦T{i}⟧` markers, grouped
- * into ≤1500-char Google requests, aligned back by marker. Google first,
- * MyMemory fallback — same provider chain as TRANSLATE.
+ * into ≤4500-char Google requests, aligned back by marker.
  *
  * Failure is non-fatal: a failed sub-batch contributes no glosses; the caller
  * keeps rendering tokens without them.
@@ -12,20 +11,19 @@ import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import { TranslateTermsPayloadSchema } from '@/entities/message/dictionarySchemas';
 import { fetchWithTimeout } from '@/shared/lib/fetchWithTimeout';
+import { getSessionStorage, removeSessionStorage, setSessionStorage } from '@/shared/lib/chrome-apis/storage';
 import {
-  buildTranslateUrl,
-  buildMyMemoryUrl,
+  buildTranslateRequest,
   parseGoogleResponse,
-  parseMyMemoryResponse,
   joinTermTexts,
   alignTermGlosses,
   chunkTermMarkerTexts,
 } from '@/features/translate/service/translateService';
 
-const GOOGLE_TRANSLATE_TIMEOUT_MS = 4000;
-const MYMEMORY_TRANSLATE_TIMEOUT_MS = 6000;
-const TERM_REQUEST_CHAR_BUDGET = 1500;
+const GOOGLE_TRANSLATE_TIMEOUT_MS = 8000;
+const TERM_REQUEST_CHAR_BUDGET = 4500;
 const GLOSS_CACHE_MAX = 20000;
+const GLOSS_SESSION_PREFIX = 'gloss:';
 
 const glossCache = new Map<string, string>();
 
@@ -36,41 +34,41 @@ function glossCacheKey(sl: string, tl: string, term: string): string {
 function glossCacheSet(key: string, gloss: string): void {
   if (glossCache.size >= GLOSS_CACHE_MAX) {
     const oldest = glossCache.keys().next().value;
-    if (oldest !== undefined) glossCache.delete(oldest);
+    if (oldest !== undefined) {
+      glossCache.delete(oldest);
+      void removeSessionStorage(GLOSS_SESSION_PREFIX + oldest);
+    }
   }
   glossCache.set(key, gloss);
+  void setSessionStorage({ [GLOSS_SESSION_PREFIX + key]: gloss });
 }
 
 async function fetchSegments(text: string, sl: string, tl: string): Promise<string[]> {
   try {
-    const response = await fetchWithTimeout(buildTranslateUrl(text, sl, tl), {
-      method: 'GET',
-      headers: { 'Accept': 'application/json, text/plain, */*' },
+    const { url, body } = buildTranslateRequest(text, sl, tl);
+    const response = await fetchWithTimeout(url, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json, text/plain, */*',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body,
     }, GOOGLE_TRANSLATE_TIMEOUT_MS);
     if (response.ok) {
       const segments = parseGoogleResponse(await response.json());
       if (segments.length > 0 && segments.some((s) => s.length > 0)) return segments;
     }
   } catch {
-    // fall through to MyMemory
+    // failure is non-fatal — caller renders tokens without glosses
   }
-
-  try {
-    const response = await fetchWithTimeout(buildMyMemoryUrl(text, sl, tl), {
-      method: 'GET',
-    }, MYMEMORY_TRANSLATE_TIMEOUT_MS);
-    if (!response.ok) return [];
-    return parseMyMemoryResponse(await response.json());
-  } catch {
-    return [];
-  }
+  return [];
 }
 
 async function translateTermChunk(
   terms: readonly string[],
   sl: string,
   tl: string,
-): Promise<readonly string[]> {
+): Promise<readonly string[] | null> {
   // Primary: newline-joined terms — Google returns one segment per line,
   // which zips positionally and produces better single-word glosses than the
   // marker form. Terms are pre-sanitized so embedded newlines can't skew the
@@ -82,7 +80,7 @@ async function translateTermChunk(
 
   if (terms.length === 1) {
     // All segments belong to the one term — join them.
-    return plain.length > 0 ? [plain.join(' ').trim()] : [];
+    return plain.length > 0 ? [plain.join(' ').trim()] : null;
   }
 
   // Fallback: marker-joined request realigns by ⟦Ti⟧ index even when the
@@ -92,9 +90,10 @@ async function translateTermChunk(
     return alignTermGlosses(marked, terms.length);
   }
   // A wrong-length plain result must not zip positionally — misaligned
-  // glosses are worse than none. Failing the sub-batch keeps existing
-  // glosses (resolve semantics treat absent terms as uncovered).
-  return [];
+  // glosses are worse than none. null = whole sub-batch failed (provider
+  // error/rate limit): caller skips it so the terms are NOT cached as ''
+  // — caching '' would permanently suppress glosses for the session.
+  return null;
 }
 
 export function registerTranslateTermsHandlers(ctx: BackgroundContext): void {
@@ -103,13 +102,13 @@ export function registerTranslateTermsHandlers(ctx: BackgroundContext): void {
     if (!parsed.success) {
       return { success: false, error: `Invalid TRANSLATE_TERMS payload: ${parsed.error.message}` };
     }
-    const { terms, sl, tl } = parsed.data;
+    const { terms, sl, tl, cacheOnly } = parsed.data;
     if (terms.length === 0 || !tl) {
       return { success: true, data: { glosses: {} } };
     }
 
     const glosses: Record<string, string> = {};
-    const misses: string[] = [];
+    let misses: string[] = [];
     for (const term of terms) {
       const cached = glossCache.get(glossCacheKey(sl, tl, term));
       if (cached !== undefined) {
@@ -119,8 +118,33 @@ export function registerTranslateTermsHandlers(ctx: BackgroundContext): void {
       }
     }
 
+    if (misses.length > 0) {
+      const stored = await getSessionStorage(
+        misses.map((term) => GLOSS_SESSION_PREFIX + glossCacheKey(sl, tl, term)),
+      ).catch((): Record<string, unknown> => ({}));
+      const unresolved: string[] = [];
+      for (const term of misses) {
+        const key = glossCacheKey(sl, tl, term);
+        const hit = stored[GLOSS_SESSION_PREFIX + key];
+        if (typeof hit === 'string') {
+          glossCache.set(key, hit);
+          if (hit) glosses[term] = hit;
+        } else {
+          unresolved.push(term);
+        }
+      }
+      misses = unresolved;
+    }
+
+    // cacheOnly callers take the hit map as-is — misses stay unbuilt so a
+    // throttled provider cannot hold back already-cached glosses.
+    if (cacheOnly === true) {
+      return { success: true, data: { glosses } };
+    }
+
     for (const chunk of chunkTermMarkerTexts(misses, TERM_REQUEST_CHAR_BUDGET)) {
       const aligned = await translateTermChunk(chunk, sl, tl);
+      if (aligned === null) continue;
       for (let i = 0; i < chunk.length; i++) {
         const term = chunk[i]!;
         const gloss = (aligned[i] ?? '').trim();

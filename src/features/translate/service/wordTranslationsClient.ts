@@ -16,6 +16,7 @@ export async function getWordTranslations(
   sl: string,
   tl: string,
   terms: readonly string[],
+  opts?: { cacheOnly?: boolean },
 ): Promise<Map<string, string> | null> {
   const out = new Map<string, string>();
   if (terms.length === 0 || !tl) return out;
@@ -23,7 +24,7 @@ export async function getWordTranslations(
   for (let i = 0; i < terms.length; i += TERMS_CHUNK) {
     const response = await sendMessage<MessageResponse<{ glosses: Record<string, string> }>>({
       type: MESSAGE_TYPES.TRANSLATE_TERMS,
-      payload: { tabId: -1, sl, tl, terms: terms.slice(i, i + TERMS_CHUNK) },
+      payload: { tabId: -1, sl, tl, terms: terms.slice(i, i + TERMS_CHUNK), cacheOnly: opts?.cacheOnly },
     });
     if (response?.success !== true) return null;
     for (const [term, gloss] of Object.entries(response.data?.glosses ?? {})) {

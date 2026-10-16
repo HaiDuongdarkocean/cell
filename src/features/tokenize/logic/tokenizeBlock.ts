@@ -62,6 +62,18 @@ function isNativeSubtitleLine(element: Element): boolean {
 }
 
 const ALLOW_TOKENIZE_SELECTOR = '[data-allow-tokenize]';
+const ALLOW_TOKENIZE_ATTR = 'data-allow-tokenize';
+const TOKEN_SPAN_CLASS = 'js-Tihoka-token';
+
+/** The part of isForbiddenElement that `[data-allow-tokenize]` overrides:
+ *  extension-UI hosts, ARIA roles, aria-hidden, contenteditable. */
+function isSoftForbidden(element: Element): boolean {
+  const role = element.getAttribute('role');
+  if (role && FORBIDDEN_ROLE_ATTRS.includes(role)) return true;
+  if (element.getAttribute('aria-hidden') === 'true') return true;
+  const contenteditable = element.getAttribute('contenteditable');
+  return contenteditable === 'true' || contenteditable === '';
+}
 
 function isForbiddenElement(element: Element): boolean {
   if (FORBIDDEN_TAGS.has(element.tagName)) return true;
@@ -70,12 +82,7 @@ function isForbiddenElement(element: Element): boolean {
     return false;
   }
   if (element.closest(EXTENSION_UI_HOST_SELECTORS)) return true;
-  const role = element.getAttribute('role');
-  if (role && FORBIDDEN_ROLE_ATTRS.includes(role)) return true;
-  if (element.getAttribute('aria-hidden') === 'true') return true;
-  const contenteditable = element.getAttribute('contenteditable');
-  if (contenteditable === 'true' || contenteditable === '') return true;
-  return false;
+  return isSoftForbidden(element);
 }
 
 /** Reject text nodes that cannot produce a word in the target language.
@@ -92,15 +99,31 @@ function hasPotentialWord(text: string, langCode?: string): boolean {
   return /\p{L}/u.test(text);
 }
 
-/** Check whether `element` or any ancestor up to (but not including) `root` is forbidden. */
-function hasForbiddenContext(element: Element, root: Node): boolean {
-  if (isForbiddenElement(element)) return true;
-  let current: Element | null = element.parentElement;
+/** Check whether `element` or any ancestor up to (but not including) `root` is
+ *  forbidden. `cache` memoizes the verdict per element so sibling text nodes
+ *  don't re-walk the same ancestor chain — dominant cost on large pages
+ *  (~230ms per full scan on Wikipedia-size DOMs without it). */
+function hasForbiddenContext(element: Element, root: Node, cache?: Map<Element, boolean>): boolean {
+  const visited: Element[] = [];
+  let verdict = false;
+  let current: Element | null = element;
   while (current && current !== root) {
-    if (isForbiddenElement(current)) return true;
+    const cached = cache?.get(current);
+    if (cached !== undefined) {
+      verdict = cached;
+      break;
+    }
+    visited.push(current);
+    if (isForbiddenElement(current)) {
+      verdict = true;
+      break;
+    }
     current = current.parentElement;
   }
-  return false;
+  if (cache) {
+    for (const el of visited) cache.set(el, verdict);
+  }
+  return verdict;
 }
 
 // Stable IDs across findTextBlocks/findTextBlocksInNodes calls, so the cache
@@ -151,7 +174,7 @@ function createBlock(textNode: Text, idPrefix: string, text: string): TokenBlock
 
 function insideTokenSpan(element: Element | null): boolean {
   if (!element) return false;
-  return element.closest('.js-Tihoka-token') !== null;
+  return element.closest(`.${TOKEN_SPAN_CLASS}`) !== null;
 }
 
 /**
@@ -170,30 +193,43 @@ export function findTextBlocks(root: Node, options: FindTextBlocksOptions = {}):
   const blocks: TokenBlock[] = [];
   const filterCache = filter ? new Map<Element, boolean>() : null;
 
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
-  let textNode: Text | null = walker.nextNode() as Text | null;
-
-  while (textNode) {
+  const emitText = (textNode: Text): void => {
     const text = textNode.textContent ?? '';
-    if (text.trim().length > 0 && text.length <= maxLength && hasPotentialWord(text, langCode)) {
-      const parent = textNode.parentElement;
-      if (parent && !hasForbiddenContext(parent, root) && !insideTokenSpan(parent)) {
-        if (filterCache) {
-          let passes = filterCache.get(parent);
-          if (passes === undefined) {
-            passes = filter!(parent);
-            filterCache.set(parent, passes);
-          }
-          if (!passes) {
-            textNode = walker.nextNode() as Text | null;
-            continue;
-          }
-        }
-        blocks.push(createBlock(textNode, idPrefix, text));
+    if (text.trim().length === 0 || text.length > maxLength || !hasPotentialWord(text, langCode)) return;
+    const parent = textNode.parentElement;
+    if (!parent) return;
+    if (filterCache) {
+      let passes = filterCache.get(parent);
+      if (passes === undefined) {
+        passes = filter!(parent);
+        filterCache.set(parent, passes);
       }
+      if (!passes) return;
     }
-    textNode = walker.nextNode() as Text | null;
-  }
+    blocks.push(createBlock(textNode, idPrefix, text));
+  };
+
+  // Top-down descent carrying forbidden state — same verdicts as a per-node
+  // ancestor walk but O(elements) with no closest() per level.
+  const walk = (parent: Node, inHost: boolean, inAllow: boolean, inToken: boolean): void => {
+    for (const child of parent.childNodes) {
+      if (child.nodeType === Node.TEXT_NODE) {
+        if (!inToken) emitText(child as Text);
+        continue;
+      }
+      if (child.nodeType !== Node.ELEMENT_NODE) continue;
+      const el = child as Element;
+      if (FORBIDDEN_TAGS.has(el.tagName) || isNativeSubtitleLine(el)) continue;
+      if (inToken || el.classList.contains(TOKEN_SPAN_CLASS)) continue;
+      const allow = inAllow || el.hasAttribute(ALLOW_TOKENIZE_ATTR);
+      const host = inHost || el.matches(EXTENSION_UI_HOST_SELECTORS);
+      if (!allow && (host || isSoftForbidden(el))) continue;
+      walk(el, host, allow, false);
+    }
+  };
+
+  const rootEl = root.nodeType === Node.ELEMENT_NODE ? (root as Element) : null;
+  walk(root, false, false, Boolean(rootEl && rootEl.classList.contains(TOKEN_SPAN_CLASS)));
 
   return blocks;
 }
@@ -210,12 +246,13 @@ export function findTextBlocks(root: Node, options: FindTextBlocksOptions = {}):
 export function findTextBlocksInNodes(nodes: readonly Node[], options: FindTextBlocksOptions = {}): TokenBlock[] {
   const { maxLength = 2000, idPrefix = 'block-', langCode } = options;
   const blocks: TokenBlock[] = [];
+  const contextCache = new Map<Element, boolean>();
 
   function addTextNode(textNode: Text, root: Node): void {
     const text = textNode.textContent ?? '';
     if (text.trim().length === 0 || text.length > maxLength || !hasPotentialWord(text, langCode)) return;
     const parent = textNode.parentElement;
-    if (!parent || insideTokenSpan(parent) || hasForbiddenContext(parent, root)) return;
+    if (!parent || insideTokenSpan(parent) || hasForbiddenContext(parent, root, contextCache)) return;
     blocks.push(createBlock(textNode, idPrefix, text));
   }
 

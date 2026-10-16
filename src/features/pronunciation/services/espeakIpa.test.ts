@@ -1,17 +1,9 @@
 import { espeakIpas, supportsEspeakIpa } from './espeakIpa';
-import type { PronunciationEngine } from './pronunciationEngine';
-import type { PronunciationResult } from '../types';
+import type { EspeakPhonemeEngine } from './espeakPhonemeEngine';
 
-function makeEngine(ipas: Record<string, string>): PronunciationEngine {
+function makeEngine(ipas: Record<string, string>): EspeakPhonemeEngine {
   return {
-    toPronunciation: jest.fn(async (text: string, language: string) => ({
-      text,
-      language,
-      ipa: ipas[text] ?? '',
-      phonemes: [],
-      audio: null,
-      metadata: { engine: 'espeak-phonemes', engineVersion: '0.0.5', source: 'espeak' },
-    }) as PronunciationResult),
+    toIpa: jest.fn(async (text: string) => ipas[text] ?? ''),
   };
 }
 
@@ -43,7 +35,7 @@ describe('espeakIpas', () => {
     const map = await espeakIpas(['cloud'], 'ja', engine);
 
     expect(map.size).toBe(0);
-    expect(engine.toPronunciation).not.toHaveBeenCalled();
+    expect(engine.toIpa).not.toHaveBeenCalled();
   });
 
   it('returns an empty map for empty input', async () => {
@@ -51,7 +43,7 @@ describe('espeakIpas', () => {
     const map = await espeakIpas([], 'en', engine);
 
     expect(map.size).toBe(0);
-    expect(engine.toPronunciation).not.toHaveBeenCalled();
+    expect(engine.toIpa).not.toHaveBeenCalled();
   });
 
   it('omits terms the engine cannot pronounce', async () => {
@@ -63,17 +55,10 @@ describe('espeakIpas', () => {
   });
 
   it('keeps per-term failures absent instead of rejecting', async () => {
-    const engine: PronunciationEngine = {
-      toPronunciation: jest.fn(async (text: string) => {
+    const engine: EspeakPhonemeEngine = {
+      toIpa: jest.fn(async (text: string) => {
         if (text === 'boom') throw new Error('engine exploded');
-        return {
-          text,
-          language: 'en',
-          ipa: 'klaʊd',
-          phonemes: [],
-          audio: null,
-          metadata: { engine: 'espeak-phonemes', engineVersion: '0.0.5', source: 'espeak' },
-        } as PronunciationResult;
+        return 'klaʊd';
       }),
     };
     const map = await espeakIpas(['cloud', 'boom'], 'en', engine);

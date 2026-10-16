@@ -1,6 +1,6 @@
 import type { SrtCue } from '@/entities/media';
 import {
-  buildTranslateUrl,
+  buildTranslateRequest,
   normalizeTranslationInput,
   parseGoogleResponse,
   joinCueTexts,
@@ -28,23 +28,24 @@ describe('translateService', () => {
     });
   });
 
-  describe('buildTranslateUrl', () => {
-    it('builds URL with client=gtx, sl, tl, dt=t, q params', () => {
-      const url = buildTranslateUrl('hello world', 'en', 'vi');
+  describe('buildTranslateRequest', () => {
+    it('builds URL params + POST body with q', () => {
+      const { url, body } = buildTranslateRequest('hello world', 'en', 'vi');
       expect(url).toContain('client=gtx');
       expect(url).toContain('sl=en');
       expect(url).toContain('tl=vi');
       expect(url).toContain('dt=t');
-      expect(url).toContain('q=hello+world');
+      expect(url).not.toContain('q=');
+      expect(body).toBe('q=hello+world');
     });
 
-    it('encodes multi-line text with %0A', () => {
-      const url = buildTranslateUrl('line1\nline2', 'en', 'vi');
-      expect(url).toContain('q=line1%0Aline2');
+    it('encodes multi-line text with %0A in the body', () => {
+      const { body } = buildTranslateRequest('line1\nline2', 'en', 'vi');
+      expect(body).toContain('q=line1%0Aline2');
     });
 
     it('supports auto-detect source language', () => {
-      const url = buildTranslateUrl('hello', 'auto', 'vi');
+      const { url } = buildTranslateRequest('hello', 'auto', 'vi');
       expect(url).toContain('sl=auto');
     });
   });

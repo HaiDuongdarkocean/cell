@@ -1,8 +1,7 @@
 import type { BilingualCue } from '@/entities/media';
 import type { FrequencyEntry, WordStatus } from '@/entities/dictionary';
 import type { Token } from '@/features/tokenize/types';
-import { getWordStatuses } from '@/features/dictionary';
-import { getFrequencyEntries } from '@/features/dictionary';
+import { getTokenizeMeta } from '@/features/dictionary';
 import { getReadings } from '@/features/dictionary';
 import { getWordTranslations } from '@/features/translate';
 import { getSrsCardTermSet } from '@/features/srs';
@@ -15,6 +14,7 @@ import {
   type FrequencyBandOptions,
   type FrequencyBandThresholds,
 } from '@/features/tokenize/utils/frequencyBand';
+import { warmEspeakIpa } from '@/features/pronunciation';
 import { resolveEspeakReadings } from './espeakReadings';
 import {
   applyTokenListStatus,
@@ -184,6 +184,7 @@ export async function resolveCueListTokenMetadata(
     : termList;
   const wantReadings = Boolean(options?.includeReadings);
   const wantGlosses = Boolean(options?.includeGlosses && options.glossTargetLanguage);
+  if (wantReadings) warmEspeakIpa(langCode);
 
   let bandOptsPromise: Promise<FrequencyBandOptions>;
   if (cache) {
@@ -198,13 +199,10 @@ export async function resolveCueListTokenMetadata(
     bandOptsPromise = loadFrequencyBandOptions(langCode);
   }
 
-  const [statusRes, freqRes, bandRes, readingsRes, glossesRes, cardTermsRes] = await Promise.allSettled([
+  const [metaRes, bandRes, readingsRes, glossesRes, cardTermsRes] = await Promise.allSettled([
     baseTerms.length > 0
-      ? fetchTermsChunked(langCode, baseTerms, getWordStatuses)
-      : Promise.resolve(new Map<string, WordStatus>()),
-    baseTerms.length > 0
-      ? fetchTermsChunked(langCode, baseTerms, getFrequencyEntries)
-      : Promise.resolve(new Map<string, FrequencyEntry[]>()),
+      ? getTokenizeMeta(langCode, baseTerms)
+      : Promise.resolve({ statuses: new Map<string, WordStatus>(), frequencyEntries: new Map<string, FrequencyEntry[]>() }),
     bandOptsPromise,
     wantReadings && readingTerms.length > 0
       ? fetchTermsChunked(langCode, readingTerms, getReadings)
@@ -214,6 +212,11 @@ export async function resolveCueListTokenMetadata(
       : Promise.resolve(null),
     getSrsCardTermSet(langCode),
   ]);
+
+  const statusRes: PromiseSettledResult<Map<string, WordStatus>> =
+    metaRes.status === 'fulfilled' ? { status: 'fulfilled', value: metaRes.value.statuses } : metaRes;
+  const freqRes: PromiseSettledResult<Map<string, FrequencyEntry[]>> =
+    metaRes.status === 'fulfilled' ? { status: 'fulfilled', value: metaRes.value.frequencyEntries } : metaRes;
 
   const statusFresh =
     statusRes.status === 'fulfilled' ? statusRes.value : new Map<string, WordStatus>();

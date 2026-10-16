@@ -1,4 +1,4 @@
-import type { ClickModifierState } from '@/entities/dictionary';
+import type { ClickModifierState, FrequencyEntry } from '@/entities/dictionary';
 import type { AnnotationDisplayMode } from '@/entities/settings';
 import { findTextBlocks, findTextBlocksInNodes } from '@/features/tokenize/logic/tokenizeBlock';
 import { TokenizeCache } from '@/features/tokenize/logic/tokenizeCache';
@@ -17,7 +17,8 @@ import {
   setTokenizeEnabledForUrl,
 } from '@/features/tokenize/services/tokenizeSettingsStore';
 import { isTihokaDebug } from '@/shared/lib/TihokaDebug';
-import { getFrequencyEntries, getReadings } from '@/features/dictionary';
+import { getReadings, getTokenizeMeta, pingTokenizeMeta } from '@/features/dictionary';
+import { warmEspeakIpa } from '@/features/pronunciation';
 import { resolveEspeakReadings } from '@/features/tokenize/logic/espeakReadings';
 import { getWordStatuses, setWordStatus, toggleTrackingFlag } from '@/features/dictionary';
 import { getWordTranslations } from '@/features/translate';
@@ -55,16 +56,15 @@ function resolveCacheCapacity(): number {
   return BASE_CACHE_CAPACITY;
 }
 const CACHE_CAPACITY = resolveCacheCapacity();
-// Phase A uses an isotropic large near-zone (above + below). This guarantees
-// the viewport immediately above and below the current view is already parsed
-// and bound, so a one-viewport scroll in either direction shows no plain text.
-// In Phase B the tracker is recreated with an asymmetric margin from
-// resolveScrollPredictMargin; this constant is the initial / no-direction value.
-const BASE_OVERSCAN_ROOT_MARGIN_PX = 600;
+// Bind ring = ±1 viewport symmetric: the current screen plus the previous and
+// next screen stay bound so a full-page scroll in either direction shows
+// already-tokenized text instead of plain text. The deeper prefetch ring
+// (metadata warm) lives on a second tracker and scales with scroll velocity.
 function resolveViewportRootMargin(): string {
   // Use explicit `0px` units — some Chromium builds reject a bare `0` token
   // in an IntersectionObserver rootMargin string.
-  return `${BASE_OVERSCAN_ROOT_MARGIN_PX}px 0px ${BASE_OVERSCAN_ROOT_MARGIN_PX}px 0px`;
+  const px = Math.max(600, Math.round(window.innerHeight));
+  return `${px}px 0px ${px}px 0px`;
 }
 const MUTATION_DEBOUNCE_MS = 300;
 const PENDING_MUTATION_LIMIT = 1000;
@@ -181,6 +181,29 @@ export async function createWebTokenizeController(
   let lastScrollY = 0;
   let scrollDirection: ScrollDirection = 'none';
   let scrollRafId: number | undefined;
+  // Scroll velocity (px/s, EMA) feeds the prefetch ring depth — a steady
+  // ~500px/s reader gets ~2 screens of warm margin, a fling gets ~3.5.
+  let scrollVelocity = 0;
+  let lastScrollT = 0;
+
+  /** Deep-overscan margin for the metadata-prefetch ring. Ahead depth follows
+   *  velocity (2–3.5 screens toward the scroll direction); behind stays 1.5
+   *  screens so scrolling back up hits fully-warmed content. Quantized to
+   *  0.5-screen steps — the bucket key gates tracker recreation so a velocity
+   *  wobble doesn't re-observe ~700 elements every frame. */
+  function resolvePrefetchMarginBucket(): { margin: string; bucket: string } {
+    const aheadScreens = Math.min(3.5, Math.max(2, 2 + scrollVelocity / 2000));
+    const result = resolveScrollPredictMargin({
+      scrollY: window.scrollY,
+      lastScrollY,
+      viewportHeight: window.innerHeight,
+      aheadScreens,
+      behindScreens: 1.5,
+      lastDirection: scrollDirection,
+    });
+    const quantized = Math.round(aheadScreens * 2) / 2;
+    return { margin: result.rootMargin, bucket: `${result.direction}:${quantized}` };
+  }
 
   // Batch metadata resolver: gather terms from all blocks that become visible in
   // the same microtask, then send a single message pair (status + frequency) to
@@ -201,6 +224,35 @@ export async function createWebTokenizeController(
   // clobber a user change made while the flush was in flight.
   let statusVersionCounter = 0;
   let nextFlushVersion = 0;
+  // Session status cache — a second flush paints bars from memory while the
+  // meta roundtrip is still in flight; the response stays authoritative and
+  // overwrites any drift (onWordStatusChanged keeps it fresh in between).
+  const statusCache = new Map<string, WordStatus>();
+  // Same trick for glosses — key embeds the target language so a TL switch
+  // namespaces naturally; legs stay authoritative and overwrite on arrival.
+  const glossCache = new Map<string, string>();
+  // Session dictionary-reading cache + coverage set — a re-flush (toggle,
+  // burst of new blocks) re-sends only terms the dictionary hasn't answered
+  // yet, so the offscreen prefetch leg shrinks to nothing on repeat runs
+  // instead of flooding the SW with ~2000-term chunk reads every toggle.
+  // Covered terms with no reading still exist in `dictCovered` so the leg
+  // stays skipped; stale-on-import is accepted (session-scoped).
+  const dictTermReadings = new Map<string, string>();
+  const dictCovered = new Set<string>();
+  // Prefetch-ring session caches — a block entering the deep overscan warms
+  // these maps at background priority, so by the time it reaches the bind
+  // ring its status/reading/gloss paint in the same turn as the tokens.
+  const freqCache = new Map<string, FrequencyEntry[]>();
+  const espeakCache = new Map<string, string>();
+  const prefetched = new Set<string>();
+  const prefetchQueue = new Set<string>();
+  // One SW/IDB request in flight for warm work at any moment — the metered
+  // loop below is what keeps a cold-arriving visible block's meta roundtrip
+  // under ~200ms instead of queueing behind a prefetch flood.
+  let warmLoopRunning = false;
+  let flushBusy = 0;
+  let prefetchViewport: ViewportTracker | null = null;
+  let prefetchMarginBucket = '';
   // Sentence wash spans while a word is hovered; a click pins the wash so it
   // survives moving to the dictionary popup, and a click anywhere outside the
   // washed sentence releases it.
@@ -265,25 +317,29 @@ export async function createWebTokenizeController(
     return { showStatus, showFrequency, readingDisplay, glossDisplay };
   }
 
-  /** Recreate the ViewportTracker with a new rootMargin and re-observe all connected blocks. */
-  function recreateViewportWithMargin(rootMargin: string): void {
-    viewport.destroy();
-    viewport = createViewport(rootMargin);
-    // Re-observe every block whose element is still connected. ADR-055: the
-    // synchronous onEnter path in ViewportTracker.observe fires for blocks that
-    // are already intersecting, so visibleElements + bind scheduling resumes
-    // without waiting for a new IO callback.
+  /** Recreate the prefetch ViewportTracker with a new margin and re-observe all connected blocks. */
+  function recreatePrefetchViewport(rootMargin: string): void {
+    prefetchViewport?.destroy();
+    prefetchViewport = createViewport(rootMargin);
     for (const block of blocks) {
       if (block.element.isConnected) observeBlock(block);
     }
   }
 
-  /** rAF-coalesced scroll handler: update direction + recreate tracker on change. */
+  /** rAF-coalesced scroll handler: track direction + velocity, then re-bucket
+   *  the prefetch margin only when the quantized value actually changes. The
+   *  bind ring is static (±1 screen) so it never needs recreation. */
   function onScroll(): void {
     if (scrollRafId !== undefined) return;
     scrollRafId = window.requestAnimationFrame(() => {
       scrollRafId = undefined;
       const scrollY = window.scrollY;
+      const now = performance.now();
+      if (lastScrollT > 0) {
+        const instant = (Math.abs(scrollY - lastScrollY) / Math.max(1, now - lastScrollT)) * 1000;
+        scrollVelocity = scrollVelocity * 0.7 + instant * 0.3;
+      }
+      lastScrollT = now;
       const result = resolveScrollPredictMargin({
         scrollY,
         lastScrollY,
@@ -291,14 +347,23 @@ export async function createWebTokenizeController(
         lastDirection: scrollDirection,
       });
       lastScrollY = scrollY;
-      if (result.direction !== scrollDirection && result.direction !== 'none') {
-        scrollDirection = result.direction;
-        recreateViewportWithMargin(result.rootMargin);
+      if (result.direction !== 'none') scrollDirection = result.direction;
+      const { margin, bucket } = resolvePrefetchMarginBucket();
+      if (bucket !== prefetchMarginBucket) {
+        prefetchMarginBucket = bucket;
+        recreatePrefetchViewport(margin);
       }
     });
   }
 
-  async function flushMetadataQueue(): Promise<void> {
+  function flushMetadataQueue(): void {
+    flushBusy++;
+    void flushMetadataQueueInner().finally(() => {
+      flushBusy--;
+    });
+  }
+
+  async function flushMetadataQueueInner(): Promise<void> {
     metadataFlushTimer = null;
     const flushVersion = nextFlushVersion;
     const batch = metadataQueue;
@@ -320,32 +385,173 @@ export async function createWebTokenizeController(
     const termList = [...terms];
     const { readingDisplay, glossDisplay } = stateStore.getState();
     const tl = glossTargetLanguage;
-    const [statusMap, freqMaps, bandOpts, dictReadings, termGlosses, cardTerms] = await Promise.all([
-      getWordStatuses(langCode, termList),
-      getFrequencyEntries(langCode, termList),
+    if (readingDisplay !== 'off') warmEspeakIpa(langCode);
+    // Glosses ride their own promises — provider latency (Google ~300-600ms,
+    // slower under throttling) must not hold back statuses/readings. The
+    // cacheOnly leg paints already-cached glosses instantly; the full leg
+    // follows with provider misses.
+    const glossLegs: Array<Promise<Map<string, string> | null>> = glossDisplay !== 'off' && tl
+      ? [
+          getWordTranslations(langCode, tl, termList, { cacheOnly: true }),
+          getWordTranslations(langCode, tl, termList),
+        ].map((p) =>
+          // Drop results that resolve after a target-language switch —
+          // writing them would persist the old language's glosses.
+          p.then((g) => (glossTargetLanguage === tl ? g : null)).catch(() => null),
+        )
+      : [];
+    const metaPromise = Promise.all([
+      getTokenizeMeta(langCode, termList),
       frequencyBandOptions ??= loadFrequencyBandOptions(langCode)
         .catch(() => ({ thresholds: DEFAULT_BAND_THRESHOLDS, resourcePriority: [] })),
-      // Annotation lanes ride the same batched flush — skipped entirely when
-      // their display mode is off so annotation-off pages cost nothing.
-      readingDisplay !== 'off' ? getReadings(langCode, termList).catch(() => null) : Promise.resolve(null),
-      glossDisplay !== 'off' && tl
-        ? getWordTranslations(langCode, tl, termList)
-            // Drop results that resolve after a target-language switch —
-            // writing them would persist the old language's glosses.
-            .then((g) => (glossTargetLanguage === tl ? g : null))
-            .catch(() => null)
-        : Promise.resolve(null),
-      // null = card-term fetch failed → keep existing flags rather than
-      // flicker the third layer off.
-      getSrsCardTermSet(langCode).catch(() => null),
     ]);
-    const espeakReadings = dictReadings !== null
-      ? await resolveEspeakReadings(
-          langCode,
-          termList,
-          (term) => dictReadings.get(term) ?? pickFrequencyReading(term, freqMaps.get(term) ?? []),
+    // Paint cached statuses/glosses while the roundtrips fly — a toggle cycle
+    // re-binds every block, so this restores bars/glosses in the same turn
+    // the tokens appear; the responses stay authoritative and patch drift.
+    if (statusCache.size > 0 || glossCache.size > 0) {
+      for (const block of batch) {
+        if (!block.tokens) continue;
+        let changed = false;
+        for (const token of block.tokens) {
+          if (token.isSeparator) continue;
+          const cached = statusCache.get(token.term);
+          if (cached !== undefined && token.status !== cached) {
+            token.status = cached;
+            changed = true;
+          }
+          const g = glossCache.get(`${tl}|${token.term}`);
+          if (g !== undefined && token.gloss !== g) {
+            token.gloss = g;
+            changed = true;
+          }
+        }
+        if (changed && visibleElements.has(block.element)) rebindBlock(block);
+      }
+    }
+    // Dictionary readings also detach — blob-backed lookups can cost ~1.5s on
+    // big corpora. The request is chained off the meta roundtrip: concurrent
+    // IDB bursts on the SW thread queue behind each other, and READINGS_GET's
+    // ~200 chunk loads pushed the status lane from ~60ms to ~2s on Wikipedia.
+    // The term list is split visible-first into two sequential requests —
+    // READINGS_GET resolves all-or-nothing, so a single ~2000-term call would
+    // hold the ~150 visible terms' readings hostage to every offscreen chunk.
+    // eSpeak IPA fills uncovered terms eagerly in the meantime; the dictionary
+    // result stays authoritative once it lands.
+    const visibleTermSet = new Set<string>();
+    for (const block of batch) {
+      if (!block.tokens || !visibleElements.has(block.element)) continue;
+      for (const token of block.tokens) {
+        if (!token.isSeparator) visibleTermSet.add(token.term);
+      }
+    }
+    const visibleTermList = termList.filter((t) => visibleTermSet.has(t) && !dictCovered.has(t));
+    const restTermList = termList.filter((t) => !visibleTermSet.has(t) && !dictCovered.has(t));
+    const dictVisiblePromise = readingDisplay !== 'off'
+      ? metaPromise.then(() =>
+          visibleTermList.length > 0
+            ? getReadings(langCode, visibleTermList)
+                .then((m) => {
+                  for (const t of visibleTermList) dictCovered.add(t);
+                  return m;
+                })
+                .catch(() => null)
+            : null,
         )
-      : null;
+      : Promise.resolve(null);
+    const dictRestPromise = readingDisplay !== 'off' && restTermList.length > 0
+      ? dictVisiblePromise.then(async () => {
+          // The offscreen prefetch is background work — hold it until the
+          // visible lanes (status/reading/gloss apply) have settled, then
+          // sub-batch so a flush fired mid-sweep finds a window for its meta
+          // roundtrip between ~150ms bursts instead of queueing behind
+          // ~2000 terms' worth of IDB chunk loads.
+          await new Promise((r) => setTimeout(r, 250));
+          const merged = new Map<string, string>();
+          for (let i = 0; i < restTermList.length; i += 256) {
+            const slice = restTermList.slice(i, i + 256);
+            const part = await getReadings(langCode, slice).catch(() => null);
+            if (part) {
+              for (const [term, reading] of part) merged.set(term, reading);
+              for (const t of slice) dictCovered.add(t);
+            }
+            await new Promise((r) => setTimeout(r, 0));
+          }
+          return merged;
+        })
+      : Promise.resolve(null);
+    // Eager IPA stream starts at flush time — fills every term without a
+    // reading yet; the dictionary apply overwrites covered terms on arrival.
+    // Session-scoped so prefetch-warmed IPA carries into later flushes.
+    if (readingDisplay !== 'off') {
+      const readingByTerm = new Map<string, Token>();
+      const blocksByTerm = new Map<string, TokenBlock[]>();
+      for (const b of batch) {
+        for (const token of b.tokens ?? []) {
+          if (token.isSeparator) continue;
+          if (!readingByTerm.has(token.term)) readingByTerm.set(token.term, token);
+          const list = blocksByTerm.get(token.term);
+          if (list) { if (list[list.length - 1] !== b) list.push(b); }
+          else blocksByTerm.set(token.term, [b]);
+        }
+      }
+      // Viewport terms first — an eager sweep is CPU-bound, so visible words
+      // must be covered before offscreen ones burn the same slice budget.
+      const espeakOrder = [
+        ...batch.filter((b) => visibleElements.has(b.element)),
+        ...batch.filter((b) => !visibleElements.has(b.element)),
+      ].flatMap((b) => (b.tokens ?? []).filter((t) => !t.isSeparator).map((t) => t.term));
+      void resolveEspeakReadings(
+        langCode,
+        [...new Set(espeakOrder)],
+        // Live lookup: slices that run after the dictionary apply skip covered
+        // terms, so eager IPA only ever computes for genuinely uncovered terms.
+        // The session cache also counts as coverage — a prefetched term must
+        // not be recomputed for every flush that touches it.
+        (term) => readingByTerm.get(term)?.reading || espeakCache.get(term),
+        undefined,
+        (espeakReadings) => {
+          const dirty = new Set<TokenBlock>();
+          for (const [term, ipa] of espeakReadings) {
+            espeakCache.set(term, ipa);
+            for (const block of blocksByTerm.get(term) ?? []) {
+              if (!block.tokens) continue;
+              for (const token of block.tokens) {
+                if (!token.isSeparator && token.term === term && !token.reading) {
+                  token.reading = ipa;
+                  dirty.add(block);
+                }
+              }
+            }
+          }
+          for (const block of dirty) {
+            if (visibleElements.has(block.element)) rebindBlock(block);
+          }
+        },
+        () => dictVisiblePromise,
+        visibleTermSet.size,
+      ).catch(() => {});
+    }
+    // Card flags are a third visual layer — they patch on arrival like
+    // readings/gloss so a cold SRS fetch never holds back the status paint.
+    void getSrsCardTermSet(langCode).catch(() => null).then((cardTerms) => {
+      if (cardTerms === null) return;
+      for (const block of batch) {
+        if (!block.tokens) continue;
+        let changed = false;
+        for (const token of block.tokens) {
+          const next = cardTerms.has(token.term);
+          if (!token.isSeparator && token.hasCard !== next) {
+            token.hasCard = next;
+            changed = true;
+          }
+        }
+        if (changed && visibleElements.has(block.element)) rebindBlock(block);
+      }
+    });
+    const [meta, bandOpts] = await metaPromise;
+    const statusMap = meta.statuses;
+    for (const term of termList) statusCache.set(term, statusMap.get(term) ?? 'unknown');
+    const freqMaps = meta.frequencyEntries;
     for (const block of batch) {
       if (!block.tokens) {
         metadataPending.delete(block);
@@ -354,24 +560,24 @@ export async function createWebTokenizeController(
       await resolveTokenMetadata(
         block.tokens,
         (term) => Promise.resolve(statusMap.get(term) ?? 'unknown'),
-        (term) => Promise.resolve(entriesToBand(freqMaps.get(term) ?? [], bandOpts)),
+        (term) => Promise.resolve(entriesToBand(freqMaps.get(term) ?? freqCache.get(term) ?? [], bandOpts)),
       );
-      // Resolved maps are authoritative ('' = covered, no annotation) so late
-      // re-resolves clear stale lanes; null = fetch failed, keep existing.
-      if (dictReadings !== null || termGlosses !== null) {
+      // Reading paint order at meta time: session dict cache (instant on a
+      // repeat flush) → frequency entries — so the reading lane lands with
+      // the status bar instead of waiting for the dictionary leg. Dict/espeak
+      // still overwrite uncovered terms later.
+      if (readingDisplay !== 'off') {
         for (const token of block.tokens) {
-          if (token.isSeparator) continue;
-          if (dictReadings !== null) {
-            token.reading = dictReadings.get(token.term)
-              ?? pickFrequencyReading(token.term, freqMaps.get(token.term) ?? [])
-              ?? espeakReadings?.get(token.term)
-              ?? '';
+          if (token.isSeparator || token.reading) continue;
+          const dr = dictTermReadings.get(token.term);
+          if (dr) {
+            token.reading = dr;
+            continue;
           }
-          if (termGlosses !== null) {
-            token.gloss = termGlosses.get(token.term) ?? '';
-          }
+          const fr = pickFrequencyReading(token.term, freqMaps.get(token.term) ?? freqCache.get(token.term) ?? [])
+            ?? espeakCache.get(token.term);
+          if (fr) token.reading = fr;
         }
-        annotationsResolved.add(block);
       }
       // Race guard: re-apply any status override with a version newer than the
       // one this flush started with, so a stale background snapshot cannot
@@ -382,9 +588,6 @@ export async function createWebTokenizeController(
         if (override && override.version > flushVersion) {
           token.status = override.status;
         }
-        if (cardTerms !== null) {
-          token.hasCard = cardTerms.has(token.term);
-        }
       }
       metadataPending.delete(block);
       metadataResolved.add(block);
@@ -392,6 +595,72 @@ export async function createWebTokenizeController(
         rebindBlock(block);
       }
     }
+
+    // Authoritative reading apply — fires whenever a dictionary leg lands;
+    // terms still uncovered keep whatever eager IPA already painted. Each leg
+    // owns its block subset so visible blocks resolve without waiting for the
+    // offscreen leg.
+    // Leg maps merge into `dictMerged` for lookups — a term shared by a
+    // visible and an offscreen block arrives with the visible leg, so the
+    // rest-leg apply must still find it.
+    const dictMerged = new Map(dictTermReadings);
+    const applyDictReadings = (
+      dictReadings: Map<string, string>,
+      targets: TokenBlock[],
+    ): void => {
+      for (const [term, reading] of dictReadings) {
+        dictMerged.set(term, reading);
+        dictTermReadings.set(term, reading);
+      }
+      for (const block of targets) {
+        if (!block.tokens) continue;
+        let changed = false;
+        for (const token of block.tokens) {
+          if (token.isSeparator) continue;
+          const next = dictMerged.get(token.term)
+            ?? pickFrequencyReading(token.term, freqMaps.get(token.term) ?? freqCache.get(token.term) ?? [])
+            ?? espeakCache.get(token.term)
+            ?? '';
+          if (token.reading !== next) {
+            token.reading = next;
+            changed = true;
+          }
+        }
+        annotationsResolved.add(block);
+        if (changed && visibleElements.has(block.element)) rebindBlock(block);
+      }
+    };
+    const visibleBlocks = batch.filter((b) => visibleElements.has(b.element));
+    const restBlocks = batch.filter((b) => !visibleElements.has(b.element));
+    void dictVisiblePromise.then((r) => {
+      if (r) applyDictReadings(r, visibleBlocks);
+    }).catch(() => {});
+    void dictRestPromise.then((r) => {
+      if (r) applyDictReadings(r, restBlocks);
+    }).catch(() => {});
+
+    // Late gloss patches — provider failure resolves null and leaves tokens
+    // untouched; each leg applies independently so cached hits paint first.
+    for (const leg of glossLegs) void leg.then((termGlosses) => {
+      if (!termGlosses) return;
+      for (const [term, gloss] of termGlosses) glossCache.set(`${tl}|${term}`, gloss);
+      for (const block of batch) {
+        if (!block.tokens) continue;
+        let changed = false;
+        for (const token of block.tokens) {
+          if (token.isSeparator) continue;
+          const gloss = termGlosses.get(token.term);
+          if (gloss !== undefined && token.gloss !== gloss) {
+            token.gloss = gloss;
+            changed = true;
+          }
+        }
+        if (changed) {
+          annotationsResolved.add(block);
+          if (visibleElements.has(block.element)) rebindBlock(block);
+        }
+      }
+    }).catch(() => {});
   }
 
   function scheduleMetadataFlush(): void {
@@ -421,6 +690,106 @@ export async function createWebTokenizeController(
     metadataQueue.push(block);
   }
 
+  /** Collect a prefetch-ring block's terms into the warm queue. Terms are
+   *  warmed once per session (`prefetched`); repeat ring entries cost a
+   *  Set check and nothing else. */
+  function enqueuePrefetchBlock(block: TokenBlock): void {
+    if (!block.tokens) return;
+    let added = false;
+    for (const token of block.tokens) {
+      if (token.isSeparator || prefetched.has(token.term)) continue;
+      prefetchQueue.add(token.term);
+      added = true;
+    }
+    // Leading edge: warmLoop self-meters to one small request in flight, so
+    // it can start immediately — the pause-on-flush check, not a debounce, is
+    // what keeps the channel clear for visible flushes.
+    if (added) void warmLoop();
+  }
+
+  /** Warm pauses while a visible flush owns the channel (pending dispatch or
+   *  meta roundtrip in flight). Bounded wait: a flush settles in ~300ms. */
+  async function waitForVisibleFlush(): Promise<void> {
+    while (isActive && (metadataFlushTimer !== null || flushBusy > 0)) {
+      await new Promise((r) => setTimeout(r, 30));
+    }
+  }
+
+  /** Metered warm pipeline — GapWorker-style admission control. Drains the
+   *  prefetch queue in ~64-term chunks, legs sequential per chunk, at most
+   *  one SW/IDB request in flight. Queue order is document order, which is
+   *  nearest-first under a top-down scroll. */
+  async function warmLoop(): Promise<void> {
+    if (warmLoopRunning) return;
+    warmLoopRunning = true;
+    try {
+      if (stateStore.getState().readingDisplay !== 'off') warmEspeakIpa(langCode);
+      while (isActive && prefetchQueue.size > 0) {
+        await waitForVisibleFlush();
+        if (!isActive || prefetchQueue.size === 0) break;
+        const chunk: string[] = [];
+        for (const term of prefetchQueue) {
+          if (chunk.length >= 64) break;
+          prefetchQueue.delete(term);
+          prefetched.add(term);
+          chunk.push(term);
+        }
+        if (chunk.length > 0) await warmChunk(chunk);
+      }
+    } finally {
+      warmLoopRunning = false;
+    }
+  }
+
+  async function warmChunk(terms: string[]): Promise<void> {
+    const { readingDisplay, glossDisplay } = stateStore.getState();
+    const tl = glossTargetLanguage;
+    const metaTerms = terms.filter((t) => !statusCache.has(t));
+    if (metaTerms.length > 0) {
+      const meta = await getTokenizeMeta(langCode, metaTerms).catch(() => null);
+      if (meta) {
+        for (const term of metaTerms) {
+          statusCache.set(term, meta.statuses.get(term) ?? 'unknown');
+          const entries = meta.frequencyEntries.get(term);
+          if (entries) freqCache.set(term, entries);
+        }
+      }
+    }
+    await waitForVisibleFlush();
+    if (readingDisplay !== 'off' && isActive) {
+      const uncovered = terms.filter((t) => !dictCovered.has(t));
+      if (uncovered.length > 0) {
+        const part = await getReadings(langCode, uncovered).catch(() => null);
+        if (part) for (const [t, r] of part) dictTermReadings.set(t, r);
+        for (const t of uncovered) dictCovered.add(t);
+      }
+      await waitForVisibleFlush();
+      await resolveEspeakReadings(
+        langCode,
+        terms,
+        (t) =>
+          dictTermReadings.get(t)
+          ?? pickFrequencyReading(t, freqCache.get(t) ?? [])
+          ?? espeakCache.get(t),
+        undefined,
+        (batch) => {
+          for (const [t, ipa] of batch) espeakCache.set(t, ipa);
+        },
+      ).catch(() => {});
+    }
+    // Gloss leg stays detached per chunk — provider latency must not hold the
+    // metering loop; only meta/dict gate the cold-path worst case.
+    if (glossDisplay !== 'off' && tl && isActive) {
+      const glossTerms = terms.filter((t) => !glossCache.has(`${tl}|${t}`));
+      if (glossTerms.length > 0) {
+        void getWordTranslations(langCode, tl, glossTerms).then((g) => {
+          if (!g || glossTargetLanguage !== tl) return;
+          for (const [t, v] of g) glossCache.set(`${tl}|${t}`, v);
+        }).catch(() => {});
+      }
+    }
+  }
+
   // Token FAB removed — settings panel is now integrated into the orbital
   // badge (see webTextDictionaryController). The tokenize controller exposes
   // state + callbacks via the panel deps wired in content-script.ts.
@@ -447,29 +816,52 @@ export async function createWebTokenizeController(
   let isActive = false;
   let cancelPendingActivation: (() => void) | null = null;
 
+  // Bind handlers are registered once per block — the prefetch tracker is
+  // recreated on scroll-bucket changes and re-runs observeBlock, so a second
+  // registration would stack duplicate onEnter callbacks on the bind ring.
+  const bindObserved = new WeakSet<TokenBlock>();
+
   function observeBlock(block: TokenBlock, eager = false): void {
-    viewport.observe(block.element, {
+    if (!bindObserved.has(block)) {
+      bindObserved.add(block);
+      viewport.observe(block.element, {
+        onEnter: () => {
+          visibleElements.add(block.element);
+          // Keep the block resident so metadata + rebinds can find it. Adding it
+          // here (rather than in scanAndObserveBlocks) prevents the LRU cache from
+          // evicting distant offscreen blocks over the viewport blocks we are
+          // actively binding.
+          cache.set(block);
+          // Prepare tokens before binding. prepareBlock is a no-op if tokens are
+          // already set, so re-entry from scroll/mutation never re-tokenizes.
+          scheduler.schedule(() => prepareBlock(block), PRIORITY_PREPARE);
+          // If the block is already bound (e.g. by eager tryBindVisible during a
+          // mutation batch), skip scheduling a no-op bind task to keep the queue
+          // short on low-end devices.
+          if (stateStore.getState().enabled && !block.isBound) {
+            scheduler.schedule(() => bindVisibleBlock(block), PRIORITY_VIEWPORT);
+          }
+        },
+        onExit: () => {
+          visibleElements.delete(block.element);
+          // Unbind is owned by the prefetch ring's exit — blocks stay bound
+          // across the ±1-screen bind margin so the previous screen renders
+          // instantly on scroll-back.
+        },
+      });
+    }
+    prefetchViewport?.observe(block.element, {
+      // Tokenize + warm metadata caches well ahead of visibility — the block's
+      // own flush then paints status/reading/gloss in the bind turn.
       onEnter: () => {
-        visibleElements.add(block.element);
-        // Keep the block resident so metadata + rebinds can find it. Adding it
-        // here (rather than in scanAndObserveBlocks) prevents the LRU cache from
-        // evicting distant offscreen blocks over the viewport blocks we are
-        // actively binding.
-        cache.set(block);
-        // Prepare tokens before binding. prepareBlock is a no-op if tokens are
-        // already set, so re-entry from scroll/mutation never re-tokenizes.
-        scheduler.schedule(() => prepareBlock(block), PRIORITY_PREPARE);
-        // If the block is already bound (e.g. by eager tryBindVisible during a
-        // mutation batch), skip scheduling a no-op bind task to keep the queue
-        // short on low-end devices.
-        if (stateStore.getState().enabled && !block.isBound) {
-          scheduler.schedule(() => bindVisibleBlock(block), PRIORITY_VIEWPORT);
-        }
+        scheduler.schedule(() => {
+          prepareBlock(block);
+          enqueuePrefetchBlock(block);
+        }, PRIORITY_BUFFER);
       },
       onExit: () => {
-        visibleElements.delete(block.element);
-        // Soft-unbind and release the cache slot for blocks that leave the
-        // observed range. The block stays in `blocks` so it can be re-observed.
+        // Leaving the deep ring means truly far away — reclaim the DOM spans
+        // and the cache slot. The block stays in `blocks` for re-observation.
         scheduler.schedule(() => {
           unbindTokenBlock(block);
           cache.delete(block.id);
@@ -482,8 +874,9 @@ export async function createWebTokenizeController(
     if (eager) tryBindVisible(block);
   }
 
-  function scanAndObserveBlocks(): void {
+  function scanAndObserveBlocks(eagerViewport = false): void {
     const scanned = findTextBlocks(root, { langCode });
+    const eager: TokenBlock[] = [];
     for (const block of scanned) {
       // VDLT-Predict FR4: bindViewportNow may have already scanned + cached
       // this block during cold-start. The same text node reuses one TokenBlock
@@ -496,10 +889,27 @@ export async function createWebTokenizeController(
       blocks.push(block);
       blockSet.add(block);
       blockElements.add(block.element);
+      // Enable path: one scan both binds viewport blocks and registers the
+      // rest — the old bindViewportNow+scan pair walked the whole DOM twice.
+      // Rect reads are collected before any bind so DOM writes can't force a
+      // layout pass per block. (observe() itself is ~0.5ms per 800 — cheap
+      // enough to stay inline.)
+      if (eagerViewport && block.element.isConnected && isElementInViewport(block.element)) {
+        eager.push(block);
+      }
       // Observe the new block immediately. Disconnected nodes are harmless to
       // observe (the callback simply won't fire) and match the original test
       // expectation that a root-only node is registered.
       observeBlock(block);
+    }
+    for (const block of eager) {
+      visibleElements.add(block.element);
+      cache.set(block);
+      try {
+        bindVisibleBlock(block);
+      } catch (err) {
+        console.error('[webTokenize] bindVisibleBlock failed during enable for', block.id, err);
+      }
     }
     // bindViewportNow may have bound viewport blocks whose source nodes are no
     // longer discoverable by findTextBlocks (they became token spans). Make
@@ -560,20 +970,43 @@ export async function createWebTokenizeController(
     return bound;
   }
 
+  // MV3 suspends an idle SW after ~30s and the warm freq term index + DB
+  // connections die with it — a ping each interval resets the suspension for
+  // the controller's lifetime so a toggle after idle still lands on a hot SW.
+  let keepAliveTimer: number | undefined;
+  const KEEP_ALIVE_MS = 25_000;
+
   function setActive(active: boolean): void {
     if (active === isActive) return;
     isActive = active;
     if (active) {
       viewport = createViewport(resolveViewportRootMargin());
+      scrollVelocity = 0;
+      lastScrollT = 0;
+      const initialPrefetch = resolvePrefetchMarginBucket();
+      prefetchMarginBucket = initialPrefetch.bucket;
+      prefetchViewport = createViewport(initialPrefetch.margin);
       lastScrollY = window.scrollY;
       scrollDirection = 'none';
       window.addEventListener('scroll', onScroll, { passive: true });
-      // VDLT-Predict FR4: bind viewport blocks first so toggle feels instant,
-      // then observe + prepare the rest. bindViewportNow scans if needed and
-      // only touches blocks whose getBoundingClientRect is inside the viewport
-      // (one batched layout pass), so it does not force a reflow per block.
-      bindViewportNow();
-      scanAndObserveBlocks();
+      // VDLT-Predict FR4: bind viewport blocks first so toggle feels instant.
+      // The filtered scan only walks subtrees inside the viewport, so the
+      // enable path pays for ~50 visible blocks instead of the whole page;
+      // the full walk (observe + prepare for offscreen blocks) defers past
+      // first paint — offscreen blocks only need observation before scroll.
+      // Zero-bound means the viewport genuinely holds no text (or rects are
+      // unavailable) — fall back to the full eager scan so blocks still bind.
+      if (bindViewportNow()) {
+        // The full walk must not land inside the first metadata window — a
+        // +0ms scan competes with the meta response delivery + status apply
+        // on the same thread (~+400ms observed). 300ms is past the critical
+        // flush but still before a human can scroll to unseen content.
+        setTimeout(() => {
+          if (isActive) scanAndObserveBlocks(false);
+        }, 300);
+      } else {
+        scanAndObserveBlocks(true);
+      }
       updateMutationObservation(true);
       options.onBlocksChanged?.();
     } else {
@@ -586,6 +1019,9 @@ export async function createWebTokenizeController(
       scheduler.stop();
       scheduler.clear();
       viewport.destroy();
+      prefetchViewport?.destroy();
+      prefetchViewport = null;
+      prefetchQueue.clear();
       visibleElements.clear();
       unbindAll();
       blocks.length = 0;
@@ -800,9 +1236,13 @@ export async function createWebTokenizeController(
         continue;
       }
       for (const n of m.addedNodes ?? []) {
+        // Skip our own token spans — every bind/rebind would otherwise feed
+        // ~1600 nodes back into the rescan queue inside the critical window.
+        if (n instanceof Element && n.classList.contains(TOKEN_CLASS)) continue;
         pendingAddedNodes.push(n);
       }
       for (const n of m.removedNodes ?? []) {
+        if (n instanceof Element && n.classList.contains(TOKEN_CLASS)) continue;
         pendingRemovedNodes.push(n);
       }
     }
@@ -867,16 +1307,28 @@ export async function createWebTokenizeController(
       cancelPendingActivation = null;
       if (stateStore.getState().enabled) activateAfterStability();
     };
+    // Viewport paint can't wait for window.load — on ad/slow-asset pages that
+    // event lands seconds after DOMContentLoaded while the text is already
+    // there to scan. Full activation still gates on load/hydration-quiet.
+    const handleInteractive = (): void => {
+      if (stateStore.getState().enabled) bindViewportNow();
+    };
     if (document.readyState === 'complete') {
       handleLoad();
     } else {
+      if (document.readyState === 'interactive') handleInteractive();
+      else document.addEventListener('DOMContentLoaded', handleInteractive, { once: true });
       window.addEventListener('load', handleLoad, { once: true });
-      cancelPendingActivation = () => window.removeEventListener('load', handleLoad);
+      cancelPendingActivation = () => {
+        document.removeEventListener('DOMContentLoaded', handleInteractive);
+        window.removeEventListener('load', handleLoad);
+      };
     }
   }
 
   window.addEventListener('yt-navigate-finish', reevaluateEnabledForCurrentUrl);
   window.addEventListener('popstate', reevaluateEnabledForCurrentUrl);
+  keepAliveTimer = window.setInterval(() => pingTokenizeMeta(langCode), KEEP_ALIVE_MS);
 
   function pickDictionaryTerm(state: TokenizeState): string | null {
     if (state.selectedTerms.size > 0) return state.selectedTerms.values().next().value as string;
@@ -1077,6 +1529,7 @@ export async function createWebTokenizeController(
     statusVersionCounter++;
     termStatusVersion.set(term, statusVersionCounter);
     localStatusOverrides.set(term, { status, version: statusVersionCounter });
+    statusCache.set(term, status);
     for (const block of blocks) {
       if (!block.tokens) continue;
       let changed = false;
@@ -1140,6 +1593,7 @@ export async function createWebTokenizeController(
         const override = localStatusOverrides.get(token.term);
         if (override !== undefined && override.version > baseline) continue;
         const next = statusMap.get(token.term) ?? 'unknown';
+        statusCache.set(token.term, next);
         if (token.status === next) continue;
         token.status = next;
         termStatusVersion.set(token.term, version);
@@ -1276,6 +1730,10 @@ export async function createWebTokenizeController(
       scheduler.stop();
       setActive(false);
       cancelPendingActivation?.();
+      if (keepAliveTimer !== undefined) {
+        clearInterval(keepAliveTimer);
+        keepAliveTimer = undefined;
+      }
       if (mutationTimer) clearTimeout(mutationTimer);
       window.removeEventListener('yt-navigate-finish', reevaluateEnabledForCurrentUrl);
       window.removeEventListener('popstate', reevaluateEnabledForCurrentUrl);

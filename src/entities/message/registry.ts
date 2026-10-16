@@ -84,6 +84,8 @@ import {
   PronunciationEspeakTtsPayloadSchema,
   PronunciationSupertonicTtsPayloadSchema,
   ReadingsGetPayloadSchema,
+  TokenizeMetaGetPayloadSchema,
+  TokenizePingPayloadSchema,
   TranslatePayloadSchema,
   TranslateTermsPayloadSchema,
   TtsDownloadProgressPayloadSchema,
@@ -625,6 +627,18 @@ export const MESSAGE_REGISTRY = {
     schema: ReadingsGetPayloadSchema,
     direction: 'cs->bg',
     owner: 'background/handlers/readings',
+  },
+  [MESSAGE_TYPES.TOKENIZE_META_GET]: {
+    type: MESSAGE_TYPES.TOKENIZE_META_GET,
+    schema: TokenizeMetaGetPayloadSchema,
+    direction: 'cs->bg',
+    owner: 'background/handlers/tokenizeMeta',
+  },
+  [MESSAGE_TYPES.TOKENIZE_PING]: {
+    type: MESSAGE_TYPES.TOKENIZE_PING,
+    schema: TokenizePingPayloadSchema,
+    direction: 'cs->bg',
+    owner: 'background/handlers/tokenizeMeta',
   },
   [MESSAGE_TYPES.DICTIONARY_CHANGED]: {
     type: MESSAGE_TYPES.DICTIONARY_CHANGED,

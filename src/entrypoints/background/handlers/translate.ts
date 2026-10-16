@@ -14,17 +14,11 @@ import { TranslatePayloadSchema } from '@/entities/message/dictionarySchemas';
 import { fetchWithTimeout } from '@/shared/lib/fetchWithTimeout';
 import { t } from '@/shared/i18n';
 import {
-  buildTranslateUrl,
-  buildMyMemoryUrl,
+  buildTranslateRequest,
   parseGoogleResponse,
-  parseMyMemoryResponse,
 } from '@/features/translate/service/translateService';
 
-/** Primary fetch timeout (ms) — Google Translate endpoint. */
-const GOOGLE_TRANSLATE_TIMEOUT_MS = 4000;
-
-/** Fallback fetch timeout (ms) — MyMemory Translate endpoint. */
-const MYMEMORY_TRANSLATE_TIMEOUT_MS = 6000;
+const GOOGLE_TRANSLATE_TIMEOUT_MS = 8000;
 
 /** Register translate message handler. */
 export function registerTranslateHandlers(ctx: BackgroundContext): void {
@@ -38,13 +32,15 @@ export function registerTranslateHandlers(ctx: BackgroundContext): void {
       return { success: false, error: 'Missing text, sl, or tl in TRANSLATE' };
     }
 
-    // Try Google first; if it fails or returns empty, fall back to MyMemory.
-    let lastError: string;
     try {
-      const url = buildTranslateUrl(text, sl, tl);
+      const { url, body } = buildTranslateRequest(text, sl, tl);
       const response = await fetchWithTimeout(url, {
-        method: 'GET',
-        headers: { 'Accept': 'application/json, text/plain, */*' },
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json, text/plain, */*',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body,
       }, GOOGLE_TRANSLATE_TIMEOUT_MS);
       if (response.ok) {
         const data = await response.json();
@@ -52,29 +48,12 @@ export function registerTranslateHandlers(ctx: BackgroundContext): void {
         if (translated.length > 0) {
           return { success: true, data: { translated } };
         }
-        lastError = 'Google Translate returned empty response (possible rate-limit)';
-      } else {
-        lastError = `Google Translate HTTP ${response.status}`;
-      }
-    } catch (error) {
-      lastError = error instanceof Error ? `Google: ${error.message}` : 'Google Translate failed';
-    }
-
-    try {
-      const url = buildMyMemoryUrl(text, sl, tl);
-      const response = await fetchWithTimeout(url, { method: 'GET' }, MYMEMORY_TRANSLATE_TIMEOUT_MS);
-      if (!response.ok) {
-        return { success: false, error: t('translate.error.http', [response.status]) };
-      }
-      const data = (await response.json()) as unknown;
-      const translated = parseMyMemoryResponse(data);
-      if (translated.length === 0) {
         return { success: false, error: t('translate.error.empty') };
       }
-      return { success: true, data: { translated } };
+      return { success: false, error: t('translate.error.http', [response.status]) };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      return { success: false, error: t('translate.error.fetch', [`${msg} (${lastError})`]) };
+      return { success: false, error: t('translate.error.fetch', [msg]) };
     }
   });
 }

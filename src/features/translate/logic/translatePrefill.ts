@@ -16,11 +16,16 @@ import { t } from '@/shared/i18n';
 import { chunkCuesByCharBudget, buildSequentialIndices } from './translateChunker';
 import { joinCueTexts, alignTranslatedSegments } from '../service/translateService';
 
-/** Hardcode params (ADR-021 D3 — 0 setting, kim chỉ nam "user vào và học thôi"). */
-export const CHAR_BUDGET = 1500;
+/** Hardcode params (ADR-021 D3 — 0 setting, kim chỉ nam "user vào và học thôi").
+ *  gtx throttles per-IP on bursts (~50 req/min → 429, block lifts once traffic
+ *  stops). POST + 4500-char chunks keep a whole movie under ~10 requests, and
+ *  patient backoff (cap 30s, 8 attempts ≈ ~2min) rides out a short block
+ *  instead of erroring — the limit toast only appears on a dead provider. */
+export const CHAR_BUDGET = 4500;
 export const MIN_REQUEST_GAP_MS = 1500; // multi-cue/request → 1.5s gap (rate-limit safe)
-export const MAX_RETRIES = 3;
-export const BACKOFF_BASE_MS = 1000; // 1s → 2s → 4s
+export const MAX_RETRIES = 8;
+export const BACKOFF_BASE_MS = 1000; // 1s → 2s → 4s → 8s → 16s → 30s cap
+export const BACKOFF_CAP_MS = 30000;
 
 /** Translate function — injectable for testing (real impl sends TRANSLATE message to background). */
 export type TranslateFn = (text: string, sl: string, tl: string) => Promise<string[]>;
@@ -45,6 +50,7 @@ export interface PrefillOptions {
   readonly requestGapMs?: number;
   readonly maxRetries?: number;
   readonly backoffBaseMs?: number;
+  readonly backoffCapMs?: number;
 }
 
 /**
@@ -75,6 +81,7 @@ export class BackgroundPrefillController {
       requestGapMs: opts.requestGapMs ?? MIN_REQUEST_GAP_MS,
       maxRetries: opts.maxRetries ?? MAX_RETRIES,
       backoffBaseMs: opts.backoffBaseMs ?? BACKOFF_BASE_MS,
+      backoffCapMs: opts.backoffCapMs ?? BACKOFF_CAP_MS,
     };
   }
 
@@ -193,8 +200,10 @@ export class BackgroundPrefillController {
           success = true;
           break;
         } catch {
-          // Backoff: 1s → 2s → 4s (configurable for tests)
-          const backoff = this.opts.backoffBaseMs * Math.pow(2, attempt);
+          const backoff = Math.min(
+            this.opts.backoffCapMs,
+            this.opts.backoffBaseMs * Math.pow(2, attempt),
+          );
           await sleep(backoff);
         }
       }
