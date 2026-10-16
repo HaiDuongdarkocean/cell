@@ -1,17 +1,19 @@
-import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { t } from '@/shared/i18n';
-import { isNotKnown, onDictionaryChangedVisible, onWordStatusChanged } from '@/features/dictionary';
+import { onDictionaryChangedVisible, onWordStatusChanged } from '@/features/dictionary';
 import { getSrsCardTermSet, invalidateSrsCardTermSet, onSrsCardsChanged } from '@/features/srs';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import {
   applyTokenListCardFlags,
   applyTokenListStatus,
+  bindTokenBlock,
   createTokenList,
-  markedTokenIndexes,
+  restyleTokenBlock,
   resolveTokenListMetadata,
+  unbindTokenBlock,
 } from '@/features/tokenize';
+import type { Token, TokenBlock, TokenSpanBindOptions } from '@/features/tokenize';
 import type { AnnotationDisplayMode } from '@/entities/settings';
-import type { Token } from '@/features/tokenize';
 import styles from './PreviewBlock.module.css';
 
 export interface PreviewBlockProps {
@@ -90,7 +92,54 @@ export function PreviewBlock({
     [targetWord],
   );
 
-  const tokenSpans = buildTokenSpans(tokens, targetTerms, sentence, onTokenClick, resolving, readingDisplay);
+  const sentenceRef = useRef<HTMLDivElement>(null);
+  const blockRef = useRef<TokenBlock | null>(null);
+  const clickRef = useRef(onTokenClick);
+  clickRef.current = onTokenClick;
+
+  // Render the sentence through the canonical tokenize binder so the preview
+  // shares markup + class logic with web tokenize (SSOT). Status/metadata
+  // updates restyle in place; a new sentence rebuilds the block.
+  useEffect(() => {
+    const el = sentenceRef.current;
+    if (!el) return;
+    const options: TokenSpanBindOptions = {
+      showStatus: true,
+      showFrequency: false,
+      readingDisplay,
+      glossDisplay: 'off',
+      onTokenClick: (term) => clickRef.current?.(term, sentence),
+    };
+    let block = blockRef.current;
+    if (block && block.originalText !== sentence) {
+      if (block.isBound) unbindTokenBlock(block);
+      block = null;
+      blockRef.current = null;
+    }
+    if (!block) {
+      el.replaceChildren(document.createTextNode(sentence));
+      const sourceNode = el.firstChild;
+      if (!(sourceNode instanceof Text)) return;
+      block = {
+        id: 'cc-preview',
+        element: el,
+        sourceNodes: [sourceNode],
+        originalText: sentence,
+        tokens: [...tokens],
+        isBound: false,
+        lastAccessedAt: Date.now(),
+      };
+      blockRef.current = block;
+    } else {
+      block.tokens = [...tokens];
+    }
+    if (block.isBound && !restyleTokenBlock(block, options)) unbindTokenBlock(block);
+    if (!block.isBound) bindTokenBlock(block, options);
+    markTargetTokens(el, tokens, targetTerms);
+    for (const span of el.querySelectorAll('.js-Tihoka-token--word')) {
+      span.classList.toggle('js-Tihoka-token--resolving', resolving);
+    }
+  }, [tokens, sentence, langCode, readingDisplay, targetTerms, resolving]);
 
   return (
     <div
@@ -102,129 +151,9 @@ export function PreviewBlock({
       data-allow-lookup
     >
       <div className={styles['cc-preview__target']}>{targetWord}</div>
-      <div className={styles['cc-preview__sentence']}>{tokenSpans}</div>
+      <div className={styles['cc-preview__sentence']} ref={sentenceRef} />
     </div>
   );
-}
-
-function readingClassName(mode: AnnotationDisplayMode, token: Token, marked: boolean): string {
-  switch (mode) {
-    case 'always': return '';
-    case 'hover': return 'js-Tihoka-token--reading-hover';
-    case 'off': return 'js-Tihoka-token--reading-off';
-    case 'unknown': return isNotKnown(token.status ?? 'unknown') ? '' : 'js-Tihoka-token--reading-off';
-    case 'i1': return marked ? '' : 'js-Tihoka-token--reading-off';
-  }
-}
-
-function tokenClassName(token: Token, resolving: boolean, readingClass: string): string {
-  return [
-    'js-Tihoka-token',
-    'js-Tihoka-token--word',
-    resolving ? 'js-Tihoka-token--resolving' : '',
-    `js-Tihoka-token--status-${token.status ?? 'unknown'}`,
-    token.frequencyBand && token.frequencyBand !== 'none'
-      ? `js-Tihoka-token--frequency-${token.frequencyBand}`
-      : '',
-    token.hasCard ? 'js-Tihoka-token--has-card' : '',
-    readingClass,
-    // Glosses are subtitle-overlay only (spec word-translation).
-    'js-Tihoka-token--gloss-off',
-    styles['cc-preview__token'],
-  ]
-    .filter(Boolean)
-    .join(' ');
-}
-
-function buildTokenSpans(
-  tokens: readonly Token[],
-  targetTerms: readonly string[],
-  sentence: string,
-  onTokenClick: ((term: string, contextSentence: string) => void) | undefined,
-  resolving: boolean,
-  readingDisplay: AnnotationDisplayMode,
-): React.ReactNode[] {
-  const gapClass = `js-Tihoka-token js-Tihoka-token--separator ${styles['cc-preview__gap']}`;
-  const marked = markedTokenIndexes(tokens);
-  const hasReading = readingDisplay !== 'off';
-  const children: React.ReactNode[] = [];
-  let lastEnd = 0;
-  let index = 0;
-
-  while (index < tokens.length) {
-    const token = tokens[index]!;
-
-    if (token.isSeparator) {
-      index += 1;
-      continue;
-    }
-
-    if (token.start > lastEnd) {
-      children.push(
-        <span key={`gap-${token.start}`} className={gapClass}>
-          {sentence.slice(lastEnd, token.start)}
-        </span>,
-      );
-    }
-
-    if (targetTerms.length > 0 && matchesTargetPhrase(tokens, index, targetTerms)) {
-      const phraseTokens = tokens.slice(index, index + targetTerms.length);
-      let phraseLastEnd = token.start;
-      const phraseChildren: React.ReactNode[] = [];
-      for (let pi = 0; pi < phraseTokens.length; pi += 1) {
-        const phraseToken = phraseTokens[pi]!;
-        if (phraseToken.start > phraseLastEnd) {
-          phraseChildren.push(
-            <span key={`phrasegap-${phraseToken.start}`} className={gapClass}>
-              {sentence.slice(phraseLastEnd, phraseToken.start)}
-            </span>,
-          );
-        }
-        phraseChildren.push(
-          <TokenSpan
-            key={phraseToken.start}
-            token={phraseToken}
-            sentence={sentence}
-            onTokenClick={onTokenClick}
-            className={tokenClassName(phraseToken, resolving, readingClassName(readingDisplay, phraseToken, marked.has(index + pi)))}
-            showReading={hasReading}
-          />,
-        );
-        phraseLastEnd = phraseToken.end;
-      }
-      children.push(
-        <strong key={`target-${token.start}`} className={styles['cc-preview__target-word']}>
-          {phraseChildren}
-        </strong>,
-      );
-      lastEnd = phraseLastEnd;
-      index += targetTerms.length;
-      continue;
-    }
-
-    children.push(
-      <TokenSpan
-        key={token.start}
-        token={token}
-        sentence={sentence}
-        onTokenClick={onTokenClick}
-        className={tokenClassName(token, resolving, readingClassName(readingDisplay, token, marked.has(index)))}
-        showReading={hasReading}
-      />,
-    );
-    lastEnd = token.end;
-    index += 1;
-  }
-
-  if (lastEnd < sentence.length) {
-    children.push(
-      <span key="tail" className={gapClass}>
-        {sentence.slice(lastEnd)}
-      </span>,
-    );
-  }
-
-  return children;
 }
 
 function matchesTargetPhrase(
@@ -232,7 +161,6 @@ function matchesTargetPhrase(
   startIndex: number,
   targetTerms: readonly string[],
 ): boolean {
-  if (startIndex + targetTerms.length > tokens.length) return false;
   for (let i = 0; i < targetTerms.length; i += 1) {
     const token = tokens[startIndex + i];
     if (token?.term !== targetTerms[i]) return false;
@@ -240,26 +168,22 @@ function matchesTargetPhrase(
   return true;
 }
 
-interface TokenSpanProps {
-  readonly token: Token;
-  readonly sentence: string;
-  readonly onTokenClick: ((term: string, contextSentence: string) => void) | undefined;
-  readonly className: string;
-  readonly showReading: boolean;
-}
-
-function TokenSpan({ token, sentence, onTokenClick, className, showReading }: TokenSpanProps): React.JSX.Element {
-  return (
-    <span
-      className={className}
-      data-tihoka-term={token.term}
-      data-tihoka-start={token.start}
-      data-tihoka-end={token.end}
-      data-reading={showReading ? token.reading : undefined}
-      onClick={onTokenClick ? () => onTokenClick(token.term, sentence) : undefined}
-    >
-      <span className="js-Tihoka-token-word">{token.text}</span>
-      <span className="js-Tihoka-token-status" aria-hidden="true" />
-    </span>
-  );
+/** The binder has no target-phrase concept — tag matching word spans with the
+ *  preview's emphasis class after every (re)bind/restyle. */
+function markTargetTokens(
+  container: HTMLElement,
+  tokens: readonly Token[],
+  targetTerms: readonly string[],
+): void {
+  if (targetTerms.length === 0) return;
+  const words = tokens.filter((token) => !token.isSeparator);
+  for (let i = 0; i + targetTerms.length <= words.length; i += 1) {
+    if (!matchesTargetPhrase(words, i, targetTerms)) continue;
+    for (const token of words.slice(i, i + targetTerms.length)) {
+      container
+        .querySelector(`.js-Tihoka-token--word[data-tihoka-start="${token.start}"]`)
+        ?.classList.add(styles['cc-preview__target-word']);
+    }
+    i += targetTerms.length - 1;
+  }
 }

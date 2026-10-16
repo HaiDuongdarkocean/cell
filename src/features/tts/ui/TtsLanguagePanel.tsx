@@ -9,7 +9,7 @@ import {
   SUPERTONIC_MAX_SELECTED_VOICES,
   SUPERTONIC_VOICE_IDS,
 } from '@/features/tts/services/ttsDownloadManager';
-import { SettingsRow, SettingsGroup, Toggle, Select, Button, Icon, Chip, Alert, Text } from '@/shared/ui';
+import { SettingsRow, SettingsGroup, SettingsPanel, Toggle, Select, Button, Icon, Chip, Alert, Text } from '@/shared/ui';
 import type { SelectOption } from '@/shared/ui/Select';
 import type { TtsSettings } from '@/entities/settings/types';
 import type { MessageResponse } from '@/entities/message';
@@ -214,7 +214,8 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
   );
 
   return (
-    <div className={styles.panel}>
+    <SettingsPanel>
+      <SettingsGroup>
       <SettingsRow dense title={t('audio.engine.supertonic.enable')} description={t('audio.engine.supertonic.description')}>
         <Toggle
           checked={settings.localTtsEnabled}
@@ -223,10 +224,12 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
           dataTestId="local-tts-toggle"
         />
       </SettingsRow>
+      </SettingsGroup>
 
       {settings.localTtsEnabled && (
         <>
           {settings.downloadedLanguages.length > 1 && (
+            <SettingsGroup>
             <SettingsRow dense title={t('tts.local.defaultLang')} className={styles.row}>
               <Select
                 value={settings.localTtsLanguage}
@@ -236,6 +239,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
                 data-tihoka-id="local-tts-language-select"
               />
             </SettingsRow>
+            </SettingsGroup>
           )}
 
           <SettingsGroup label={t('tts.local.downloaded')}>
@@ -435,6 +439,6 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
           )}
         </>
       )}
-    </div>
+    </SettingsPanel>
   );
 }

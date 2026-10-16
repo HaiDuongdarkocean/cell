@@ -243,6 +243,7 @@
   color: var(--color-text-secondary);
   justify-content: flex-start;
   width: 100%;
+  min-width: 0;
   text-align: start;
 }
 

@@ -32,35 +32,38 @@ describe('PreviewBlock', () => {
     expect(tokens[3]).toHaveAttribute('data-tihoka-term', 'study');
   });
 
-  it('wraps all occurrences of target word in <strong>', () => {
+  it('marks all occurrences of target word', () => {
     const sentence = 'I like to study because study is fun.';
     const target = 'study';
     const { container } = render(<PreviewBlock targetWord={target} sentence={sentence} />);
-    const strongs = container.querySelectorAll('strong');
-    expect(strongs.length).toBe(countOccurrences(sentence, target));
-    strongs.forEach((strong) => expect(strong.textContent?.toLowerCase()).toBe(target));
+    const marked = container.querySelectorAll('[class*="cc-preview__target-word"]');
+    expect(marked.length).toBe(countOccurrences(sentence, target));
+    marked.forEach((span) => expect(span.textContent?.toLowerCase()).toBe(target));
   });
 
   it('highlights the target word regardless of case', () => {
     const sentence = 'I like to Study, but study is hard.';
     const { container } = render(<PreviewBlock targetWord="study" sentence={sentence} />);
-    const strongs = container.querySelectorAll('strong');
-    expect(strongs.length).toBe(2);
-    expect(strongs[0]?.textContent?.toLowerCase()).toBe('study');
-    expect(strongs[1]?.textContent?.toLowerCase()).toBe('study');
+    const marked = container.querySelectorAll('[class*="cc-preview__target-word"]');
+    expect(marked.length).toBe(2);
+    expect(marked[0]?.textContent?.toLowerCase()).toBe('study');
+    expect(marked[1]?.textContent?.toLowerCase()).toBe('study');
   });
 
   it('highlights multi-word target phrases', () => {
     const sentence = 'I like to study hard because study hard is fun.';
     const { container } = render(<PreviewBlock targetWord="study hard" sentence={sentence} />);
-    const strongs = container.querySelectorAll('strong');
-    expect(strongs.length).toBe(2);
-    strongs.forEach((strong) => expect(strong.textContent?.toLowerCase()).toBe('study hard'));
+    const marked = container.querySelectorAll('[class*="cc-preview__target-word"]');
+    expect(marked.length).toBe(4);
+    expect(marked[0]?.textContent?.toLowerCase()).toBe('study');
+    expect(marked[1]?.textContent?.toLowerCase()).toBe('hard');
+    expect(marked[2]?.textContent?.toLowerCase()).toBe('study');
+    expect(marked[3]?.textContent?.toLowerCase()).toBe('hard');
   });
 
   it('renders sentence without highlights when target word is empty', () => {
     const { container } = render(<PreviewBlock targetWord="" sentence="I like to study." />);
-    expect(container.querySelectorAll('strong').length).toBe(0);
+    expect(container.querySelectorAll('[class*="cc-preview__target-word"]').length).toBe(0);
     expect(container.textContent).toContain('I like to study.');
   });
 

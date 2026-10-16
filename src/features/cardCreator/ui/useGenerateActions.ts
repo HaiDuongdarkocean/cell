@@ -119,11 +119,6 @@ export function useGenerateActions({
       return false;
     };
 
-    if (key === 'targetWord') {
-      trySetTextField('targetWord', ctx.prefill?.targetWord?.trim() ?? '');
-      return;
-    }
-
     if (!ensureTargetWord()) return;
 
     const current = store().draft.fields;

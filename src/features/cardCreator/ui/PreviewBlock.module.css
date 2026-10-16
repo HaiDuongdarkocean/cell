@@ -37,16 +37,7 @@
   max-width: 100%;
 }
 
-.cc-preview__sentence strong {
+.cc-preview__sentence .cc-preview__target-word {
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
-}
-
-.cc-preview__token {
-  cursor: pointer;
-  white-space: inherit;
-}
-
-.cc-preview__gap {
-  white-space: inherit;
 }

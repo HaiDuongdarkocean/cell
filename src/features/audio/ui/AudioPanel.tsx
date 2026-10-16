@@ -18,7 +18,7 @@
 
 import { useMemo, useState, type ReactElement } from 'react';
 import { t, type MessageKey } from '@/shared/i18n';
-import { Button, HintIcon, Icon, Input, SegmentedControl, Select, SettingsGroup, SettingsRow } from '@/shared/ui';
+import { Button, HintIcon, Icon, Input, SegmentedControl, Select, SettingsGroup, SettingsPanel, SettingsRow } from '@/shared/ui';
 import type {
   AudioEngineKind,
   PronunciationSettings,
@@ -150,7 +150,7 @@ export function AudioPanel({
   };
 
   return (
-    <div className={styles.panel} data-tihoka-id="audio-panel">
+    <SettingsPanel data-tihoka-id="audio-panel">
       {/* Sources: pick a mode → see the order → configure a source → hear it. */}
       <SettingsGroup>
         <SettingsRow dense stacked>
@@ -282,6 +282,6 @@ export function AudioPanel({
           />
         </SettingsRow>
       </SettingsGroup>
-    </div>
+    </SettingsPanel>
   );
 }

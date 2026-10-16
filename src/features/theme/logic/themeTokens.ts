@@ -71,6 +71,42 @@ ${darkTokens}
 ${componentTokens}
 }
 
+/* Toast pill — bottom-center of the video container (showToast mounts it
+   inside the element returned by findVideoOverlayContainer). */
+.subtitle-toast {
+  position: absolute;
+  bottom: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-toast);
+  background: var(--color-surface-popover);
+  color: var(--color-text-primary);
+  border-left: var(--space-1) solid var(--toast-variant-color, var(--color-info));
+  border-radius: var(--radius-card);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  box-shadow: var(--shadow-popover);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  animation: subtitle-toast-in var(--duration-normal) var(--ease-standard);
+}
+
+.subtitle-toast-icon {
+  color: var(--toast-variant-color, var(--color-info));
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.subtitle-toast--fade-out {
+  opacity: 0;
+  transition: opacity var(--duration-slow) ease;
+}
+
 @keyframes subtitle-toast-in {
   from { opacity: 0; transform: translateX(-50%) translateY(var(--space-2)); }
   to { opacity: 1; transform: translateX(-50%) translateY(0); }

@@ -370,12 +370,16 @@ export async function pruneSessionEventsOnce(olderThanMs: number): Promise<void>
   if (sessionEventsPruned) return;
   sessionEventsPruned = true;
   const db = await getDB();
-  const tx = db.transaction(STORES.SESSION_EVENTS, 'readwrite');
   const range = IDBKeyRange.upperBound(olderThanMs);
-  const keys = (await reqToPromise(
-    tx.objectStore(STORES.SESSION_EVENTS).index(INDEXES.by_at).getAllKeys(range),
-  )) as IDBValidKey[];
-  const store = tx.objectStore(STORES.SESSION_EVENTS);
-  for (const key of keys) store.delete(key);
-  await txDone(tx);
+  for (;;) {
+    const tx = db.transaction(STORES.SESSION_EVENTS, 'readwrite', { durability: 'relaxed' });
+    const keys = (await reqToPromise(
+      tx.objectStore(STORES.SESSION_EVENTS).index(INDEXES.by_at).getAllKeys(range, 128),
+    )) as IDBValidKey[];
+    const store = tx.objectStore(STORES.SESSION_EVENTS);
+    for (const key of keys) store.delete(key);
+    await txDone(tx);
+    if (keys.length < 128) break;
+    await new Promise((r) => setTimeout(r, 16));
+  }
 }
