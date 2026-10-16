@@ -1,0 +1,87 @@
+/* AiAnswerPanel — AI provider pills + answer card (spec ai-bridge-dictionary). */
+
+.TihokaAi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0 var(--space-2) var(--space-2);
+}
+
+.TihokaAiProviders {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.TihokaAiProvider {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  height: var(--chip-height, 26px);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-field-hover);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.TihokaAiProvider:disabled {
+  opacity: var(--button-disabled-opacity, 0.5);
+  cursor: default;
+}
+
+.TihokaAiProvider--active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-muted);
+}
+
+.TihokaAiProvider--error {
+  border-color: var(--color-error-muted);
+}
+
+.TihokaAiDot {
+  width: var(--space-1-5);
+  height: var(--space-1-5);
+  border-radius: 50%;
+  background: var(--color-success-muted);
+}
+
+.TihokaAiProvider:disabled .TihokaAiDot {
+  opacity: 0.5;
+}
+
+.TihokaAiDot--error {
+  background: var(--color-error-muted);
+}
+
+.TihokaAiAnswer {
+  border-radius: var(--radius-md);
+  background: var(--color-field);
+  padding: var(--space-2);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal, 1.5);
+}
+
+.TihokaAiText {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.TihokaAiNotice {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.TihokaAiFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-2);
+  padding-top: var(--space-1-5);
+  border-top: 1px solid var(--color-field-hover);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
