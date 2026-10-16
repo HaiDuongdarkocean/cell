@@ -97,7 +97,8 @@ export interface UseDictionaryToolbarReturn {
   readonly translationError: string | null;
   readonly translationSelected: boolean;
   readonly toggleTranslation: () => void;
-  readonly translate: () => Promise<string>;
+  /** `fresh` regenerates the AI translation (retry) — bypasses the answer cache. */
+  readonly translate: (fresh?: boolean) => Promise<string>;
   readonly selectedTranslationCount: number;
 
   // === AI bridge (spec ai-bridge-dictionary) ===
@@ -115,7 +116,12 @@ export interface UseDictionaryToolbarReturn {
   /** [ANSWER_LANG] source: interface ('native') or target language. */
   readonly aiLanguage: 'native' | 'target';
   readonly pickAiLanguage: (lang: 'native' | 'target') => void;
+  /** Breakdown chunk indexes ticked for the card's Definitions field. */
+  readonly checkedChunks: ReadonlySet<number>;
+  readonly toggleChunk: (index: number) => void;
   readonly translateEngine: 'google' | 'ai';
+  /** Session source pick for the translate tab: Google or an AI provider. */
+  readonly pickTranslateSource: (source: 'google' | AiProviderId) => void;
   /** Engine that produced the current translation — attribution for the header. */
   readonly translationSource: 'google' | 'ai' | null;
 
@@ -188,6 +194,14 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
   const [translationSource, setTranslationSource] = useState<'google' | 'ai' | null>(initialTranslation ? 'google' : null);
   const [aiLanguage, setAiLanguage] = useState<'native' | 'target'>(DEFAULT_AI_BRIDGE_SETTINGS.answerLanguage);
   const googleTranslationRef = useRef(initialTranslation ?? '');
+  /** Breakdown chunk indexes ticked for the card's Definitions field. */
+  const [checkedChunks, setCheckedChunks] = useState<ReadonlySet<number>>(new Set());
+  /** Same-tick mirror of translateEngine — a source pick re-translates before
+   *  the state update lands in the next render's closure. */
+  const translateEngineRef = useRef(translateEngine);
+  useEffect(() => {
+    translateEngineRef.current = translateEngine;
+  }, [translateEngine]);
 
   const ensureAiCfg = useCallback(async (): Promise<AiBridgeSettings> => {
     if (aiCfgRef.current) return aiCfgRef.current;
@@ -205,20 +219,22 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
   const composeAiPrompt = useCallback(
     (feature: AiFeature, cfg: AiBridgeSettings): string => {
       const interfaceName = getLocale() === 'vi' ? 'Vietnamese' : 'English';
+      const toTarget = (cfg.answerLanguage ?? 'native') === 'target';
       return composePrompt(feature, cfg.prompts, {
         word: result?.term,
         sentence: contextSentence.trim() || undefined,
-        targetLang,
+        targetLang: feature === 'sentenceTranslate' && toTarget ? sourceLang : targetLang,
         interfaceLang: interfaceName,
-        answerLang: (cfg.answerLanguage ?? 'native') === 'target' ? targetLang : interfaceName,
+        answerLang: toTarget ? sourceLang : interfaceName,
       });
     },
-    [result?.term, contextSentence, targetLang, aiLanguage],
+    [result?.term, contextSentence, sourceLang, targetLang],
   );
 
   const askAi = useCallback(
     (feature: AiFeature, fresh = false): void => {
       if (!result) return;
+      if (feature === 'sentenceBreakdown') setCheckedChunks(new Set());
       void (async () => {
         const cfg = await ensureAiCfg();
         const prompt = composeAiPrompt(feature, cfg);
@@ -235,6 +251,27 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
   const pickAiProvider = useCallback((feature: AiFeature, provider: AiProviderId): void => {
     aiPicksRef.current = { ...aiPicksRef.current, [feature]: provider };
     setAiPicks(aiPicksRef.current);
+  }, []);
+
+  const pickTranslateSource = useCallback((source: 'google' | AiProviderId): void => {
+    const engine = source === 'google' ? 'google' : 'ai';
+    setTranslateEngineState(engine);
+    translateEngineRef.current = engine;
+    if (source !== 'google') {
+      aiPicksRef.current = { ...aiPicksRef.current, sentenceTranslate: source };
+      setAiPicks(aiPicksRef.current);
+    }
+    setTranslationSource(null);
+    void translateRef.current(true);
+  }, []);
+
+  const toggleChunk = useCallback((index: number): void => {
+    setCheckedChunks((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
   }, []);
 
   const pickAiLanguage = useCallback(
@@ -255,6 +292,10 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
+
+  useEffect(() => {
+    setCheckedChunks(new Set());
+  }, [result?.term, result?.langCode]);
 
   // Use a ref so the result-change effect can read the latest initial props
   // without including the (potentially unstable) arrays in its dependency list.
@@ -433,15 +474,15 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
       });
   }, [imageItems, imageLoading, result]);
 
-  const translate = useCallback((): Promise<string> => {
+  const translate = useCallback((fresh = false): Promise<string> => {
     if (!result) return Promise.resolve('');
     const text = contextSentence.trim() || result.term.trim();
     if (!text) return Promise.resolve(translation);
     return (async () => {
       const cfg = await ensureAiCfg();
-      if (cfg.sentenceTranslateEngine === 'ai') {
+      if (translateEngineRef.current === 'ai') {
         const answer = ai.answers.find((a) => a.feature === 'sentenceTranslate');
-        if (answer) {
+        if (answer && !fresh) {
           if (mountedRef.current) {
             setTranslation(answer.text);
             setTranslationSource('ai');
@@ -450,8 +491,9 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
         }
         setIsTranslating(true);
         setTranslationError(null);
+        if (fresh) setTranslation('');
         const prompt = composeAiPrompt('sentenceTranslate', cfg);
-        const aiAnswer = await ai.ask('sentenceTranslate', prompt, aiPicksRef.current.sentenceTranslate);
+        const aiAnswer = await ai.ask('sentenceTranslate', prompt, aiPicksRef.current.sentenceTranslate, fresh);
         if (mountedRef.current) {
           if (aiAnswer) {
             setTranslation(aiAnswer.text);
@@ -463,11 +505,13 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
         }
         return aiAnswer?.text ?? '';
       }
-      if (translation || isTranslating) return translation;
+      if (!fresh && (translation || isTranslating)) return translation;
       setIsTranslating(true);
       setTranslationError(null);
+      if (fresh) setTranslation('');
       try {
-        const res = await withTimeout(translateSentence(text, sourceLang, targetLang), 10_000);
+        const outLang = (cfg.answerLanguage ?? 'native') === 'target' ? sourceLang : targetLang;
+        const res = await withTimeout(translateSentence(text, sourceLang, outLang), 10_000);
         if (mountedRef.current) {
           setTranslation(res);
           setTranslationSource('google');
@@ -485,7 +529,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
         if (mountedRef.current) setIsTranslating(false);
       }
     })();
-  }, [contextSentence, result, sourceLang, targetLang, translation, isTranslating, ai.answers, ai.ask, ensureAiCfg, composeAiPrompt]);
+  }, [contextSentence, result, sourceLang, targetLang, translation, isTranslating, aiLanguage, ai.answers, ai.ask, ensureAiCfg, composeAiPrompt]);
 
   const toggleAudio = useCallback((id: string, selected: boolean): void => {
     setAudioSelection((prev) => new Map(prev).set(id, selected));
@@ -514,7 +558,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
   // the callback, re-trigger the effect, and start another fetch.
   const fetchAudioRef = useRef<() => Promise<readonly AudioItem[]>>(fetchAudio);
   const fetchImagesRef = useRef<() => Promise<readonly ImageItem[]>>(fetchImages);
-  const translateRef = useRef<() => Promise<string>>(translate);
+  const translateRef = useRef<(fresh?: boolean) => Promise<string>>(translate);
   useEffect(() => {
     fetchAudioRef.current = fetchAudio;
     fetchImagesRef.current = fetchImages;
@@ -612,7 +656,10 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     askAi,
     aiLanguage,
     pickAiLanguage,
+    checkedChunks,
+    toggleChunk,
     translateEngine,
+    pickTranslateSource,
     translationSource,
     links,
     selectedLinkCount: links.length,

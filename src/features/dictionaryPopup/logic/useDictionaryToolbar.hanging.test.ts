@@ -8,6 +8,8 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_PRONUNCIATION_SETTINGS } from '@/shared/config/config';
 
 jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
+  onMessage: jest.fn(),
+  removeOnMessageListener: jest.fn(),
   sendMessage: jest.fn(),
 }));
 

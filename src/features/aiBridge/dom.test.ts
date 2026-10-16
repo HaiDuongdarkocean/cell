@@ -13,6 +13,10 @@ const fastStability: AiProviderAdapter = {
   ...AI_PROVIDERS.gemini,
   doneSignal: { kind: 'stability', silenceMs: 60 },
 };
+const fastChatgpt: AiProviderAdapter = {
+  ...chatgpt,
+  doneSignal: { kind: 'attribute', attr: 'data-talvt-turn-state', scopeSelector: '[data-talvt-turn-state]', streamingValue: 'in_progress', completeValue: 'complete', idleDoneMs: 60, stuckIdleMs: 120 },
+};
 
 function mount(html: string): void {
   document.body.innerHTML = html;
@@ -141,6 +145,46 @@ test('waitForAssistantReply resolves via stop-button fallback on legacy DOM', as
   document.querySelector('button')?.remove();
   document.querySelector('.markdown')!.insertAdjacentHTML('beforeend', '<p>final answer</p>');
   await expect(reply).resolves.toContain('final answer');
+});
+
+test('waitForAssistantReply settles on idle text when the attr contract is absent', async () => {
+  const reply = waitForAssistantReply(fastChatgpt, document, 0, 5_000);
+  mount(
+    '<div data-message-author-role="assistant"><div class="markdown">no-attr answer</div></div>',
+  );
+  await expect(reply).resolves.toContain('no-attr answer');
+});
+
+test('waitForAssistantReply settles when the attr is stuck in_progress but text is quiet', async () => {
+  mount(turn('in_progress', 't:0:assistant', 'done text'));
+  const reply = waitForAssistantReply(fastChatgpt, document, 0, 5_000);
+  await expect(reply).resolves.toContain('done text');
+});
+
+test('waitForAssistantReply keeps waiting while in_progress text still grows', async () => {
+  mount(turn('in_progress', 't:0:assistant', 'chunk'));
+  const reply = waitForAssistantReply(fastChatgpt, document, 0, 5_000);
+  await sleep(30);
+  const holder = document.querySelector('[data-talvt-turn-state]')!;
+  holder.querySelector('[data-markdown-text-style] p')!.textContent = 'chunk and more';
+  await sleep(30);
+  holder.setAttribute('data-talvt-turn-state', 'complete');
+  await expect(reply).resolves.toContain('and more');
+});
+
+test('waitForAssistantReply reports partials as the unit text grows', async () => {
+  mount(turn('in_progress', 't:0:assistant', 'chunk'));
+  const partials: string[] = [];
+  const reply = waitForAssistantReply(fastChatgpt, document, 0, 5_000, (t) =>
+    partials.push(t),
+  );
+  await sleep(30);
+  const holder = document.querySelector('[data-talvt-turn-state]')!;
+  holder.querySelector('[data-markdown-text-style] p')!.textContent = 'chunk and more';
+  await sleep(30);
+  holder.setAttribute('data-talvt-turn-state', 'complete');
+  await expect(reply).resolves.toContain('and more');
+  expect(partials).toEqual(['chunk', 'chunk and more']);
 });
 
 test('waitForAssistantReply resolves on claude perf-row-streaming flip', async () => {

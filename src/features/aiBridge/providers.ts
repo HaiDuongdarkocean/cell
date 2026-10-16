@@ -18,6 +18,10 @@ export type AiDoneSignal =
       scopeSelector?: string;
       streamingValue: string;
       completeValue: string;
+      /** Quiet-text fallback when nothing reports streaming (enum drift). */
+      idleDoneMs?: number;
+      /** Quiet-text fallback while the DOM still claims streaming (stuck signal). */
+      stuckIdleMs?: number;
     }
   | { kind: 'stability'; silenceMs: number };
 

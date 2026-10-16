@@ -519,6 +519,18 @@ export const AiAskPayloadSchema = z.object({
   prompt: z.string().min(1).max(20000),
   provider: AiProviderIdSchema.optional(),
   feature: AiFeatureSchema.optional(),
+  /** Correlates AI_STREAM partials back to this ask. */
+  askId: z.string().min(1).max(64).optional(),
+  /** Injected by the bus from sender.tab.id — the popup's host tab. */
+  tabId: z.number().int().optional(),
+});
+
+/** Provider tab -> background -> popup tab: partial answer while the
+ *  source site streams. */
+export const AiStreamPayloadSchema = z.object({
+  askId: z.string().min(1).max(64),
+  provider: AiProviderIdSchema,
+  text: z.string().max(20000),
 });
 
 export const AiPingPayloadSchema = z

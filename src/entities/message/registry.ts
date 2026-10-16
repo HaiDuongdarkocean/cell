@@ -73,6 +73,7 @@ import {
 import {
   AiAskPayloadSchema,
   AiPingPayloadSchema,
+  AiStreamPayloadSchema,
   DictionaryChangedPayloadSchema,
   FetchCommunityAudioPayloadSchema,
   FetchImagesPayloadSchema,
@@ -446,6 +447,12 @@ export const MESSAGE_REGISTRY = {
     type: MESSAGE_TYPES.AI_ASK,
     schema: AiAskPayloadSchema,
     direction: 'panel->bg',
+    owner: 'background/handlers/aiBridge',
+  },
+  [MESSAGE_TYPES.AI_STREAM]: {
+    type: MESSAGE_TYPES.AI_STREAM,
+    schema: AiStreamPayloadSchema,
+    direction: 'cs->bg',
     owner: 'background/handlers/aiBridge',
   },
   [MESSAGE_TYPES.CARD_CREATOR_REQUEST]: {

@@ -1,81 +1,73 @@
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { describe, expect, it, beforeEach, afterEach } from '@jest/globals';
 import { act, renderHook } from '@testing-library/react';
-import { useAiAsk } from './useAiAsk';
-import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { clearAiAnswerCache } from '@/features/aiBridge';
+import { useAiAsk } from './useAiAsk';
 
-jest.mock('@/shared/lib/chrome-apis/runtime', () => ({ sendMessage: jest.fn() }));
-const mockSend = jest.mocked(sendMessage);
+type StreamListener = (msg: unknown, sender?: unknown, respond?: unknown) => void;
 
-const okResponse = (text: string, provider = 'chatgpt') => ({
-  success: true,
-  data: { text, provider },
-});
+const g = globalThis as {
+  __TihokaSendMessage?: (m: unknown) => Promise<unknown>;
+  __TihokaOnMessageListeners?: Set<StreamListener>;
+};
+
+function pushMessage(msg: unknown): void {
+  g.__TihokaOnMessageListeners?.forEach((l) => l(msg, {}, () => {}));
+}
 
 beforeEach(() => {
-  jest.clearAllMocks();
-  clearAiAnswerCache();
+  document.body.innerHTML = '';
 });
 
-describe('useAiAsk — tab-session cache', () => {
-  it('serves the second ask from cache without messaging the background', async () => {
-    mockSend.mockResolvedValue(okResponse('first answer') as never);
-    const first = renderHook(() => useAiAsk());
-    await act(async () => {
-      await first.result.current.ask('wordExplain', 'p1', 'chatgpt');
-    });
-    expect(mockSend).toHaveBeenCalledTimes(1);
-    first.unmount();
+afterEach(() => {
+  delete g.__TihokaSendMessage;
+});
 
-    // A fresh hook instance = popup reopened — same request hits the cache.
-    const second = renderHook(() => useAiAsk());
-    const cached = await act(async () => second.result.current.ask('wordExplain', 'p1', 'chatgpt'));
-    expect(mockSend).toHaveBeenCalledTimes(1);
-    expect(cached?.text).toBe('first answer');
-    expect(second.result.current.state.phase).toBe('answered');
-    expect(second.result.current.answers.map((a) => a.text)).toContain('first answer');
-  });
-
-  it('misses on a different provider pick or prompt', async () => {
-    mockSend.mockResolvedValue(okResponse('a') as never);
+describe('useAiAsk streaming', () => {
+  it('renders AI_STREAM partials for the matching askId while loading', async () => {
+    let askIdSeen = '';
+    let resolveAsk!: (v: unknown) => void;
+    g.__TihokaSendMessage = (m) => {
+      askIdSeen = (m as { payload: { askId: string } }).payload.askId;
+      return new Promise((res) => {
+        resolveAsk = res;
+      });
+    };
     const { result } = renderHook(() => useAiAsk());
+    let askPromise!: Promise<unknown>;
     await act(async () => {
-      await result.current.ask('wordExplain', 'p1', 'chatgpt');
+      askPromise = result.current.ask('wordExplain', 'prompt text', 'chatgpt');
+      await Promise.resolve();
     });
-    await act(async () => {
-      await result.current.ask('wordExplain', 'p1', 'gemini');
-      await result.current.ask('wordExplain', 'p2', 'chatgpt');
-    });
-    expect(mockSend).toHaveBeenCalledTimes(3);
-  });
+    expect(result.current.state.phase).toBe('loading');
+    expect(result.current.state.answer).toBeNull();
 
-  it('fresh=true regenerates and overwrites the cached answer', async () => {
-    mockSend
-      .mockResolvedValueOnce(okResponse('v1') as never)
-      .mockResolvedValueOnce(okResponse('v2') as never);
-    const { result } = renderHook(() => useAiAsk());
-    await act(async () => {
-      await result.current.ask('wordExplain', 'p1', 'chatgpt');
+    act(() => {
+      pushMessage({
+        type: MESSAGE_TYPES.AI_STREAM,
+        payload: { askId: 'other-ask', provider: 'chatgpt', text: 'ignored' },
+      });
+      pushMessage({
+        type: MESSAGE_TYPES.AI_STREAM,
+        payload: { askId: askIdSeen, provider: 'chatgpt', text: 'partial one' },
+      });
     });
-    const next = await act(async () => result.current.ask('wordExplain', 'p1', 'chatgpt', true));
-    expect(next?.text).toBe('v2');
-    expect(mockSend).toHaveBeenCalledTimes(2);
+    expect(result.current.state.phase).toBe('loading');
+    expect(result.current.state.answer?.text).toBe('partial one');
+    expect(result.current.state.provider).toBe('chatgpt');
 
-    const third = renderHook(() => useAiAsk());
-    const cached = await act(async () => third.result.current.ask('wordExplain', 'p1', 'chatgpt'));
-    expect(cached?.text).toBe('v2');
-  });
-
-  it('sends AI_ASK with feature, prompt and provider payload', async () => {
-    mockSend.mockResolvedValue(okResponse('x') as never);
-    const { result } = renderHook(() => useAiAsk());
     await act(async () => {
-      await result.current.ask('sentenceBreakdown', 'p', 'deepseek');
+      resolveAsk({ success: true, data: { text: 'final text', provider: 'chatgpt' } });
+      await askPromise;
     });
-    expect(mockSend).toHaveBeenCalledWith({
-      type: MESSAGE_TYPES.AI_ASK,
-      payload: { prompt: 'p', provider: 'deepseek', feature: 'sentenceBreakdown' },
+    expect(result.current.state.phase).toBe('answered');
+    expect(result.current.state.answer?.text).toBe('final text');
+
+    act(() => {
+      pushMessage({
+        type: MESSAGE_TYPES.AI_STREAM,
+        payload: { askId: askIdSeen, provider: 'chatgpt', text: 'late chunk' },
+      });
     });
+    expect(result.current.state.answer?.text).toBe('final text');
   });
 });

@@ -32,7 +32,12 @@ import type {
   VariantFrequency,
 } from '@/entities/dictionary';
 import type { DefinitionSelection, ExampleSelection } from '../logic/definitionSelection';
-import { formatAiNoteBlocks, mergeAiNoteBlocks } from '@/features/aiBridge';
+import {
+  formatAiNoteBlocks,
+  mergeAiNoteBlocks,
+  parseBreakdown,
+  type BreakdownChunk,
+} from '@/features/aiBridge';
 import type { AiAnswer, AiAskState } from '../logic/useAiAsk';
 import type { AiFeature, AiProviderId } from '@/entities/settings';
 import { DEFAULT_AI_BRIDGE_SETTINGS } from '@/shared/config/config';
@@ -110,7 +115,7 @@ export interface UseCandidateReturn {
   readonly translationError: string | null;
   readonly translationSelected: boolean;
   readonly toggleTranslation: () => void;
-  readonly translate: () => Promise<string>;
+  readonly translate: (fresh?: boolean) => Promise<string>;
   readonly selectedTranslationCount: number;
   readonly aiState: AiAskState;
   readonly aiAnswers: readonly AiAnswer[];
@@ -120,7 +125,10 @@ export interface UseCandidateReturn {
   readonly askAi: (feature: AiFeature, fresh?: boolean) => void;
   readonly aiLanguage: 'native' | 'target';
   readonly pickAiLanguage: (lang: 'native' | 'target') => void;
+  readonly checkedChunks: ReadonlySet<number>;
+  readonly toggleChunk: (index: number) => void;
   readonly translateEngine: 'google' | 'ai';
+  readonly pickTranslateSource: (source: 'google' | AiProviderId) => void;
   readonly translationSource: 'google' | 'ai' | null;
   readonly playTerm: () => void;
   readonly playSentence: () => void;
@@ -440,8 +448,21 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     });
   }, [candidate.langCode, candidate.term, contextSentence, ttsVoices]);
 
-  const buildCurrentPrefill = useCallback((): PopupCardCreatorPrefill =>
-    buildPrefill(
+  const buildCurrentPrefill = useCallback((): PopupCardCreatorPrefill => {
+    const breakdown = toolbar.aiAnswers.find((a) => a.feature === 'sentenceBreakdown');
+    const chunks = breakdown ? parseBreakdown(breakdown.text) : [];
+    const chunkDefs: DefinitionEntry[] = [...toolbar.checkedChunks]
+      .sort((a, b) => a - b)
+      .map((i) => chunks[i])
+      .filter((c): c is BreakdownChunk => c !== undefined)
+      .map((c, i) => ({
+        id: `ai-chunk-${i}`,
+        text: c.meaning ? `${c.text} — ${c.meaning}` : c.text,
+        source: 'ai',
+        examples: [],
+        defaultSelected: true,
+      }));
+    return buildPrefill(
       candidate,
       selectedDefinitions,
       exampleSelection,
@@ -455,7 +476,9 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
       toolbar.translationSelected,
       variant ? { variant, accentIndex } : undefined,
       formatAiNoteBlocks(toolbar.aiAnswers),
-    ), [toolbar, candidate, selectedDefinitions, exampleSelection, definitionSelection, contextSentence, variant, accentIndex]);
+      chunkDefs,
+    );
+  }, [toolbar, candidate, selectedDefinitions, exampleSelection, definitionSelection, contextSentence, variant, accentIndex]);
 
   // REQ-5: after a send/quick-add, push late-arriving AI answers into the open
   // card dialog so the note gains each block once, without overwriting edits.
@@ -567,7 +590,10 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     askAi: toolbar.askAi,
     aiLanguage: toolbar.aiLanguage,
     pickAiLanguage: toolbar.pickAiLanguage,
+    checkedChunks: toolbar.checkedChunks,
+    toggleChunk: toolbar.toggleChunk,
     translateEngine: toolbar.translateEngine,
+    pickTranslateSource: toolbar.pickTranslateSource,
     translationSource: toolbar.translationSource,
     playTerm,
     playSentence,

@@ -50,6 +50,25 @@
   white-space: pre-wrap;
 }
 
+.TihokaAiChunk {
+  justify-content: space-between;
+  padding: var(--space-1-5) var(--space-1);
+}
+
+.TihokaAiChunkBody {
+  min-width: 0;
+}
+
+.TihokaAiChunkText {
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.TihokaAiChunkMeta {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  margin-top: var(--space-0-5);
+}
+
 .TihokaAiNotice {
   margin: 0 0 var(--space-1);
   font-size: var(--font-size-xs);

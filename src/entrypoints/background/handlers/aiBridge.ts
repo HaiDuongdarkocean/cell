@@ -15,6 +15,7 @@ import type { AiProviderId } from '@/entities/message/dictionarySchemas';
 import {
   AiAskPayloadSchema,
   AiPingPayloadSchema,
+  AiStreamPayloadSchema,
 } from '@/entities/message/dictionarySchemas';
 import {
   AI_PROVIDERS,
@@ -54,6 +55,9 @@ interface AskAttempt {
 
 let askInFlight = false;
 let askSeq = 0;
+/** askId -> the popup's host tab; AI_STREAM partials from provider tabs are
+ *  relayed there. Set on AI_ASK entry, cleared in its finally. */
+const pendingStreams = new Map<string, number>();
 
 async function ensureBridgeTabId(adapter: AiProviderAdapter): Promise<number> {
   const tabs = await queryTabs({ url: adapter.tabUrlPatterns });
@@ -125,6 +129,7 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
 async function askOnProvider(
   adapter: AiProviderAdapter,
   prompt: string,
+  askId?: string,
 ): Promise<{ ok: true; text: string } | { ok: false; error: AiAskFailureKind; loginTabId?: number }> {
   try {
     const tabId = await ensureBridgeTabId(adapter);
@@ -133,7 +138,7 @@ async function askOnProvider(
     const reply = await withTimeout(
       sendTabMessage<BridgeReply>(tabId, {
         type: MESSAGE_TYPES.AI_ASK,
-        payload: { prompt },
+        payload: { prompt, askId },
       }),
       ATTEMPT_TIMEOUT_MS,
       'AI_ASK',
@@ -178,13 +183,18 @@ export function registerAiBridgeHandlers(ctx: BackgroundContext): void {
       const seq = ++askSeq;
       if (askInFlight) return { success: false, error: `AI ask already in flight (seq=${seq})` };
       askInFlight = true;
+      const { prompt, askId } = parsed.data;
+      const streamTab = parsed.data.tabId;
+      if (askId !== undefined && streamTab !== undefined) {
+        pendingStreams.set(askId, streamTab);
+      }
       try {
         const configured = providerOrderFromSettings(await ctx.loadSettings());
         const order = resolveProviderOrder(configured, parsed.data.provider);
         const attempts: AskAttempt[] = [];
         let loginTabId: number | undefined;
         for (const provider of order) {
-          const outcome = await askOnProvider(AI_PROVIDERS[provider], parsed.data.prompt);
+          const outcome = await askOnProvider(AI_PROVIDERS[provider], prompt, askId);
           if (outcome.ok) {
             return { success: true, data: { text: outcome.text, provider } };
           }
@@ -199,7 +209,26 @@ export function registerAiBridgeHandlers(ctx: BackgroundContext): void {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       } finally {
         askInFlight = false;
+        if (askId !== undefined) pendingStreams.delete(askId);
       }
+    },
+  );
+
+  ctx.on(
+    MESSAGE_TYPES.AI_STREAM,
+    async (request): Promise<MessageResponse> => {
+      const parsed = AiStreamPayloadSchema.safeParse(request.payload);
+      if (!parsed.success) {
+        return { success: false, error: `Invalid AI_STREAM payload: ${parsed.error.message}` };
+      }
+      const tabId = pendingStreams.get(parsed.data.askId);
+      if (tabId !== undefined) {
+        await sendTabMessage(tabId, {
+          type: MESSAGE_TYPES.AI_STREAM,
+          payload: parsed.data,
+        }).catch(() => {});
+      }
+      return { success: true };
     },
   );
 }

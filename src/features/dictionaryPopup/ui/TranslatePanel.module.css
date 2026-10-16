@@ -38,6 +38,27 @@
   color: var(--color-text-secondary);
 }
 
+button.TihokaTranslateSource {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  height: var(--chip-height, 26px);
+  padding: 0 var(--space-1) 0 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+
+button.TihokaTranslateSource:hover:not(:disabled) {
+  color: var(--color-text);
+}
+
+button.TihokaTranslateSource:disabled {
+  opacity: var(--button-disabled-opacity, 0.5);
+  cursor: default;
+}
+
 /* Mirrors .TihokaTranslateBlock metrics — same padding/border/radius so the
    skeleton occupies the exact box the loaded block will. */
 .TihokaTranslateSkeletonBlock {

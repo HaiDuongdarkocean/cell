@@ -18,6 +18,7 @@ import { ImagePanel } from './ImagePanel';
 import { TranslatePanel } from './TranslatePanel';
 import { AiAnswerPanel } from './AiAnswerPanel';
 import { aiStateForFeature, type AiAnswer } from '../logic/useAiAsk';
+import { parseBreakdown } from '@/features/aiBridge';
 import type { AiProviderId } from '@/entities/settings';
 import { LinksPanel } from './LinksPanel';
 import { DictionaryToolbar } from './DictionaryToolbar';
@@ -157,6 +158,11 @@ export function CandidateView({
       .catch(() => { /* keep defaults */ });
     return () => { isMountedRef.current = false; };
   }, []);
+
+  const breakdownAnswer =
+    (panel.aiState.feature === 'sentenceBreakdown' ? panel.aiState.answer : null) ??
+    panel.aiAnswers.find((a) => a.feature === 'sentenceBreakdown');
+  const breakdownChunks = breakdownAnswer ? parseBreakdown(breakdownAnswer.text) : undefined;
 
   return (
     <article
@@ -312,10 +318,28 @@ export function CandidateView({
             selected={panel.translationSelected}
             onToggle={panel.toggleTranslation}
             onTranslate={() => { void panel.translate(); }}
+            onRetry={() => { void panel.translate(true); }}
+            aiStreamText={panel.translateEngine === 'ai' && panel.aiState.feature === 'sentenceTranslate' && panel.aiState.phase === 'loading'
+              ? panel.aiState.answer?.text
+              : undefined}
             engine={panel.translationSource ?? panel.translateEngine}
             aiProviderLabel={(panel.translationSource ?? panel.translateEngine) === 'ai'
-              ? t(`dict.ai.provider.${panel.aiAnswers.find((a) => a.feature === 'sentenceTranslate')?.provider ?? 'chatgpt'}`)
+              ? t(`dict.ai.provider.${panel.aiState.feature === 'sentenceTranslate' && panel.aiState.provider ? panel.aiState.provider : (panel.aiAnswers.find((a) => a.feature === 'sentenceTranslate')?.provider ?? 'chatgpt')}`)
               : undefined}
+            sourceMenu={{
+              providerOrder: panel.aiProviders,
+              activeSource: panel.translateEngine === 'ai'
+                ? (panel.aiPicks.sentenceTranslate ?? panel.aiProviders[0] ?? 'chatgpt')
+                : 'google',
+              answerLanguage: panel.aiLanguage,
+              targetLang,
+              busy: panel.isTranslating || (panel.aiState.feature === 'sentenceTranslate' && panel.aiState.phase === 'loading'),
+              onPickSource: panel.pickTranslateSource,
+              onPickLanguage: (lang) => {
+                panel.pickAiLanguage(lang);
+                void panel.translate(true);
+              },
+            }}
           />
         )}
         {panel.activeTab === 'ai' && (
@@ -354,6 +378,9 @@ export function CandidateView({
               panel.askAi('sentenceBreakdown', true);
             }}
             onRetry={() => panel.askAi('sentenceBreakdown', true)}
+            chunks={breakdownChunks}
+            checkedChunks={panel.checkedChunks}
+            onToggleChunk={panel.toggleChunk}
           />
         )}
         {panel.activeTab === 'links' && <LinksPanel links={panel.links} />}

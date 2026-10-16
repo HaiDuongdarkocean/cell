@@ -36,9 +36,21 @@ Tất cả provider đều lỗi → panel hiện lỗi cuối + nút **Retry**.
 
 Nếu lỗi là chưa đăng nhập → panel nói rõ provider nào cần đăng nhập và cửa sổ đăng nhập của provider đó tự mở ra. Đăng nhập xong bấm Retry.
 
+### Trạng thái trong lúc chờ
+
+Cả 3 tab (AI / Breakdown / Translate với engine AI) chạy cùng một cơ chế:
+
+1. **Thinking…** — provider đang suy nghĩ, chưa có chữ nào.
+2. **Streaming** — chữ chạy dần vào popup y như trên trang provider, kèm caret nhấp nháy.
+3. **Kết quả** — câu trả lời cuối hiện đầy đủ khi provider xong.
+
 ### Regenerate
 
-Không thích câu trả lời → bấm **Retry** để generate lại (có thể đổi provider trước để lấy văn phong khác).
+Không thích câu trả lời → bấm **Retry** → kết quả cũ xóa, quay lại Thinking… rồi stream lại từ đầu (có thể đổi provider trước để lấy văn phong khác).
+
+### Tick chunk vào card (Breakdown)
+
+Mỗi chunk trong bảng phân tích câu có checkbox bên phải (hiện khi hover hàng). Tick chunk nào → chunk đó (text + meaning) được thêm vào field **Definitions** của card khi bấm Send/Quick Add. Mặc định chưa tick — chọn phần nào muốn giữ.
 
 ### Cache theo tab
 
@@ -53,10 +65,13 @@ Tra từ mà dictionary không có kết quả → tab AI tự mở và AI giả
 
 ## 4. Dịch câu bằng AI
 
-Tab **Translate** có chọn engine:
+Tab **Translate** bấm vào header "Sourced from…" để mở menu nguồn giống các tab AI:
 
-- **Google** — engine cũ, nhanh, giữ nguyên.
-- **AI** — dịch qua provider, đúng ngữ cảnh hơn, chậm hơn vài giây.
+- **Google** — engine máy, nhanh.
+- **ChatGPT / Gemini / DeepSeek / Claude** — dịch qua provider, đúng ngữ cảnh hơn, stream chữ như các tab khác.
+- Dưới cùng: chọn ngôn ngữ câu trả lời — **ngôn ngữ mẹ đẻ** hay **ngôn ngữ đang học** (áp dụng cho cả Google lẫn AI).
+
+Đổi nguồn hoặc ngôn ngữ → tự dịch lại ngay.
 
 Chọn AI → extension hỏi provider và đổ kết quả vào ô translation như thường. Engine mặc định chỉnh ở **Settings → AI → Sentence translation engine**.
 

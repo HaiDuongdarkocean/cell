@@ -22,3 +22,4 @@ export {
   setAiAnswer,
   clearAiAnswerCache,
 } from './answerCache';
+export { type BreakdownChunk, parseBreakdown } from './breakdown';

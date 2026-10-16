@@ -6,6 +6,9 @@ import { Skeleton } from '@/shared/ui/Skeleton';
 import { Tooltip } from '@/shared/ui/Tooltip';
 import { Menu, MenuItem, MenuSeparator } from '@/shared/ui/Menu';
 import { getLocale, t } from '@/shared/i18n';
+import { AiStreamStatus } from './AiStreamStatus';
+import type { BreakdownChunk } from '@/features/aiBridge';
+import checkStyles from './DictionaryCheckable.module.css';
 import styles from './AiAnswerPanel.module.css';
 import type { AiProviderId, AiAskState } from '../logic/useAiAsk';
 
@@ -36,6 +39,11 @@ export interface AiAnswerPanelProps {
   readonly onPickProvider: (provider: AiProviderId) => void;
   readonly onPickLanguage: (lang: 'native' | 'target') => void;
   readonly onRetry: () => void;
+  /** Parsed breakdown chunks — renders the checkable chunk list instead of
+   *  the flat answer paragraph (breakdown tab only). */
+  readonly chunks?: readonly BreakdownChunk[];
+  readonly checkedChunks?: ReadonlySet<number>;
+  readonly onToggleChunk?: (index: number) => void;
 }
 
 function providerLabel(id: AiProviderId): string {
@@ -52,6 +60,9 @@ export function AiAnswerPanel({
   onPickProvider,
   onPickLanguage,
   onRetry,
+  chunks,
+  checkedChunks,
+  onToggleChunk,
 }: AiAnswerPanelProps): React.JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -138,12 +149,57 @@ export function AiAnswerPanel({
                 {t('dict.ai.failoverNotice', [providerLabel(state.failoverFrom), providerLabel(state.provider ?? state.failoverFrom)])}
               </p>
             )}
-            <AnswerSkeleton />
+            <AiStreamStatus text={state.answer?.text} />
           </>
         )}
 
         {state.phase === 'answered' && state.answer && (
-          <p className={styles.TihokaAiText}>{state.answer.text}</p>
+          chunks && chunks.length > 0 ? (
+            <div data-tihoka-id="ai-chunk-list">
+              {chunks.map((c, i) => {
+                const checked = checkedChunks?.has(i) ?? false;
+                return (
+                  <div
+                    key={i}
+                    className={`${checkStyles.TihokaDefExampleItem} ${styles.TihokaAiChunk}`}
+                    role="checkbox"
+                    aria-checked={checked}
+                    tabIndex={0}
+                    onClick={() => onToggleChunk?.(i)}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault();
+                        onToggleChunk?.(i);
+                      }
+                    }}
+                  >
+                    <div className={styles.TihokaAiChunkBody}>
+                      <div className={styles.TihokaAiChunkText}>{c.text}</div>
+                      {c.meaning && (
+                        <div className={styles.TihokaAiChunkMeta}>
+                          <b>{t('dict.ai.chunkMeaning')}</b> {c.meaning}
+                        </div>
+                      )}
+                      {c.explanation && (
+                        <div className={styles.TihokaAiChunkMeta}>
+                          <b>{t('dict.ai.chunkExplanation')}</b> {c.explanation}
+                        </div>
+                      )}
+                    </div>
+                    <span
+                      className={`${checkStyles.TihokaDefCheck} ${checked ? checkStyles['TihokaDefCheck--checked'] : ''}`}
+                    >
+                      <span className={checkStyles.TihokaDefCheckBox} aria-hidden="true">
+                        <Icon name="check" size="md" />
+                      </span>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className={styles.TihokaAiText}>{state.answer.text}</p>
+          )
         )}
 
         {state.phase === 'error' && (

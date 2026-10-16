@@ -23,10 +23,13 @@ export function buildPrefill(
   translationSelected = false,
   variant?: { readonly variant: PosVariant; readonly accentIndex: number },
   aiNote?: string,
+  /** Ticked breakdown chunks — appended to the card's Definitions field. */
+  aiChunkDefs: readonly DefinitionEntry[] = [],
 ): PopupCardCreatorPrefill {
-  const defs = selectedDefinitions.length > 0
-    ? selectedDefinitions
-    : result.definitions;
+  const defs = [
+    ...(selectedDefinitions.length > 0 ? selectedDefinitions : result.definitions),
+    ...aiChunkDefs,
+  ];
 
   const selectedAudios = audioItems.filter((item) => audioSelection.get(item.id) ?? item.defaultSelected);
   const selectedWordAudios = selectedAudios.filter((item) => item.kind === 'word' && (item.url || item.audioBytes));
@@ -86,7 +89,9 @@ export function buildPrefill(
     audioItems,
     imageItems,
     selectedDefinitionIds: definitionSelection
-      ? [...definitionSelection.keys()].filter((k) => definitionSelection.get(k) === true)
+      ? [...definitionSelection.keys()]
+          .filter((k) => definitionSelection.get(k) === true)
+          .concat(aiChunkDefs.map((d) => d.id))
       : defs.map((d) => d.id),
     selectedExampleIds: toSelectedExampleIds(defs, exampleSelection),
     selectedAudioIds: effectiveAudios.map((item) => item.id),

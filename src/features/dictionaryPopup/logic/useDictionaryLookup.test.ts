@@ -6,6 +6,8 @@ import { useDictionaryLookup } from './useDictionaryLookup';
 const mockSendMessage = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
 jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
+  onMessage: jest.fn(),
+  removeOnMessageListener: jest.fn(),
   sendMessage: (...args: unknown[]) => mockSendMessage(...args),
 }));
 

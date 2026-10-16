@@ -46,15 +46,25 @@ export function isStreaming(adapter: AiProviderAdapter, doc: Document): boolean 
   return adapter.streamingIndicators.some((sel) => doc.querySelector(sel) !== null);
 }
 
+/** Idle-text grace before an attribute-mode reply settles without the
+ *  completeValue flip — covers enum drift ('finished') or a lagging attr
+ *  write after the text is done. */
+const ATTR_IDLE_DONE_MS = 3_000;
+/** Longer quiet tolerated while the DOM still claims streaming — a stuck
+ *  in_progress/stop indicator settles instead of hanging to the timeout.
+ *  Must exceed typical mid-answer model pauses (~thinking gaps). */
+const ATTR_IDLE_STUCK_MS = 12_000;
+
 /**
  * Resolve with the text of assistant unit #baseline+1 the moment the
  * provider's done signal fires — event-driven via MutationObserver, so the
  * reply arrives on the same tick the DOM settles, not on a poll interval.
  *
- * attribute mode: waits for unit's signal host (itself or closest
- * scopeSelector) to flip to completeValue. When the attr contract is absent
- * from the document entirely (legacy DOM), falls back to the first
- * non-empty idle text — a very fast partial stream could clip early.
+ * attribute mode: settles instantly on completeValue; otherwise watches
+ * the unit text — ATTR_IDLE_DONE_MS of quiet once nothing reports
+ * streaming, or ATTR_IDLE_STUCK_MS when the attr says streaming but the
+ * text has stopped growing (stuck signal). A genuine mid-generation
+ * pause longer than the stuck window can still clip the tail.
  * stability mode: resolves once the unit's text is unchanged for
  * silenceMs; a mid-generation pause can clip the tail.
  */
@@ -63,23 +73,23 @@ export function waitForAssistantReply(
   doc: Document,
   baseline: number,
   timeoutMs: number,
+  onPartial?: (text: string) => void,
 ): Promise<string | null> {
   const done = adapter.doneSignal;
+  const idleDoneMs = done.kind === 'stability' ? done.silenceMs : ATTR_IDLE_DONE_MS;
   return new Promise((resolve) => {
     let silenceTimer: ReturnType<typeof setTimeout> | undefined;
     let lastText = '';
+    let wasStreaming = false;
     const settle = (text: string | null) => {
       observer.disconnect();
       clearTimeout(timer);
       if (silenceTimer) clearTimeout(silenceTimer);
       resolve(text);
     };
-    const armStability = () => {
+    const armStability = (ms: number) => {
       if (silenceTimer) clearTimeout(silenceTimer);
-      silenceTimer = setTimeout(
-        () => settle(lastText),
-        done.kind === 'stability' ? done.silenceMs : 0,
-      );
+      silenceTimer = setTimeout(() => settle(lastText), ms);
     };
     const check = () => {
       const unit = assistantUnits(adapter, doc)[baseline];
@@ -90,18 +100,34 @@ export function waitForAssistantReply(
         if (!text) return;
         if (text !== lastText) {
           lastText = text;
-          armStability();
+          onPartial?.(text);
+          armStability(idleDoneMs);
         }
         return;
       }
       const host = done.scopeSelector ? unit.closest(done.scopeSelector) : unit;
       const state = host?.getAttribute(done.attr);
       if (state === done.completeValue) return settle(unitText(adapter, unit));
-      if (state != null) return;
-      if (doc.querySelector(done.scopeSelector ?? `[${done.attr}]`)) return;
-      if (isStreaming(adapter, doc)) return;
+      const streaming = state === done.streamingValue || isStreaming(adapter, doc);
       const text = unitText(adapter, unit);
-      if (text) settle(text);
+      if (!text) {
+        if (silenceTimer) clearTimeout(silenceTimer);
+        silenceTimer = undefined;
+        lastText = '';
+        wasStreaming = streaming;
+        return;
+      }
+      // Text still growing → re-arm; quiet → the current streaming flag picks
+      // the grace window. A flag flip to idle re-arms the short window.
+      if (text !== lastText || streaming !== wasStreaming) {
+        const grew = text !== lastText;
+        lastText = text;
+        wasStreaming = streaming;
+        if (grew) onPartial?.(text);
+        armStability(
+          streaming ? (done.stuckIdleMs ?? ATTR_IDLE_STUCK_MS) : (done.idleDoneMs ?? idleDoneMs),
+        );
+      }
     };
     const observer = new MutationObserver(check);
     observer.observe(doc.body, {

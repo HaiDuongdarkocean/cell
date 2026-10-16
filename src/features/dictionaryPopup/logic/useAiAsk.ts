@@ -5,7 +5,11 @@
 // hook only sees the terminal result plus the provider that answered.
 
 import { useCallback, useRef, useState } from 'react';
-import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import {
+  onMessage,
+  removeOnMessageListener,
+  sendMessage,
+} from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { MessageResponse } from '@/entities/message/types';
 import type { AiFeature, AiProviderId } from '@/entities/settings';
@@ -106,16 +110,35 @@ export function useAiAsk(): {
       setState((prev) => ({
         phase: 'loading',
         feature,
-        answer: prev.feature === feature ? prev.answer : null,
+        answer: null,
         provider: provider ?? prev.provider,
         failoverFrom: null,
         loginProviders: [],
         error: null,
       }));
+      // Streamed partials carry our askId — render them as the answer grows;
+      // the terminal AI_ASK response stays authoritative.
+      const askId = `ai-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      const onStream = (message: unknown): void => {
+        const msg = message as {
+          type?: unknown;
+          payload?: { askId?: unknown; provider?: unknown; text?: unknown };
+        };
+        if (msg?.type !== MESSAGE_TYPES.AI_STREAM || msg.payload?.askId !== askId) return;
+        const text = typeof msg.payload.text === 'string' ? msg.payload.text.trim() : '';
+        const streamProvider = msg.payload.provider as AiProviderId | undefined;
+        if (!text || !streamProvider) return;
+        setState((prev) =>
+          prev.feature === feature && prev.phase === 'loading'
+            ? { ...prev, answer: { feature, text, provider: streamProvider }, provider: streamProvider }
+            : prev,
+        );
+      };
+      onMessage(onStream);
       try {
         const res = await sendMessage<MessageResponse<AiAskResponseData>>({
           type: MESSAGE_TYPES.AI_ASK,
-          payload: { prompt, provider, feature },
+          payload: { prompt, provider, feature, askId },
         });
         const text = res?.data?.text?.trim();
         if (res?.success && text) {
@@ -156,6 +179,7 @@ export function useAiAsk(): {
         }));
       } finally {
         inFlightRef.current = false;
+        removeOnMessageListener(onStream);
       }
       return null;
     },
