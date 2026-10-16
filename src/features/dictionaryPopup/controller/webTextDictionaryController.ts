@@ -227,6 +227,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     sendLookupCancel: cancelLookup,
     onCardCreatorAction: (level, action, prefill) => cardBridge.handlePopupCardCreatorAction(level, action, prefill),
     onQuickAdd: (level, prefill) => cardBridge.handlePopupQuickAdd(level, prefill),
+    onAiNoteUpdate: (answers) => cardBridge.updateAiNote(answers),
   });
 
   const cardBridge = createCardCreatorBridge({

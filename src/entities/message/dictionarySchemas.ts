@@ -517,6 +517,43 @@ export const TranslateTermsPayloadSchema = z.object({
   cacheOnly: z.boolean().optional(),
 });
 
+// === AI bridge (AI_ASK / AI_PING — provider web-session relay) ===
+
+export const AI_PROVIDER_IDS = ['chatgpt', 'gemini', 'deepseek', 'claude'] as const;
+export const AiProviderIdSchema = z.enum(AI_PROVIDER_IDS);
+export type AiProviderId = (typeof AI_PROVIDER_IDS)[number];
+
+export const AiFeatureSchema = z.enum([
+  'wordExplain',
+  'sentenceBreakdown',
+  'sentenceTranslate',
+]);
+export type AiFeature = z.infer<typeof AiFeatureSchema>;
+
+export const AiAskPayloadSchema = z.object({
+  prompt: z.string().min(1).max(20000),
+  provider: AiProviderIdSchema.optional(),
+  feature: AiFeatureSchema.optional(),
+  /** Correlates AI_STREAM partials back to this ask. */
+  askId: z.string().min(1).max(64).optional(),
+  /** Injected by the bus from sender.tab.id — the popup's host tab. */
+  tabId: z.number().int().optional(),
+});
+
+/** Provider tab -> background -> popup tab: partial answer while the
+ *  source site streams. */
+export const AiStreamPayloadSchema = z.object({
+  askId: z.string().min(1).max(64),
+  provider: AiProviderIdSchema,
+  text: z.string().max(20000),
+});
+
+export const AiPingPayloadSchema = z
+  .object({
+    provider: AiProviderIdSchema.optional(),
+  })
+  .optional();
+
 // === Quick Add (spec §9.4 B — QUICK_ADD) ===
 
 export const QuickAddPayloadMessageSchema = QuickAddPayloadSchema.extend({

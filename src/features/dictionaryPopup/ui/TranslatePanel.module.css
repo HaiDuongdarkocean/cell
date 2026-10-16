@@ -6,6 +6,14 @@
   padding: 0 var(--space-2);
 }
 
+.TihokaTranslateHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
 .TihokaTranslateText {
   flex: 1;
   min-width: 0;
@@ -23,6 +31,32 @@
 .TihokaTranslateNative {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
+}
+
+.TihokaTranslateSource {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+button.TihokaTranslateSource {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  height: var(--chip-height, 26px);
+  padding: 0 var(--space-1) 0 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+
+button.TihokaTranslateSource:hover:not(:disabled) {
+  color: var(--color-text);
+}
+
+button.TihokaTranslateSource:disabled {
+  opacity: var(--button-disabled-opacity, 0.5);
+  cursor: default;
 }
 
 /* Mirrors .TihokaTranslateBlock metrics — same padding/border/radius so the

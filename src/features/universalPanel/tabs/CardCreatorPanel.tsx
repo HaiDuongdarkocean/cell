@@ -92,6 +92,7 @@ function buildOpenContext(
           definitions: prefillDefinitions(context, frequencyFormat, frequencyThresholds),
           sentence: context.contextSentence,
           sentenceTranslation: context.translation,
+          note: context.note,
           wordAudioUrls: context.wordAudioUrls,
           sentenceAudioUrls: context.sentenceAudioUrls,
           imageUrls: context.imageUrls,

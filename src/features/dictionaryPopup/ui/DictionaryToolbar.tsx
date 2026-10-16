@@ -10,6 +10,8 @@ const TABS: { key: PopupTab; icon: IconName; labelKey: MessageKey }[] = [
   { key: 'audio', icon: 'audioWave', labelKey: 'dict.tab.audio' },
   { key: 'image', icon: 'image', labelKey: 'dict.tab.image' },
   { key: 'translate', icon: 'languages', labelKey: 'dict.tab.translate' },
+  { key: 'ai', icon: 'atom', labelKey: 'dict.tab.ai' },
+  { key: 'breakdown', icon: 'scanText', labelKey: 'dict.tab.breakdown' },
   { key: 'links', icon: 'link', labelKey: 'dict.tab.links' },
   { key: 'pronunciation', icon: 'microphone', labelKey: 'dict.tab.pronunciation' },
 ];
@@ -21,6 +23,8 @@ export interface DictionaryToolbarProps {
     readonly audio?: number;
     readonly image?: number;
     readonly translate?: number;
+    readonly ai?: number;
+    readonly breakdown?: number;
     readonly links?: number;
     readonly pronunciation?: number;
   };

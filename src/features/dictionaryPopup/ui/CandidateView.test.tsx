@@ -29,6 +29,8 @@ jest.mock('@/features/pronunciation/services/pronunciationEngineSingleton', () =
 }));
 
 jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
+  onMessage: jest.fn(),
+  removeOnMessageListener: jest.fn(),
   sendMessage: jest.fn(),
 }));
 

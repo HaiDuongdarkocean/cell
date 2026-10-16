@@ -183,6 +183,7 @@ const FULL_INPUT = {
   localPlayer: resolve(import.meta.dirname, 'src/entrypoints/local-player/index.html'),
   reader: resolve(import.meta.dirname, 'src/entrypoints/reader/index.html'),
   srsStudy: resolve(import.meta.dirname, 'src/entrypoints/srs-study/index.html'),
+  aiLab: resolve(import.meta.dirname, 'src/entrypoints/ai-lab/index.html'),
 };
 
 export default defineConfig(({ mode }) => {

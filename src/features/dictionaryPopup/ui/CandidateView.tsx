@@ -16,6 +16,10 @@ import { PosVariantNav } from './PosVariantNav';
 import { PronunciationAudioPanel } from './PronunciationAudioPanel';
 import { ImagePanel } from './ImagePanel';
 import { TranslatePanel } from './TranslatePanel';
+import { AiAnswerPanel } from './AiAnswerPanel';
+import { aiStateForFeature, type AiAnswer } from '../logic/useAiAsk';
+import { parseBreakdown } from '@/features/aiBridge';
+import type { AiProviderId } from '@/entities/settings';
 import { LinksPanel } from './LinksPanel';
 import { DictionaryToolbar } from './DictionaryToolbar';
 import { Tooltip } from '@/shared/ui/Tooltip';
@@ -60,6 +64,9 @@ export interface CandidateViewProps {
   readonly targetLang: string;
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
+  /** Pushes the updated AI answer set after a send so an open card dialog can
+   *  merge late blocks into the note field (spec ai-bridge-dictionary REQ-5). */
+  readonly onAiNoteUpdate?: (answers: readonly AiAnswer[]) => void;
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Called from the empty-definitions state to open Settings → Resources. */
   readonly onOpenSettings?: () => void;
@@ -81,6 +88,7 @@ export function CandidateView({
   targetLang,
   onSendToCard,
   onQuickAdd,
+  onAiNoteUpdate,
   onStatusChange,
   onOpenSettings,
   defaultActiveTab,
@@ -95,6 +103,7 @@ export function CandidateView({
     targetLang,
     onSendToCard,
     onQuickAdd,
+    onAiNoteUpdate,
     onStatusChange,
     defaultActiveTab,
     selectionSnapshot,
@@ -149,6 +158,11 @@ export function CandidateView({
       .catch(() => { /* keep defaults */ });
     return () => { isMountedRef.current = false; };
   }, []);
+
+  const breakdownAnswer =
+    (panel.aiState.feature === 'sentenceBreakdown' ? panel.aiState.answer : null) ??
+    panel.aiAnswers.find((a) => a.feature === 'sentenceBreakdown');
+  const breakdownChunks = breakdownAnswer ? parseBreakdown(breakdownAnswer.text) : undefined;
 
   return (
     <article
@@ -300,10 +314,73 @@ export function CandidateView({
             targetLang={targetLang}
             translation={panel.translation}
             error={panel.translationError}
-            loading={panel.isTranslating}
+            loading={panel.isTranslating || (panel.translateEngine === 'ai' && panel.aiState.phase === 'loading' && panel.aiState.feature === 'sentenceTranslate')}
             selected={panel.translationSelected}
             onToggle={panel.toggleTranslation}
             onTranslate={() => { void panel.translate(); }}
+            onRetry={() => { void panel.translate(true); }}
+            aiStreamText={panel.translateEngine === 'ai' && panel.aiState.feature === 'sentenceTranslate' && panel.aiState.phase === 'loading'
+              ? panel.aiState.answer?.text
+              : undefined}
+            engine={panel.translationSource ?? panel.translateEngine}
+            aiProviderLabel={(panel.translationSource ?? panel.translateEngine) === 'ai'
+              ? t(`dict.ai.provider.${panel.aiState.feature === 'sentenceTranslate' && panel.aiState.provider ? panel.aiState.provider : (panel.aiAnswers.find((a) => a.feature === 'sentenceTranslate')?.provider ?? 'chatgpt')}`)
+              : undefined}
+            sourceMenu={{
+              providerOrder: panel.aiProviders,
+              activeSource: panel.translateEngine === 'ai'
+                ? (panel.aiPicks.sentenceTranslate ?? panel.aiProviders[0] ?? 'chatgpt')
+                : 'google',
+              answerLanguage: panel.aiLanguage,
+              targetLang,
+              busy: panel.isTranslating || (panel.aiState.feature === 'sentenceTranslate' && panel.aiState.phase === 'loading'),
+              onPickSource: panel.pickTranslateSource,
+              onPickLanguage: (lang) => {
+                panel.pickAiLanguage(lang);
+                void panel.translate(true);
+              },
+            }}
+          />
+        )}
+        {panel.activeTab === 'ai' && (
+          <AiAnswerPanel
+            state={aiStateForFeature(panel.aiState, panel.aiAnswers, 'wordExplain')}
+            providerOrder={panel.aiProviders}
+            selectedProvider={panel.aiPicks.wordExplain ?? panel.aiProviders[0] ?? 'chatgpt'}
+            answerLanguage={panel.aiLanguage}
+            targetLang={targetLang}
+            busy={panel.aiState.phase === 'loading'}
+            onPickProvider={(p: AiProviderId) => {
+              panel.pickAiProvider('wordExplain', p);
+              panel.askAi('wordExplain');
+            }}
+            onPickLanguage={(lang) => {
+              panel.pickAiLanguage(lang);
+              panel.askAi('wordExplain', true);
+            }}
+            onRetry={() => panel.askAi('wordExplain', true)}
+          />
+        )}
+        {panel.activeTab === 'breakdown' && (
+          <AiAnswerPanel
+            state={aiStateForFeature(panel.aiState, panel.aiAnswers, 'sentenceBreakdown')}
+            providerOrder={panel.aiProviders}
+            selectedProvider={panel.aiPicks.sentenceBreakdown ?? panel.aiProviders[0] ?? 'chatgpt'}
+            answerLanguage={panel.aiLanguage}
+            targetLang={targetLang}
+            busy={panel.aiState.phase === 'loading'}
+            onPickProvider={(p: AiProviderId) => {
+              panel.pickAiProvider('sentenceBreakdown', p);
+              panel.askAi('sentenceBreakdown');
+            }}
+            onPickLanguage={(lang) => {
+              panel.pickAiLanguage(lang);
+              panel.askAi('sentenceBreakdown', true);
+            }}
+            onRetry={() => panel.askAi('sentenceBreakdown', true)}
+            chunks={breakdownChunks}
+            checkedChunks={panel.checkedChunks}
+            onToggleChunk={panel.toggleChunk}
           />
         )}
         {panel.activeTab === 'links' && <LinksPanel links={panel.links} />}

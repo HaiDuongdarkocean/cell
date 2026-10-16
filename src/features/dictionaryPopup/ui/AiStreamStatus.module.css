@@ -1,0 +1,49 @@
+/* AiStreamStatus — shared thinking/streaming states (spec ai-bridge-dictionary). */
+
+.TihokaAiText {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.TihokaAiThinking {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.TihokaAiThinking svg {
+  animation: tihokaAiThink 1.4s ease-in-out infinite;
+}
+
+@keyframes tihokaAiThink {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.TihokaAiCaret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: currentColor;
+  animation: tihokaAiCaretBlink 1s step-end infinite;
+}
+
+@keyframes tihokaAiCaretBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}

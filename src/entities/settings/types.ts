@@ -504,6 +504,9 @@ export interface Settings {
   // === Anki status sync (spec anki-known-seed — schema v34) ===
   /** Anki ↔ wordStatus ↔ SRS status synchronization. */
   readonly ankiStatusSync?: AnkiStatusSyncSettings;
+  // === AI bridge (spec ai-bridge-dictionary — REQ-6/REQ-7/REQ-10) ===
+  /** AI provider defaults, failover order, and custom prompt templates. */
+  readonly aiBridge?: AiBridgeSettings;
 }
 
 /** Anki status sync settings slice (spec anki-known-seed). */
@@ -520,6 +523,36 @@ export interface AnkiStatusSyncSettings {
 export interface CondensedAudioSettings {
   /** Padding applied around each merged cue range in ms. Default: 500. */
   readonly padMs: number;
+}
+
+// === AI Bridge (spec ai-bridge-dictionary) ===
+
+/** AI provider ids. Union duplicated locally — provider adapters live in features/aiBridge (separate lane). */
+export type AiProviderId = 'chatgpt' | 'gemini' | 'deepseek' | 'claude';
+
+/** AI features with user-editable prompt templates. */
+export type AiFeature = 'wordExplain' | 'sentenceBreakdown' | 'sentenceTranslate';
+
+/** System + user prompt template pair for one AI feature. */
+export interface AiPromptTemplate {
+  readonly system: string;
+  readonly user: string;
+}
+
+/** AI bridge settings slice (spec ai-bridge-dictionary — REQ-6, REQ-7, REQ-10). */
+export interface AiBridgeSettings {
+  /** Provider used when the popup has no per-session pick. Default: 'chatgpt'. */
+  readonly defaultProvider: AiProviderId;
+  /** Ordered failover chain — covers every provider exactly once. */
+  readonly providerOrder: readonly AiProviderId[];
+  /** Editable prompt templates per feature. Placeholders: [WORD] [SENTENCE] [TARGET_LANG] [INTERFACE_LANG] [ANSWER_LANG]. */
+  readonly prompts: Record<AiFeature, AiPromptTemplate>;
+  /** Language the AI writes its answer in — feeds [ANSWER_LANG]. Default: 'native' (interface language). */
+  readonly answerLanguage: 'native' | 'target';
+  /** Sentence-translate engine. Default: 'google'. */
+  readonly sentenceTranslateEngine: 'google' | 'ai';
+  /** Auto-open the AI tab when dictionary lookup returns no results. Default: true. */
+  readonly autoOpenOnMiss: boolean;
 }
 
 // === Subtitle Search API Key (schema v21) ===

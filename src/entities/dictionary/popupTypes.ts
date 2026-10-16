@@ -23,7 +23,7 @@ export type WordStatus = 'unknown' | 'known' | 'tracking' | 'ignore';
 export const STATUS_CYCLE: readonly WordStatus[] = ['unknown', 'known', 'ignore'];
 export type TriggerMode = 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt';
 export type ClickModifierState = Pick<MouseEvent, 'ctrlKey' | 'shiftKey' | 'altKey'>;
-export type PopupTab = 'audio' | 'image' | 'translate' | 'links' | 'pronunciation';
+export type PopupTab = 'audio' | 'image' | 'translate' | 'ai' | 'breakdown' | 'links' | 'pronunciation';
 export type SrsDestination = 'anki';
 export type AudioSourceKind = 'community' | 'system-tts' | 'cloud-tts' | 'local' | 'espeak';
 export type AudioKind = 'word' | 'sentence';
@@ -430,6 +430,8 @@ export interface PopupCardCreatorPrefill extends PopupSelectionSnapshot {
   readonly rawDefinitions: readonly string[];
   readonly contextSentence: string;
   readonly translation?: string;
+  /** AI answer blocks (spec ai-bridge-dictionary REQ-5) — appended to the card note. */
+  readonly note?: string;
   readonly wordAudioUrls?: readonly string[];
   readonly sentenceAudioUrls?: readonly string[];
   readonly imageUrls?: readonly string[];

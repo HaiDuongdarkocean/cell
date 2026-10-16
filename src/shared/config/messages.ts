@@ -48,6 +48,9 @@ export const MESSAGE_TYPES = {
   FETCH_REQUEST: 'FETCH_REQUEST',
   TRANSLATE: 'TRANSLATE',
   TRANSLATE_TERMS: 'TRANSLATE_TERMS',
+  AI_PING: 'AI_PING',
+  AI_ASK: 'AI_ASK',
+  AI_STREAM: 'AI_STREAM',
   CARD_CREATOR_REQUEST: 'CARD_CREATOR_REQUEST',
   // === Popup Dictionary (spec §9.4 B) — scrape / status / Anki ===
   // Worker dict match uses the dedicated requestId bridge, NOT this fan-out.

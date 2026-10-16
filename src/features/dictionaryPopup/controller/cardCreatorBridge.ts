@@ -19,7 +19,9 @@ import {
   mountCardCreatorDialog,
   prefetchAnkiConnectData,
   seekAndWaitReady,
+  useCardCreatorStore,
 } from '@/features/cardCreator';
+import { mergeAiNoteBlocks, type AiNoteAnswer } from '@/features/aiBridge';
 import type {
   CardCreatorAction,
   CardCreatorMountController,
@@ -80,6 +82,10 @@ export interface CardCreatorBridge {
     prefill: PopupCardCreatorPrefill,
   ) => OnCardCreatorActionResult;
   readonly handlePopupQuickAdd: (level: PopupLevel, prefill: PopupCardCreatorPrefill) => void;
+  /** Merge late-arriving AI answers into the open card dialog's note field
+   *  (spec ai-bridge-dictionary REQ-5) — append-only per feature, preserves
+   *  user edits already in the field. */
+  readonly updateAiNote: (answers: readonly AiNoteAnswer[]) => void;
   readonly unmount: () => void;
 }
 
@@ -196,6 +202,7 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
       frequencyStars: selection?.frequencyStars,
       audioItems: selection?.audioItems,
       imageItems: selection?.imageItems,
+      note: context.prefill?.note ?? selection?.note,
       video: context.video,
       cue: context.cue,
       initialMedia: context.initialMedia,
@@ -315,6 +322,7 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
         definitions: definitionsText,
         sentenceTranslation: prefill.translation,
         sentence: prefill.contextSentence,
+        note: prefill.note,
         wordAudioUrls: prefill.wordAudioUrls,
         sentenceAudioUrls: captureVideo ? [] : prefill.sentenceAudioUrls,
         imageUrls: prefill.imageUrls,
@@ -619,6 +627,7 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
               definitions: definitionsFieldText(prefill, settings.dictionaryPopup?.frequencyDisplay, settings.frequencyBands),
               sentence: prefill.contextSentence,
               sentenceTranslation: prefill.translation,
+              note: prefill.note,
               wordAudioUrls: prefill.wordAudioUrls,
               sentenceAudioUrls: captureVideo ? [] : prefill.sentenceAudioUrls,
               imageUrls: prefill.imageUrls,
@@ -665,6 +674,7 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
               definitions: definitionsFieldText(prefill, settings.dictionaryPopup?.frequencyDisplay, settings.frequencyBands),
               sentence: media.cue?.targetText || prefill.contextSentence,
               sentenceTranslation,
+              note: prefill.note,
               wordAudioUrls: media.wordAudioUrls,
               sentenceAudioUrls: media.sentenceAudioUrls,
               imageUrls: media.imageUrls,
@@ -710,6 +720,15 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
     }
   }
 
+  function updateAiNote(answers: readonly AiNoteAnswer[]): void {
+    if (answers.length === 0) return;
+    if (!cardCreatorMount?.isOpen() && !deps.panelController?.isOpen()) return;
+    useCardCreatorStore.getState().setDraft((prev) => ({
+      ...prev,
+      fields: { ...prev.fields, note: mergeAiNoteBlocks(prev.fields.note ?? '', answers) },
+    }));
+  }
+
   function unmount(): void {
     cardCreatorMount?.unmount();
     cardCreatorMount = null;
@@ -722,6 +741,7 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
     isOpen,
     handlePopupCardCreatorAction,
     handlePopupQuickAdd,
+    updateAiNote,
     unmount,
   };
 }

@@ -100,6 +100,19 @@
       "run_at": "document_start",
       "world": "MAIN",
       "all_frames": false
+    },
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://gemini.google.com/*",
+        "https://chat.deepseek.com/*",
+        "https://claude.ai/*"
+      ],
+      "js": [
+        "src/entrypoints/content/providerBridge.ts"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
     }
   ],
   "options_page": "public/options.html",

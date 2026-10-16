@@ -71,6 +71,9 @@ import {
   VideoTimeUpdatePayloadSchema,
 } from './schema';
 import {
+  AiAskPayloadSchema,
+  AiPingPayloadSchema,
+  AiStreamPayloadSchema,
   DictionaryChangedPayloadSchema,
   FetchCommunityAudioPayloadSchema,
   FetchImagesPayloadSchema,
@@ -435,6 +438,24 @@ export const MESSAGE_REGISTRY = {
     schema: TranslateTermsPayloadSchema,
     direction: 'cs->bg',
     owner: 'background/handlers/translateTerms',
+  },
+  [MESSAGE_TYPES.AI_PING]: {
+    type: MESSAGE_TYPES.AI_PING,
+    schema: AiPingPayloadSchema,
+    direction: 'panel->bg',
+    owner: 'background/handlers/aiBridge',
+  },
+  [MESSAGE_TYPES.AI_ASK]: {
+    type: MESSAGE_TYPES.AI_ASK,
+    schema: AiAskPayloadSchema,
+    direction: 'panel->bg',
+    owner: 'background/handlers/aiBridge',
+  },
+  [MESSAGE_TYPES.AI_STREAM]: {
+    type: MESSAGE_TYPES.AI_STREAM,
+    schema: AiStreamPayloadSchema,
+    direction: 'cs->bg',
+    owner: 'background/handlers/aiBridge',
   },
   [MESSAGE_TYPES.CARD_CREATOR_REQUEST]: {
     type: MESSAGE_TYPES.CARD_CREATOR_REQUEST,

@@ -24,6 +24,7 @@ import { observeScrollDirection } from '@/shared/lib/dom/observeScrollDirection'
 import { collapseOnScroll, findScrollableAncestor } from '@/shared/lib/dom/collapseOnScroll';
 import { CandidateView } from './CandidateView';
 import type { LookupResult, WordStatus, PopupCardCreatorPrefill, PopupTab, PopupSelectionSnapshot } from '@/entities/dictionary';
+import type { AiNoteAnswer } from '@/features/aiBridge';
 import candidateStyles from './CandidateView.module.css';
 import checkStyles from './DictionaryCheckable.module.css';
 import toolbarStyles from './DictionaryToolbar.module.css';
@@ -46,6 +47,8 @@ interface DictionaryPanelViewProps {
   readonly onResult?: (winner: LookupResult, candidates: readonly LookupResult[], contextSentence: string) => void;
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
+  /** Late AI answers after a send — merged into the open card's note field. */
+  readonly onAiNoteUpdate?: (answers: readonly AiNoteAnswer[]) => void;
   /** Called when the user cycles a candidate's word status. */
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Called when the user switches to a different candidate (chip click). */
@@ -89,6 +92,7 @@ export function DictionaryPanelView({
   onResult,
   onSendToCard,
   onQuickAdd,
+  onAiNoteUpdate,
   onStatusChange,
   onCandidateChange,
   onOpenSettings,
@@ -519,6 +523,7 @@ export function DictionaryPanelView({
                   targetLang={targetLang}
                   onSendToCard={onSendToCard}
                   onQuickAdd={onQuickAdd}
+                  onAiNoteUpdate={onAiNoteUpdate}
                   onStatusChange={onStatusChange}
                   onOpenSettings={onOpenSettings}
                   defaultActiveTab={defaultActiveTab}

@@ -6,6 +6,8 @@ import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 
 jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
+  onMessage: jest.fn(),
+  removeOnMessageListener: jest.fn(),
   sendMessage: jest.fn(),
 }));
 

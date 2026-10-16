@@ -7,6 +7,8 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { LookupResult } from '@/entities/dictionary';
 
 jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
+  onMessage: jest.fn(),
+  removeOnMessageListener: jest.fn(),
   sendMessage: jest.fn(),
 }));
 

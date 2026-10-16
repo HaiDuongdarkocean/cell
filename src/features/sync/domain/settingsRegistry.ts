@@ -64,6 +64,7 @@ export const SETTINGS_FIELD_REGISTRY: FieldRegistry = {
     ['pronunciation'],
     ['frequencyBands'],
     ['srs'],
+    ['aiBridge'],
   ],
   excludedPaths: [
     ['schemaVersion'],

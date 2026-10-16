@@ -32,6 +32,15 @@ import type {
   VariantFrequency,
 } from '@/entities/dictionary';
 import type { DefinitionSelection, ExampleSelection } from '../logic/definitionSelection';
+import {
+  formatAiNoteBlocks,
+  mergeAiNoteBlocks,
+  parseBreakdown,
+  type BreakdownChunk,
+} from '@/features/aiBridge';
+import type { AiAnswer, AiAskState } from '../logic/useAiAsk';
+import type { AiFeature, AiProviderId } from '@/entities/settings';
+import { DEFAULT_AI_BRIDGE_SETTINGS } from '@/shared/config/config';
 
 const ACCENT_PREF_KEY = 'dictAccentPreference';
 let accentPrefCache: string | undefined;
@@ -43,6 +52,9 @@ export interface UseCandidateOptions {
   readonly targetLang: string;
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
+  /** Live AI-note push after a send/quick-add: invoked whenever the answer set
+   *  changes so an already-open card dialog can merge the late blocks. */
+  readonly onAiNoteUpdate?: (answers: readonly AiAnswer[]) => void;
   /** Called when the user cycles the word status inside this candidate. */
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Default media tab to open when this candidate first appears. */
@@ -103,8 +115,21 @@ export interface UseCandidateReturn {
   readonly translationError: string | null;
   readonly translationSelected: boolean;
   readonly toggleTranslation: () => void;
-  readonly translate: () => Promise<string>;
+  readonly translate: (fresh?: boolean) => Promise<string>;
   readonly selectedTranslationCount: number;
+  readonly aiState: AiAskState;
+  readonly aiAnswers: readonly AiAnswer[];
+  readonly aiProviders: readonly AiProviderId[];
+  readonly aiPicks: Readonly<Partial<Record<AiFeature, AiProviderId>>>;
+  readonly pickAiProvider: (feature: AiFeature, provider: AiProviderId) => void;
+  readonly askAi: (feature: AiFeature, fresh?: boolean) => void;
+  readonly aiLanguage: 'native' | 'target';
+  readonly pickAiLanguage: (lang: 'native' | 'target') => void;
+  readonly checkedChunks: ReadonlySet<number>;
+  readonly toggleChunk: (index: number) => void;
+  readonly translateEngine: 'google' | 'ai';
+  readonly pickTranslateSource: (source: 'google' | AiProviderId) => void;
+  readonly translationSource: 'google' | 'ai' | null;
   readonly playTerm: () => void;
   readonly playSentence: () => void;
   readonly autoplayCount: number;
@@ -120,6 +145,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     targetLang,
     onSendToCard,
     onQuickAdd,
+    onAiNoteUpdate,
     onStatusChange,
     defaultActiveTab,
     selectionSnapshot,
@@ -422,8 +448,21 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     });
   }, [candidate.langCode, candidate.term, contextSentence, ttsVoices]);
 
-  const buildCurrentPrefill = useCallback((): PopupCardCreatorPrefill =>
-    buildPrefill(
+  const buildCurrentPrefill = useCallback((): PopupCardCreatorPrefill => {
+    const breakdown = toolbar.aiAnswers.find((a) => a.feature === 'sentenceBreakdown');
+    const chunks = breakdown ? parseBreakdown(breakdown.text) : [];
+    const chunkDefs: DefinitionEntry[] = [...toolbar.checkedChunks]
+      .sort((a, b) => a - b)
+      .map((i) => chunks[i])
+      .filter((c): c is BreakdownChunk => c !== undefined)
+      .map((c, i) => ({
+        id: `ai-chunk-${i}`,
+        text: c.meaning ? `${c.text} — ${c.meaning}` : c.text,
+        source: 'ai',
+        examples: [],
+        defaultSelected: true,
+      }));
+    return buildPrefill(
       candidate,
       selectedDefinitions,
       exampleSelection,
@@ -436,16 +475,63 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
       toolbar.imageSelection,
       toolbar.translationSelected,
       variant ? { variant, accentIndex } : undefined,
-    ), [toolbar, candidate, selectedDefinitions, exampleSelection, definitionSelection, contextSentence, variant, accentIndex]);
+      formatAiNoteBlocks(toolbar.aiAnswers),
+      chunkDefs,
+    );
+  }, [toolbar, candidate, selectedDefinitions, exampleSelection, definitionSelection, contextSentence, variant, accentIndex]);
+
+  // REQ-5: after a send/quick-add, push late-arriving AI answers into the open
+  // card dialog so the note gains each block once, without overwriting edits.
+  const sentNoteRef = useRef<string | null>(null);
+  const onAiNoteUpdateRef = useRef(onAiNoteUpdate);
+  useEffect(() => {
+    onAiNoteUpdateRef.current = onAiNoteUpdate;
+  });
+  useEffect(() => {
+    if (sentNoteRef.current === null) return;
+    const next = mergeAiNoteBlocks(sentNoteRef.current, toolbar.aiAnswers);
+    if (next !== sentNoteRef.current) {
+      sentNoteRef.current = next;
+      onAiNoteUpdateRef.current?.(toolbar.aiAnswers);
+    }
+  }, [toolbar.aiAnswers]);
+
+  // REQ-2: dictionary miss → auto-open the AI tab once per candidate.
+  // The settings read resolves after the user may have picked a tab — a manual
+  // choice always wins over the auto-open.
+  const missAutoOpenedRef = useRef(false);
+  const activeTabRef = useRef(toolbar.activeTab);
+  useEffect(() => {
+    activeTabRef.current = toolbar.activeTab;
+  }, [toolbar.activeTab]);
+  useEffect(() => {
+    missAutoOpenedRef.current = false;
+  }, [candidate.term, candidate.langCode]);
+  useEffect(() => {
+    if (missAutoOpenedRef.current || displayDefinitions.length > 0 || !candidate.term) return;
+    missAutoOpenedRef.current = true;
+    const openAi = (): void => {
+      if (!activeTabRef.current) toolbar.setActiveTab('ai');
+    };
+    void loadSettings()
+      .then((s) => {
+        if (s.aiBridge?.autoOpenOnMiss ?? DEFAULT_AI_BRIDGE_SETTINGS.autoOpenOnMiss) openAi();
+      })
+      .catch(openAi);
+  }, [displayDefinitions.length, candidate.term, candidate.langCode, toolbar.setActiveTab]);
 
   const sendToCard = useCallback(async (): Promise<void> => {
     if (!onSendToCard) return;
-    onSendToCard(buildCurrentPrefill());
+    const prefill = buildCurrentPrefill();
+    sentNoteRef.current = prefill.note ?? '';
+    onSendToCard(prefill);
   }, [onSendToCard, buildCurrentPrefill]);
 
   const quickAdd = useCallback(async (): Promise<void> => {
     if (!onQuickAdd) return;
-    onQuickAdd(buildCurrentPrefill());
+    const prefill = buildCurrentPrefill();
+    sentNoteRef.current = prefill.note ?? '';
+    onQuickAdd(prefill);
   }, [onQuickAdd, buildCurrentPrefill]);
 
   return {
@@ -496,6 +582,19 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     toggleTranslation: toolbar.toggleTranslation,
     translate: toolbar.translate,
     selectedTranslationCount: toolbar.selectedTranslationCount,
+    aiState: toolbar.aiState,
+    aiAnswers: toolbar.aiAnswers,
+    aiProviders: toolbar.aiProviders,
+    aiPicks: toolbar.aiPicks,
+    pickAiProvider: toolbar.pickAiProvider,
+    askAi: toolbar.askAi,
+    aiLanguage: toolbar.aiLanguage,
+    pickAiLanguage: toolbar.pickAiLanguage,
+    checkedChunks: toolbar.checkedChunks,
+    toggleChunk: toolbar.toggleChunk,
+    translateEngine: toolbar.translateEngine,
+    pickTranslateSource: toolbar.pickTranslateSource,
+    translationSource: toolbar.translationSource,
     playTerm,
     playSentence,
     autoplayCount,
