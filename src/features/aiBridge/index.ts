@@ -15,3 +15,10 @@ export {
   validatePromptPlaceholders,
   composePrompt,
 } from './prompts';
+export {
+  type CachedAiAnswer,
+  aiAnswerCacheKey,
+  getAiAnswer,
+  setAiAnswer,
+  clearAiAnswerCache,
+} from './answerCache';

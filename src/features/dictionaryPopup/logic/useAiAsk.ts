@@ -9,6 +9,7 @@ import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { MessageResponse } from '@/entities/message/types';
 import type { AiFeature, AiProviderId } from '@/entities/settings';
+import { aiAnswerCacheKey, getAiAnswer, setAiAnswer } from '@/features/aiBridge';
 
 export type { AiFeature, AiProviderId } from '@/entities/settings';
 
@@ -67,7 +68,8 @@ export function useAiAsk(): {
   readonly state: AiAskState;
   /** All answered features this session — feeds the card note append. */
   readonly answers: readonly AiAnswer[];
-  readonly ask: (feature: AiFeature, prompt: string, provider?: AiProviderId) => Promise<AiAnswer | null>;
+  /** `fresh` bypasses the tab-session cache (retry/regenerate). */
+  readonly ask: (feature: AiFeature, prompt: string, provider?: AiProviderId, fresh?: boolean) => Promise<AiAnswer | null>;
   readonly retry: (prompt: string) => Promise<AiAnswer | null>;
   readonly reset: () => void;
 } {
@@ -77,8 +79,24 @@ export function useAiAsk(): {
   const inFlightRef = useRef(false);
 
   const ask = useCallback(
-    async (feature: AiFeature, prompt: string, provider?: AiProviderId): Promise<AiAnswer | null> => {
+    async (feature: AiFeature, prompt: string, provider?: AiProviderId, fresh = false): Promise<AiAnswer | null> => {
       if (inFlightRef.current || !prompt.trim()) return null;
+      const cacheKey = aiAnswerCacheKey(feature, provider, prompt);
+      const cached = fresh ? undefined : getAiAnswer(cacheKey);
+      if (cached) {
+        lastAskRef.current = { feature, provider };
+        const answer: AiAnswer = { feature, text: cached.text, provider: cached.provider };
+        setAnswers((prev) => [...prev.filter((a) => a.feature !== feature), answer]);
+        setState({
+          phase: 'answered',
+          feature,
+          answer,
+          provider: answer.provider,
+          failoverFrom: null,
+          error: null,
+        });
+        return answer;
+      }
       inFlightRef.current = true;
       lastAskRef.current = { feature, provider };
       setState((prev) => ({
@@ -102,6 +120,7 @@ export function useAiAsk(): {
             provider: res.data?.provider ?? provider ?? 'chatgpt',
           };
           const failedAttempt = res.data?.attempts?.find((a) => a.provider !== answer.provider);
+          setAiAnswer(cacheKey, answer);
           setAnswers((prev) => [...prev.filter((a) => a.feature !== feature), answer]);
           setState({
             phase: 'answered',
@@ -136,7 +155,7 @@ export function useAiAsk(): {
     async (prompt: string): Promise<AiAnswer | null> => {
       const last = lastAskRef.current;
       if (!last) return null;
-      return ask(last.feature, prompt, last.provider);
+      return ask(last.feature, prompt, last.provider, true);
     },
     [ask],
   );

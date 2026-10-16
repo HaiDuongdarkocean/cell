@@ -329,7 +329,7 @@ export function CandidateView({
               panel.pickAiProvider('wordExplain', p);
               panel.askAi('wordExplain');
             }}
-            onRetry={() => panel.askAi('wordExplain')}
+            onRetry={() => panel.askAi('wordExplain', true)}
           />
         )}
         {panel.activeTab === 'breakdown' && (
@@ -342,7 +342,7 @@ export function CandidateView({
               panel.pickAiProvider('sentenceBreakdown', p);
               panel.askAi('sentenceBreakdown');
             }}
-            onRetry={() => panel.askAi('sentenceBreakdown')}
+            onRetry={() => panel.askAi('sentenceBreakdown', true)}
           />
         )}
         {panel.activeTab === 'links' && <LinksPanel links={panel.links} />}

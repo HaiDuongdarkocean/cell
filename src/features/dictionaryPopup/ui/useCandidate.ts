@@ -117,7 +117,7 @@ export interface UseCandidateReturn {
   readonly aiProviders: readonly AiProviderId[];
   readonly aiPicks: Readonly<Partial<Record<AiFeature, AiProviderId>>>;
   readonly pickAiProvider: (feature: AiFeature, provider: AiProviderId) => void;
-  readonly askAi: (feature: AiFeature) => void;
+  readonly askAi: (feature: AiFeature, fresh?: boolean) => void;
   readonly translateEngine: 'google' | 'ai';
   readonly setTranslateEngine: (engine: 'google' | 'ai') => void;
   readonly playTerm: () => void;

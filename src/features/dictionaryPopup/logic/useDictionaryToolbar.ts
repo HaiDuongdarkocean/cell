@@ -110,7 +110,8 @@ export interface UseDictionaryToolbarReturn {
   readonly aiPicks: Readonly<Partial<Record<AiFeature, AiProviderId>>>;
   readonly pickAiProvider: (feature: AiFeature, provider: AiProviderId) => void;
   /** Fire (or re-fire) an ask for a feature — tab-open trigger AND retry. */
-  readonly askAi: (feature: AiFeature) => void;
+  /** `fresh` bypasses the tab-session answer cache (retry/regenerate). */
+  readonly askAi: (feature: AiFeature, fresh?: boolean) => void;
   readonly translateEngine: 'google' | 'ai';
   readonly setTranslateEngine: (engine: 'google' | 'ai') => void;
 
@@ -206,12 +207,12 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
   );
 
   const askAi = useCallback(
-    (feature: AiFeature): void => {
+    (feature: AiFeature, fresh = false): void => {
       if (!result) return;
       void (async () => {
         const cfg = await ensureAiCfg();
         const prompt = composeAiPrompt(feature, cfg);
-        const answer = await ai.ask(feature, prompt, aiPicksRef.current[feature]);
+        const answer = await ai.ask(feature, prompt, aiPicksRef.current[feature], fresh);
         if (feature === 'sentenceTranslate' && answer && mountedRef.current) {
           setTranslation(answer.text);
         }

@@ -38,6 +38,10 @@ Tất cả provider đều lỗi → panel hiện lỗi cuối + nút **Retry**.
 
 Không thích câu trả lời → bấm **Retry** để generate lại (có thể đổi provider trước để lấy văn phong khác).
 
+### Cache theo tab
+
+Câu trả lời được cache trong tab trình duyệt đang mở: đổi qua lại giữa các tab trong popup, hoặc đóng popup rồi tra lại cùng từ trong cùng câu → answer hiện lại ngay, không hỏi provider lần nữa. Retry luôn hỏi mới và ghi đè cache. Cache mất khi đóng tab — không lưu qua phiên.
+
 ## 3. Dictionary miss
 
 Tra từ mà dictionary không có kết quả → tab AI tự mở và AI giải thích luôn.
