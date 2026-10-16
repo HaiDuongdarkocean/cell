@@ -52,6 +52,10 @@ export interface AiProviderAdapter {
   /** Virtualized transcripts (DeepSeek) unmount offscreen rows — keep the
    *  newest unit scrolled into view so mutations keep flowing. */
   scrollIntoViewWhileObserving?: boolean;
+  /** Units can mount holding status text ("Warming up the model") before
+   *  the answer body exists — without this the status settles as the
+   *  answer. True = a unit without its answerBody counts as no answer yet. */
+  answerBodyRequired?: boolean;
 }
 
 export const AI_PROVIDERS: Record<AiProviderId, AiProviderAdapter> = {
@@ -148,6 +152,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderAdapter> = {
     },
     assistantUnit: '[data-testid="transcript-row"][data-perf-row="assistant"]',
     answerBody: '.standard-markdown',
+    answerBodyRequired: true,
     doneSignal: {
       kind: 'attribute',
       attr: 'data-perf-row-streaming',

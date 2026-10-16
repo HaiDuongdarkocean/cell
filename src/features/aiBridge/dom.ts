@@ -32,8 +32,9 @@ export function assistantTurnCount(adapter: AiProviderAdapter, doc: Document): n
 }
 
 function unitText(adapter: AiProviderAdapter, unit: Element): string {
-  const body = unit.querySelector<HTMLElement>(adapter.answerBody) ?? unit;
-  const el = body as HTMLElement;
+  const body = unit.querySelector<HTMLElement>(adapter.answerBody);
+  if (!body && adapter.answerBodyRequired) return '';
+  const el = (body ?? unit) as HTMLElement;
   return (el.innerText || el.textContent || '').trim();
 }
 
@@ -119,7 +120,7 @@ export function waitForAssistantReply(
       const state = host?.getAttribute(done.attr);
       if (state === done.completeValue) {
         const finalText = unitText(adapter, unit);
-        if (!isEcho(finalText)) return settle(finalText);
+        if (finalText && !isEcho(finalText)) return settle(finalText);
       }
       const streaming = state === done.streamingValue || isStreaming(adapter, doc);
       const text = unitText(adapter, unit);
