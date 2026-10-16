@@ -33,9 +33,14 @@ export function useFocusTrap(panelRef: RefObject<HTMLElement | null>, open: bool
     // Move focus into the panel — first *visible* focusable. The DOM-first
     // node can be display:none (e.g. the desktop-hidden bottom nav), where
     // .focus() no-ops and leaves focus outside the aria-modal dialog.
-    const first = Array.from(
+    // Skip role=separator (e.g. Sheet drag handle): programmatic .focus()
+    // after a keyboard open still paints the UA focus ring on the splitter,
+    // and users Tab to it explicitly anyway — it stays in the trap cycle.
+    const focusables = Array.from(
       panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-    ).find((el) => el.offsetParent !== null || el === root.activeElement);
+    ).filter((el) => el.offsetParent !== null || el === root.activeElement);
+    const first =
+      focusables.find((el) => el.getAttribute('role') !== 'separator') ?? focusables[0];
     if (first) {
       first.focus();
     } else if (panel.tabIndex >= 0) {

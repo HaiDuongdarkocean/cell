@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent, RefObject } from 'react';
+import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 
 // ─── Sheet atom — shared bottom sheet logic (SSOT) ───
 // Extracted from dictionary popup's usePopupPosition sheet logic.
@@ -78,6 +79,10 @@ export interface UseSheetOptions {
   readonly onClose?: () => void;
   /** Called when sheet height changes (for persistence). */
   readonly onHeightChange?: (height: number) => void;
+  /** Storage key for built-in height persistence (stored as %vh, clamped
+   *  20–95). When set, the sheet restores its last height on mount and saves
+   *  on every drag/keyboard resize — consumers stop re-rolling storage. */
+  readonly persistKey?: string;
 }
 
 export interface UseSheetResult {
@@ -102,6 +107,7 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
     maxHeight,
     onClose,
     onHeightChange,
+    persistKey,
   } = options;
 
   const sheetRef = useRef<HTMLDivElement | null>(null);
@@ -139,6 +145,35 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
   const snapBackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { sheetHeightRef.current = sheetHeight; }, [sheetHeight]);
+
+  // Height persistence — restore once on mount. Same %vh unit + 20–95 clamp
+  // the existing sheet storage keys use. Skipped while a drag session is
+  // active so a slow load can't fight the user's finger.
+  useEffect(() => {
+    if (!persistKey) return;
+    let cancelled = false;
+    getStorage<Record<string, number>>(persistKey)
+      .then((data) => {
+        const stored = data[persistKey];
+        if (cancelled || sessionRef.current) return;
+        if (typeof stored !== 'number' || !Number.isFinite(stored)) return;
+        const vh = Math.max(20, Math.min(95, stored));
+        const avail = getAvailableHeight();
+        const min = getEffectiveMin();
+        const next = Math.max(min, Math.min((vh / 100) * getClientHeight(), avail));
+        sheetHeightRef.current = next;
+        setSheetHeight(next);
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [persistKey, getAvailableHeight, getEffectiveMin]);
+
+  const emitHeightChange = useCallback((h: number) => {
+    onHeightChangeRef.current?.(h);
+    if (!persistKey) return;
+    const vh = Math.max(20, Math.min(95, Math.round((h / getClientHeight()) * 100)));
+    void setStorage({ [persistKey]: vh }).catch(() => undefined);
+  }, [persistKey]);
 
   // Sync to initialHeight when it arrives after mount (e.g. async storage
   // load in HostManagerSheet). useState initializer only runs once, so a
@@ -207,7 +242,7 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
         closeFromPointer();
         return;
       }
-      onHeightChangeRef.current?.(sheetHeightRef.current);
+      emitHeightChange(sheetHeightRef.current);
       return;
     }
 
@@ -225,7 +260,7 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
       setTransition(undefined);
       setTransform(undefined);
     }, 200);
-  }, []);
+  }, [emitHeightChange]);
 
   const applyPointerUpdate = useCallback((_clientX: number, clientY: number) => {
     const session = sessionRef.current;
@@ -310,8 +345,8 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
     const clamped = Math.max(min, Math.min(next, avail));
     sheetHeightRef.current = clamped;
     setSheetHeight(clamped);
-    onHeightChangeRef.current?.(clamped);
-  }, [getAvailableHeight, getEffectiveMin]);
+    emitHeightChange(clamped);
+  }, [getAvailableHeight, getEffectiveMin, emitHeightChange]);
 
   const onPointerDownContent = useCallback((e: PointerEvent<HTMLDivElement>) => {
     if (isInteractiveTarget(e.target)) return;

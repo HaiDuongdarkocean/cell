@@ -25,8 +25,8 @@ export interface SegmentedControlProps<T extends string> {
   readonly onChange: (value: T) => void;
   /** Visual skin. Default: `raised` (Apple HIG — elevated segment on tinted track). */
   readonly variant?: SegmentedControlVariant;
-  /** Option size — `md` = 32px pills. Only the `chips` variant sizes options. */
-  readonly size?: 'sm' | 'md';
+  /** Option size — `md` = 32px, `lg` = 40px (touch target) pills. Only the `chips` variant sizes options. */
+  readonly size?: 'sm' | 'md' | 'lg';
   /** Accessible group label (rendered as `aria-label` on the radiogroup). */
   readonly ariaLabel: string;
   readonly className?: string;
@@ -97,7 +97,7 @@ export function SegmentedControl<T extends string>({
           className={
             variant === 'chips'
               ? [
-                  size === 'md' ? styles.chipOptionMd : styles.chipOption,
+                  { sm: styles.chipOption, md: styles.chipOptionMd, lg: styles.chipOptionLg }[size],
                   option.value === value ? styles.chipOptionActive : '',
                 ].filter(Boolean).join(' ')
               : `${styles.segment} ${option.value === value ? styles.segmentActive : ''}`

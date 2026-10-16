@@ -101,13 +101,15 @@
 }
 
 .horizontal {
-  composes: chip sm outline from './Chip.module.css';
+  composes: chip outline from './Chip.module.css';
   flex-direction: row;
   justify-content: center;
   width: auto;
+  padding: var(--space-1) var(--space-3);
 }
 
 .item.horizontal {
+  min-height: var(--touch-target);
   border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-pill);
 }

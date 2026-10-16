@@ -3,6 +3,7 @@ import { mountReactShadow, type ShadowMount } from '@/shared/lib/shadowRoot/moun
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
 import type { IconCatalogKey } from '@/shared/icons';
 import { ToastStack, upsertToast, type ToastItem, type ToastKind } from './Toast';
+import { createRemoteToastHost } from './iframeToastBridge';
 
 export interface ToastHandle {
   readonly id: number;
@@ -26,6 +27,10 @@ export interface CreateToastHostOptions {
 const DEFAULT_TTL_MS = 3000;
 
 export function createToastHost(options: CreateToastHostOptions = {}): ToastHost {
+  // Cross-origin player iframe: a fixed toast host here is clipped to the
+  // iframe viewport — delegate to the top document.
+  const remote = createRemoteToastHost();
+  if (remote) return remote;
   const ttlMs = options.ttlMs ?? DEFAULT_TTL_MS;
   let mount: ShadowMount | null = null;
   let toasts: ToastItem[] = [];

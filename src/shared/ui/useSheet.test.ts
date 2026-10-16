@@ -1,7 +1,16 @@
-import { describe, expect, it, jest, afterEach } from '@jest/globals';
+import { describe, expect, it, jest, afterEach, beforeEach } from '@jest/globals';
 import { act, render } from '@testing-library/react';
 import { createElement } from 'react';
 import { useSheet } from './useSheet';
+import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
+
+jest.mock('@/shared/lib/chrome-apis', () => ({
+  getStorage: jest.fn(async () => ({})),
+  setStorage: jest.fn(async () => undefined),
+}));
+
+const mockGetStorage = getStorage as jest.MockedFunction<typeof getStorage>;
+const mockSetStorage = setStorage as jest.MockedFunction<typeof setStorage>;
 
 function Probe({ onClose }: { readonly onClose: () => void }): React.JSX.Element {
   const { onPointerDownHandle } = useSheet({ onClose });
@@ -62,5 +71,44 @@ describe('useSheet ghost-click swallower', () => {
     document.body.dispatchEvent(late);
     expect(sentinel).toHaveBeenCalledTimes(1);
     expect(late.defaultPrevented).toBe(false);
+  });
+});
+
+describe('useSheet persistKey', () => {
+  function PersistProbe(): React.JSX.Element {
+    const { sheetHeight, onKeyDownHandle } = useSheet({ persistKey: 'testSheetVh' });
+    return createElement('div', {
+      'data-tihoka-id': 'handle',
+      style: { height: sheetHeight },
+      onKeyDown: onKeyDownHandle,
+    });
+  }
+
+  beforeEach(() => {
+    mockGetStorage.mockClear();
+    mockSetStorage.mockClear().mockResolvedValue(undefined);
+    Object.defineProperty(document.documentElement, 'clientHeight', { value: 800, configurable: true });
+  });
+
+  it('restores the stored %vh height on mount', async () => {
+    mockGetStorage.mockResolvedValue({ testSheetVh: 50 });
+    const { getByTestId } = render(createElement(PersistProbe));
+    await act(async () => undefined);
+    const vh = document.documentElement.clientHeight;
+    expect(getByTestId('handle').style.height).toBe(`${Math.round(vh * 0.5)}px`);
+  });
+
+  it('saves %vh on keyboard resize and clamps to 95', async () => {
+    mockGetStorage.mockResolvedValue({ testSheetVh: 99 });
+    const { getByTestId } = render(createElement(PersistProbe));
+    await act(async () => undefined);
+    act(() => {
+      const e = new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true });
+      getByTestId('handle').dispatchEvent(e);
+    });
+    expect(mockSetStorage).toHaveBeenCalled();
+    const arg = mockSetStorage.mock.calls[0][0] as { testSheetVh: number };
+    expect(arg.testSheetVh).toBeLessThanOrEqual(95);
+    expect(arg.testSheetVh).toBeGreaterThanOrEqual(20);
   });
 });

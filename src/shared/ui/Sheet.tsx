@@ -19,6 +19,9 @@ export interface SheetProps {
   readonly maxHeight?: number;
   /** Called when sheet height changes (for persistence). */
   readonly onHeightChange?: (height: number) => void;
+  /** Storage key enabling built-in height persistence — the sheet restores
+   *  its last height on mount and saves on resize (see useSheet). */
+  readonly persistKey?: string;
   /** Content pinned between the drag handle and the scrollable content area
    *  (e.g. a breadcrumb trail). Stays fixed while content scrolls. */
   readonly header?: ReactNode;
@@ -48,6 +51,7 @@ export function Sheet({
   initialHeight,
   maxHeight,
   onHeightChange,
+  persistKey,
   header,
   children,
   footer,
@@ -61,7 +65,7 @@ export function Sheet({
     onPointerDownHandle,
     onKeyDownHandle,
     onPointerDownContent,
-  } = useSheet({ initialHeight, maxHeight, onClose, onHeightChange });
+  } = useSheet({ initialHeight, maxHeight, onClose, onHeightChange, persistKey });
   useFocusTrap(sheetRef, open);
 
   // Stop non-Escape keyboard events from leaking to the host page while the

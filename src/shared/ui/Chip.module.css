@@ -36,6 +36,13 @@
   font-size: var(--font-size-base);
 }
 
+.chip.lg {
+  height: auto;
+  min-height: var(--touch-target);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
 /* === Variants === */
 .default {
   background: var(--color-field);

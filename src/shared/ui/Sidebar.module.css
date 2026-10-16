@@ -62,6 +62,7 @@
   max-height: calc(var(--touch-target) + var(--space-2) * 2);
   border-right: none;
   border-bottom: none;
+  background: var(--color-background);
   transition: max-height var(--duration-normal) var(--ease-out),
               opacity var(--duration-fast) var(--ease-out),
               transform var(--duration-normal) var(--ease-out);
