@@ -1,6 +1,6 @@
 import type { Settings, FilenameSource, KeyboardShortcut, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
-import type { AnkiStatusSyncSettings, CardCreatorSettings, CondensedAudioSettings, DictionaryPopupSettings, LocalPlayerSettings, PronunciationSettings, SrsSettingsSlice, TtsSettings } from '@/entities/settings';
+import type { AiBridgeSettings, AnkiStatusSyncSettings, CardCreatorSettings, CondensedAudioSettings, DictionaryPopupSettings, LocalPlayerSettings, PronunciationSettings, SrsSettingsSlice, TtsSettings } from '@/entities/settings';
 import { DEFAULT_BAND_THRESHOLDS } from '@/shared/lib/frequencyBand';
 import tokensJson from '@/shared/styles/tokens.json';
 
@@ -302,6 +302,82 @@ export const DEFAULT_ANKI_STATUS_SYNC_SETTINGS: AnkiStatusSyncSettings = {
   addonPort: 8766,
 } as const;
 
+/** Default AI bridge settings (spec ai-bridge-dictionary — REQ-6, REQ-7, REQ-10). */
+export const DEFAULT_AI_BRIDGE_SETTINGS: AiBridgeSettings = {
+  defaultProvider: 'chatgpt',
+  providerOrder: ['chatgpt', 'gemini', 'deepseek', 'claude'],
+  prompts: {
+    wordExplain: {
+      system: `You are a language API that explains the specific nuance of specified word(s) in a sentence.
+
+Respond concisely in no more than 100 words.
+
+Specified word(s) MUST be in its original language.
+
+All other explanation text MUST be in language [INTERFACE_LANG].
+
+In your response:
+
+DO NOT OUTPUT the language name or the word 'nuance';
+
+DO NOT OUTPUT the context sentence ;
+
+DO NOT OUTPUT romaji/pinyin/furigana or any notes on pronunciation;
+
+Conclude with the specific nuance within the context sentence.`,
+      user: 'Sentence: [SENTENCE]\nWord(s): [WORD]',
+    },
+    sentenceBreakdown: {
+      system: `You are a language API that does sentence breakdown-explanations.
+
+Break down the supplied sentence into meaningful, contiguous chunks.
+
+Each chunk should be SMALL, meaningful groupings of words or characters.
+
+Output in groups of NUMBERED LISTS, in this format:
+
+#1 chunk, #2 reworded meaning, #3 explanation (particles, tenses, etc.).
+
+'Chunk' MUST be in its original language.
+
+'Meaning' and 'explanation' MUST be in language [INTERFACE_LANG].
+
+'Meaning' MUST be markedly different from 'Chunk' text (reworded, definition, synonyms, etc.).
+
+The 'explanation' field should be no longer than 100 words.
+
+ALWAYS count like so: #1 ... #2 ... #3 ... DO NOT count higher.
+
+DO NOT OUTPUT dot-points, dashes, or titles like 'Chunk:' etc.
+
+DO NOT OUTPUT readings, brackets, or romaji/pinyin/furigana/pronunciations of any kind.
+
+DO NOT OUTPUT the original sentence.
+
+DO NOT OUTPUT quotation marks in the 'chunk' or 'meaning' fields.
+
+DO NOT OUTPUT other text, ONLY OUTPUT numbered lists.
+
+DO NOT OUTPUT any text in [TARGET_LANG]. ONLY output text IN [INTERFACE_LANG].`,
+      user: '[SENTENCE]',
+    },
+    sentenceTranslate: {
+      system: `You are a language translation API.
+
+RESPOND ONLY with the translated text.
+
+MAINTAIN the EXACT punctuation of the original text.
+
+DO NOT RESPOND with enclosing quotations unless the original text has them.
+
+Sentence MUST BE translated into this SPECIFIC language: [TARGET_LANG].`,
+      user: '[SENTENCE]',
+    },
+  },
+  sentenceTranslateEngine: 'google',
+  autoOpenOnMiss: true,
+};
+
 export const DEFAULT_SETTINGS: Settings = {
   uiLanguage: 'auto',
   universalNativeLanguage: 'vi',
@@ -368,6 +444,8 @@ export const DEFAULT_SETTINGS: Settings = {
   condensedAudio: DEFAULT_CONDENSED_AUDIO_SETTINGS,
   // === Anki status sync (spec anki-known-seed — schema v34) ===
   ankiStatusSync: DEFAULT_ANKI_STATUS_SYNC_SETTINGS,
+  // === AI bridge (spec ai-bridge-dictionary — REQ-6/REQ-7/REQ-10) ===
+  aiBridge: DEFAULT_AI_BRIDGE_SETTINGS,
 };
 
 /**
