@@ -19,6 +19,7 @@ import {
   STORES,
   clearAllStores,
   closeAllDBs,
+  deleteDB,
   getDB,
   getDbName,
 } from '../repositories/baseRepository';
@@ -98,14 +99,7 @@ afterEach(() => {
 
 afterAll(async () => {
   delete (global as { chrome?: unknown }).chrome;
-  const dbName = await getDbName(LANG);
-  closeAllDBs();
-  await new Promise<void>((resolve, reject) => {
-    const request = indexedDB.deleteDatabase(dbName);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-    request.onblocked = () => resolve();
-  });
+  await deleteDB(await getDbName(LANG));
   await deleteSyncDB();
 });
 

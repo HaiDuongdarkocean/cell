@@ -19,7 +19,7 @@ import {
   type PhraseMatch,
 } from './phraseMatcher';
 import {
-  deserializePhraseIndex,
+  openLazyPhraseIndex,
   type PhraseIndex,
 } from './phraseIndexCompiler';
 
@@ -80,7 +80,7 @@ async function tryPhraseMatch(
 
   for (const stored of sorted) {
     checkAbort(signal);
-    const index: PhraseIndex = deserializePhraseIndex(stored.blob);
+    const index: PhraseIndex = openLazyPhraseIndex(stored.blob);
     const match = matchPhrase({ sentence, cursorOffset }, index, stored.resourceId);
     if (match) candidates.push({ resourceId: stored.resourceId, match });
   }

@@ -1,6 +1,7 @@
 import { stableJson } from '@/features/sync';
 import { idbRequest } from '@/features/sync';
-import { INDEXES, STORES } from '../repositories/baseRepository';
+import { stagedRowsForResource, STORES } from '../repositories/baseRepository';
+import { blobRowsForResource } from '../repositories/entryBlobStore';
 import type { ResourceInfo } from '@/entities/dictionary';
 
 const STRIPPED_FIELDS = new Set(['id', 'resourceId', 'kind']);
@@ -73,10 +74,8 @@ export async function ensureResourceContentHash(
 ): Promise<ResourceInfo> {
   if (resource.contentHash) return resource;
   if (resource.id === undefined) return resource;
-  const rtx = db.transaction([STORES.ENTRY], 'readonly');
-  const rows = (await idbRequest(
-    rtx.objectStore(STORES.ENTRY).index(INDEXES.by_resource).getAll(resource.id),
-  )) as Record<string, unknown>[];
+  const rows = (await blobRowsForResource(resource.langCode, resource.id))
+    ?? (await stagedRowsForResource(resource.langCode, resource.id));
   const { dictRows, freqRows } = partitionResourceRows(rows);
   const hash = await sha256Hex(serializeResourcePortable(dictRows, freqRows));
   const wtx = db.transaction([STORES.RESOURCE], 'readwrite');

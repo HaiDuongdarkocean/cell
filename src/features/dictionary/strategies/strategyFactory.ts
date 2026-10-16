@@ -14,13 +14,21 @@ import { SqliteStrategy } from './sqliteStrategy';
 import { WordlistJsonStrategy } from './wordlistJsonStrategy';
 import { JsonFrequencyStrategy } from './jsonFrequencyStrategy';
 import { UnsupportedFormatError } from '../logic/importErrors';
+import type { ImportSourceInput } from '../logic/importStreams';
 import type { BaseImportStrategy } from './baseImportStrategy';
+
+/** What a strategy receives: a streamable `file`/`data` source plus the
+ *  orchestrator's pass-1 zip manifest when the source is a zip. `zipFiles`
+ *  stays supported for callers that already inflated the container. */
+export interface StrategyFileData extends ImportSourceInput {
+  readonly zipFiles?: Record<string, Uint8Array>;
+}
 
 /** Create a strategy for a detected format. */
 export function createStrategy(
   format: ImportFormat,
   options: StrategyOptions,
-  fileData: { data: Uint8Array; fileName: string; zipFiles?: Record<string, Uint8Array> },
+  fileData: StrategyFileData,
 ): BaseImportStrategy<unknown, unknown> {
   switch (format) {
     case 'txt':

@@ -132,8 +132,9 @@ describe('importOrchestrator', () => {
         expect(result.format).toBe('term-bank');
         expect(result.wordCount).toBe(1);
         expect(await countDictionaryByResource(LANG, result.resourceId)).toBe(1);
-        // Head sniff + full-data sniff — the strategy must not inflate again.
-        expect(unzipSpy).toHaveBeenCalledTimes(2);
+        // Only the head sniff inside detectFormat may inflate; orchestrator +
+        // strategy work off the streamed zip manifest, never a full unzipAll.
+        expect(unzipSpy).toHaveBeenCalledTimes(1);
       } finally {
         unzipSpy.mockRestore();
       }

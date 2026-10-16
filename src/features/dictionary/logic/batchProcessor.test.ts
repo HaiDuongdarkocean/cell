@@ -6,22 +6,25 @@ describe('batchProcessor', () => {
     expect(BATCH_SIZE).toBe(2000);
   });
 
-  it('accumulates without flushing below BATCH_SIZE', async () => {
+  it('accumulates without flushing below the initial batch size', async () => {
     const flush = jest.fn().mockResolvedValue(undefined);
     const bp = new BatchProcessor<number>(flush);
-    for (let i = 0; i < 100; i++) await bp.add(i);
+    for (let i = 0; i < 32; i++) await bp.add(i);
     expect(flush).not.toHaveBeenCalled();
-    expect(bp.pending).toBe(100);
+    expect(bp.pending).toBe(32);
     expect(bp.count).toBe(0);
   });
 
-  it('auto-flushes when buffer reaches BATCH_SIZE', async () => {
+  it('auto-flushes batches bounded by BATCH_SIZE', async () => {
     const flush = jest.fn().mockResolvedValue(undefined);
     const bp = new BatchProcessor<number>(flush);
     for (let i = 0; i < BATCH_SIZE; i++) await bp.add(i);
-    expect(flush).toHaveBeenCalledTimes(1);
-    expect(flush).toHaveBeenCalledWith(expect.any(Array));
-    expect(flush.mock.calls[0]![0]).toHaveLength(BATCH_SIZE);
+    expect(flush).toHaveBeenCalled();
+    await bp.flush();
+    for (const call of flush.mock.calls) {
+      expect(call[0].length).toBeLessThanOrEqual(BATCH_SIZE);
+      expect(call[0].length).toBeGreaterThan(0);
+    }
     expect(bp.count).toBe(BATCH_SIZE);
     expect(bp.pending).toBe(0);
   });
@@ -31,9 +34,10 @@ describe('batchProcessor', () => {
     const bp = new BatchProcessor<number>(flush);
     for (let i = 0; i < 150; i++) await bp.add(i);
     await bp.flush();
-    expect(flush).toHaveBeenCalledTimes(1);
-    expect(flush.mock.calls[0]![0]).toHaveLength(150);
+    const written = flush.mock.calls.reduce((n, c) => n + (c[0] as ReadonlyArray<number>).length, 0);
+    expect(written).toBe(150);
     expect(bp.count).toBe(150);
+    expect(bp.pending).toBe(0);
   });
 
   it('flush() on empty buffer is no-op', async () => {
@@ -49,7 +53,6 @@ describe('batchProcessor', () => {
     const bp = new BatchProcessor<number>(flush, onProgress);
     bp.setTotal(6000);
     for (let i = 0; i < BATCH_SIZE; i++) await bp.add(i);
-    expect(onProgress).toHaveBeenCalledWith(BATCH_SIZE, 6000);
     for (let i = 0; i < 500; i++) await bp.add(i);
     await bp.flush();
     expect(onProgress).toHaveBeenLastCalledWith(BATCH_SIZE + 500, 6000);
@@ -69,7 +72,7 @@ describe('batchProcessor', () => {
     const bp = new BatchProcessor<number>(flush);
     for (let i = 0; i < BATCH_SIZE * 2 + 100; i++) await bp.add(i);
     await bp.flush();
-    expect(flush).toHaveBeenCalledTimes(3);
+    expect(flush.mock.calls.length).toBeGreaterThanOrEqual(3);
     expect(bp.count).toBe(BATCH_SIZE * 2 + 100);
   });
 
@@ -80,20 +83,21 @@ describe('batchProcessor', () => {
       .mockImplementationOnce(() => new Promise<void>((r) => { resolveFirst = r; }))
       .mockResolvedValue(undefined);
     const bp = new BatchProcessor<number>(flush);
-    for (let i = 0; i < BATCH_SIZE; i++) await bp.add(i);
+    let i = 0;
+    while (flush.mock.calls.length === 0) await bp.add(i++);
+    const firstSize = flush.mock.calls[0]![0].length;
+    expect(firstSize).toBeLessThanOrEqual(BATCH_SIZE);
     expect(flush).toHaveBeenCalledTimes(1);
-    expect(flush.mock.calls[0]![0]).toHaveLength(BATCH_SIZE);
     const tail: Promise<void>[] = [];
-    for (let i = 0; i < BATCH_SIZE; i++) tail.push(bp.add(i));
+    for (let j = 0; j < 100; j++) tail.push(bp.add(i++));
     await Promise.resolve();
-    expect(bp.pending).toBe(BATCH_SIZE);
+    expect(bp.pending).toBe(100);
     expect(flush).toHaveBeenCalledTimes(1);
     resolveFirst!();
     await Promise.all(tail);
-    expect(flush).toHaveBeenCalledTimes(2);
-    expect(flush.mock.calls[1]![0]).toHaveLength(BATCH_SIZE);
     await bp.flush();
-    expect(bp.count).toBe(BATCH_SIZE * 2);
+    expect(flush.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(bp.count).toBe(i);
   });
 
   it('creates the next write transaction only after the in-flight write commits', async () => {

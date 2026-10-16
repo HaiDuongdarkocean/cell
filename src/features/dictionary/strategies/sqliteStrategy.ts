@@ -12,7 +12,9 @@
 // wasm load fail → DatabaseError → orchestrator catch → rollback.
 
 import { BaseImportStrategy, type RawFrequencyEntry, type RawDictionaryEntry, type StrategyOptions } from './baseImportStrategy';
-import { gunzipFile, isGzip, isSqlite } from '../logic/fileDetector';
+import { isSqlite, isGzip, gunzipFile } from '../logic/fileDetector';
+import { resolveImportSource, streamFileChunks, concatBytes } from '../logic/importStreams';
+import type { ImportSourceInput } from '../logic/importStreams';
 import { yieldToEventLoop } from '../logic/yieldToEventLoop';
 import { toCanonicalDefinition } from '../logic/normalize/canonical';
 import { collectEntryComponents } from '../logic/dictionaryComponents';
@@ -40,11 +42,10 @@ interface QueryExecResult {
   values: unknown[][];
 }
 
-/** Options for sqliteStrategy. */
-export interface SqliteStrategyOptions {
-  readonly data: Uint8Array;
-  readonly fileName: string;
-}
+/** Options for sqliteStrategy. sql.js needs the whole db in wasm memory —
+ *  streaming applies only to reading/decompressing the source bytes; the
+ *  parsed db buffer itself stays materialized (documented limitation). */
+export type SqliteStrategyOptions = ImportSourceInput;
 
 type StoredRow = Omit<FrequencyEntry, 'id'> | Omit<DictionaryEntry, 'id'>;
 
@@ -56,24 +57,27 @@ const YIELD_EVERY_ROWS = 4000;
 /** SQLite strategy — emits every recognized table the schema contains. */
 export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDictionaryEntry, StoredRow> {
   readonly format = 'sqlite' as const;
-  private readonly data: Uint8Array;
+  private readonly fileData: SqliteStrategyOptions;
 
   constructor(options: StrategyOptions, fileData: SqliteStrategyOptions) {
     super(options);
-    this.data = fileData.data;
+    this.fileData = fileData;
   }
 
   protected async *parse(): AsyncGenerator<RawFrequencyEntry | RawDictionaryEntry> {
-    // 1. Gunzip if needed
-    let dbData: Uint8Array | undefined;
-    if (isGzip(this.data)) {
+    // 1. Read source bytes in chunks + gunzip (sync gunzipFile — its corrupt
+    //    -input errors are part of the contract). sql.js then takes over; it
+    //    requires the whole db in wasm memory regardless.
+    const { file } = await resolveImportSource(this.fileData);
+    const parts: Uint8Array[] = [];
+    for await (const chunk of streamFileChunks(file)) parts.push(chunk);
+    let dbData: Uint8Array | undefined = concatBytes(parts);
+    if (isGzip(dbData)) {
       try {
-        dbData = gunzipFile(this.data);
+        dbData = gunzipFile(dbData);
       } catch (e) {
         throw new DatabaseError('Failed to gunzip SQLite file.', e);
       }
-    } else {
-      dbData = this.data;
     }
 
     // 2. Validate SQLite magic

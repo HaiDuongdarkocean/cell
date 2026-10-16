@@ -144,6 +144,38 @@ export async function getWordStatuses(
   const tx = db.transaction(STORES.WORD_STATUS, 'readonly');
   const store = tx.objectStore(STORES.WORD_STATUS);
   const result = new Map<string, WordStatus>();
+  // shortcut: >64 terms scans the whole store in one getAll — thousands of
+  // serialized per-term callbacks on the shared IDB connection stall
+  // concurrent meta requests by seconds; upgrade to an in-memory index if a
+  // marked-words store ever grows past ~50k rows
+  if (terms.length > 64) {
+    const rows = await new Promise<WordStatusEntry[]>((resolve, reject) => {
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result as WordStatusEntry[]);
+      req.onerror = () => reject(req.error);
+    });
+    const wanted = new Set(terms);
+    const posRows = new Map<string, Map<string, WordStatus>>();
+    for (const e of rows) {
+      const split = splitPosKey(e.term);
+      if (split) {
+        if (!wanted.has(split.term)) continue;
+        const status = normalizeEntry(e)?.status ?? DEFAULT_STATUS;
+        let m = posRows.get(split.term);
+        if (!m) posRows.set(split.term, (m = new Map()));
+        m.set(split.pos, status);
+      } else if (wanted.has(e.term)) {
+        result.set(e.term, normalizeEntry(e)?.status ?? DEFAULT_STATUS);
+      }
+    }
+    for (const term of wanted) {
+      if (!result.has(term)) result.set(term, DEFAULT_STATUS);
+    }
+    for (const [term, rowsMap] of posRows) {
+      result.set(term, aggregatePosStatus(result.get(term), rowsMap));
+    }
+    return result;
+  }
   await Promise.all(
     terms.map(
       (term) =>

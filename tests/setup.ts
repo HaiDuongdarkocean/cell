@@ -75,6 +75,7 @@ if (!existingCrypto?.subtle) {
     value: {
       subtle: nodeCrypto.webcrypto.subtle,
       getRandomValues: (arr: Uint8Array) => nodeCrypto.randomFillSync(arr),
+      randomUUID: () => nodeCrypto.randomUUID(),
     },
     writable: true,
     configurable: true,

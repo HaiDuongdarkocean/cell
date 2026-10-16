@@ -12,8 +12,9 @@ async function seedResources(context: BrowserContext): Promise<void> {
   const worker = context.serviceWorkers()[0] ?? (await context.waitForEvent('serviceworker'));
   await worker.evaluate(async () => {
     const DB = 'orca-dict-devmode0-en';
+    const existing = (await indexedDB.databases?.() ?? []).find((d) => d.name === DB);
     const db = await new Promise<IDBDatabase>((res, rej) => {
-      const req = indexedDB.open(DB, 14);
+      const req = indexedDB.open(DB, Math.max(15, existing?.version ?? 0));
       req.onupgradeneeded = () => {
         if (!req.result.objectStoreNames.contains('langResourceInfo')) {
           req.result.createObjectStore('langResourceInfo', { keyPath: 'id', autoIncrement: true });

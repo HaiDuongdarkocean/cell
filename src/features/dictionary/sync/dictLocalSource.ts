@@ -15,7 +15,8 @@ import type { ApplyContext } from '@/features/sync';
 import type { DictionaryComponent, ResourceInfo } from '@/entities/dictionary';
 import type { WordStatusSource } from '@/features/dictionary/services/wordStatusArbitration';
 import { normalizeStoredStatus, type StoredWordStatus } from '@/features/dictionary/services/wordStatusSemantics';
-import { getDB, INDEXES, STORES } from '../repositories/baseRepository';
+import { getDB, getEntryDB, INDEXES, STORES } from '../repositories/baseRepository';
+import { compileEntryBlob, deleteEntryBlobArtifacts, dropStagedRows } from '../repositories/entryBlobStore';
 import { buildPhraseIndexForResource } from '../logic/phraseIndexBuilder';
 import { collectEntryComponents, deriveResourceType, sortedComponents, type ComponentSource } from '../logic/dictionaryComponents';
 import { gunzipFile, isGzip } from '../logic/fileDetector';
@@ -30,6 +31,10 @@ import { logger } from '@/shared/lib/logger';
 
 const RESOURCE_PREFIX = 'resource:';
 const WORD_PREFIX = 'word:';
+
+/** Rows per staged-write txn on blob import — same bound as file import. */
+const SYNC_STAGE_CHUNK = 256;
+const stageGap = () => new Promise((r) => setTimeout(r, 16));
 
 const RESOURCE_FIELDS = [
   'name',
@@ -93,6 +98,10 @@ function toResourceMeta(row: ResourceInfo): Record<string, unknown> {
 class DictResourceLocalSource extends IdbLocalSource {
   readonly dataClass: DataClass = 'dictResource';
   protected readonly keyPrefix = RESOURCE_PREFIX;
+  /** Resource ids whose blob artifacts must be swept once the apply tx
+   *  commits — meta is removed in-tx (flips reads back to row path) but the
+   *  chunk/bwd rows live in stores outside the apply scope. */
+  private readonly artifactSweep = new Set<number>();
 
   constructor(private readonly langCode: string) {
     super();
@@ -109,7 +118,7 @@ class DictResourceLocalSource extends IdbLocalSource {
   protected applyStores(): readonly string[] {
     return [
       STORES.RESOURCE,
-      STORES.ENTRY,
+      STORES.ENTRY_META,
       STORES.PHRASE_INDEX,
       STORES.SYNC_META,
     ];
@@ -148,7 +157,7 @@ class DictResourceLocalSource extends IdbLocalSource {
       const row = (await idbRequest(
         db.transaction([STORES.RESOURCE], 'readonly').objectStore(STORES.RESOURCE).get(id),
       )) as ResourceInfo | undefined;
-      if (row) await ensureResourceContentHash(db, row);
+      if (row && row.installationFinished !== false) await ensureResourceContentHash(db, row);
     }
   }
 
@@ -158,7 +167,11 @@ class DictResourceLocalSource extends IdbLocalSource {
       db.transaction([STORES.RESOURCE], 'readonly').objectStore(STORES.RESOURCE).getAll(),
     )) as ResourceInfo[];
     for (const row of rows) {
-      if (!row.contentHash && row.id !== undefined) await ensureResourceContentHash(db, row);
+      // Skip in-flight imports — hashing partially staged rows would produce
+      // a contentHash for incomplete content and sync a broken blob out.
+      if (!row.contentHash && row.id !== undefined && row.installationFinished !== false) {
+        await ensureResourceContentHash(db, row);
+      }
     }
   }
 
@@ -295,6 +308,11 @@ class DictResourceLocalSource extends IdbLocalSource {
     _applied: readonly ChangeRecord[],
     ctx?: ApplyContext,
   ): Promise<void> {
+    for (const id of this.artifactSweep) {
+      await deleteEntryBlobArtifacts(this.langCode, id).catch(() => undefined);
+      await dropStagedRows(this.langCode, id).catch(() => undefined);
+    }
+    this.artifactSweep.clear();
     if (!ctx?.fetchBlob) return;
     const db = await this.openDb();
     const rows = (await idbRequest(
@@ -327,17 +345,37 @@ class DictResourceLocalSource extends IdbLocalSource {
     blob: Blob,
   ): Promise<void> {
     if (row.id === undefined) return;
+    const resourceId = row.id;
+    // A re-imported resource may still carry blob artifacts — the meta record
+    // would flip reads to the stale chunks and hide the fresh staged rows.
+    await deleteEntryBlobArtifacts(this.langCode, resourceId);
     const bytes = await blobBytes(blob);
     const { dictRows, freqRows } = deserializeResourcePortable(isGzip(bytes) ? gunzipFile(bytes) : bytes);
-    const wtx = db.transaction([STORES.ENTRY], 'readwrite');
-    const entryStore = wtx.objectStore(STORES.ENTRY);
-    const staleKeys = (await idbRequest(
-      entryStore.index(INDEXES.by_resource).getAllKeys(row.id),
-    )) as IDBValidKey[];
-    for (const key of staleKeys) entryStore.delete(key);
-    for (const entry of dictRows) entryStore.add({ ...entry, resourceId: row.id });
-    for (const entry of freqRows) entryStore.add({ ...entry, resourceId: row.id, kind: 'freq' });
-    await awaitIdbTx(wtx);
+    await dropStagedRows(this.langCode, resourceId);
+    // Bounded stage writes into the ingest DB — a single-tx write of a full
+    // resource is a multi-second commit, and even chunked writes on the main
+    // database serialize against every lookup read.
+    const entryDb = await getEntryDB(this.langCode);
+    const stageRows = async (
+      rows: readonly Record<string, unknown>[],
+      stamp: Record<string, unknown>,
+    ): Promise<void> => {
+      for (let i = 0; i < rows.length; i += SYNC_STAGE_CHUNK) {
+        const slice = rows.slice(i, i + SYNC_STAGE_CHUNK);
+        await new Promise<void>((resolve, reject) => {
+          const tx = entryDb.transaction(STORES.ENTRY, 'readwrite', { durability: 'relaxed' });
+          const store = tx.objectStore(STORES.ENTRY);
+          for (const entry of slice) store.add({ ...entry, ...stamp });
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+          tx.onabort = () => reject(tx.error);
+        });
+        if (i + SYNC_STAGE_CHUNK < rows.length) await stageGap();
+      }
+    };
+    await stageRows(dictRows, { resourceId });
+    await stageRows(freqRows, { resourceId, kind: 'freq' });
+    await compileEntryBlob(this.langCode, resourceId);
     if (row.format === 'json-entries') {
       await buildPhraseIndexForResource(this.langCode, row.id);
     }
@@ -372,12 +410,12 @@ class DictResourceLocalSource extends IdbLocalSource {
     const store = tx.objectStore(STORES.RESOURCE);
     const row = await this.resourceByToken(store, token);
     if (row?.id !== undefined) {
-      const contentKeys = (await idbRequest(
-        tx.objectStore(STORES.ENTRY).index(INDEXES.by_resource).getAllKeys(row.id),
-      )) as IDBValidKey[];
-      for (const contentKey of contentKeys) {
-        tx.objectStore(STORES.ENTRY).delete(contentKey);
-      }
+      // Staged ENTRY rows drop post-commit (artifactSweep → dropStagedRows):
+      // deleting a full resource inside the apply txn is a giant commit, and
+      // orphans are invisible anyway — the deleted resource id is filtered
+      // out of every lookup's allowed set.
+      tx.objectStore(STORES.ENTRY_META).delete(row.id);
+      this.artifactSweep.add(row.id);
       tx.objectStore(STORES.PHRASE_INDEX).delete(row.id);
       store.delete(row.id);
     }

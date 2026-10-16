@@ -189,6 +189,19 @@
   50% { opacity: 0.5; }
 }
 
+/* Compact: the info column can shrink to nothing beside grip + actions, so
+   it takes the full first line instead — controls wrap below. */
+@container (max-width: 479px) {
+  .row {
+    flex-wrap: wrap;
+  }
+
+  .info {
+    flex: 1 1 100%;
+    order: -1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .skeleton {
     animation: none;

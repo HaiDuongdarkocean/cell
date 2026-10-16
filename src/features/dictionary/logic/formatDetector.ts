@@ -175,6 +175,14 @@ export interface ZipDataEntry {
   readonly format: ImportFormat;
 }
 
+/** The data .json path inside a zip file/manifest map — shared pick for the
+ *  zipped single-file strategies. `files` values may be full bytes or heads. */
+export function pickDataJsonPath(files: Record<string, Uint8Array>, label: string): string {
+  const entry = selectZipDataJson(files);
+  if (!entry) throw new ParseError(`${label} zip: no .json entry found.`);
+  return entry.path;
+}
+
 const isDataJsonPath = (p: string): boolean =>
   p.endsWith('.json') && !p.endsWith('index.json') && !p.includes('_bank_');
 

@@ -2,8 +2,11 @@ import fs, { existsSync } from 'node:fs';
 import path from 'node:path';
 import {
   compilePhraseIndex,
+  compilePhraseIndexAsync,
   serializePhraseIndex,
+  serializePhraseIndexAsync,
   deserializePhraseIndex,
+  openLazyPhraseIndex,
   type PhraseIndexInput,
   STOPWORDS,
 } from '@/features/dictionary/logic/phraseIndexCompiler';
@@ -179,6 +182,77 @@ describe('phraseIndexCompiler', () => {
           .toEqual([...index.lookupByAnchor(anchor)]);
       }
       expect(index.byteSize).toBe(buffer.byteLength);
+    });
+
+    it('lazy-open produces identical templates, anchors, and postings', () => {
+      const original = compilePhraseIndex([
+        tmpl('kick the bucket', 1),
+        tmpl('spill the beans', 2),
+        tmpl('be (right) under your nose', 3),
+        tmpl('carry sb/sth through something', 4),
+        tmpl('put down sth', 5),
+      ]);
+      const buffer = serializePhraseIndex(original);
+      const full = deserializePhraseIndex(buffer);
+      const lazy = openLazyPhraseIndex(buffer);
+
+      expect(lazy.compilerVersion).toBe(full.compilerVersion);
+      expect(lazy.termCount).toBe(full.termCount);
+      expect(lazy.anchorCount).toBe(full.anchorCount);
+      expect(lazy.anchorKeys).toEqual(full.anchorKeys);
+      expect(lazy.byteSize).toBe(full.byteSize);
+      expect(lazy.templates.length).toBe(full.templates.length);
+
+      for (const t of full.templates) {
+        expect(lazy.templates[t.templateId]).toEqual(t);
+      }
+      for (const key of full.anchorKeys) {
+        expect([...lazy.lookupByAnchor(key)]).toEqual([...full.lookupByAnchor(key)]);
+      }
+      expect(lazy.lookupByAnchor('definitely-not-an-anchor')).toEqual([]);
+    });
+
+    it('lazy-open memoizes decoded templates', () => {
+      const original = compilePhraseIndex([tmpl('kick the bucket', 1)]);
+      const lazy = openLazyPhraseIndex(serializePhraseIndex(original));
+      expect(lazy.templates[0]).toBe(lazy.templates[0]);
+    });
+
+    it('lazy-open rejects bad magic and old versions', () => {
+      const original = compilePhraseIndex([tmpl('be under your nose', 1)]);
+      const buffer = serializePhraseIndex(original);
+      expect(() => openLazyPhraseIndex(buffer.slice(4))).toThrow(/bad magic/);
+      const view = new Uint8Array(buffer);
+      view[4] = 1; view[5] = 0; view[6] = 0; view[7] = 0;
+      expect(() => openLazyPhraseIndex(buffer)).toThrow(/version mismatch/);
+    });
+
+    it('async compile+serialize produce identical output to the sync path', async () => {
+      const inputs = [
+        tmpl('kick the bucket', 1),
+        tmpl('spill the beans', 2),
+        tmpl('be (right) under your nose', 3),
+        tmpl('put down sth', 4),
+        tmpl('carry sb/sth through something', 5),
+      ];
+      const yieldStub = async () => {};
+      const asyncIndex = await compilePhraseIndexAsync(inputs, yieldStub);
+      const syncIndex = compilePhraseIndex(inputs);
+      expect(asyncIndex.templates).toEqual(syncIndex.templates);
+      expect(asyncIndex.anchorKeys).toEqual(syncIndex.anchorKeys);
+      expect(asyncIndex.termCount).toBe(syncIndex.termCount);
+
+      const asyncBlob = await serializePhraseIndexAsync(asyncIndex, yieldStub);
+      const syncBlob = serializePhraseIndex(syncIndex);
+      expect(new Uint8Array(asyncBlob)).toEqual(new Uint8Array(syncBlob));
+    });
+
+    it('async compile yields control between iterations', async () => {
+      const inputs = Array.from({ length: 50 }, (_, i) => tmpl(`phrase number ${i}`));
+      let yields = 0;
+      const index = await compilePhraseIndexAsync(inputs, async () => { yields++; });
+      expect(yields).toBeGreaterThan(0);
+      expect(index.termCount).toBeGreaterThanOrEqual(50);
     });
 
     it('throws clear version-mismatch error on old-format blob', () => {

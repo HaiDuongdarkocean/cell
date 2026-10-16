@@ -8,22 +8,34 @@
 //
 // A zip containing both families produces one resource with components
 // {definitions, frequency}; the user's component subset can drop a family.
+//
+// Streaming port: bank files are inflated + scanned element-by-element —
+// JSON.parse runs per row (~KB) instead of on a whole multi-MB array — so
+// import no longer holds the inflated zip + decoded text + parsed graph.
 
 import { BaseImportStrategy, type RawFrequencyEntry, type RawDictionaryEntry, type StrategyOptions, type StrategyResult } from './baseImportStrategy';
-import { unzipAll, isImportZipEntry, decodeText } from '../logic/fileDetector';
+import { decodeText } from '../logic/fileDetector';
+import type { ReadableFile } from '../logic/fileDetector';
 import { yieldToEventLoop } from '../logic/yieldToEventLoop';
 import { toCanonicalDefinition } from '../logic/normalize/canonical';
 import { collectEntryComponents } from '../logic/dictionaryComponents';
 import { ParseError, CorruptedFileError } from '../logic/importErrors';
+import {
+  resolveImportSource,
+  streamTextChunks,
+  zipEntryBytes,
+  concatBytes,
+} from '../logic/importStreams';
+import type { ImportSourceInput } from '../logic/importStreams';
+import { iterJsonArrayElements } from '../logic/jsonElementScanner';
+import { MalformedJsonArrayError } from '../logic/jsonObjectScanner';
 import { bulkInsertFrequencyEntries, bulkInsertDictionaryEntries } from '../repositories/resourceEntryRepository';
 import type { FrequencyEntry, DictionaryEntry } from '@/entities/dictionary';
 
 /** Options for termBankStrategy. */
-export interface TermBankStrategyOptions {
-  readonly data: Uint8Array;
-  readonly fileName: string;
-  /** Pre-inflated zip entries (importOrchestrator already unzipped for the
-   *  format sniff) — reused instead of inflating `data` a second time. */
+export interface TermBankStrategyOptions extends ImportSourceInput {
+  /** Pre-inflated zip entries (legacy callers/tests) — reused instead of
+   *  streaming entries out of `data`. */
   readonly zipFiles?: Record<string, Uint8Array>;
 }
 
@@ -47,82 +59,133 @@ const isFreqRow = (e: StoredRow): e is Omit<FrequencyEntry, 'id'> => 'frequency'
 /** term-bank ZIP strategy — emits every bank family the zip contains. */
 export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDictionaryEntry, StoredRow> {
   readonly format = 'term-bank' as const;
-  private readonly data: Uint8Array;
-  private readonly zipFiles?: Record<string, Uint8Array>;
+  private readonly fileData: TermBankStrategyOptions;
   private attemptedTotal = 0;
   private readonly profile = { parseMs: 0, transformMs: 0, insertMs: 0 };
   private profileStart = 0;
+  private source!: ReadableFile;
+  private entryMap!: Record<string, Uint8Array>;
+  private inflated = false;
 
   constructor(options: StrategyOptions, fileData: TermBankStrategyOptions) {
     super(options);
-    this.data = fileData.data;
-    this.zipFiles = fileData.zipFiles;
+    this.fileData = fileData;
   }
 
   protected async *parse(): AsyncGenerator<RawFrequencyEntry | RawDictionaryEntry> {
     this.profileStart = performance.now();
-    let files: Record<string, Uint8Array>;
-    if (this.zipFiles) {
-      files = this.zipFiles;
+    if (this.fileData.zipFiles) {
+      // Legacy/test path — caller already inflated every entry.
+      this.entryMap = this.fileData.zipFiles;
+      this.inflated = true;
+      this.source = this.fileData.file ?? { size: 0, name: this.fileData.fileName, slice: () => ({ arrayBuffer: async () => new ArrayBuffer(0) }) };
     } else {
-      try {
-        files = unzipAll(this.data, isImportZipEntry);
-      } catch (e) {
-        throw new CorruptedFileError('Failed to unzip term-bank file.', e);
+      const { file, manifest } = await resolveImportSource(this.fileData);
+      if (manifest === null) {
+        throw new CorruptedFileError('Failed to unzip term-bank file.');
       }
+      this.source = file;
+      this.entryMap = manifest;
     }
 
-    // Parse index.json (validate structure)
-    const indexPath = Object.keys(files).find((p) => p.endsWith('index.json'));
+    const indexPath = Object.keys(this.entryMap).find((p) => p.endsWith('index.json'));
     if (!indexPath) {
       throw new ParseError('term-bank format: index.json not found in zip.');
     }
     try {
-      const indexJson: BankIndex = JSON.parse(decodeText(files[indexPath]!));
+      const indexJson: BankIndex = JSON.parse(decodeText(await this.entryAllBytes(indexPath)));
       void indexJson;
     } catch (e) {
       throw new ParseError('term-bank format: invalid index.json.', e);
     }
 
-    const paths = Object.keys(files);
+    const paths = Object.keys(this.entryMap);
     const emitDict = this.wants('definitions') && paths.some((p) => p.includes('term_bank'));
     const emitFreq = this.wants('frequency') && paths.some((p) => p.includes('term_meta_bank'));
     if (!emitDict && !emitFreq) {
       throw new ParseError('term-bank format: no term_bank_*.json or term_meta_bank_*.json files found.');
     }
 
-    if (emitDict) yield* this.parseTermBanks(files);
-    if (emitFreq) yield* this.parseTermMetaBanks(files);
+    if (emitDict) yield* this.parseTermBanks(paths);
+    if (emitFreq) yield* this.parseTermMetaBanks(paths);
   }
 
-  /** Grow the attempted-entry total as each bank lands (progress total is
+  /** Entry chunks — raw buffer when caller pre-inflated, streamed inflate
+   *  from the source file otherwise. */
+  private entryChunks(path: string): AsyncGenerator<Uint8Array> {
+    if (this.inflated) {
+      const bytes = this.entryMap[path];
+      return (async function* () {
+        if (bytes) yield bytes;
+      })();
+    }
+    return zipEntryBytes(this.source, path);
+  }
+
+  private async entryAllBytes(path: string): Promise<Uint8Array> {
+    const parts: Uint8Array[] = [];
+    for await (const chunk of this.entryChunks(path)) parts.push(chunk);
+    return concatBytes(parts);
+  }
+
+  /** Grow the attempted-entry total as entries parse (progress total is
    *  cumulative — it grows mid-import instead of a second parse pass). */
   private addToAttemptedTotal(count: number): void {
     this.attemptedTotal += count;
     this.batchProcessor.setTotal(this.attemptedTotal);
   }
 
+  /** Streamed elements of one bank file's top-level array. */
+  private async *bankElements(bankPath: string): AsyncGenerator<string> {
+    try {
+      for await (const el of iterJsonArrayElements(streamTextChunks(this.entryChunks(bankPath)))) {
+        yield el.text;
+      }
+    } catch (e) {
+      if (e instanceof MalformedJsonArrayError) {
+        throw new ParseError(`term-bank format: invalid ${bankPath}.`, e);
+      }
+      throw e;
+    }
+  }
+
+  /** Count elements without copying slices — the upfront progress total a
+   *  bank contributes (same semantics as the old whole-array .length). */
+  private async countBankElements(bankPath: string): Promise<number> {
+    let count = 0;
+    try {
+      for await (const _ of iterJsonArrayElements(
+        streamTextChunks(this.entryChunks(bankPath)),
+        { collectText: false },
+      )) {
+        count++;
+      }
+    } catch (e) {
+      if (e instanceof MalformedJsonArrayError) {
+        throw new ParseError(`term-bank format: invalid ${bankPath}.`, e);
+      }
+      throw e;
+    }
+    return count;
+  }
+
   /** Parse term_bank_*.json → dictionary entries. */
-  private async *parseTermBanks(files: Record<string, Uint8Array>): AsyncGenerator<RawDictionaryEntry> {
-    const bankPaths = Object.keys(files)
+  private async *parseTermBanks(paths: string[]): AsyncGenerator<RawDictionaryEntry> {
+    const bankPaths = paths
       .filter((p) => p.includes('term_bank') && !p.includes('term_meta_bank'))
       .sort();
 
     for (const bankPath of bankPaths) {
       await yieldToEventLoop();
       let segStart = performance.now();
-      let entries: TermBankEntry[];
-      try {
-        entries = JSON.parse(decodeText(files[bankPath]!));
-      } catch (e) {
-        throw new ParseError(`term-bank format: invalid ${bankPath}.`, e);
-      }
-      delete files[bankPath];
-      if (!Array.isArray(entries)) {
-        throw new ParseError(`term-bank format: ${bankPath} is not an array.`);
-      }
-      this.addToAttemptedTotal(entries.length);
-      for (const entry of entries) {
+      this.addToAttemptedTotal(await this.countBankElements(bankPath));
+      for await (const text of this.bankElements(bankPath)) {
+        let entry: TermBankEntry;
+        try {
+          entry = JSON.parse(text) as TermBankEntry;
+        } catch (e) {
+          throw new ParseError(`term-bank format: invalid ${bankPath}.`, e);
+        }
         const [expression, reading, definitionTags, rules, , definitions] = entry;
         const raw: RawDictionaryEntry = {
           term: expression,
@@ -140,25 +203,21 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
   }
 
   /** Parse term_meta_bank_*.json → frequency entries. */
-  private async *parseTermMetaBanks(files: Record<string, Uint8Array>): AsyncGenerator<RawFrequencyEntry> {
-    const bankPaths = Object.keys(files)
+  private async *parseTermMetaBanks(paths: string[]): AsyncGenerator<RawFrequencyEntry> {
+    const bankPaths = paths
       .filter((p) => p.includes('term_meta_bank'))
       .sort();
 
     for (const bankPath of bankPaths) {
       await yieldToEventLoop();
       let segStart = performance.now();
-      let entries: TermMetaEntry[];
-      try {
-        entries = JSON.parse(decodeText(files[bankPath]!));
-      } catch (e) {
-        throw new ParseError(`term-bank format: invalid ${bankPath}.`, e);
-      }
-      delete files[bankPath];
-      if (!Array.isArray(entries)) {
-        throw new ParseError(`term-bank format: ${bankPath} is not an array.`);
-      }
-      for (const entry of entries) {
+      for await (const text of this.bankElements(bankPath)) {
+        let entry: TermMetaEntry;
+        try {
+          entry = JSON.parse(text) as TermMetaEntry;
+        } catch (e) {
+          throw new ParseError(`term-bank format: invalid ${bankPath}.`, e);
+        }
         const [term, type, meta] = entry;
         if (type !== 'freq') continue;
         this.addToAttemptedTotal(1);

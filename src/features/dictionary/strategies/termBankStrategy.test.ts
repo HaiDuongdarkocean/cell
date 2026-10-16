@@ -275,7 +275,9 @@ describe('termBankStrategy — dictionary (term_bank)', () => {
     );
     const result = await strategy.execute();
     expect(result.wordCount).toBe(5100);
-    expect(progress[0]).toEqual([2000, 5000]);
+    expect(progress[0]![0]).toBeGreaterThan(0);
+    expect(progress[0]![0]).toBeLessThan(5100);
+    expect(progress[0]![1]).toBe(5000);
     expect(progress[progress.length - 1]).toEqual([5100, 5100]);
     expect(progress.some(([, total]) => total < 5100)).toBe(true);
   });

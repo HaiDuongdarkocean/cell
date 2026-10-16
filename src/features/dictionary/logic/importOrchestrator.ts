@@ -5,9 +5,10 @@
 // (wordCount, installationFinished=true) → return result.
 // Error → rollbackImport(resourceId) → rethrow. Rollback-during-rollback → RollbackError.
 
-import { validateFile, readFileBytes, isGzip, isZip, gunzipFile, unzipAll, isImportZipEntry, getExtension, stripExtension } from '../logic/fileDetector';
+import { validateFile, isGzip, getExtension, stripExtension } from '../logic/fileDetector';
 import type { ReadableFile } from '../logic/fileDetector';
 import { detectFormat, sniffZipFormat } from '../logic/formatDetector';
+import { resolveImportSource, gunzipHead } from './importStreams';
 import { deriveResourceType } from '../logic/dictionaryComponents';
 import { computeSignature, isSignature } from '../logic/signatureGenerator';
 import { createStrategy } from '../strategies/strategyFactory';
@@ -26,6 +27,7 @@ import {
   getAllResources,
 } from '../repositories/resourceRepository';
 import { deleteEntriesByResource } from '../repositories/resourceEntryRepository';
+import { compileEntryBlob } from '../repositories/entryBlobStore';
 import { deletePhraseIndex } from '../repositories/phraseIndexRepository';
 import { buildPhraseIndexForResource } from '../logic/phraseIndexBuilder';
 import type {
@@ -71,26 +73,25 @@ export async function importFile(
     await deleteResourceCascade(langCode, existing.id ?? 0);
   }
 
-  // 4. Read full file bytes — detection sniffs the head slice of the full
-  //    read instead of a second 1MB fetch.
-  let data = await readFileBytes(file);
-  let format = await detectFormat(file.name, data.slice(0, 1024 * 1024));
+  // 4. Head-only detection — the full file never lands in memory; strategies
+  //    stream it themselves (gunzip/unzip/scan per chunk).
+  const head = new Uint8Array(
+    await file.slice(0, Math.min(1024 * 1024, file.size)).arrayBuffer(),
+  );
+  let format = await detectFormat(file.name, head);
 
-  // 4a. A .gz whose head couldn't gunzip (or whose inner kind was guessed
-  //     from the inner extension) gets a content-truth re-sniff here —
-  //     decompressed bytes flow on to the strategy so it skips its own pass.
-  if (isGzip(data) && getExtension(file.name) === 'gz') {
-    data = gunzipFile(data);
-    format = await detectFormat(stripExtension(file.name), data.slice(0, 1024 * 1024));
+  // 4a. .gz: re-sniff on the inflated head only — the strategy stream-
+  //     decompresses the body itself.
+  if (isGzip(head) && getExtension(file.name) === 'gz') {
+    format = await detectFormat(stripExtension(file.name), await gunzipHead(file));
   }
 
-  // 4b. Zip >1MB can't be sniffed from the head — 'term-bank' is only the
-  //     extension default there. Re-sniff authoritative content on full bytes;
-  //     the inflated map flows on to the strategy so it skips its own pass.
-  let zipFiles: Record<string, Uint8Array> | undefined;
-  if (format === 'term-bank' && isZip(data)) {
-    zipFiles = unzipAll(data, isImportZipEntry);
-    const refined = sniffZipFormat(zipFiles);
+  // 4b. Zip: the streamed manifest (entry names + ≤64KB heads) sniffs the
+  //     format authoritatively for any size zip — no full inflate — and
+  //     flows on to the strategy so it skips its own manifest pass.
+  const { file: sourceFile, manifest } = await resolveImportSource({ file, fileName: file.name });
+  if (manifest) {
+    const refined = sniffZipFormat(manifest);
     if (refined) format = refined;
   }
 
@@ -109,8 +110,15 @@ export async function importFile(
 
   // 6. Execute strategy
   try {
-    const strategy = createStrategy(format, { resourceId, langCode, onProgress, components: options.components }, { data, fileName: file.name, zipFiles });
+    const strategy = createStrategy(format, { resourceId, langCode, onProgress, components: options.components }, { file: sourceFile, fileName: file.name, zipManifest: manifest ?? undefined });
     const result = await strategy.execute();
+
+    // 6b. Compile the staged rows into immutable entry chunks + meta (ADR-118).
+    //     Meta is written last — it is the commit point flipping this
+    //     resource's reads to the blob path — then staged rows are deleted.
+    //     Must succeed before installationFinished=true so a failure rolls
+    //     back the whole import.
+    await compileEntryBlob(langCode, resourceId);
 
     // 7. Build phrase index for entry-object dictionaries (ADR-037 §7.2).
     //    Must succeed before installationFinished=true so a blob failure

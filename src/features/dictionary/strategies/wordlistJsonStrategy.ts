@@ -3,52 +3,50 @@
 // Shape: {name, index: {tag: description}, list: [[term, reading, [tags]]]}.
 // Stored as DICTIONARY entries with definition = comma-joined tags so lookups
 // surface e.g. "N5" / "HSK 3" for a hovered word.
+//
+// Streaming port: the `list` member's rows are scanned + parsed one at a
+// time; other members (index map etc.) are skipped without buffering.
 
 import { BaseDictionaryStrategy } from './baseImportStrategy';
 import type { StrategyOptions, RawDictionaryEntry } from './baseImportStrategy';
-import { decodeText, isGzip, gunzipFile, isZip, unzipAll, isImportZipEntry } from '../logic/fileDetector';
-import { selectZipDataJson } from '../logic/formatDetector';
+import { pickDataJsonPath } from '../logic/formatDetector';
+import {
+  resolveImportSource,
+  streamByteSource,
+  streamTextChunks,
+  zipEntryBytes,
+  type ImportSourceInput,
+} from '../logic/importStreams';
+import { iterJsonObjectMemberElements } from '../logic/jsonElementScanner';
+import { MalformedJsonArrayError } from '../logic/jsonObjectScanner';
+import type { ReadableFile } from '../logic/fileDetector';
 import { ParseError } from '../logic/importErrors';
 import { bulkInsertDictionaryEntries } from '../repositories/resourceEntryRepository';
 import type { DictionaryEntry } from '@/entities/dictionary';
 
-interface WordlistJson {
-  readonly index?: Record<string, string>;
-  readonly list?: ReadonlyArray<readonly [string, string?, string[]?]>;
-}
+/** Kept for the existing import surface. */
+export type WordlistJsonStrategyOptions = ImportSourceInput;
 
 export class WordlistJsonStrategy extends BaseDictionaryStrategy {
   readonly format = 'wordlist-json' as const;
-  private readonly data: Uint8Array;
+  private readonly fileData: ImportSourceInput;
 
-  constructor(options: StrategyOptions, fileData: { data: Uint8Array; fileName: string }) {
+  constructor(options: StrategyOptions, fileData: ImportSourceInput) {
     super(options);
-    this.data = fileData.data;
+    this.fileData = fileData;
   }
 
   protected async *parse(): AsyncGenerator<RawDictionaryEntry> {
-    let data = this.data;
-    if (isGzip(data)) data = gunzipFile(data);
-    if (isZip(data)) {
-      const files = unzipAll(data, isImportZipEntry);
-      const entry = selectZipDataJson(files);
-      if (!entry) throw new ParseError('wordlist zip: no .json entry found.');
-      data = entry.bytes;
-    }
+    const { file, manifest } = await resolveImportSource(this.fileData);
 
-    let parsed: WordlistJson;
-    try {
-      parsed = JSON.parse(decodeText(data));
-    } catch (e) {
-      throw new ParseError('wordlist: invalid JSON.', e);
-    }
-    if (!parsed || !Array.isArray(parsed.list)) {
-      throw new ParseError('wordlist: expected {index, list} object.');
-    }
+    // Count pass for the exact total, then emit (same as the old
+    // parsed.list.length upfront report).
+    const countPass = this.listRows(this.freshBytes(file, manifest));
+    let total = 0;
+    for await (const _ of countPass) total++;
+    this.reportTotal(total);
 
-    this.reportTotal(parsed.list.length);
-
-    for (const row of parsed.list) {
+    for await (const row of this.listRows(this.freshBytes(file, manifest))) {
       const [term, reading, tags] = row;
       if (!term) continue;
       yield {
@@ -56,6 +54,45 @@ export class WordlistJsonStrategy extends BaseDictionaryStrategy {
         reading: reading || term,
         definition: Array.isArray(tags) ? tags.join(', ') : '',
       };
+    }
+  }
+
+  private freshBytes(
+    file: ReadableFile,
+    manifest: Record<string, Uint8Array> | null,
+  ): AsyncGenerator<Uint8Array> {
+    return manifest === null
+      ? streamByteSource(file)
+      : zipEntryBytes(file, pickDataJsonPath(manifest, 'wordlist'));
+  }
+
+  private async *listRows(
+    bytes: AsyncIterable<Uint8Array>,
+  ): AsyncGenerator<readonly [string, string?, string[]?]> {
+    let found = false;
+    try {
+      for await (const el of iterJsonObjectMemberElements(
+        streamTextChunks(bytes),
+        'list',
+        { onFound: () => { found = true; } },
+      )) {
+        let row: unknown;
+        try {
+          row = JSON.parse(el.text);
+        } catch (e) {
+          throw new ParseError('wordlist: invalid JSON.', e);
+        }
+        if (!Array.isArray(row)) continue;
+        yield row as unknown as readonly [string, string?, string[]?];
+      }
+    } catch (e) {
+      if (e instanceof MalformedJsonArrayError) {
+        throw new ParseError('wordlist: invalid JSON.', e);
+      }
+      throw e;
+    }
+    if (!found) {
+      throw new ParseError('wordlist: expected {index, list} object.');
     }
   }
 

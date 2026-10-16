@@ -244,25 +244,156 @@ export function serializePhraseIndex(index: PhraseIndex): ArrayBuffer {
 
   // Template table.
   for (const t of index.templates) {
-    writeString(w, t.sourceTerm);
-    writeString(w, t.normalizedTerm);
-    writeU8(w, t.fixedTokenCount);
-    writeU8(w, t.minSurfaceTokens);
-    writeU8(w, t.maxSurfaceTokens);
-    writeI32(w, t.frequencyRank);
-    writeU8(w, t.anchors.length);
-    for (const a of t.anchors) writeU32(w, intern(a));
-    const nodeBytes = serializeNodes(t.nodes, intern);
-    writeU32(w, nodeBytes.length);
-    writeBytes(w, nodeBytes);
+    writeTemplateRecord(w, t, intern);
   }
 
   // Anchor table: per anchor — tokenId + postingCount + templateIds
   for (const key of index.anchorKeys) {
-    writeU32(w, intern(key));
-    const ids = index.lookupByAnchor(key);
-    writeU32(w, ids.length);
-    for (const id of ids) writeU32(w, id);
+    writeAnchorRecord(w, index, key, intern);
+  }
+
+  const buffer = w.bytes.slice(0, w.offset).buffer;
+  (index as { byteSize: number }).byteSize = buffer.byteLength;
+  return buffer;
+}
+
+function writeTemplateRecord(w: ByteWriter, t: CompiledTemplate, intern: (s: string) => number): void {
+  writeString(w, t.sourceTerm);
+  writeString(w, t.normalizedTerm);
+  writeU8(w, t.fixedTokenCount);
+  writeU8(w, t.minSurfaceTokens);
+  writeU8(w, t.maxSurfaceTokens);
+  writeI32(w, t.frequencyRank);
+  writeU8(w, t.anchors.length);
+  for (const a of t.anchors) writeU32(w, intern(a));
+  const nodeBytes = serializeNodes(t.nodes, intern);
+  writeU32(w, nodeBytes.length);
+  writeBytes(w, nodeBytes);
+}
+
+function writeAnchorRecord(w: ByteWriter, index: PhraseIndex, key: string, intern: (s: string) => number): void {
+  writeU32(w, intern(key));
+  const ids = index.lookupByAnchor(key);
+  writeU32(w, ids.length);
+  for (const id of ids) writeU32(w, id);
+}
+
+/**
+ * Async twin of compilePhraseIndex — identical result, yields via `maybeYield`
+ * between iterations so a post-import build does not starve the SW event loop.
+ */
+export async function compilePhraseIndexAsync(
+  inputs: readonly PhraseIndexInput[],
+  maybeYield: () => Promise<void>,
+): Promise<PhraseIndex> {
+  const filtered: PhraseIndexInput[] = [];
+  for (const input of inputs) {
+    if (isIndexable(input.nodes)) filtered.push(input);
+    await maybeYield();
+  }
+  const expanded: PhraseIndexInput[] = [];
+  for (const input of filtered) {
+    expanded.push(input);
+    const variant = makeSeparableVariant(input);
+    if (variant) expanded.push(variant);
+    await maybeYield();
+  }
+  const renumbered = expanded.map((input, i) => ({ ...input, templateId: i }));
+
+  const templates: CompiledTemplate[] = renumbered.map((input, i) => ({
+    templateId: i,
+    sourceTerm: input.sourceTerm,
+    normalizedTerm: input.normalizedTerm,
+    nodes: input.nodes,
+    fixedTokenCount: input.fixedTokenCount,
+    minSurfaceTokens: input.minSurfaceTokens,
+    maxSurfaceTokens: input.maxSurfaceTokens,
+    frequencyRank: input.frequencyRank,
+    anchors: [],
+  }));
+
+  const postingCounts = new Map<string, number>();
+  const candidatesPerTemplate: string[][] = [];
+  for (const t of templates) {
+    const cands = collectAnchorCandidates(t.nodes);
+    candidatesPerTemplate.push(cands);
+    for (const c of new Set(cands)) {
+      postingCounts.set(c, (postingCounts.get(c) ?? 0) + 1);
+    }
+    await maybeYield();
+  }
+
+  const postings = new Map<string, number[]>();
+  const totalTemplates = templates.length;
+  for (let i = 0; i < templates.length; i++) {
+    const t = templates[i]!;
+    const anchors = selectAnchors(candidatesPerTemplate[i]!, postingCounts, totalTemplates);
+    templates[i] = { ...t, anchors };
+    for (const a of anchors) {
+      if (!postings.has(a)) postings.set(a, []);
+      postings.get(a)!.push(t.templateId);
+    }
+    await maybeYield();
+  }
+
+  const anchorKeys = [...postings.keys()].sort();
+  const lookup = (token: string): readonly number[] => postings.get(token) ?? [];
+  return {
+    compilerVersion: COMPILER_VERSION,
+    termCount: templates.length,
+    templates,
+    anchorKeys,
+    anchorCount: anchorKeys.length,
+    lookupByAnchor: lookup,
+    byteSize: 0,
+  };
+}
+
+/**
+ * Async twin of serializePhraseIndex — byte-identical output, yields via
+ * `maybeYield` between records so the SW stays responsive during the build.
+ */
+export async function serializePhraseIndexAsync(
+  index: PhraseIndex,
+  maybeYield: () => Promise<void>,
+): Promise<ArrayBuffer> {
+  const tokenTable = new Map<string, number>();
+  const tokenList: string[] = [];
+  function intern(token: string): number {
+    let id = tokenTable.get(token);
+    if (id === undefined) {
+      id = tokenList.length;
+      tokenTable.set(token, id);
+      tokenList.push(token);
+    }
+    return id;
+  }
+
+  for (const t of index.templates) {
+    for (const a of t.anchors) intern(a);
+    internNodes(t.nodes, intern);
+    await maybeYield();
+  }
+
+  const w = createWriter(1024 * 1024);
+  writeU32(w, MAGIC);
+  writeU32(w, index.compilerVersion);
+  writeU32(w, index.termCount);
+  writeU32(w, index.anchorCount);
+
+  writeU32(w, tokenList.length);
+  for (const token of tokenList) {
+    writeString(w, token);
+  }
+
+  for (const t of index.templates) {
+    writeTemplateRecord(w, t, intern);
+    await maybeYield();
+  }
+
+  for (const key of index.anchorKeys) {
+    writeAnchorRecord(w, index, key, intern);
+    await maybeYield();
   }
 
   const buffer = w.bytes.slice(0, w.offset).buffer;
@@ -346,6 +477,133 @@ export function deserializePhraseIndex(buffer: ArrayBuffer): PhraseIndex {
     anchorKeys,
     anchorCount,
     lookupByAnchor: (token: string) => postings.get(token) ?? [],
+    byteSize: buffer.byteLength,
+  };
+}
+
+const NO_POSTINGS: readonly number[] = [];
+const NO_POSTING = 0xffffffff;
+
+/**
+ * Open a phrase index blob without materializing it: only the token table and
+ * per-template/per-anchor byte directories are parsed up front. `templates[id]`
+ * decodes on first access and memoizes; `lookupByAnchor` reads postings straight
+ * from the blob. Use on the lookup hot path — keep `deserializePhraseIndex` for
+ * code that must iterate every template (validation, tests).
+ */
+export function openLazyPhraseIndex(buffer: ArrayBuffer): PhraseIndex {
+  const view = new Uint8Array(buffer);
+  let offset = 0;
+  const magic = readU32(view, offset); offset += 4;
+  if (magic !== MAGIC) throw new Error('phraseIndex: bad magic');
+  const version = readU32(view, offset); offset += 4;
+  if (version !== COMPILER_VERSION) {
+    throw new Error(`phraseIndex: version mismatch (expected ${COMPILER_VERSION}, got ${version}). Re-import the dictionary to rebuild the phrase index.`);
+  }
+  const termCount = readU32(view, offset); offset += 4;
+  const anchorCount = readU32(view, offset); offset += 4;
+
+  const tokenCount = readU32(view, offset); offset += 4;
+  const tokens: string[] = new Array(tokenCount);
+  const tokenToId = new Map<string, number>();
+  for (let i = 0; i < tokenCount; i++) {
+    const len = readU16(view, offset); offset += 2;
+    const s = utf8String(view.subarray(offset, offset + len));
+    offset += len;
+    tokens[i] = s;
+    tokenToId.set(s, i);
+  }
+
+  const templateOffsets = new Uint32Array(termCount);
+  for (let i = 0; i < termCount; i++) {
+    templateOffsets[i] = offset;
+    offset += skipString(view, offset);
+    offset += skipString(view, offset);
+    offset += 7;
+    const anchorN = view[offset]!;
+    offset += 1 + anchorN * 4;
+    const nodeLen = readU32(view, offset);
+    offset += 4 + nodeLen;
+  }
+
+  const anchorKeys: string[] = new Array(anchorCount);
+  const anchorOff = new Uint32Array(tokenCount).fill(NO_POSTING);
+  const anchorCnt = new Uint32Array(tokenCount);
+  for (let i = 0; i < anchorCount; i++) {
+    const tokenId = readU32(view, offset); offset += 4;
+    const postingN = readU32(view, offset); offset += 4;
+    anchorKeys[i] = tokens[tokenId]!;
+    anchorOff[tokenId] = offset;
+    anchorCnt[tokenId] = postingN;
+    offset += postingN * 4;
+  }
+
+  const postingCache = new Map<number, number[]>();
+  const lookupByAnchor = (token: string): readonly number[] => {
+    const tokenId = tokenToId.get(token);
+    if (tokenId === undefined) return NO_POSTINGS;
+    let ids = postingCache.get(tokenId);
+    if (ids) return ids;
+    const off = anchorOff[tokenId]!;
+    if (off === NO_POSTING) return NO_POSTINGS;
+    const n = anchorCnt[tokenId]!;
+    ids = new Array(n);
+    for (let i = 0; i < n; i++) ids[i] = readU32(view, off + i * 4);
+    postingCache.set(tokenId, ids);
+    return ids;
+  };
+
+  const decodeTemplate = (i: number): CompiledTemplate => {
+    let o = templateOffsets[i]!;
+    const sourceTerm = readString(view, o); o += skipString(view, o);
+    const normalizedTerm = readString(view, o); o += skipString(view, o);
+    const fixedTokenCount = view[o]!;
+    const minSurfaceTokens = view[o + 1]!;
+    const maxSurfaceTokens = view[o + 2]!;
+    const frequencyRank = readI32(view, o + 3);
+    o += 7;
+    const anchorN = view[o]!; o += 1;
+    const anchors: string[] = new Array(anchorN);
+    for (let a = 0; a < anchorN; a++) {
+      anchors[a] = tokens[readU32(view, o)]!; o += 4;
+    }
+    const nodeLen = readU32(view, o); o += 4;
+    const nodes = deserializeNodes(view, o, o + nodeLen, tokens);
+    return {
+      templateId: i,
+      sourceTerm,
+      normalizedTerm,
+      nodes,
+      fixedTokenCount,
+      minSurfaceTokens,
+      maxSurfaceTokens,
+      frequencyRank,
+      anchors,
+    };
+  };
+
+  const templateStore = new Array<CompiledTemplate>(termCount);
+  const templates = new Proxy(templateStore, {
+    get(t, prop, recv) {
+      if (typeof prop === 'string' && /^\d+$/.test(prop)) {
+        const i = +prop;
+        if (i < termCount) {
+          let v = t[i];
+          if (v === undefined) v = t[i] = decodeTemplate(i);
+          return v;
+        }
+      }
+      return Reflect.get(t, prop, recv);
+    },
+  });
+
+  return {
+    compilerVersion: version,
+    termCount,
+    templates,
+    anchorKeys,
+    anchorCount,
+    lookupByAnchor,
     byteSize: buffer.byteLength,
   };
 }

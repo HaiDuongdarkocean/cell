@@ -1,80 +1,83 @@
 // jsonArrayStrategy — JSON array of strings streaming (ADR-023 D3, spec F9).
 //
-// ["word1", "word2", ...] — frequency list. Token-level streaming parse
-// (không load full array vào RAM). Memory ~1 string at a time.
+// ["word1", "word2", ...] — frequency list. Element-level streaming scan:
+// memory ~one chunk + one string instead of the whole decoded array.
 
 import { BaseFrequencyStrategy } from './baseImportStrategy';
 import type { StrategyOptions, RawFrequencyEntry } from './baseImportStrategy';
-import { decodeText, isGzip, gunzipFile, isZip, unzipAll, isImportZipEntry } from '../logic/fileDetector';
-import { selectZipDataJson } from '../logic/formatDetector';
+import { pickDataJsonPath } from '../logic/formatDetector';
+import {
+  resolveImportSource,
+  streamByteSource,
+  streamTextChunks,
+  zipEntryBytes,
+  type ImportSourceInput,
+} from '../logic/importStreams';
+import { iterJsonArrayElements } from '../logic/jsonElementScanner';
+import { MalformedJsonArrayError } from '../logic/jsonObjectScanner';
+import type { ScannedElement } from '../logic/jsonElementScanner';
+import type { ReadableFile } from '../logic/fileDetector';
 import { ParseError } from '../logic/importErrors';
 import { bulkInsertFrequencyEntries } from '../repositories/resourceEntryRepository';
 import type { FrequencyEntry } from '@/entities/dictionary';
 
-/** Options for jsonArrayStrategy. */
-export interface JsonArrayStrategyOptions {
-  readonly data: Uint8Array;
-  readonly fileName: string;
-}
+/** Kept for the existing import surface. */
+export type JsonArrayStrategyOptions = ImportSourceInput;
 
 /** JSON array of strings strategy — frequency list. */
 export class JsonArrayStrategy extends BaseFrequencyStrategy {
   readonly format = 'json-array' as const;
-  private readonly data: Uint8Array;
+  private readonly fileData: ImportSourceInput;
 
   constructor(
     options: StrategyOptions,
-    fileData: JsonArrayStrategyOptions,
+    fileData: ImportSourceInput,
   ) {
     super(options);
-    this.data = fileData.data;
+    this.fileData = fileData;
   }
 
   protected async *parse(): AsyncGenerator<RawFrequencyEntry> {
-    let data = this.data;
-    if (isGzip(data)) data = gunzipFile(data);
-    if (isZip(data)) {
-      const files = unzipAll(data, isImportZipEntry);
-      const entry = selectZipDataJson(files);
-      if (!entry) throw new ParseError('JSON array zip: no .json entry found.');
-      data = entry.bytes;
-    }
-
-    let text: string;
+    const { file, manifest } = await resolveImportSource(this.fileData);
+    // Pass 1: validate every element is a string + count (exact total upfront,
+    // same as the old residue check before any insert). Pass 2 emits.
+    let total = 0;
     try {
-      text = decodeText(data);
+      for await (const el of this.elements(file, manifest)) {
+        if (el.kind !== 'string') throw new ParseError('Expected a JSON array of strings.');
+        total++;
+      }
     } catch (e) {
-      throw new ParseError(`Failed to decode JSON array file.`, e);
+      if (e instanceof ParseError) throw e;
+      if (e instanceof MalformedJsonArrayError) {
+        throw new ParseError('Expected a JSON array of strings.', e);
+      }
+      throw e;
     }
+    this.reportTotal(total);
 
-    const trimmed = text.trim();
-    const residue = trimmed.replace(/"(?:[^"\\]|\\.)*"/g, '').replace(/[\s,]/g, '');
-    if (residue !== '[]') {
-      throw new ParseError('Expected a JSON array of strings.');
-    }
-
-    // Streaming parse: extract strings one at a time via regex
-    // Matches "..." strings inside the array. Use JSON.parse for correct unescape.
-    const countRegex = /"((?:[^"\\]|\\.)*)"/g;
-    let matchCount = 0;
-    while (countRegex.exec(trimmed) !== null) matchCount++;
-    this.reportTotal(matchCount);
-
-    const stringRegex = /"((?:[^"\\]|\\.)*)"/g;
-    let match: RegExpExecArray | null;
     let index = 0;
-    while ((match = stringRegex.exec(trimmed)) !== null) {
-      const raw = match[1]!;
-      // Use JSON.parse for correct unescape (handles \\n, \\", \\\\, \\uXXXX, etc.)
+    for await (const el of this.elements(file, manifest)) {
       let unescaped: string;
       try {
-        unescaped = JSON.parse(`"${raw}"`);
+        unescaped = JSON.parse(el.text) as string;
       } catch (e) {
         throw new ParseError('Malformed string entry in JSON array.', e);
       }
       index++;
       yield { term: unescaped, reading: unescaped, frequency: index };
     }
+  }
+
+  private elements(
+    file: ReadableFile,
+    manifest: Record<string, Uint8Array> | null,
+  ): AsyncGenerator<ScannedElement> {
+    const bytes =
+      manifest === null
+        ? streamByteSource(file)
+        : zipEntryBytes(file, pickDataJsonPath(manifest, 'JSON array'));
+    return iterJsonArrayElements(streamTextChunks(bytes));
   }
 
   protected async flushBatch(batch: ReadonlyArray<Omit<FrequencyEntry, 'id'>>): Promise<void> {

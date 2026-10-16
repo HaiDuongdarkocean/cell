@@ -52,3 +52,19 @@
   width: calc(var(--space-10) * 3);
   max-width: 100%;
 }
+
+/* Compact: "top ≤" + input can't share the row with name+desc — the input
+   drops to its own line and stretches. */
+@container (max-width: 479px) {
+  .bandRow {
+    flex-wrap: wrap;
+  }
+
+  .bandInputWrap {
+    flex: 1 1 100%;
+  }
+
+  .bands .bandInput {
+    flex: 1;
+  }
+}

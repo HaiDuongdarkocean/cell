@@ -11,11 +11,11 @@
 
 import { parsePhraseTemplate, type PhraseTemplateStatus } from './phraseTemplateParser';
 import {
-  compilePhraseIndex,
-  serializePhraseIndex,
+  compilePhraseIndexAsync,
+  serializePhraseIndexAsync,
   type PhraseIndexInput,
 } from './phraseIndexCompiler';
-import { findDictionaryByResource } from '../repositories/resourceEntryRepository';
+import { findDictionaryTermsByResource } from '../repositories/resourceEntryRepository';
 import { putPhraseIndex } from '../repositories/phraseIndexRepository';
 import { createYieldChecker } from './yieldToEventLoop';
 
@@ -74,7 +74,7 @@ export async function buildPhraseIndexForResource(
   // strategy — skips the getAll that would materialize every rich row.
   // Absent (sync rebuilds, lazy self-heal) → read the store as before.
   const sourceTerms: readonly string[] =
-    terms ?? (await findDictionaryByResource(langCode, resourceId)).map((e) => e.term);
+    terms ?? await findDictionaryTermsByResource(langCode, resourceId);
 
   const seen = new Set<string>();
   const inputs: PhraseIndexInput[] = [];
@@ -136,8 +136,8 @@ export async function buildPhraseIndexForResource(
   // An empty supported set is not an error — an entry-object resource with no
   // multiword terms simply produces no phrase index. We still persist a blob
   // so the worker knows this resource has been processed.
-  const index = compilePhraseIndex(inputs);
-  const blob = serializePhraseIndex(index);
+  const index = await compilePhraseIndexAsync(inputs, maybeYield);
+  const blob = await serializePhraseIndexAsync(index, maybeYield);
 
   await putPhraseIndex(langCode, resourceId, blob, {
     compilerVersion: index.compilerVersion,

@@ -1,20 +1,23 @@
 import 'fake-indexeddb/auto';
 import type { ResourceInfo } from '@/entities/dictionary';
 import {
-  STORES,
   clearAllStores,
   closeAllDBs,
+  deleteDB,
   getDB,
   getDbName,
+  stagedRowsForResource,
 } from '../repositories/baseRepository';
 import { addResource } from '../repositories/resourceRepository';
-import { bulkInsertDictionaryEntries } from '../repositories/resourceEntryRepository';
+import { bulkInsertDictionaryEntries, bulkInsertFrequencyEntries } from '../repositories/resourceEntryRepository';
+import { compileEntryBlob } from '../repositories/entryBlobStore';
 import { createDictBlobReader } from './dictBlobReader';
 import { blobToBytes } from '@/features/sync';
 import { gunzipFile, isGzip } from '../logic/fileDetector';
 import {
   deserializeResourcePortable,
   ensureResourceContentHash,
+  partitionResourceRows,
   serializeResourcePortable,
   sha256Hex,
 } from './resourceIdentity';
@@ -57,14 +60,7 @@ afterEach(() => {
 });
 
 afterAll(async () => {
-  const dbName = await getDbName(LANG);
-  closeAllDBs();
-  await new Promise<void>((resolve, reject) => {
-    const request = indexedDB.deleteDatabase(dbName);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-    request.onblocked = () => resolve();
-  });
+  await deleteDB(await getDbName(LANG));
 });
 
 describe('dictBlobReader', () => {
@@ -93,14 +89,26 @@ describe('dictBlobReader', () => {
     const { dictRows, freqRows } = deserializeResourcePortable(raw);
     expect(freqRows).toEqual([]);
     expect(dictRows.map((r) => r['term']).sort()).toEqual(['apple', 'berry']);
-    const db = await getDB(LANG);
-    const tx = db.transaction([STORES.ENTRY], 'readonly');
-    const stored = (await new Promise<Record<string, unknown>[]>((resolve, reject) => {
-      const req = tx.objectStore(STORES.ENTRY).getAll();
-      req.onsuccess = () => resolve(req.result as Record<string, unknown>[]);
-      req.onerror = () => reject(req.error);
-    }));
+    const stored = await stagedRowsForResource(LANG, resourceId);
     const expected = serializeResourcePortable(stored, []);
+    expect([...raw]).toEqual([...expected]);
+  });
+
+  it('serializes identical bytes once the resource is blob-backed', async () => {
+    const resourceId = await addResource(LANG, makeResource('sig-blob', 'hash-blob'));
+    await bulkInsertDictionaryEntries(LANG, [
+      makeEntry(resourceId, 'apple'),
+      makeEntry(resourceId, 'berry'),
+    ]);
+    await bulkInsertFrequencyEntries(LANG, [
+      { resourceId, term: 'apple', reading: 'apple', frequency: 3 },
+    ]);
+    const staged = await stagedRowsForResource(LANG, resourceId);
+    const { dictRows, freqRows } = partitionResourceRows(staged);
+    const expected = serializeResourcePortable(dictRows, freqRows);
+    await compileEntryBlob(LANG, resourceId);
+    const reader = createDictBlobReader(async () => [LANG]);
+    const raw = gunzipFile(await blobToBytes((await reader.read('hash-blob'))!));
     expect([...raw]).toEqual([...expected]);
   });
 

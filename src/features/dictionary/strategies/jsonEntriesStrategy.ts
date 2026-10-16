@@ -1,24 +1,27 @@
 // jsonEntriesStrategy — entry-object JSON dictionary (ADR-023 D3, spec F9).
 //
 // JSON array [{term, altterm, pronunciation, definition, pos, examples, audio}, ...].
-// Parse + yield dictionary entries with rich fields.
+// Two streamed passes — count objects, then parse + yield — so a 170MB file
+// keeps memory at one chunk + one entry instead of a decoded string + graph.
 
 import { BaseDictionaryStrategy } from './baseImportStrategy';
 import type { StrategyOptions, StrategyResult, RawDictionaryEntry } from './baseImportStrategy';
-import { decodeText, isGzip, gunzipFile, isZip, unzipAll, isImportZipEntry } from '../logic/fileDetector';
-import { selectZipDataJson } from '../logic/formatDetector';
+import { pickDataJsonPath } from '../logic/formatDetector';
+import {
+  readAllText,
+  resolveImportSource,
+  streamByteSource,
+  streamTextChunks,
+  zipEntryBytes,
+  type ImportSourceInput,
+} from '../logic/importStreams';
+import { iterJsonArrayElements } from '../logic/jsonElementScanner';
+import { MalformedJsonArrayError } from '../logic/jsonObjectScanner';
+import type { ScannedElement } from '../logic/jsonElementScanner';
+import type { ReadableFile } from '../logic/fileDetector';
 import { ParseError } from '../logic/importErrors';
-import { scanTopLevelJsonObjectRanges, MalformedJsonArrayError } from '../logic/jsonObjectScanner';
-import type { JsonObjectRange } from '../logic/jsonObjectScanner';
-import { createYieldChecker } from '../logic/yieldToEventLoop';
 import { bulkInsertDictionaryEntries } from '../repositories/resourceEntryRepository';
 import type { DictionaryEntry, SenseBlock, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo, PronunciationAccent } from '@/entities/dictionary';
-
-/** Options for jsonEntriesStrategy. */
-export interface JsonEntriesStrategyOptions {
-  readonly data: Uint8Array;
-  readonly fileName: string;
-}
 
 /** Entry-object JSON shape. `senses` is present on pre-normalized files
  *  (tihoka-convert-dictionary script output) and passes through verbatim —
@@ -46,15 +49,18 @@ interface JsonEntry {
 
 const MULTIWORD_RE = /\s/;
 
+/** Kept for the existing import surface. */
+export type JsonEntriesStrategyOptions = ImportSourceInput;
+
 /** entry-object JSON dictionary strategy. */
 export class JsonEntriesStrategy extends BaseDictionaryStrategy {
   readonly format = 'json-entries' as const;
-  private readonly data: Uint8Array;
+  private readonly fileData: ImportSourceInput;
   private readonly phraseTermSet = new Set<string>();
 
-  constructor(options: StrategyOptions, fileData: JsonEntriesStrategyOptions) {
+  constructor(options: StrategyOptions, fileData: ImportSourceInput) {
     super(options);
-    this.data = fileData.data;
+    this.fileData = fileData;
   }
 
   protected override transformEntry(raw: RawDictionaryEntry, _index: number): Omit<DictionaryEntry, 'id'> | null {
@@ -70,57 +76,31 @@ export class JsonEntriesStrategy extends BaseDictionaryStrategy {
   }
 
   protected async *parse(): AsyncGenerator<RawDictionaryEntry> {
-    let data = this.data;
-    if (isGzip(data)) data = gunzipFile(data);
-    if (isZip(data)) {
-      const files = unzipAll(data, isImportZipEntry);
-      const entry = selectZipDataJson(files);
-      if (!entry) throw new ParseError('entry-object JSON zip: no .json entry found.');
-      data = entry.bytes;
-    }
-
-    let text: string;
+    const { file, manifest } = await resolveImportSource(this.fileData);
+    // Pass 1: count top-level objects (exact total upfront, same as the old
+    // range-collecting scan). Top-level array elements stay rejected as before.
+    let total = 0;
     try {
-      text = decodeText(data);
-    } catch (e) {
-      throw new ParseError('Failed to decode entry-object JSON file.', e);
-    }
-
-    const trimmed = text.trim();
-    if (!trimmed.startsWith('[')) {
-      try {
-        JSON.parse(trimmed);
-      } catch (e) {
-        throw new ParseError('entry-object JSON: invalid JSON.', e);
-      }
-      throw new ParseError('entry-object JSON: expected array of entries.');
-    }
-    if (!trimmed.endsWith(']')) {
-      throw new ParseError('entry-object JSON: invalid JSON.');
-    }
-
-    // One envelope-validating scan collects exact ranges — the count is
-    // known upfront (exact total) without a second charCodeAt pass.
-    const maybeYield = createYieldChecker();
-    const ranges: JsonObjectRange[] = [];
-    try {
-      for (const range of scanTopLevelJsonObjectRanges(trimmed)) {
-        ranges.push(range);
-        await maybeYield();
+      for await (const el of this.elements(file, manifest)) {
+        if (el.kind === 'array') {
+          throw new ParseError('entry-object JSON: invalid JSON.');
+        }
+        if (el.kind === 'object') total++;
       }
     } catch (e) {
+      if (e instanceof ParseError) throw e;
       if (e instanceof MalformedJsonArrayError) {
-        throw new ParseError('entry-object JSON: invalid JSON.', e);
+        throw await this.classifyMalformed(file, manifest, e);
       }
       throw e;
     }
-    this.reportTotal(ranges.length);
+    this.reportTotal(total);
 
-    for (const { start, end } of ranges) {
-      await maybeYield();
+    for await (const el of this.elements(file, manifest)) {
+      if (el.kind !== 'object') continue;
       let entry: JsonEntry;
       try {
-        entry = JSON.parse(trimmed.slice(start, end)) as JsonEntry;
+        entry = JSON.parse(el.text) as JsonEntry;
       } catch (e) {
         throw new ParseError('entry-object JSON: invalid JSON.', e);
       }
@@ -146,6 +126,41 @@ export class JsonEntriesStrategy extends BaseDictionaryStrategy {
         anagrams: Array.isArray(entry.anagrams) ? entry.anagrams : undefined,
       };
     }
+  }
+
+  private byteSource(
+    file: ReadableFile,
+    manifest: Record<string, Uint8Array> | null,
+  ): AsyncGenerator<Uint8Array> {
+    return manifest === null
+      ? streamByteSource(file)
+      : zipEntryBytes(file, pickDataJsonPath(manifest, 'entry-object JSON'));
+  }
+
+  private elements(
+    file: ReadableFile,
+    manifest: Record<string, Uint8Array> | null,
+  ): AsyncGenerator<ScannedElement> {
+    return iterJsonArrayElements(streamTextChunks(this.byteSource(file, manifest)));
+  }
+
+  /** Malformed input parity with the old whole-text path: a doc that parses
+   *  as JSON but isn't an array gets "expected array"; anything else gets
+   *  "invalid JSON". Error path only — safe to re-read the source. */
+  private async classifyMalformed(
+    file: ReadableFile,
+    manifest: Record<string, Uint8Array> | null,
+    cause: MalformedJsonArrayError,
+  ): Promise<ParseError> {
+    if (!cause.message.startsWith("expected '['")) {
+      return new ParseError('entry-object JSON: invalid JSON.', cause);
+    }
+    try {
+      JSON.parse(await readAllText(this.byteSource(file, manifest)));
+    } catch (e) {
+      return new ParseError('entry-object JSON: invalid JSON.', e);
+    }
+    return new ParseError('entry-object JSON: expected array of entries.', cause);
   }
 
   protected async flushBatch(batch: ReadonlyArray<Omit<DictionaryEntry, 'id'>>): Promise<void> {

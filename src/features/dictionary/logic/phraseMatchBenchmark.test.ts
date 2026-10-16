@@ -4,6 +4,7 @@ import {
   compilePhraseIndex,
   serializePhraseIndex,
   deserializePhraseIndex,
+  openLazyPhraseIndex,
   type PhraseIndexInput,
 } from '@/features/dictionary/logic/phraseIndexCompiler';
 import { parsePhraseTemplate } from '@/features/dictionary/logic/phraseTemplateParser';
@@ -95,6 +96,30 @@ function loadFixtureIndex(): { index: PhraseIndex; blob: ArrayBuffer; inputs: Ph
     const elapsed = performance.now() - start;
 
     expect(elapsed).toBeLessThan(300);
+  });
+
+  it('lazy-open parses the directory in under 60ms', () => {
+    const start = performance.now();
+    const index = openLazyPhraseIndex(fixture.blob);
+    const elapsed = performance.now() - start;
+
+    expect(elapsed).toBeLessThan(60);
+    expect(index.termCount).toBe(fixture.index.termCount);
+  });
+
+  it('lazy index matches identically to the deserialized index', () => {
+    const lazy = openLazyPhraseIndex(fixture.blob);
+    const full = deserializePhraseIndex(fixture.blob);
+    const requests: PhraseMatchRequest[] = [
+      { sentence: 'The old man kicked the bucket.', cursorOffset: 12 },
+      { sentence: 'The answer was right under my nose.', cursorOffset: 11 },
+      { sentence: 'The quick brown fox jumps over the lazy dog.', cursorOffset: 4 },
+    ];
+    for (const request of requests) {
+      const a = matchPhrase(request, lazy);
+      const b = matchPhrase(request, full);
+      expect(a).toEqual(b);
+    }
   });
 
   it('matches a simple phrase in under 30ms (P06: kick the bucket)', () => {

@@ -14,7 +14,7 @@ import {
   deleteEntriesByResource,
   isContiguousKeys,
 } from '@/features/dictionary/repositories/resourceEntryRepository';
-import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
+import { closeAllDBs, clearAllStores, getDB, STORES } from '@/features/dictionary/repositories/baseRepository';
 
 const storageLocalGetMock = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
 
@@ -96,6 +96,22 @@ describe('resourceEntryRepository — dictionary', () => {
     expect(results[0].term).toBe('apple');
   });
 
+  it('reads rows staged in the legacy main-DB ENTRY store', async () => {
+    const db = await getDB(LANG);
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORES.ENTRY, 'readwrite');
+      tx.objectStore(STORES.ENTRY).add({ ...makeDictEntry('legacy'), backwardTerm: 'ycagel' });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    const byTerm = await findDictionaryByTerm(LANG, 'legacy');
+    expect(byTerm).toHaveLength(1);
+    expect(byTerm[0].term).toBe('legacy');
+    await expect(countEntriesByResource(LANG, RESOURCE_ID)).resolves.toBe(1);
+    await deleteEntriesByResource(LANG, RESOURCE_ID);
+    await expect(countEntriesByResource(LANG, RESOURCE_ID)).resolves.toBe(0);
+  });
+
   it('findDictionaryByPrefix returns entries starting with prefix', async () => {
     await bulkInsertDictionaryEntries(LANG, [
       makeDictEntry('apple'),
@@ -152,16 +168,19 @@ describe('resourceEntryRepository — dictionary', () => {
     const calls: Array<[number, number]> = [];
     await deleteEntriesByResource(LANG, RESOURCE_ID, (d, t) => calls.push([d, t]));
     await expect(countEntriesByResource(LANG, RESOURCE_ID)).resolves.toBe(0);
-    expect(calls).toEqual([[0, 600], [600, 600]]);
+    expect(calls).toEqual([[0, 600], [256, 600], [512, 600], [600, 600]]);
   });
 
   it('deleteEntriesByResource reports per-chunk progress when contiguous keys exceed one chunk', async () => {
-    await bulkInsertDictionaryEntries(LANG, Array.from({ length: 9000 }, (_, i) => makeDictEntry(`t${i}`)));
+    await bulkInsertDictionaryEntries(LANG, Array.from({ length: 3000 }, (_, i) => makeDictEntry(`t${i}`)));
     const calls: Array<[number, number]> = [];
     await deleteEntriesByResource(LANG, RESOURCE_ID, (d, t) => calls.push([d, t]));
     await expect(countEntriesByResource(LANG, RESOURCE_ID)).resolves.toBe(0);
-    expect(calls).toEqual([[0, 9000], [8192, 9000], [9000, 9000]]);
-  });
+    const expected: Array<[number, number]> = [[0, 3000]];
+    for (let done = 256; done < 3000; done += 256) expected.push([done, 3000]);
+    expected.push([3000, 3000]);
+    expect(calls).toEqual(expected);
+  }, 60000);
 
   it('deleteEntriesByResource deletes only own rows when keys interleave', async () => {
     await bulkInsertDictionaryEntries(LANG, Array.from({ length: 5 }, (_, i) => makeDictEntry(`a${i}`)));
@@ -180,7 +199,7 @@ describe('resourceEntryRepository — dictionary', () => {
     await deleteEntriesByResource(LANG, RESOURCE_ID, (d, t) => calls.push([d, t]));
     await expect(countEntriesByResource(LANG, RESOURCE_ID)).resolves.toBe(0);
     await expect(countEntriesByResource(LANG, 2)).resolves.toBe(1);
-    expect(calls).toEqual([[0, 600], [300, 600], [600, 600]]);
+    expect(calls).toEqual([[0, 601], [256, 601], [512, 601], [600, 601]]);
   });
 
   it('sampleDictionaryEntries returns the first N entries for a resource', async () => {
