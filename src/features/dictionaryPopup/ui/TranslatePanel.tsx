@@ -11,6 +11,7 @@ import panelStyles from './DictionaryPanelView.module.css';
 import styles from './TranslatePanel.module.css';
 import { AiStreamStatus } from './AiStreamStatus';
 import { getLocale, t } from '@/shared/i18n';
+import { isoCodeToLabel } from '@/shared/config/languageRegistry';
 import type { AiProviderId } from '@/entities/settings';
 
 /** Session source + answer-language controls shared with the AI/breakdown
@@ -127,7 +128,11 @@ export function TranslatePanel({
                 onSelect={() => sourceMenu.onPickLanguage(lang)}
                 data-tihoka-id={`translate-lang-${lang}`}
               >
-                {t('dict.ai.answerIn', [lang === 'native' ? nativeLang : sourceMenu.targetLang])}
+                {t('dict.ai.answerIn', [
+                  lang === 'native'
+                    ? nativeLang
+                    : (isoCodeToLabel(sourceMenu.targetLang) ?? sourceMenu.targetLang).replace(/^./, (c) => c.toUpperCase()),
+                ])}
               </MenuItem>
             ))}
           </Menu>

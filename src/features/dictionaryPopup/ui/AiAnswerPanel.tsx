@@ -6,6 +6,7 @@ import { Skeleton } from '@/shared/ui/Skeleton';
 import { Tooltip } from '@/shared/ui/Tooltip';
 import { Menu, MenuItem, MenuSeparator } from '@/shared/ui/Menu';
 import { getLocale, t } from '@/shared/i18n';
+import { isoCodeToLabel } from '@/shared/config/languageRegistry';
 import { AiStreamStatus } from './AiStreamStatus';
 import type { BreakdownChunk } from '@/features/aiBridge';
 import checkStyles from './DictionaryCheckable.module.css';
@@ -71,6 +72,7 @@ export function AiAnswerPanel({
   );
   const activeProvider = state.provider ?? selectedProvider;
   const nativeLang = getLocale() === 'vi' ? 'Vietnamese' : 'English';
+  const targetLangName = (isoCodeToLabel(targetLang) ?? targetLang).replace(/^./, (c) => c.toUpperCase());
   const loginNames = state.loginProviders.map(providerLabel).join(', ');
   const errorDescription = loginNames
     ? t('dict.ai.loginRequired', [loginNames])
@@ -122,7 +124,7 @@ export function AiAnswerPanel({
               onSelect={() => onPickLanguage(lang)}
               data-tihoka-id={`ai-lang-${lang}`}
             >
-              {t('dict.ai.answerIn', [lang === 'native' ? nativeLang : targetLang])}
+              {t('dict.ai.answerIn', [lang === 'native' ? nativeLang : targetLangName])}
             </MenuItem>
           ))}
         </Menu>
