@@ -4,6 +4,7 @@ import {
   adapterForHost,
   classifyAskError,
   isAiProviderId,
+  probeSession,
   providerOrderFromSettings,
   resolveProviderOrder,
 } from './providers';
@@ -77,4 +78,30 @@ test('classifyAskError maps bridge error strings to failure kinds', () => {
   expect(classifyAskError('AI_ASK timeout')).toBe('timeout');
   expect(classifyAskError('bridge tab not ready')).toBe('domError');
   expect(classifyAskError(undefined)).toBe('domError');
+});
+
+describe('probeSession — invisible login guard', () => {
+  const jsonRes = (body: unknown, status = 200) =>
+    ({ ok: status >= 200 && status < 300, status, json: () => Promise.resolve(body) }) as Response;
+  const mockFetch = (impl: () => Promise<Response>) => {
+    globalThis.fetch = jest.fn(impl) as unknown as typeof fetch;
+  };
+
+  it('reports in when the session endpoint returns a user/token', async () => {
+    mockFetch(() => Promise.resolve(jsonRes({ accessToken: 'tok', user: { id: 'u' } })));
+    expect(await probeSession('chatgpt')).toBe('in');
+  });
+
+  it('reports out on 401 or an empty session body', async () => {
+    mockFetch(() => Promise.resolve(jsonRes({}, 401)));
+    expect(await probeSession('claude')).toBe('out');
+    mockFetch(() => Promise.resolve(jsonRes({})));
+    expect(await probeSession('chatgpt')).toBe('out');
+  });
+
+  it('reports unknown on network errors so the DOM ping decides', async () => {
+    mockFetch(() => Promise.reject(new Error('offline')));
+    expect(await probeSession('gemini')).toBe('unknown');
+    expect(await probeSession('deepseek')).toBe('unknown');
+  });
 });

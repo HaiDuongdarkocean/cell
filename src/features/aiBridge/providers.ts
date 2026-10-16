@@ -30,6 +30,10 @@ export interface AiProviderAdapter {
   tabUrlPatterns: string[];
   /** location.host suffix the content script uses to pick its adapter. */
   host: string;
+  /** URL substrings proving the tab landed on a login wall — lets the
+   *  handler fast-fail loginRequired instead of waiting out the composer
+   *  grace window on a logged-out session. */
+  loginUrlPatterns?: string[];
   composer: {
     selectors: string[];
     isTextarea?: boolean;
@@ -51,6 +55,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderAdapter> = {
     url: 'https://chatgpt.com/',
     tabUrlPatterns: ['https://chatgpt.com/*'],
     host: 'chatgpt.com',
+    loginUrlPatterns: ['auth.openai.com', 'chatgpt.com/auth/login'],
     composer: {
       selectors: [
         '#prompt-textarea',
@@ -79,6 +84,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderAdapter> = {
     url: 'https://gemini.google.com/app',
     tabUrlPatterns: ['https://gemini.google.com/*'],
     host: 'gemini.google.com',
+    loginUrlPatterns: ['accounts.google.com'],
     composer: {
       selectors: [
         'div.ql-editor[contenteditable="true"][aria-label="Enter a prompt for Gemini"]',
@@ -98,6 +104,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderAdapter> = {
     url: 'https://chat.deepseek.com/',
     tabUrlPatterns: ['https://chat.deepseek.com/*'],
     host: 'chat.deepseek.com',
+    loginUrlPatterns: ['/sign_in', '/login'],
     composer: {
       selectors: ['textarea[placeholder="Message DeepSeek"]', 'textarea'],
       isTextarea: true,
@@ -115,6 +122,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderAdapter> = {
     url: 'https://claude.ai/new',
     tabUrlPatterns: ['https://claude.ai/*'],
     host: 'claude.ai',
+    loginUrlPatterns: ['claude.ai/login', 'claude.ai/signup'],
     composer: {
       selectors: [
         'div.tiptap.ProseMirror[contenteditable="true"][aria-label="Write your prompt to Claude"]',
@@ -165,6 +173,54 @@ export function resolveProviderOrder(
   const order = cleaned.length ? cleaned : [...DEFAULT_PROVIDER_ORDER];
   if (!requested) return order;
   return [requested, ...order.filter((id) => id !== requested)];
+}
+
+export type SessionProbe = 'in' | 'out' | 'unknown';
+
+async function probeJsonSession(
+  url: string,
+  hasSession: (body: unknown) => boolean,
+): Promise<SessionProbe> {
+  try {
+    const res = await fetch(url, { credentials: 'include' });
+    if (res.status === 401 || res.status === 403) return 'out';
+    if (!res.ok) return 'unknown';
+    return hasSession(await res.json()) ? 'in' : 'out';
+  } catch {
+    return 'unknown';
+  }
+}
+
+async function probeGeminiSession(): Promise<SessionProbe> {
+  try {
+    const res = await fetch('https://gemini.google.com/app', { credentials: 'include' });
+    if (!res.ok) return 'unknown';
+    if (res.redirected && res.url.includes('accounts.google')) return 'out';
+    return (await res.text()).includes('SNlM0e') ? 'in' : 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
+/** Login guard run from the service worker — no tab needed. 'unknown'
+ *  defers to the DOM ping in the provider tab (DeepSeek keeps its token in
+ *  localStorage, invisible to a fetch probe). */
+export function probeSession(provider: AiProviderId): Promise<SessionProbe> {
+  switch (provider) {
+    case 'chatgpt':
+      return probeJsonSession('https://chatgpt.com/api/auth/session', (j) => {
+        const s = j as { user?: unknown; accessToken?: unknown };
+        return Boolean(s?.accessToken ?? s?.user);
+      });
+    case 'gemini':
+      return probeGeminiSession();
+    case 'claude':
+      return probeJsonSession('https://claude.ai/api/organizations', (j) => {
+        return Array.isArray(j) && j.length > 0;
+      });
+    case 'deepseek':
+      return Promise.resolve('unknown');
+  }
 }
 
 export const AI_ASK_FAILURE_KINDS = [

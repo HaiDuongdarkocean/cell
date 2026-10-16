@@ -24,9 +24,11 @@ import {
   type AiAskFailureKind,
   type AiProviderAdapter,
 } from '@/features/aiBridge/providers';
-import { createTab, queryTabs, sendTabMessage } from '@/shared/lib/chrome-apis/tabs';
+import { createTab, getTab, queryTabs, sendTabMessage, updateTab } from '@/shared/lib/chrome-apis/tabs';
+import { updateWindow } from '@/shared/lib/chrome-apis/windows';
 
 const BRIDGE_READY_TIMEOUT_MS = 30_000;
+const COMPOSER_WAIT_MS = 15_000;
 const ATTEMPT_TIMEOUT_MS = 90_000;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -62,6 +64,17 @@ async function ensureBridgeTabId(adapter: AiProviderAdapter): Promise<number> {
   return created.id;
 }
 
+/** Surface the provider tab only when the user must act on it (login/challenge). */
+async function focusBridgeTab(tabId: number): Promise<void> {
+  const tab = await getTab(tabId).catch(() => null);
+  if (!tab) return;
+  await updateTab(tabId, { active: true }).catch(() => {});
+  if (tab.windowId !== undefined) {
+    await updateWindow(tab.windowId, { state: 'normal' }).catch(() => {});
+    await updateWindow(tab.windowId, { focused: true }).catch(() => {});
+  }
+}
+
 async function pingBridge(tabId: number): Promise<BridgePing | null> {
   try {
     return await sendTabMessage<BridgePing>(tabId, { type: MESSAGE_TYPES.AI_PING });
@@ -80,6 +93,26 @@ async function awaitBridgeReady(tabId: number): Promise<BridgePing> {
   }
 }
 
+/** A freshly created background tab answers the ping before its SPA mounts
+ *  the composer — keep polling until it appears, the URL proves a login
+ *  wall, or the grace window runs out. */
+async function awaitComposer(
+  tabId: number,
+  adapter: AiProviderAdapter,
+  seed: BridgePing,
+): Promise<BridgePing> {
+  const deadline = Date.now() + COMPOSER_WAIT_MS;
+  let ping = seed;
+  while (!ping.composer) {
+    const url = ping.url;
+    if (url && adapter.loginUrlPatterns?.some((p) => url.includes(p))) break;
+    if (Date.now() >= deadline) break;
+    await sleep(750);
+    ping = (await pingBridge(tabId)) ?? ping;
+  }
+  return ping;
+}
+
 function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   return Promise.race([
     p,
@@ -92,11 +125,11 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
 async function askOnProvider(
   adapter: AiProviderAdapter,
   prompt: string,
-): Promise<{ ok: true; text: string } | { ok: false; error: AiAskFailureKind }> {
+): Promise<{ ok: true; text: string } | { ok: false; error: AiAskFailureKind; loginTabId?: number }> {
   try {
     const tabId = await ensureBridgeTabId(adapter);
-    const ping = await awaitBridgeReady(tabId);
-    if (!ping.composer) return { ok: false, error: 'loginRequired' };
+    const ping = await awaitComposer(tabId, adapter, await awaitBridgeReady(tabId));
+    if (!ping.composer) return { ok: false, error: 'loginRequired', loginTabId: tabId };
     const reply = await withTimeout(
       sendTabMessage<BridgeReply>(tabId, {
         type: MESSAGE_TYPES.AI_ASK,
@@ -149,13 +182,18 @@ export function registerAiBridgeHandlers(ctx: BackgroundContext): void {
         const configured = providerOrderFromSettings(await ctx.loadSettings());
         const order = resolveProviderOrder(configured, parsed.data.provider);
         const attempts: AskAttempt[] = [];
+        let loginTabId: number | undefined;
         for (const provider of order) {
           const outcome = await askOnProvider(AI_PROVIDERS[provider], parsed.data.prompt);
           if (outcome.ok) {
             return { success: true, data: { text: outcome.text, provider } };
           }
+          if (outcome.error === 'loginRequired' && loginTabId === undefined) {
+            loginTabId = outcome.loginTabId;
+          }
           attempts.push({ provider, error: outcome.error });
         }
+        if (loginTabId !== undefined) void focusBridgeTab(loginTabId);
         return { success: false, error: 'all_failed', data: { attempts } };
       } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
