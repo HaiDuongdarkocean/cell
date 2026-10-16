@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react';
 import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
-import { EmptyState } from '@/shared/ui/EmptyState';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { Tooltip } from '@/shared/ui/Tooltip';
 import { Menu, MenuItem, MenuSeparator } from '@/shared/ui/Menu';
@@ -72,11 +71,6 @@ export function AiAnswerPanel({
   const nativeLang = getLocale() === 'vi' ? 'Vietnamese' : 'English';
   const targetLangName = (isoCodeToLabel(targetLang) ?? targetLang).replace(/^./, (c) => c.toUpperCase());
   const loginNames = state.loginProviders.map(providerLabel).join(', ');
-  const errorDescription = loginNames
-    ? t('dict.ai.loginRequired', [loginNames])
-    : state.error === 'all_failed'
-      ? undefined
-      : (state.error ?? undefined);
 
   return (
     <Panel id="dictionary-ai-panel">
@@ -184,18 +178,13 @@ export function AiAnswerPanel({
 
         {state.phase === 'error' && (
           <PanelItem padded>
-            <EmptyState
-              size="md"
-              icon={<Icon name="alertCircle" />}
-              title={t('dict.ai.allFailed')}
-              description={errorDescription}
-              action={
-                <Button variant="outline" size="sm" onClick={onRetry} data-tihoka-id="ai-retry">
-                  {t('dict.ai.retry')}
-                </Button>
-              }
-              data-tihoka-id="dictionary-ai-error"
-            />
+            <p className={styles.TihokaAiError} data-tihoka-id="dictionary-ai-error">
+              {loginNames
+                ? t('dict.ai.loginRequired', [loginNames])
+                : state.error === 'rateLimit'
+                  ? t('dict.ai.rateLimit')
+                  : t('dict.ai.errorHint')}
+            </p>
           </PanelItem>
         )}
 

@@ -187,6 +187,8 @@
   "dict.ai.answerIn": "Trả lời bằng $1",
   "dict.ai.retry": "Thử lại",
   "dict.ai.failoverNotice": "$1 không phản hồi — đang hỏi $2…",
+  "dict.ai.errorHint": "Chưa lấy được câu trả lời — thử lại hoặc đổi nguồn khác.",
+  "dict.ai.rateLimit": "Nguồn đang bận — đợi một lúc rồi thử lại nhé.",
   "dict.ai.allFailed": "Mọi nhà cung cấp đều lỗi.",
   "dict.ai.loginRequired": "$1 chưa đăng nhập — mở tab của nó và đăng nhập, hoặc chọn nhà cung cấp khác.",
   "dict.ai.provider.chatgpt": "ChatGPT",

@@ -187,6 +187,8 @@
   "dict.ai.answerIn": "Answer in $1",
   "dict.ai.retry": "Retry",
   "dict.ai.failoverNotice": "$1 did not respond — asking $2…",
+  "dict.ai.errorHint": "Couldn’t get an answer — retry or pick another source.",
+  "dict.ai.rateLimit": "The provider is busy right now — give it a moment, then try again.",
   "dict.ai.allFailed": "All providers failed to answer.",
   "dict.ai.loginRequired": "$1 is not signed in — open its tab and log in, or pick another provider.",
   "dict.ai.provider.chatgpt": "ChatGPT",

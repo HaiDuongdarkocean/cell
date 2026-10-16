@@ -166,18 +166,7 @@ export function TranslatePanel({
     return (
       <Panel id="dictionary-translate-panel">
         {sourceHead}
-        <div className={panelStyles.TihokaTranslateError}>{error}</div>
-        <EmptyState
-          size="md"
-          icon={<Icon name="languages"  />}
-          title={t('dict.translate.empty')}
-          action={
-            <Button variant="outline" size="md" onClick={onTranslate}>
-              {t('dict.translate.action', [targetLang])}
-            </Button>
-          }
-          data-tihoka-id="dictionary-translate-empty"
-        />
+        <div className={panelStyles.TihokaTranslateError} data-tihoka-id="dictionary-translate-error">{error}</div>
       </Panel>
     );
   }

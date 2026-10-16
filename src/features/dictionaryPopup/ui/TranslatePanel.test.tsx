@@ -39,8 +39,8 @@ describe('TranslatePanel', () => {
     );
 
     expect(screen.getByText('translate failed')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Translate to vi/i }));
-    expect(onTranslate).toHaveBeenCalled();
+    expect(screen.getByTestId('dictionary-translate-error')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Translate to vi/i })).not.toBeInTheDocument();
   });
 
   it('shows the empty state and triggers translation', () => {
