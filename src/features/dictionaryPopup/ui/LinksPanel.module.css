@@ -1,11 +1,5 @@
-/* LinksPanel — external dictionary links list. */
-
-.TihokaLinks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
-}
+/* LinksPanel — external dictionary link chips; panel/list chrome is the
+   PopupPanel kit. */
 
 .TihokaLinksItem {
   height: fit-content;

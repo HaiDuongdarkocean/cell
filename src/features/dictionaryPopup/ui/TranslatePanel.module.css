@@ -1,18 +1,6 @@
-/* TranslatePanel — translation blocks, target/native text, skeleton.
-   Shared checkbox contract (TihokaTranslateBlock / TihokaDefCheckBox / --selected)
-   lives in DictionaryCheckable.module.css. */
-
-.TihokaTranslate {
-  padding: 0 var(--space-2);
-}
-
-.TihokaTranslateHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-1);
-  margin-bottom: var(--space-2);
-}
+/* TranslatePanel — translation block content + skeleton.
+   Panel chrome (wrapper/head) + checkable contract live in PopupPanel /
+   DictionaryCheckable. */
 
 .TihokaTranslateText {
   flex: 1;

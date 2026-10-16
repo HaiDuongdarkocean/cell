@@ -1,18 +1,4 @@
-/* AiAnswerPanel — source menu + answer card (spec ai-bridge-dictionary). */
-
-.TihokaAi {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: 0 var(--space-2) var(--space-2);
-}
-
-.TihokaAiHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-1);
-}
+/* AiAnswerPanel — source menu trigger; list/item chrome lives in PopupPanel. */
 
 .TihokaAiSource {
   display: inline-flex;
@@ -37,45 +23,7 @@
   cursor: default;
 }
 
-.TihokaAiAnswer {
-  border-radius: var(--radius-md);
-  background: var(--color-field);
-  padding: var(--space-2);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-normal, 1.5);
-}
-
 .TihokaAiText {
   margin: 0;
   white-space: pre-wrap;
-}
-
-.TihokaAiChunkList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.TihokaAiChunk {
-  padding: var(--space-1-5) var(--space-1);
-}
-
-.TihokaAiChunkBody {
-  min-width: 0;
-}
-
-.TihokaAiChunkText {
-  font-weight: var(--font-weight-semibold, 600);
-}
-
-.TihokaAiChunkMeta {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  margin-top: var(--space-0-5);
-}
-
-.TihokaAiNotice {
-  margin: 0 0 var(--space-1);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
 }

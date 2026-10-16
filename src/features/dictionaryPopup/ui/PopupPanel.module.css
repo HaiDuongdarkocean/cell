@@ -1,0 +1,91 @@
+/* PopupPanel kit — panel chrome, list containers, item body sections.
+   All spacing on tokens; checkable-row visuals live in DictionaryCheckable. */
+
+.TihokaPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0;
+}
+
+.TihokaPanelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+}
+
+.TihokaPanelHeadSource {
+  min-width: 0;
+}
+
+.TihokaPanelHeadActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.TihokaPanelList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.TihokaPanelList--sm {
+  gap: var(--space-1);
+}
+
+.TihokaPanelList--horizontal {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.TihokaPanelList--wrap {
+  flex-wrap: wrap;
+}
+
+.TihokaPanelCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--color-field);
+  padding: var(--space-1);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal, 1.5);
+}
+
+.TihokaPanelItem {
+  border-radius: var(--radius-sm);
+}
+
+.TihokaPanelItem--padded {
+  padding: var(--space-1-5) var(--space-1);
+}
+
+.TihokaPanelItemBody {
+  min-width: 0;
+  flex: 1;
+}
+
+.TihokaPanelItemHead {
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.TihokaPanelItemMeta {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  margin-top: var(--space-0-5);
+}
+
+.TihokaPanelItemLabel {
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.TihokaPanelNotice {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}

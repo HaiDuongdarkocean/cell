@@ -2,11 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import { EmptyState } from '@/shared/ui/EmptyState';
-import { Spinner } from '@/shared/ui/Spinner';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { Tooltip } from '@/shared/ui/Tooltip';
 import { Menu, MenuItem, MenuSeparator } from '@/shared/ui/Menu';
-import checkStyles from './DictionaryCheckable.module.css';
+import { Panel, PanelHead, PanelItem } from './PopupPanel';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './TranslatePanel.module.css';
 import { AiStreamStatus } from './AiStreamStatus';
@@ -75,87 +74,93 @@ export function TranslatePanel({
       : t(`dict.ai.provider.${sourceMenu.activeSource}`)
     : undefined;
   const sourceHead = engine ? (
-    <div className={styles.TihokaTranslateHead}>
-      {sourceMenu ? (
+    <PanelHead
+      source={(
         <>
-          <button
-            ref={triggerRef}
-            type="button"
-            className={styles.TihokaTranslateSource}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-            disabled={sourceMenu.busy}
-            onClick={() => setMenuOpen((v) => !v)}
-            data-tihoka-id="translate-source-menu"
-          >
-            {loading
-              ? t('dict.ai.asking', [activeLabel ?? ''])
-              : t('dict.ai.sourcedFrom', [activeLabel ?? ''])}
-            <Icon name="chevronDown" aria-hidden />
-          </button>
-          <Menu
-            open={menuOpen}
-            onClose={() => setMenuOpen(false)}
-            triggerRef={triggerRef}
-            ariaLabel={t('dict.ai.provider.aria')}
-          >
-            <MenuItem
-              radio
-              selected={sourceMenu.activeSource === 'google'}
-              onSelect={() => sourceMenu.onPickSource('google')}
-              data-tihoka-id="translate-source-google"
+          {sourceMenu ? (
+            <button
+              ref={triggerRef}
+              type="button"
+              className={styles.TihokaTranslateSource}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              disabled={sourceMenu.busy}
+              onClick={() => setMenuOpen((v) => !v)}
+              data-tihoka-id="translate-source-menu"
             >
-              Google
-            </MenuItem>
-            <MenuSeparator />
-            {sourceMenu.providerOrder.map((p) => (
+              {loading
+                ? t('dict.ai.asking', [activeLabel ?? ''])
+                : t('dict.ai.sourcedFrom', [activeLabel ?? ''])}
+              <Icon name="chevronDown" aria-hidden />
+            </button>
+          ) : (
+            <span className={styles.TihokaTranslateSource}>
+              {t('dict.ai.sourcedFrom', [engine === 'google' ? 'Google' : (aiProviderLabel ?? t('dict.translate.engine.ai'))])}
+            </span>
+          )}
+          {sourceMenu && (
+            <Menu
+              open={menuOpen}
+              onClose={() => setMenuOpen(false)}
+              triggerRef={triggerRef}
+              ariaLabel={t('dict.ai.provider.aria')}
+            >
               <MenuItem
-                key={p}
                 radio
-                selected={sourceMenu.activeSource === p}
-                onSelect={() => sourceMenu.onPickSource(p)}
-                data-tihoka-id={`translate-source-${p}`}
+                selected={sourceMenu.activeSource === 'google'}
+                onSelect={() => sourceMenu.onPickSource('google')}
+                data-tihoka-id="translate-source-google"
               >
-                {t(`dict.ai.provider.${p}`)}
+                Google
               </MenuItem>
-            ))}
-            <MenuSeparator />
-            {(['native', 'target'] as const).map((lang) => (
-              <MenuItem
-                key={lang}
-                radio
-                selected={sourceMenu.answerLanguage === lang}
-                onSelect={() => sourceMenu.onPickLanguage(lang)}
-                data-tihoka-id={`translate-lang-${lang}`}
-              >
-                {t('dict.ai.answerIn', [
-                  lang === 'native'
-                    ? nativeLang
-                    : (isoCodeToLabel(sourceMenu.targetLang) ?? sourceMenu.targetLang).replace(/^./, (c) => c.toUpperCase()),
-                ])}
-              </MenuItem>
-            ))}
-          </Menu>
+              <MenuSeparator />
+              {sourceMenu.providerOrder.map((p) => (
+                <MenuItem
+                  key={p}
+                  radio
+                  selected={sourceMenu.activeSource === p}
+                  onSelect={() => sourceMenu.onPickSource(p)}
+                  data-tihoka-id={`translate-source-${p}`}
+                >
+                  {t(`dict.ai.provider.${p}`)}
+                </MenuItem>
+              ))}
+              <MenuSeparator />
+              {(['native', 'target'] as const).map((lang) => (
+                <MenuItem
+                  key={lang}
+                  radio
+                  selected={sourceMenu.answerLanguage === lang}
+                  onSelect={() => sourceMenu.onPickLanguage(lang)}
+                  data-tihoka-id={`translate-lang-${lang}`}
+                >
+                  {t('dict.ai.answerIn', [
+                    lang === 'native'
+                      ? nativeLang
+                      : (isoCodeToLabel(sourceMenu.targetLang) ?? sourceMenu.targetLang).replace(/^./, (c) => c.toUpperCase()),
+                  ])}
+                </MenuItem>
+              ))}
+            </Menu>
+          )}
         </>
-      ) : (
-        <span className={styles.TihokaTranslateSource}>
-          {t('dict.ai.sourcedFrom', [engine === 'google' ? 'Google' : (aiProviderLabel ?? t('dict.translate.engine.ai'))])}
-        </span>
       )}
-      <Tooltip content={t('dict.ai.retry')}>
-        <Button
-          variant="ghost"
-          size="sm"
-          shape="circle"
-          aria-label={t('dict.ai.retry')}
-          disabled={loading}
-          onClick={onRetry ?? onTranslate}
-          data-tihoka-id="translate-retry"
-        >
-          <Icon name="rotateCcw" />
-        </Button>
-      </Tooltip>
-    </div>
+      actions={(
+        <Tooltip content={t('dict.ai.retry')}>
+          <Button
+            variant="ghost"
+            size="sm"
+            shape="circle"
+            aria-label={t('dict.ai.retry')}
+            disabled={loading}
+            onClick={onRetry ?? onTranslate}
+            data-tihoka-id="translate-retry"
+          >
+            <Icon name="rotateCcw" />
+          </Button>
+        </Tooltip>
+      )}
+    />
   ) : null;
   // Auto-translate once when panel opens with no translation and no error yet
   const autoTranslateFiredRef = useRef(false);
@@ -169,20 +174,20 @@ export function TranslatePanel({
 
   if (loading && !translation) {
     return (
-      <div className={styles.TihokaTranslate} data-tihoka-id="dictionary-translate-panel">
+      <Panel id="dictionary-translate-panel">
         {sourceHead}
         {engine === 'ai' && aiStreamText !== undefined ? (
           <AiStreamStatus text={aiStreamText || undefined} />
         ) : (
           <TranslateSkeleton />
         )}
-      </div>
+      </Panel>
     );
   }
 
   if (error) {
     return (
-      <div className={styles.TihokaTranslate} data-tihoka-id="dictionary-translate-panel">
+      <Panel id="dictionary-translate-panel">
         {sourceHead}
         <div className={panelStyles.TihokaTranslateError}>{error}</div>
         <EmptyState
@@ -196,35 +201,31 @@ export function TranslatePanel({
           }
           data-tihoka-id="dictionary-translate-empty"
         />
-      </div>
+      </Panel>
     );
   }
 
   if (translation) {
     return (
-      <div className={styles.TihokaTranslate} data-tihoka-id="dictionary-translate-panel">
+      <Panel id="dictionary-translate-panel">
         {sourceHead}
-        <div
-          className={`${checkStyles.TihokaTranslateBlock} ${selected ? checkStyles['TihokaTranslateBlock--selected'] : ''}`}
-          onClick={onToggle}
-          role="button"
-          aria-pressed={selected}
-          tabIndex={0}
+        <PanelItem
+          checkMode="block"
+          checked={selected}
+          loading={loading}
+          onToggle={onToggle}
         >
           <div className={styles.TihokaTranslateText}>
             <div className={styles.TihokaTranslateTarget}>{translation}</div>
             <div className={styles.TihokaTranslateNative}>{sentence || term}</div>
           </div>
-          <span className={`${checkStyles.TihokaDefCheckBox} ${loading ? checkStyles['TihokaDefCheckBox--loading'] : ''}`} aria-hidden="true">
-            {loading ? <Spinner size="xl" color="accent" /> : <Icon name="check" size="md" />}
-          </span>
-        </div>
-      </div>
+        </PanelItem>
+      </Panel>
     );
   }
 
   return (
-    <div className={styles.TihokaTranslate} data-tihoka-id="dictionary-translate-panel">
+    <Panel id="dictionary-translate-panel">
       {sourceHead}
       <EmptyState
         size="md"
@@ -237,7 +238,7 @@ export function TranslatePanel({
         }
         data-tihoka-id="dictionary-translate-empty"
       />
-    </div>
+    </Panel>
   );
 }
 

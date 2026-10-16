@@ -2,19 +2,8 @@
    Shared checkbox contract (TihokaAudioItem / TihokaDefCheckBox / --checked) lives
    in DictionaryCheckable.module.css — the unified checkbox SSOT block. */
 
-.TihokaAudio {
-  padding: 0 var(--space-2);
-}
-
 /* Subtab bar (word/sentence) — shared InkTabs component
    (src/shared/ui/InkTabs), liquid ink-bar animation included. */
-
-/* Item list — gap drives row spacing; no margins on items. */
-.TihokaAudioItems {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
 
 .TihokaAudioReconnect {
   display: flex;
@@ -107,7 +96,7 @@
 /* Plain text label — the row (.TihokaAudioItem) is the checkable host, so
    this is a non-interactive span. flex:1 keeps the name/meta stack filling
    the space right of the play button; text stays left-aligned. */
-.TihokaAudioItems .TihokaAudioLabel {
+.TihokaAudioLabel {
   flex: 1;
   display: flex;
   flex-direction: column;

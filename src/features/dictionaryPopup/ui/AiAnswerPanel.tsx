@@ -8,8 +8,8 @@ import { Menu, MenuItem, MenuSeparator } from '@/shared/ui/Menu';
 import { getLocale, t } from '@/shared/i18n';
 import { isoCodeToLabel } from '@/shared/config/languageRegistry';
 import { AiStreamStatus } from './AiStreamStatus';
+import { Panel, PanelCard, PanelHead, PanelItem, PanelItemHead, PanelItemMeta, PanelNotice } from './PopupPanel';
 import type { BreakdownChunk } from '@/features/aiBridge';
-import checkStyles from './DictionaryCheckable.module.css';
 import styles from './AiAnswerPanel.module.css';
 import type { AiProviderId, AiAskState } from '../logic/useAiAsk';
 
@@ -81,146 +81,134 @@ export function AiAnswerPanel({
       : (state.error ?? undefined);
 
   return (
-    <div className={styles.TihokaAi} data-tihoka-id="dictionary-ai-panel">
-      <div className={styles.TihokaAiHead}>
-        <button
-          ref={triggerRef}
-          type="button"
-          className={styles.TihokaAiSource}
-          aria-haspopup="menu"
-          aria-expanded={menuOpen}
-          disabled={busy}
-          onClick={() => setMenuOpen((v) => !v)}
-          data-tihoka-id="ai-provider-menu"
-        >
-          {state.phase === 'loading'
-            ? t('dict.ai.asking', [providerLabel(activeProvider)])
-            : t('dict.ai.sourcedFrom', [providerLabel(activeProvider)])}
-          <Icon name="chevronDown" aria-hidden />
-        </button>
-        <Menu
-          open={menuOpen}
-          onClose={() => setMenuOpen(false)}
-          triggerRef={triggerRef}
-          ariaLabel={t('dict.ai.provider.aria')}
-        >
-          {ordered.map((p) => (
-            <MenuItem
-              key={p}
-              radio
-              selected={activeProvider === p && state.phase !== 'error'}
-              onSelect={() => onPickProvider(p)}
-              data-tihoka-id={`ai-provider-${p}`}
-            >
-              {providerLabel(p)}
-            </MenuItem>
-          ))}
-          <MenuSeparator />
-          {(['native', 'target'] as const).map((lang) => (
-            <MenuItem
-              key={lang}
-              radio
-              selected={answerLanguage === lang}
-              onSelect={() => onPickLanguage(lang)}
-              data-tihoka-id={`ai-lang-${lang}`}
-            >
-              {t('dict.ai.answerIn', [lang === 'native' ? nativeLang : targetLangName])}
-            </MenuItem>
-          ))}
-        </Menu>
-        <Tooltip content={t('dict.ai.retry')}>
-          <Button
-            variant="ghost"
-            size="sm"
-            shape="circle"
-            aria-label={t('dict.ai.retry')}
-            disabled={busy}
-            onClick={onRetry}
-            data-tihoka-id="ai-retry"
-          >
-            <Icon name="rotateCcw" />
-          </Button>
-        </Tooltip>
-      </div>
-
-      <div className={styles.TihokaAiAnswer} data-tihoka-id="dictionary-ai-answer">
-        {state.phase === 'loading' && (
+    <Panel id="dictionary-ai-panel">
+      <PanelHead
+        source={(
           <>
+            <button
+              ref={triggerRef}
+              type="button"
+              className={styles.TihokaAiSource}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              disabled={busy}
+              onClick={() => setMenuOpen((v) => !v)}
+              data-tihoka-id="ai-provider-menu"
+            >
+              {state.phase === 'loading'
+                ? t('dict.ai.asking', [providerLabel(activeProvider)])
+                : t('dict.ai.sourcedFrom', [providerLabel(activeProvider)])}
+              <Icon name="chevronDown" aria-hidden />
+            </button>
+            <Menu
+              open={menuOpen}
+              onClose={() => setMenuOpen(false)}
+              triggerRef={triggerRef}
+              ariaLabel={t('dict.ai.provider.aria')}
+            >
+              {ordered.map((p) => (
+                <MenuItem
+                  key={p}
+                  radio
+                  selected={activeProvider === p && state.phase !== 'error'}
+                  onSelect={() => onPickProvider(p)}
+                  data-tihoka-id={`ai-provider-${p}`}
+                >
+                  {providerLabel(p)}
+                </MenuItem>
+              ))}
+              <MenuSeparator />
+              {(['native', 'target'] as const).map((lang) => (
+                <MenuItem
+                  key={lang}
+                  radio
+                  selected={answerLanguage === lang}
+                  onSelect={() => onPickLanguage(lang)}
+                  data-tihoka-id={`ai-lang-${lang}`}
+                >
+                  {t('dict.ai.answerIn', [lang === 'native' ? nativeLang : targetLangName])}
+                </MenuItem>
+              ))}
+            </Menu>
+          </>
+        )}
+        actions={(
+          <Tooltip content={t('dict.ai.retry')}>
+            <Button
+              variant="ghost"
+              size="sm"
+              shape="circle"
+              aria-label={t('dict.ai.retry')}
+              disabled={busy}
+              onClick={onRetry}
+              data-tihoka-id="ai-retry"
+            >
+              <Icon name="rotateCcw" />
+            </Button>
+          </Tooltip>
+        )}
+      />
+
+      <PanelCard id="dictionary-ai-answer">
+        {state.phase === 'loading' && (
+          <PanelItem padded>
             {state.failoverFrom && (
-              <p className={styles.TihokaAiNotice}>
+              <PanelNotice>
                 {t('dict.ai.failoverNotice', [providerLabel(state.failoverFrom), providerLabel(state.provider ?? state.failoverFrom)])}
-              </p>
+              </PanelNotice>
             )}
             <AiStreamStatus text={state.answer?.text} />
-          </>
+          </PanelItem>
         )}
 
         {state.phase === 'answered' && state.answer && (
           chunks && chunks.length > 0 ? (
-            <div className={styles.TihokaAiChunkList} data-tihoka-id="ai-chunk-list">
-              {chunks.map((c, i) => {
-                const checked = checkedChunks?.has(i) ?? false;
-                return (
-                  <div
-                    key={i}
-                    className={`${checkStyles.TihokaDefExampleItem} ${styles.TihokaAiChunk}`}
-                    role="checkbox"
-                    aria-checked={checked}
-                    tabIndex={0}
-                    onClick={() => onToggleChunk?.(i)}
-                    onKeyDown={(e) => {
-                      if (e.key === ' ' || e.key === 'Enter') {
-                        e.preventDefault();
-                        onToggleChunk?.(i);
-                      }
-                    }}
-                  >
-                    <span
-                      className={`${checkStyles.TihokaDefCheck} ${checked ? checkStyles['TihokaDefCheck--checked'] : ''}`}
-                    >
-                      <span className={checkStyles.TihokaDefCheckBox} aria-hidden="true">
-                        <Icon name="check" size="md" />
-                      </span>
-                    </span>
-                    <div className={styles.TihokaAiChunkBody}>
-                      <div className={styles.TihokaAiChunkText}>{c.text}</div>
-                      {c.meaning && (
-                        <div className={styles.TihokaAiChunkMeta}>
-                          <b>{t('dict.ai.chunkMeaning')}</b> {c.meaning}
-                        </div>
-                      )}
-                      {c.explanation && (
-                        <div className={styles.TihokaAiChunkMeta}>
-                          <b>{t('dict.ai.chunkExplanation')}</b> {c.explanation}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            chunks.map((c, i) => (
+              <PanelItem
+                key={i}
+                padded
+                checked={checkedChunks?.has(i) ?? false}
+                onToggle={() => onToggleChunk?.(i)}
+              >
+                <PanelItemHead>{c.text}</PanelItemHead>
+                {c.meaning && (
+                  <PanelItemMeta label={t('dict.ai.chunkMeaning')}>{c.meaning}</PanelItemMeta>
+                )}
+                {c.explanation && (
+                  <PanelItemMeta label={t('dict.ai.chunkExplanation')}>{c.explanation}</PanelItemMeta>
+                )}
+              </PanelItem>
+            ))
           ) : (
-            <p className={styles.TihokaAiText}>{state.answer.text}</p>
+            <PanelItem padded>
+              <p className={styles.TihokaAiText}>{state.answer.text}</p>
+            </PanelItem>
           )
         )}
 
         {state.phase === 'error' && (
-          <EmptyState
-            size="md"
-            icon={<Icon name="alertCircle" />}
-            title={t('dict.ai.allFailed')}
-            description={errorDescription}
-            action={
-              <Button variant="outline" size="sm" onClick={onRetry} data-tihoka-id="ai-retry">
-                {t('dict.ai.retry')}
-              </Button>
-            }
-            data-tihoka-id="dictionary-ai-error"
-          />
+          <PanelItem padded>
+            <EmptyState
+              size="md"
+              icon={<Icon name="alertCircle" />}
+              title={t('dict.ai.allFailed')}
+              description={errorDescription}
+              action={
+                <Button variant="outline" size="sm" onClick={onRetry} data-tihoka-id="ai-retry">
+                  {t('dict.ai.retry')}
+                </Button>
+              }
+              data-tihoka-id="dictionary-ai-error"
+            />
+          </PanelItem>
         )}
 
-        {state.phase === 'idle' && <AnswerSkeleton />}
-      </div>
-    </div>
+        {state.phase === 'idle' && (
+          <PanelItem padded>
+            <AnswerSkeleton />
+          </PanelItem>
+        )}
+      </PanelCard>
+    </Panel>
   );
 }

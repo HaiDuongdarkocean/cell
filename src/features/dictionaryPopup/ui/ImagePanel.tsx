@@ -3,6 +3,7 @@ import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Skeleton } from '@/shared/ui/Skeleton';
+import { Panel, PanelList } from './PopupPanel';
 import checkStyles from './DictionaryCheckable.module.css';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './ImagePanel.module.css';
@@ -55,23 +56,23 @@ export function ImagePanel({
 
   if (loading) {
     return (
-      <div className={styles.TihokaImage} data-tihoka-id="dictionary-image-panel">
+      <Panel id="dictionary-image-panel" className={styles.TihokaImage}>
         <ImageSkeleton />
-      </div>
+      </Panel>
     );
   }
 
   if (error) {
     return (
-      <div className={styles.TihokaImage} data-tihoka-id="dictionary-image-panel">
+      <Panel id="dictionary-image-panel" className={styles.TihokaImage}>
         <div className={panelStyles.TihokaImageError}>{error}</div>
-      </div>
+      </Panel>
     );
   }
 
   if (items.length === 0) {
     return (
-      <div className={styles.TihokaImage} data-tihoka-id="dictionary-image-panel">
+      <Panel id="dictionary-image-panel" className={styles.TihokaImage}>
         <EmptyState
           size="md"
           icon={<Icon name="image"  />}
@@ -88,17 +89,18 @@ export function ImagePanel({
           }
           data-tihoka-id="dictionary-image-empty"
         />
-      </div>
+      </Panel>
     );
   }
 
   return (
-    <div className={styles.TihokaImage} data-tihoka-id="dictionary-image-panel">
-      <div
+    <Panel id="dictionary-image-panel" className={styles.TihokaImage}>
+      <PanelList
+        direction="horizontal"
         className={styles.TihokaImageStrip}
-        ref={stripRef}
+        listRef={stripRef}
         onScroll={updateScrollState}
-        data-tihoka-id="dictionary-image-strip"
+        id="dictionary-image-strip"
       >
         {items.map((item) => {
           const selected = selection.get(item.id) === true;
@@ -123,7 +125,7 @@ export function ImagePanel({
             </button>
           );
         })}
-      </div>
+      </PanelList>
       <Button
         variant="secondary"
         size="sm"
@@ -150,7 +152,7 @@ export function ImagePanel({
       >
         <Icon name="chevronRight"  />
       </Button>
-    </div>
+    </Panel>
   );
 }
 

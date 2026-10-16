@@ -79,7 +79,7 @@ describe('TranslatePanel', () => {
       />,
     );
 
-    const block = screen.getByRole('button', { name: /xin chào/i });
+    const block = screen.getByRole('checkbox', { name: /xin chào/i });
     fireEvent.click(block);
     expect(onToggle).toHaveBeenCalled();
   });
@@ -99,7 +99,7 @@ describe('TranslatePanel', () => {
       />,
     );
 
-    const block = screen.getByRole('button', { name: /xin chào/i });
-    expect(block).toHaveAttribute('aria-pressed', 'true');
+    const block = screen.getByRole('checkbox', { name: /xin chào/i });
+    expect(block).toHaveAttribute('aria-checked', 'true');
   });
 });

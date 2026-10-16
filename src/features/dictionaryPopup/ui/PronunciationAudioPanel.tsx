@@ -6,7 +6,7 @@ import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { markAudio, measureAudio, clearAudioMarks } from '@/shared/lib/perfMarks';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { useAudioItemUrlMap } from '@/features/pronunciation';
-import checkStyles from './DictionaryCheckable.module.css';
+import { Panel, PanelItem, PanelList } from './PopupPanel';
 import styles from './PronunciationAudioPanel.module.css';
 import type { AudioItem } from '@/entities/dictionary';
 import { t } from '@/shared/i18n';
@@ -114,7 +114,7 @@ export function PronunciationAudioPanel({
   }, [loading, items, term, autoplayCount, getUrl, playQueue, onTtsWord]);
 
   return (
-    <div className={styles.TihokaAudio} data-tihoka-id="dictionary-audio-panel">
+    <Panel id="dictionary-audio-panel">
       {loading ? (
         <AudioSkeleton />
       ) : (
@@ -146,26 +146,18 @@ export function PronunciationAudioPanel({
             </button>
           )}
 
-          <div className={styles.TihokaAudioItems}>
+          <PanelList gap="sm">
           {displayItems.map((item) => {
             const selected = selection.get(item.id) === true;
             const parts = item.label.split(' · ');
             return (
-              <div
+              <PanelItem
                 key={item.id}
-                className={checkStyles.TihokaAudioItem}
-                role="checkbox"
-                aria-checked={selected}
-                aria-label={t('dict.audio.select', [item.label])}
-                tabIndex={0}
-                onClick={() => onToggle(item.id, !selected)}
-                onKeyDown={(e): void => {
-                  if (e.target !== e.currentTarget) return;
-                  if (e.key === ' ' || e.key === 'Enter') {
-                    e.preventDefault();
-                    onToggle(item.id, !selected);
-                  }
-                }}
+                checkMode="audio"
+                bare
+                checked={selected}
+                ariaLabel={t('dict.audio.select', [item.label])}
+                onToggle={() => onToggle(item.id, !selected)}
               >
                 <span
                   className={styles.TihokaAudioPlay}
@@ -193,19 +185,13 @@ export function PronunciationAudioPanel({
                     <span className={styles.TihokaAudioLabelMeta}>{parts.slice(1).join(' · ')}</span>
                   )}
                 </span>
-                <span
-                  className={`${checkStyles.TihokaDefCheckBox} ${selected ? checkStyles['TihokaAudioCheck--checked'] : ''}`}
-                  aria-hidden="true"
-                >
-                  <Icon name="check" size="md" />
-                </span>
-              </div>
+              </PanelItem>
             );
           })}
-          </div>
+          </PanelList>
         </>
       )}
-    </div>
+    </Panel>
   );
 }
 
