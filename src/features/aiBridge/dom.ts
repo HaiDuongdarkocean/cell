@@ -13,8 +13,12 @@ import type { AiProviderAdapter } from './providers';
 
 export function findComposer(adapter: AiProviderAdapter, doc: Document): HTMLElement | null {
   for (const selector of adapter.composer.selectors) {
-    const el = doc.querySelector<HTMLElement>(selector);
-    if (el) return el;
+    for (const el of doc.querySelectorAll<HTMLElement>(selector)) {
+      // Skip invisible candidates — providers mount hidden placeholder inputs
+      // (e.g. chatgpt's pending-home-input textarea) next to the real editor.
+      // checkVisibility is unimplemented in jsdom → falls back to visible.
+      if (el.checkVisibility?.({ checkVisibilityCSS: true }) ?? true) return el;
+    }
   }
   return null;
 }
@@ -74,9 +78,15 @@ export function waitForAssistantReply(
   baseline: number,
   timeoutMs: number,
   onPartial?: (text: string) => void,
+  ignoreText?: string,
 ): Promise<string | null> {
   const done = adapter.doneSignal;
   const idleDoneMs = done.kind === 'stability' ? done.silenceMs : ATTR_IDLE_DONE_MS;
+  // Provider DOMs can echo our own message into a unit-shaped row — a reply
+  // that just repeats the prompt is not the assistant's answer.
+  const ignore = ignoreText?.replace(/\s+/g, ' ').trim();
+  const isEcho = (text: string): boolean =>
+    ignore !== undefined && text.replace(/\s+/g, ' ').trim() === ignore;
   return new Promise((resolve) => {
     let silenceTimer: ReturnType<typeof setTimeout> | undefined;
     let lastText = '';
@@ -97,7 +107,7 @@ export function waitForAssistantReply(
       if (adapter.scrollIntoViewWhileObserving) unit.scrollIntoView?.({ block: 'nearest' });
       if (done.kind === 'stability') {
         const text = unitText(adapter, unit);
-        if (!text) return;
+        if (!text || isEcho(text)) return;
         if (text !== lastText) {
           lastText = text;
           onPartial?.(text);
@@ -107,10 +117,13 @@ export function waitForAssistantReply(
       }
       const host = done.scopeSelector ? unit.closest(done.scopeSelector) : unit;
       const state = host?.getAttribute(done.attr);
-      if (state === done.completeValue) return settle(unitText(adapter, unit));
+      if (state === done.completeValue) {
+        const finalText = unitText(adapter, unit);
+        if (!isEcho(finalText)) return settle(finalText);
+      }
       const streaming = state === done.streamingValue || isStreaming(adapter, doc);
       const text = unitText(adapter, unit);
-      if (!text) {
+      if (!text || isEcho(text)) {
         if (silenceTimer) clearTimeout(silenceTimer);
         silenceTimer = undefined;
         lastText = '';

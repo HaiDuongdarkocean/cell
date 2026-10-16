@@ -45,6 +45,9 @@ interface AiAskResponseData {
   readonly attempts?: readonly { provider: AiProviderId; error: string }[];
 }
 
+/** Slightly above the provider-side 90s cap + chain overhead. */
+const ASK_CLIENT_TIMEOUT_MS = 120_000;
+
 const IDLE: AiAskState = {
   phase: 'idle',
   feature: null,
@@ -78,16 +81,40 @@ export function useAiAsk(): {
   /** `fresh` bypasses the tab-session cache (retry/regenerate). */
   readonly ask: (feature: AiFeature, prompt: string, provider?: AiProviderId, fresh?: boolean) => Promise<AiAnswer | null>;
   readonly retry: (prompt: string) => Promise<AiAnswer | null>;
+  /** Abandons the in-flight ask (provider keeps the page-side generation
+   *  stopped via AI_CANCEL); stale resolutions no-op. */
+  readonly cancel: () => void;
   readonly reset: () => void;
 } {
   const [state, setState] = useState<AiAskState>(IDLE);
   const [answers, setAnswers] = useState<readonly AiAnswer[]>([]);
   const lastAskRef = useRef<{ feature: AiFeature; provider?: AiProviderId } | null>(null);
   const inFlightRef = useRef(false);
+  /** Bumped on every ask/cancel/reset — stale resolutions no-op. */
+  const generationRef = useRef(0);
+  const streamListenerRef = useRef<((message: unknown) => void) | null>(null);
+
+  const cancel = useCallback((): void => {
+    generationRef.current += 1;
+    inFlightRef.current = false;
+    if (streamListenerRef.current) {
+      removeOnMessageListener(streamListenerRef.current);
+      streamListenerRef.current = null;
+    }
+    void sendMessage({ type: MESSAGE_TYPES.AI_CANCEL, payload: {} }).catch(() => {});
+    setState((prev) => (prev.phase === 'loading' ? { ...prev, phase: 'idle', answer: null } : prev));
+  }, []);
 
   const ask = useCallback(
     async (feature: AiFeature, prompt: string, provider?: AiProviderId, fresh = false): Promise<AiAnswer | null> => {
-      if (inFlightRef.current || !prompt.trim()) return null;
+      if (inFlightRef.current) {
+        // Same-feature re-ask (retry / provider pick) abandons the running
+        // ask; a different feature keeps the single-slot serialization.
+        if (lastAskRef.current?.feature !== feature) return null;
+        cancel();
+      }
+      if (!prompt.trim()) return null;
+      const gen = ++generationRef.current;
       const cacheKey = aiAnswerCacheKey(feature, provider, prompt);
       const cached = fresh ? undefined : getAiAnswer(cacheKey);
       if (cached) {
@@ -120,6 +147,7 @@ export function useAiAsk(): {
       // the terminal AI_ASK response stays authoritative.
       const askId = `ai-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
       const onStream = (message: unknown): void => {
+        if (gen !== generationRef.current) return;
         const msg = message as {
           type?: unknown;
           payload?: { askId?: unknown; provider?: unknown; text?: unknown };
@@ -134,12 +162,30 @@ export function useAiAsk(): {
             : prev,
         );
       };
+      streamListenerRef.current = onStream;
       onMessage(onStream);
       try {
-        const res = await sendMessage<MessageResponse<AiAskResponseData>>({
-          type: MESSAGE_TYPES.AI_ASK,
-          payload: { prompt, provider, feature, askId },
-        });
+        // Client-side hard cap: if the response is lost (SW reload orphaning
+        // the sendMessage callback, provider chain stall), the popup must
+        // surface an error — never spin "thinking" forever.
+        const res = await Promise.race([
+          sendMessage<MessageResponse<AiAskResponseData>>({
+            type: MESSAGE_TYPES.AI_ASK,
+            payload: { prompt, provider, feature, askId },
+          }),
+          new Promise<null>((r) => setTimeout(() => r(null), ASK_CLIENT_TIMEOUT_MS)),
+        ]);
+        if (gen !== generationRef.current) return null;
+        if (res === null) {
+          cancel();
+          setState((prev) => ({
+            ...prev,
+            phase: 'error',
+            loginProviders: [],
+            error: 'timeout',
+          }));
+          return null;
+        }
         const text = res?.data?.text?.trim();
         if (res?.success && text) {
           const answer: AiAnswer = {
@@ -178,12 +224,13 @@ export function useAiAsk(): {
           error: err instanceof Error ? err.message : String(err),
         }));
       } finally {
-        inFlightRef.current = false;
+        if (gen === generationRef.current) inFlightRef.current = false;
+        if (streamListenerRef.current === onStream) streamListenerRef.current = null;
         removeOnMessageListener(onStream);
       }
       return null;
     },
-    [],
+    [cancel],
   );
 
   const retry = useCallback(
@@ -196,10 +243,11 @@ export function useAiAsk(): {
   );
 
   const reset = useCallback((): void => {
+    cancel();
     setState(IDLE);
     setAnswers([]);
     lastAskRef.current = null;
-  }, []);
+  }, [cancel]);
 
-  return { state, answers, ask, retry, reset };
+  return { state, answers, ask, retry, cancel, reset };
 }

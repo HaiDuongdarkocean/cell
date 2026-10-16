@@ -47,6 +47,8 @@ export interface AiProviderAdapter {
   doneSignal: AiDoneSignal;
   streamingIndicators: string[];
   sendButtonSelectors: string[];
+  /** Buttons that abort an in-flight generation — AI_CANCEL clicks these. */
+  stopButtonSelectors: string[];
   /** Virtualized transcripts (DeepSeek) unmount offscreen rows — keep the
    *  newest unit scrolled into view so mutations keep flowing. */
   scrollIntoViewWhileObserving?: boolean;
@@ -80,7 +82,12 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderAdapter> = {
       completeValue: 'complete',
     },
     streamingIndicators: ['button[aria-label*="Stop" i]', '.result-streaming'],
-    sendButtonSelectors: ['button[aria-label*="Send" i]'],
+    sendButtonSelectors: [
+      'button[aria-label*="Send" i]',
+      'button[data-testid="send-button"]',
+      'button[data-testid*="send" i]',
+    ],
+    stopButtonSelectors: ['button[aria-label*="Stop" i]', '.result-streaming button'],
   },
   gemini: {
     id: 'gemini',
@@ -101,6 +108,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderAdapter> = {
     doneSignal: { kind: 'stability', silenceMs: 1500 },
     streamingIndicators: [],
     sendButtonSelectors: ['button[aria-label*="Send" i]'],
+    stopButtonSelectors: ['button[aria-label*="Stop" i]'],
   },
   deepseek: {
     id: 'deepseek',
@@ -113,11 +121,15 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderAdapter> = {
       selectors: ['textarea[placeholder="Message DeepSeek"]', 'textarea'],
       isTextarea: true,
     },
-    assistantUnit: '.ds-message',
+    /** User messages share .ds-message but never render .ds-markdown — the
+     *  :has guard keeps the unit selector assistant-only so baseline+1 can't
+     *  resolve to the prompt we just posted. */
+    assistantUnit: '.ds-message:has(.ds-markdown)',
     answerBody: '.ds-markdown',
     doneSignal: { kind: 'stability', silenceMs: 1500 },
     streamingIndicators: [],
     sendButtonSelectors: [],
+    stopButtonSelectors: ['button[aria-label*="Stop" i]'],
     scrollIntoViewWhileObserving: true,
   },
   claude: {
@@ -144,6 +156,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderAdapter> = {
     },
     streamingIndicators: [],
     sendButtonSelectors: ['button[aria-label*="Send" i]'],
+    stopButtonSelectors: ['button[aria-label*="Stop" i]'],
   },
 };
 
@@ -234,6 +247,7 @@ export const AI_ASK_FAILURE_KINDS = [
   'busy',
   'loginRequired',
   'domError',
+  'cancelled',
 ] as const;
 export type AiAskFailureKind = (typeof AI_ASK_FAILURE_KINDS)[number];
 
@@ -241,6 +255,7 @@ export type AiAskFailureKind = (typeof AI_ASK_FAILURE_KINDS)[number];
  *  timeouts thrown bg-side) is mapped heuristically. */
 export function classifyAskError(error: string | undefined): AiAskFailureKind {
   const e = (error ?? '').toLowerCase();
+  if (e.includes('cancelled')) return 'cancelled';
   if (e.includes('busy')) return 'busy';
   if (e.includes('rate')) return 'rateLimit';
   if (e.includes('log')) return 'loginRequired';

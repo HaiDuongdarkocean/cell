@@ -331,14 +331,7 @@ export function CandidateView({
               activeSource: panel.translateEngine === 'ai'
                 ? (panel.aiPicks.sentenceTranslate ?? panel.aiProviders[0] ?? 'chatgpt')
                 : 'google',
-              answerLanguage: panel.aiLanguage,
-              targetLang,
-              busy: panel.isTranslating || (panel.aiState.feature === 'sentenceTranslate' && panel.aiState.phase === 'loading'),
               onPickSource: panel.pickTranslateSource,
-              onPickLanguage: (lang) => {
-                panel.pickAiLanguage(lang);
-                void panel.translate(true);
-              },
             }}
           />
         )}
@@ -349,7 +342,6 @@ export function CandidateView({
             selectedProvider={panel.aiPicks.wordExplain ?? panel.aiProviders[0] ?? 'chatgpt'}
             answerLanguage={panel.aiLanguage}
             targetLang={targetLang}
-            busy={panel.aiState.phase === 'loading'}
             onPickProvider={(p: AiProviderId) => {
               panel.pickAiProvider('wordExplain', p);
               panel.askAi('wordExplain');
@@ -368,7 +360,6 @@ export function CandidateView({
             selectedProvider={panel.aiPicks.sentenceBreakdown ?? panel.aiProviders[0] ?? 'chatgpt'}
             answerLanguage={panel.aiLanguage}
             targetLang={targetLang}
-            busy={panel.aiState.phase === 'loading'}
             onPickProvider={(p: AiProviderId) => {
               panel.pickAiProvider('sentenceBreakdown', p);
               panel.askAi('sentenceBreakdown');

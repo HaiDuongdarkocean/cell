@@ -72,6 +72,7 @@ import {
 } from './schema';
 import {
   AiAskPayloadSchema,
+  AiCancelPayloadSchema,
   AiPingPayloadSchema,
   AiStreamPayloadSchema,
   DictionaryChangedPayloadSchema,
@@ -455,6 +456,12 @@ export const MESSAGE_REGISTRY = {
     type: MESSAGE_TYPES.AI_STREAM,
     schema: AiStreamPayloadSchema,
     direction: 'cs->bg',
+    owner: 'background/handlers/aiBridge',
+  },
+  [MESSAGE_TYPES.AI_CANCEL]: {
+    type: MESSAGE_TYPES.AI_CANCEL,
+    schema: AiCancelPayloadSchema,
+    direction: 'panel->bg',
     owner: 'background/handlers/aiBridge',
   },
   [MESSAGE_TYPES.CARD_CREATOR_REQUEST]: {

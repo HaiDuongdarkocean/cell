@@ -553,6 +553,9 @@ export interface AiBridgeSettings {
   readonly sentenceTranslateEngine: 'google' | 'ai';
   /** Auto-open the AI tab when dictionary lookup returns no results. Default: true. */
   readonly autoOpenOnMiss: boolean;
+  /** Per-tab provider picks — each AI tab pins its own provider across
+   *  popups (wordExplain / sentenceBreakdown / sentenceTranslate). */
+  readonly providerPicks?: Partial<Record<AiFeature, AiProviderId>>;
 }
 
 // === Subtitle Search API Key (schema v21) ===

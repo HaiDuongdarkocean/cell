@@ -36,7 +36,6 @@ export interface AiAnswerPanelProps {
   readonly answerLanguage: 'native' | 'target';
   /** Display name of the target language (e.g. "English"). */
   readonly targetLang: string;
-  readonly busy: boolean;
   readonly onPickProvider: (provider: AiProviderId) => void;
   readonly onPickLanguage: (lang: 'native' | 'target') => void;
   readonly onRetry: () => void;
@@ -57,7 +56,6 @@ export function AiAnswerPanel({
   selectedProvider,
   answerLanguage,
   targetLang,
-  busy,
   onPickProvider,
   onPickLanguage,
   onRetry,
@@ -91,7 +89,6 @@ export function AiAnswerPanel({
               className={styles.TihokaAiSource}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
-              disabled={busy}
               onClick={() => setMenuOpen((v) => !v)}
               data-tihoka-id="ai-provider-menu"
             >
@@ -139,7 +136,6 @@ export function AiAnswerPanel({
               size="sm"
               shape="circle"
               aria-label={t('dict.ai.retry')}
-              disabled={busy}
               onClick={onRetry}
               data-tihoka-id="ai-retry"
             >

@@ -79,6 +79,7 @@ export type MessageType =
   | 'AI_PING'
   | 'AI_ASK'
   | 'AI_STREAM'
+  | 'AI_CANCEL'
   | 'CARD_CREATOR_REQUEST'
   | 'FETCH_COMMUNITY_AUDIO'
   | 'FETCH_LOCAL_AUDIO'

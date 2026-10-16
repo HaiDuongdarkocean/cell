@@ -208,22 +208,42 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     const s = await withTimeout(loadSettings(), 5_000).catch(() => null);
     const cfg = s?.aiBridge ?? DEFAULT_AI_BRIDGE_SETTINGS;
     aiCfgRef.current = cfg;
+    aiPicksRef.current = { ...(cfg.providerPicks ?? {}) };
     if (mountedRef.current) {
       setAiProviders(cfg.providerOrder);
       setTranslateEngineState(cfg.sentenceTranslateEngine);
       setAiLanguage(cfg.answerLanguage);
+      setAiPicks(aiPicksRef.current);
     }
     return cfg;
+  }, []);
+
+  /** Persist a partial aiBridge slice — fresh-reads storage first so a pick
+   *  made in another popup isn't clobbered by our cached copy. */
+  const persistAiCfg = useCallback((patch: Partial<AiBridgeSettings>): void => {
+    void withTimeout(loadSettings(), 5_000)
+      .then((s) => {
+        const cfg = s?.aiBridge ?? aiCfgRef.current ?? DEFAULT_AI_BRIDGE_SETTINGS;
+        aiCfgRef.current = {
+          ...cfg,
+          ...patch,
+          providerPicks: { ...cfg.providerPicks, ...patch.providerPicks },
+        };
+        void saveSettings({ aiBridge: aiCfgRef.current }).catch(() => { /* keep in-memory choice */ });
+      })
+      .catch(() => { /* keep in-memory choice */ });
   }, []);
 
   const composeAiPrompt = useCallback(
     (feature: AiFeature, cfg: AiBridgeSettings): string => {
       const interfaceName = getLocale() === 'vi' ? 'Vietnamese' : 'English';
-      const toTarget = (cfg.answerLanguage ?? 'native') === 'target';
+      // Translate always lands in the native language — the native/target
+      // pick only applies to explain + breakdown prompts.
+      const toTarget = feature !== 'sentenceTranslate' && (cfg.answerLanguage ?? 'native') === 'target';
       return composePrompt(feature, cfg.prompts, {
         word: result?.term,
         sentence: contextSentence.trim() || undefined,
-        targetLang: feature === 'sentenceTranslate' && toTarget ? sourceLang : targetLang,
+        targetLang,
         interfaceLang: interfaceName,
         answerLang: toTarget ? sourceLang : interfaceName,
       });
@@ -251,7 +271,8 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
   const pickAiProvider = useCallback((feature: AiFeature, provider: AiProviderId): void => {
     aiPicksRef.current = { ...aiPicksRef.current, [feature]: provider };
     setAiPicks(aiPicksRef.current);
-  }, []);
+    persistAiCfg({ providerPicks: aiPicksRef.current });
+  }, [persistAiCfg]);
 
   const pickTranslateSource = useCallback((source: 'google' | AiProviderId): void => {
     const engine = source === 'google' ? 'google' : 'ai';
@@ -261,9 +282,10 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
       aiPicksRef.current = { ...aiPicksRef.current, sentenceTranslate: source };
       setAiPicks(aiPicksRef.current);
     }
+    persistAiCfg({ sentenceTranslateEngine: engine, providerPicks: aiPicksRef.current });
     setTranslationSource(null);
     void translateRef.current(true);
-  }, []);
+  }, [persistAiCfg]);
 
   const toggleChunk = useCallback((index: number): void => {
     setCheckedChunks((prev) => {
@@ -510,8 +532,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
       setTranslationError(null);
       if (fresh) setTranslation('');
       try {
-        const outLang = (cfg.answerLanguage ?? 'native') === 'target' ? sourceLang : targetLang;
-        const res = await withTimeout(translateSentence(text, sourceLang, outLang), 10_000);
+        const res = await withTimeout(translateSentence(text, sourceLang, targetLang), 10_000);
         if (mountedRef.current) {
           setTranslation(res);
           setTranslationSource('google');

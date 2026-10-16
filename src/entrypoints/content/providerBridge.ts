@@ -76,15 +76,15 @@ async function waitFor<T>(probe: () => T | null, timeoutMs: number): Promise<T |
   }
 }
 
-function fillComposer(adapter: AiProviderAdapter, composer: HTMLElement, prompt: string): void {
+function fillComposer(composer: HTMLElement, prompt: string): void {
   composer.focus();
-  if (adapter.composer.isTextarea) {
-    const el = composer as HTMLTextAreaElement;
-    // Native setter so a controlled (React) textarea registers the change.
-    const setter = Object.getOwnPropertyDescriptor(
-      HTMLTextAreaElement.prototype,
-      'value',
-    )?.set;
+  if (composer instanceof HTMLTextAreaElement || composer instanceof HTMLInputElement) {
+    const el = composer;
+    // Native setter so a controlled (React) input registers the change.
+    const proto = composer instanceof HTMLTextAreaElement
+      ? HTMLTextAreaElement.prototype
+      : HTMLInputElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
     if (setter) setter.call(el, prompt);
     else el.value = prompt;
     el.dispatchEvent(
@@ -110,9 +110,9 @@ function fillComposer(adapter: AiProviderAdapter, composer: HTMLElement, prompt:
   }
 }
 
-function composerStillFilled(adapter: AiProviderAdapter, composer: HTMLElement): boolean {
-  if (adapter.composer.isTextarea) {
-    return Boolean((composer as HTMLTextAreaElement).value?.trim());
+function composerStillFilled(composer: HTMLElement): boolean {
+  if (composer instanceof HTMLTextAreaElement || composer instanceof HTMLInputElement) {
+    return Boolean(composer.value?.trim());
   }
   return Boolean(composer.textContent?.trim());
 }
@@ -132,26 +132,44 @@ function sendPrompt(composer: HTMLElement): void {
   }
 }
 
-/** Enter first; while the composer stays filled, retry Enter and click the
- *  send button once it enables — a cold tab can bind handlers late and a
- *  disabled-button click is a no-op, so every path gets repeated chances. */
-async function submitPrompt(adapter: AiProviderAdapter, composer: HTMLElement): Promise<void> {
-  sendPrompt(composer);
-  const deadline = Date.now() + 10_000;
-  for (let attempt = 0; ; attempt++) {
-    await sleep(800);
-    if (!composerStillFilled(adapter, composer)) return;
-    sendPrompt(composer);
-    if (attempt >= 1) {
-      for (const selector of adapter.sendButtonSelectors) {
-        const button = document.querySelector<HTMLButtonElement>(selector);
-        if (button && !button.disabled) {
-          button.click();
-          break;
-        }
+/** Submit = click the send button when the provider exposes one — synthetic
+ *  Enter is ignored by React-controlled composers that gate on trusted
+ *  events (chatgpt), so Enter is only the fallback for providers without a
+ *  button. A detached/emptied composer means the send landed. */
+async function submitPrompt(adapter: AiProviderAdapter, composer: HTMLElement): Promise<boolean> {
+  const findSendButton = (): HTMLButtonElement | null => {
+    for (const selector of adapter.sendButtonSelectors) {
+      for (const b of document.querySelectorAll<HTMLButtonElement>(selector)) {
+        if (!b.disabled && b.getClientRects().length > 0) return b;
       }
     }
-    if (Date.now() >= deadline) return;
+    return null;
+  };
+  const submitted = (): boolean => !composer.isConnected || !composerStillFilled(composer);
+  sendPrompt(composer);
+  const deadline = Date.now() + 10_000;
+  for (;;) {
+    await sleep(800);
+    if (submitted()) return true;
+    const button = findSendButton();
+    if (button) button.click();
+    else sendPrompt(composer);
+    if (Date.now() >= deadline) return submitted();
+  }
+}
+
+/** Cancels the running ask: clicks the provider's stop button and resolves
+ *  the wait early so the tab frees immediately for the next ask. */
+let cancelInFlight: (() => void) | null = null;
+
+function clickStop(adapter: AiProviderAdapter): void {
+  for (const selector of adapter.stopButtonSelectors) {
+    for (const b of document.querySelectorAll<HTMLButtonElement>(selector)) {
+      if (!b.disabled && b.getClientRects().length > 0) {
+        b.click();
+        return;
+      }
+    }
   }
 }
 
@@ -175,12 +193,26 @@ async function ask(
     baseline,
     ASK_TIMEOUT_MS,
     streamPartials(askId, adapter.id),
+    prompt,
   );
-  fillComposer(adapter, composer, prompt);
+  const cancelled = new Promise<string>((res) => {
+    cancelInFlight = () => {
+      clickStop(adapter);
+      res('__cancelled__');
+    };
+  });
+  fillComposer(composer, prompt);
   await sleep(600);
-  await submitPrompt(adapter, composer);
+  if (!(await submitPrompt(adapter, composer))) {
+    cancelInFlight = null;
+    return { success: false, error: 'domError', provider: adapter.id };
+  }
 
-  const text = await reply;
+  const text = await Promise.race([reply, cancelled]);
+  cancelInFlight = null;
+  if (text === '__cancelled__') {
+    return { success: false, error: 'cancelled', provider: adapter.id };
+  }
   return text
     ? { success: true, text, provider: adapter.id }
     : { success: false, error: 'noAnswer', provider: adapter.id };
@@ -200,6 +232,11 @@ if (adapter) {
         url: location.href,
         provider: adapter.id,
       });
+      return false;
+    }
+    if (msg?.type === MESSAGE_TYPES.AI_CANCEL) {
+      cancelInFlight?.();
+      sendResponse({ ok: true, provider: adapter.id });
       return false;
     }
     if (msg?.type !== MESSAGE_TYPES.AI_ASK) return false;

@@ -1,9 +1,10 @@
 /**
  * AI bridge handler — relays AI_ASK/AI_PING from extension surfaces to a
- * provider tab, driving the user's logged-in web session. On failure the
- * configured provider order is walked (REQ-8): each attempt gets its own
- * ≤90s timeout, a provider is never retried inside one chain, and 'busy'
- * means that provider's tab is serving another ask — skip, never queue.
+ * provider tab, driving the user's logged-in web session. The picked (or
+ * configured default) provider is the only one asked — no automatic
+ * failover; failure surfaces to the popup where the user retries or
+ * switches source manually. 'busy' means that provider's tab is serving
+ * another ask.
  *
  * @source chrome.tabs.query/create/sendMessage —
  *   https://developer.chrome.com/docs/extensions/reference/api/tabs
@@ -14,6 +15,7 @@ import type { MessageResponse } from '@/entities/message';
 import type { AiProviderId } from '@/entities/message/dictionarySchemas';
 import {
   AiAskPayloadSchema,
+  AiCancelPayloadSchema,
   AiPingPayloadSchema,
   AiStreamPayloadSchema,
 } from '@/entities/message/dictionarySchemas';
@@ -181,6 +183,9 @@ export function registerAiBridgeHandlers(ctx: BackgroundContext): void {
         return { success: false, error: `Invalid AI_ASK payload: ${parsed.error.message}` };
       }
       const seq = ++askSeq;
+      // A re-ask right after a client-side cancel can race the old chain
+      // unwinding — give it a short window to release before rejecting.
+      for (let i = 0; askInFlight && i < 20; i++) await sleep(250);
       if (askInFlight) return { success: false, error: `AI ask already in flight (seq=${seq})` };
       askInFlight = true;
       const { prompt, askId } = parsed.data;
@@ -190,27 +195,53 @@ export function registerAiBridgeHandlers(ctx: BackgroundContext): void {
       }
       try {
         const configured = providerOrderFromSettings(await ctx.loadSettings());
-        const order = resolveProviderOrder(configured, parsed.data.provider);
-        const attempts: AskAttempt[] = [];
-        let loginTabId: number | undefined;
-        for (const provider of order) {
-          const outcome = await askOnProvider(AI_PROVIDERS[provider], prompt, askId);
-          if (outcome.ok) {
-            return { success: true, data: { text: outcome.text, provider } };
-          }
-          if (outcome.error === 'loginRequired' && loginTabId === undefined) {
-            loginTabId = outcome.loginTabId;
-          }
-          attempts.push({ provider, error: outcome.error });
+        // No failover: the picked/configured provider is the only one asked.
+        // On failure the popup shows the terminal state — the user retries or
+        // switches source manually.
+        const provider = resolveProviderOrder(configured, parsed.data.provider)[0];
+        const outcome = await askOnProvider(AI_PROVIDERS[provider], prompt, askId);
+        if (outcome.ok) {
+          return { success: true, data: { text: outcome.text, provider } };
         }
-        if (loginTabId !== undefined) void focusBridgeTab(loginTabId);
-        return { success: false, error: 'all_failed', data: { attempts } };
+        if (outcome.error === 'cancelled') {
+          return { success: false, error: 'cancelled' };
+        }
+        if (outcome.error === 'loginRequired' && outcome.loginTabId !== undefined) {
+          void focusBridgeTab(outcome.loginTabId);
+        }
+        return {
+          success: false,
+          error: 'all_failed',
+          data: { attempts: [{ provider, error: outcome.error }] },
+        };
       } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       } finally {
         askInFlight = false;
         if (askId !== undefined) pendingStreams.delete(askId);
       }
+    },
+  );
+
+  ctx.on(
+    MESSAGE_TYPES.AI_CANCEL,
+    async (request): Promise<MessageResponse> => {
+      const parsed = AiCancelPayloadSchema.safeParse(request.payload);
+      if (!parsed.success) {
+        return { success: false, error: `Invalid AI_CANCEL payload: ${parsed.error.message}` };
+      }
+      const provider = parsed.data?.provider;
+      const adapters = Object.values(AI_PROVIDERS).filter(
+        (a) => provider === undefined || a.id === provider,
+      );
+      for (const adapter of adapters) {
+        const tabs = await queryTabs({ url: adapter.tabUrlPatterns }).catch(() => []);
+        for (const tab of tabs) {
+          if (tab.id === undefined) continue;
+          void sendTabMessage(tab.id, { type: MESSAGE_TYPES.AI_CANCEL }).catch(() => {});
+        }
+      }
+      return { success: true };
     },
   );
 

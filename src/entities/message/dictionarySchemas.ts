@@ -548,6 +548,13 @@ export const AiStreamPayloadSchema = z.object({
   text: z.string().max(20000),
 });
 
+/** Popup tab -> background -> provider tabs: abandon the in-flight ask. */
+export const AiCancelPayloadSchema = z
+  .object({
+    provider: AiProviderIdSchema.optional(),
+  })
+  .optional();
+
 export const AiPingPayloadSchema = z
   .object({
     provider: AiProviderIdSchema.optional(),

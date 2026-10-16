@@ -9,20 +9,16 @@ import { Panel, PanelHead, PanelItem } from './PopupPanel';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './TranslatePanel.module.css';
 import { AiStreamStatus } from './AiStreamStatus';
-import { getLocale, t } from '@/shared/i18n';
-import { isoCodeToLabel } from '@/shared/config/languageRegistry';
+import { t } from '@/shared/i18n';
 import type { AiProviderId } from '@/entities/settings';
 
-/** Session source + answer-language controls shared with the AI/breakdown
- *  tabs — Google joined as the machine source. */
+/** Session source controls — Google joined as the machine source. The
+ *  translate tab always renders into the native language, so unlike the
+ *  AI/breakdown tabs it carries no answer-language section. */
 export interface TranslateSourceMenu {
   readonly providerOrder: readonly AiProviderId[];
   readonly activeSource: 'google' | AiProviderId;
-  readonly answerLanguage: 'native' | 'target';
-  readonly targetLang: string;
-  readonly busy: boolean;
   readonly onPickSource: (source: 'google' | AiProviderId) => void;
-  readonly onPickLanguage: (lang: 'native' | 'target') => void;
 }
 
 export interface TranslatePanelProps {
@@ -67,7 +63,6 @@ export function TranslatePanel({
 }: TranslatePanelProps): React.JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const nativeLang = getLocale() === 'vi' ? 'Vietnamese' : 'English';
   const activeLabel = sourceMenu
     ? sourceMenu.activeSource === 'google'
       ? 'Google'
@@ -84,7 +79,6 @@ export function TranslatePanel({
               className={styles.TihokaTranslateSource}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
-              disabled={sourceMenu.busy}
               onClick={() => setMenuOpen((v) => !v)}
               data-tihoka-id="translate-source-menu"
             >
@@ -125,22 +119,6 @@ export function TranslatePanel({
                   {t(`dict.ai.provider.${p}`)}
                 </MenuItem>
               ))}
-              <MenuSeparator />
-              {(['native', 'target'] as const).map((lang) => (
-                <MenuItem
-                  key={lang}
-                  radio
-                  selected={sourceMenu.answerLanguage === lang}
-                  onSelect={() => sourceMenu.onPickLanguage(lang)}
-                  data-tihoka-id={`translate-lang-${lang}`}
-                >
-                  {t('dict.ai.answerIn', [
-                    lang === 'native'
-                      ? nativeLang
-                      : (isoCodeToLabel(sourceMenu.targetLang) ?? sourceMenu.targetLang).replace(/^./, (c) => c.toUpperCase()),
-                  ])}
-                </MenuItem>
-              ))}
             </Menu>
           )}
         </>
@@ -152,7 +130,6 @@ export function TranslatePanel({
             size="sm"
             shape="circle"
             aria-label={t('dict.ai.retry')}
-            disabled={loading}
             onClick={onRetry ?? onTranslate}
             data-tihoka-id="translate-retry"
           >

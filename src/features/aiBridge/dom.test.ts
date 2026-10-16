@@ -221,3 +221,15 @@ test('waitForAssistantReply (stability) times out with no unit', async () => {
   const reply = waitForAssistantReply(fastStability, document, 0, 40);
   await expect(reply).resolves.toBeNull();
 });
+
+test('waitForAssistantReply rejects a unit that echoes the prompt', async () => {
+  const reply = waitForAssistantReply(fastStability, document, 0, 120, undefined, 'my prompt text');
+  mount('<model-response><message-content>my prompt text</message-content></model-response>');
+  await expect(reply).resolves.toBeNull();
+});
+
+test('waitForAssistantReply accepts an answer that differs from the prompt', async () => {
+  const reply = waitForAssistantReply(fastStability, document, 0, 5_000, undefined, 'my prompt text');
+  mount('<model-response><message-content>the actual answer</message-content></model-response>');
+  await expect(reply).resolves.toContain('actual answer');
+});
