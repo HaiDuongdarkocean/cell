@@ -7,6 +7,7 @@
 - Tests pass and test the right things? Off-by-one, races, state inconsistencies?
 
 ### Readability & simplicity
+→ `code-simplification` when complexity is the finding.
 - Names descriptive and conventional (no bare `temp`/`data`/`result`)? Control flow straightforward (no nested ternaries, deep callbacks)?
 - Logical organization and module boundaries? "Clever" tricks that should be simplified?
 - Could it be fewer lines? Do abstractions earn their complexity (don't generalize before the third use)?

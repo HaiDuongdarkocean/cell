@@ -185,3 +185,8 @@ docs/design-system/sql-wasm.wasm
 # src/entrypoints/design-system-showcase/assets/; build recreates these on demand).
 docs/design-system/assets/*.mp4
 
+
+# packed extension artifacts
+release/
+# skill script scratch
+.agents/skills/*/script/tmp/

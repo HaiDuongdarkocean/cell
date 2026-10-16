@@ -48,6 +48,19 @@ Spec/build theo chiều này; audit ngược lại (page → layout → componen
 | Status display | `Badge`/`Chip`/`StatusDot`/`Alert` | bảng `behavior.md` |
 | Icon | `Icon` + `ICON_CATALOG` | không inline SVG |
 
+## Control theo cardinality — chọn input theo tập giá trị, không mặc định Select
+
+| Tập giá trị | Control | Vì |
+|---|---|---|
+| 2–5 options, label ngắn | `SegmentedControl` | Thấy hết lựa chọn + trạng thái ngay (recognition > recall); 1 click thay vì mở dropdown |
+| Numeric range nhỏ (2–6, 1–10) | `Stepper` ± | ±1 step; dropdown ép user nhớ giá trị hợp lệ |
+| ≥6 options hoặc label cần diễn giải | `Select` / `SearchableSelect` | Dropdown đúng khi options dài/không tự giải thích |
+| Boolean | `Toggle` | Không Select on/off |
+
+Label segment phải ngắn (≤~12 chars): label dài → short-label i18n riêng + full text vào `ariaLabel`/`title`. Field `labelFor` chỉ áp cho form-control thật (`Select`); segmented/stepper tự mang tên qua `ariaLabel` radiogroup.
+
+Case chuẩn: `src/features/settings/ui/SettingsDialogContent.tsx` (section Tải xuống) — 7 setting, 4 segment + 1 stepper + 2 select.
+
 ## Q1–Q4 — thiết kế từng atom (chi tiết tại `spec-sheet.md`)
 
 1. **Concept** — inset / squish / stretch / stack / inline / grid

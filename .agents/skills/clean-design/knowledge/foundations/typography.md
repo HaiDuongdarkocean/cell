@@ -66,5 +66,8 @@ Không weight 510; cần nặng hơn → `semibold` hoặc tăng size. Dark mode
 
 - Weight phân biệt hierarchy; size hiếm khi nhảy trong cùng component.
 - Mỗi vai (label/value/hint/caption) = 1 recipe xuyên suốt các màn.
+- **Pairing (R-TYPO-PAIR):** 2 text khác vai trong cùng context phải khác ≥2 trong 3 kênh — size·weight·color. Cùng size + cùng color = vai trò mơ hồ.
+- **Heading emphatic, không subordinate (canon Tihoka):** heading của group/section phải **thắng** items nó dẫn trên ≥2 kênh — size ↑ + weight ↑. Heading nhỏ hơn/nhạt hơn items = đảo vai trò = defect (caption style chỉ cho metadata không-dẫn-nhóm). Canon ladder: section `heading-3` (lg/semibold) → group `heading-4` (md/semibold/primary) → row title `sm/medium/primary` → hint `xs/secondary`. *Quyết định: iOS dùng footnote-header (nhỏ+secondary); Tihoka chọn emphatic — heading phải nhìn ra "đây là đầu nhóm" trước khi đọc chữ.*
+- **Semantic ≠ visual:** group heading render `<Heading>` level = section-level+1 (outline h3→h4 đúng), không phải `Text variant="label"` — class/prop mang tên `label` cho heading = mơ hồ semantics.
 - Truncation phải có strategy khai báo (ellipsis/wrap) — không để overflow đẩy sibling.
 - Status/ý nghĩa qua icon+text kèm màu; hierarchy text = contrast với nền (L-TEXT), không thêm màu.

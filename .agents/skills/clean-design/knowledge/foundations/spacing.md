@@ -29,6 +29,23 @@ Cơ chế: **gap trên parent flex/grid** — không sibling margin chains.
 
 **Test:** outer ≥ 2× inner trong cùng ngữ cảnh; dãy số theo chiều ra ngoài phải tăng dần (ladder check — `method/spec-sheet.md`).
 
+## Gap ladder theo vai trò — canon cho grouped lists/settings
+
+Mỗi *cặp vai trò* = **1 con số duy nhất**. Cùng số cho các cặp khác vai trò = hierarchy dẹt (Atlassian: "the same step on every edge flattens hierarchy"). Canon ladder (decision: Anh, xác nhận bởi Atlassian/Carbon role-spacing):
+
+| Cặp | Giá trị | Token | Ratio với bậc dưới |
+|---|---|---|---|
+| heading ↔ description/subheading | 4 | `space-1` | — |
+| item ↔ item (cùng group) | 8 | `space-2` | 2× |
+| group heading → items của nó | 12 | `space-3` | 1.5× |
+| group ↔ group | 24 | `space-6` | 2× |
+| card inset (riêng — padding không phải gap) | 16 | `space-4` | — |
+
+Quy tắc suy ra:
+- `8` cho mọi cặp = vỡ phân cấp — item-item(8) < heading→items(12) < group-group(24) phải **đọc được** trên build.
+- Between-group whitespace = gap của parent section (`space-6` = 24) — KHÔNG sibling margin. Đo edge-to-edge để confirm = 24.
+- Mọi cặp không thuộc bảng này phải ghi provenance `decision: <lý do>` trong spec.
+
 ## Height ladder (rhythm thứ hai)
 
 | Element | Giá trị | Token |

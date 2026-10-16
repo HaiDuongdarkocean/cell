@@ -45,11 +45,17 @@ Số không qua được chuỗi này = không được vào spec.
 | btn↔btn | 12 | `space-3` | decision: same-group | actions cùng nhóm |
 | divider | 1px hairline | `color-divider` | token | separator cấu trúc (L-BORDER ngoại lệ) |
 
-### Lớp 3: ☐ Test sheet
+### Lớp 3: ☐ Test sheet — asserts đo được (R-SPEC-ASSERT)
+
+Token-có-source là điều kiện cần, **không đủ** — spec phải ghi assert hình học/typo mà reviewer đo được trên build thật:
 
 ```
 [ ] Mọi số có source token/measured/decision
 [ ] Ladder đọc được: icon→title(12) > title→desc(4) < body→footer(16) < inset(24)
+[ ] R-UNIFORM: ∀ row trong group cùng offsetHeight; rail controls cùng height, width ≥ floor khai báo
+[ ] R-HEADING-EARN: mọi group label có ≥2 items + thêm nghĩa (nêu lý do trong spec)
+[ ] R-TYPO-PAIR: mỗi cặp heading/item khác ≥2 kênh (size·weight·color)
+[ ] R-TIER-READABLE: dãy gap kèm ratio liền kề ≥1.5× (vd 8→16→24)
 [ ] Target size: nút ≥40 visual; hit ≥40 (tách visual vs hit)
 [ ] Worst-case content: email 60 chars + i18n ×1.3 không vỡ
 [ ] 320 + 1280, light + dark, zoom 200%
@@ -59,7 +65,7 @@ Số không qua được chuỗi này = không được vào spec.
 
 ## Ladder check — test nhanh nhất
 
-Viết dãy số gap theo chiều ra ngoài. Phải đọc được: **outer > inner**.
+Viết dãy số gap theo chiều ra ngoài. Phải đọc được: **outer > inner** VÀ ratio liền kề **≥1.5×** (R-TIER-READABLE).
 
 ```
 icon→title   title→desc   body→footer   panel inset

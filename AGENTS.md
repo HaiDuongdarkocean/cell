@@ -31,7 +31,6 @@
 - KHI item có owner khác → không mutate state, không đụng files của nó; cần chuyển hướng → `request-handoff`.
 - KHI thấy dirty/uncommitted file không phải mình tạo → in-flight work của agent khác — không stash/commit/edit đè.
 - KHI worktree có `.Tihoka-owner` khác mình → tuyệt đối không ghi vào.
-- KHI cần context → đọc theo nhu cầu: `docs/1-share-language.md` cho thuật ngữ, `git log`/`ls` cho map repo.
 - KHI sửa bug → tái hiện end-to-end trên môi trường thật trước — chưa thấy bug chạy thì chưa sửa.
 - KHI viết test cho bug → viết sau reproduce và test phải fail khi bug còn đó.
 - KHI đụng shared hàm/type/field → grep hết callers + trace blast radius trước; đổi contract → migrate tất cả producers/consumers trong cùng commit.

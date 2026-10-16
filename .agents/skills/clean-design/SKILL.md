@@ -77,7 +77,8 @@ Con số không qua được chuỗi này = không được vào spec.
 |---|---|
 | `knowledge/why/philosophy.md` | Cần biện minh quyết định; bị challenge "vì sao" |
 | `knowledge/method/content.md` | B0–B1: goal + content inventory |
-| `knowledge/method/anatomy.md` | B3: phân rã + map component |
+| `knowledge/method/anatomy.md` | B3: phân rã + map component + control theo cardinality |
+| `knowledge/method/composition.md` | B3–B4: R-UNIFORM / R-HEADING-EARN / R-TYPO-PAIR / R-TIER-READABLE / R-SPEC-ASSERT |
 | `knowledge/method/spec-sheet.md` | B4: viết spec đo được |
 | `knowledge/method/behavior.md` | B2+B6: triad, variant, states, a11y |
 | `knowledge/foundations/{color,typography,spacing,shape,motion,icons,responsive}.md` | B4: gán token theo family |

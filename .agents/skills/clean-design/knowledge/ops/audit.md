@@ -39,6 +39,11 @@ Evidence rules cho mọi finding:
 - [ ] 1 rhythm per container — gap/padding/margin cùng token family, không lone 11px.
 - [ ] **Edge alignment** — inner column inset cùng edge với option rows dưới.
 - [ ] Related gần hơn unrelated — section > item > inline gaps.
+- [ ] **R-TIER-READABLE** — dãy gap đo thật kèm ratio: tier liền kề ≥1.5×; bước quá nhỏ (12 vs 16) mắt không tách được = defect dù token đúng.
+- [ ] **R-UNIFORM rows** — ∀ row trong 1 group cùng offsetHeight; description làm row cao hơn sibling → chuyển thành `hint`/group description, không nhét trong row.
+- [ ] **R-UNIFORM rail** — ∀ control cùng cột rail cùng height (ladder 40) + `min-width` floor chung; strip/control lọt thỏm so sibling = defect.
+- [ ] **R-HEADING-EARN** — group label với 1 item, hoặc label paraphrase row title/section title → bỏ label.
+- [ ] **R-GROUP-SEPARATION** — `rowGaps[]` giữa mọi cặp row liền kề chỉ được có 2 giá trị (within-group, between-group); orphan unlabeled group tạo giá trị thứ 3 = defect → fold vào group kề hoặc nâng section.
 - [ ] Even vertical rhythm — header→control→list→footer 1 interval, không per-section ngẫu hứng.
 - [ ] Grid/inset nhất quán mọi width (narrow, zoom 200%, mobile sheet).
 - [ ] **Coupled-pair gaps = recipe cố định** — trigger↔menu, label↔field, group-label↔list = 1 token mỗi cặp, mọi nơi.
@@ -57,12 +62,16 @@ Evidence rules cho mọi finding:
 - [ ] Selected = `primary-subtle` fill + `text-accent-strong` + check — recipe có sẵn, đừng chế thêm.
 - [ ] Accent chỉ cho state thật — không decoration.
 - [ ] Secondary content = `text-secondary`; status qua icon+text, không màu một mình.
+- [ ] **R-COLOR-FAMILY** — controls cùng rail/panel cùng fill recipe (đo computedStyle bg — cùng lightness bucket ±5%); trộn `field-solid` với `surface-hover` trên 1 cột = phối màu lỗi.
+- [ ] **Selected đo được** — selected segment/thumb khác biệt rõ với track (đo bg-contrast hoặc recipe canon `primary-subtle`+`accent-strong`); white-on-near-white không có shadow = điểm nhấn yếu.
 
 ## 5. Typography
 
 - [ ] Size chỉ từ type scale; dense rows = `font-size-sm`, body = `base`/`md`.
 - [ ] Hierarchy nhất quán — label/value/hint/caption mỗi vai 1 recipe.
 - [ ] Weight phân biệt; size hiếm khi nhảy trong 1 component.
+- [ ] **R-TYPO-PAIR** — cặp heading/item khác vai phải khác ≥2 kênh (size·weight·color); group heading **thắng** items ≥2 kênh UP (`md/semibold/primary` trên `sm/medium/primary`). Heading nhỏ/nhạt hơn items = đảo vai trò = defect.
+- [ ] **Heading semantics** — group heading = `<Heading>` level = section-level+1, không phải Text `label`/`secondary`.
 
 ## 6. States & feedback
 
@@ -150,4 +159,31 @@ grep -rn 'z-index:' src/ --include="*.css" --include="*.module.css" | grep -v 'v
 # CSS audit script + health report
 node scripts/check-design-system-css.mjs
 node scripts/generate-design-system-health-report.mjs
+```
+
+## Runtime contrast probe (paste vào evaluate/devtools — đo thật, không đoán)
+
+```js
+const _lin = v => { v/=255; return v <= 0.04045 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); };
+const _parse = s => {
+  let m = s.match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:[\s,/]+([\d.]+))?/);
+  if (m) return [+m[1], +m[2], +m[3], m[4] == null ? 1 : +m[4]];
+  m = s.match(/color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?/);
+  if (m) return [+m[1]*255, +m[2]*255, +m[3]*255, m[4] == null ? 1 : +m[4]];
+  return null;
+};
+// composite lên nền thật của parent (walk up tới opaque)
+const _bg = el => {
+  for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+    const c = _parse(getComputedStyle(n).backgroundColor);
+    if (c && c[3] === 1) return c.slice(0, 3);
+    if (c && c[3] > 0) { /* composite lên lớp dưới */ const under = _bg(n.parentElement); return c.slice(0,3).map((v,i)=> c[3]*v + (1-c[3])*under[i]); }
+  }
+  return [255, 255, 255];
+};
+const L = c => 0.2126*_lin(c[0]) + 0.7152*_lin(c[1]) + 0.0722*_lin(c[2]);
+const C = (a, b) => { const [x,y] = [L(a),L(b)].sort((p,q)=>q-p); return +((x+0.05)/(y+0.05)).toFixed(2); };
+
+// usage: C(_bg(el).map(...)→ fg vs nền) — đo text/fg vs bg, fill vs parent fill
+// harmony check: |L(fill₁) − L(fill₂)| ≤ 0.05 cho cùng rail
 ```

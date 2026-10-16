@@ -72,6 +72,29 @@ Control có hover token riêng (`--button-*`, `--input-*`) giữ token đó, kh�
 - Shadow light-theme alpha (<10%) vô hình trên dark → dark `shadow-popover/modal/floating` cần ≥30–50% black + optional 1px light inset ring.
 - Text dark: body ≥400, control ≥500 (halation).
 
+## Contrast — công thức đo (WCAG 2.x, không "cảm giác")
+
+Relative luminance + contrast ratio:
+
+```
+RsRGB = c/255;  R = RsRGB ≤ 0.04045 ? RsRGB/12.92 : ((RsRGB+0.055)/1.055)^2.4
+L = 0.2126·R + 0.7152·G + 0.0722·B
+Contrast C = (L₁ + 0.05) / (L₂ + 0.05)    (L₁ ≥ L₂)
+```
+
+**Ngưỡng (AA):**
+
+| Cặp | Min C | Vì sao |
+|---|---|---|
+| Text vs nền | 4.5 | WCAG 1.4.3 |
+| Large text (≥18px / 14 semibold) | 3.0 | WCAG 1.4.3 |
+| Control boundary / state indicator vs kề | 3.0 | WCAG 1.4.11 — selected thumb, focus ring, field edge |
+| Icon có nghĩa vs nền | 3.0 | 1.4.11 |
+
+**Alpha washes** (`field`, `*-hover`, `overlay-*`): composite lên nền dưới trước khi đo — `C' = α·fg + (1−α)·bg` per channel. Không bao giờ đo raw `rgba(...0.14)` với nền trắng giả định — đo trên surface thật.
+
+**Harmony ≠ contrast:** controls cùng rail/family phải **cùng lightness bucket** — |ΔL| ≤ ~0.05 sau composite (đo `L` của từng fill). Trộn 0.97-track với 0.86-field trên 1 cột = phối màu lỗi dù cả hai là token. Contrast rules lo *đọc được*; harmony rule lo *cùng loài*.
+
 ## Anti-patterns
 
 - Màu làm kênh duy nhất truyền status (thiếu icon/text).
