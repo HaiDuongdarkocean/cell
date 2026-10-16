@@ -502,11 +502,30 @@ export const TranslateTermsPayloadSchema = z.object({
   terms: z.array(z.string().min(1).max(200)).max(500),
 });
 
-// === AI bridge PoC (AI_ASK — chatgpt.com web-session relay) ===
+// === AI bridge (AI_ASK / AI_PING — provider web-session relay) ===
+
+export const AI_PROVIDER_IDS = ['chatgpt', 'gemini', 'deepseek', 'claude'] as const;
+export const AiProviderIdSchema = z.enum(AI_PROVIDER_IDS);
+export type AiProviderId = (typeof AI_PROVIDER_IDS)[number];
+
+export const AiFeatureSchema = z.enum([
+  'wordExplain',
+  'sentenceBreakdown',
+  'sentenceTranslate',
+]);
+export type AiFeature = z.infer<typeof AiFeatureSchema>;
 
 export const AiAskPayloadSchema = z.object({
   prompt: z.string().min(1).max(20000),
+  provider: AiProviderIdSchema.optional(),
+  feature: AiFeatureSchema.optional(),
 });
+
+export const AiPingPayloadSchema = z
+  .object({
+    provider: AiProviderIdSchema.optional(),
+  })
+  .optional();
 
 // === Quick Add (spec §9.4 B — QUICK_ADD) ===
 
