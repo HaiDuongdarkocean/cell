@@ -11,7 +11,7 @@ AI Bridge đưa câu trả lời của ChatGPT, Gemini, DeepSeek, Claude vào di
 - DeepSeek — https://chat.deepseek.com/
 - Claude — https://claude.ai/new
 
-Extension tự mở lại tab của provider khi cần hỏi. Giữ phiên đăng nhập còn hiệu lực.
+Extension tự kiểm tra phiên đăng nhập ngầm (không mở tab). Khi cần hỏi, tab provider mở ở nền trong cửa sổ Anh đang dùng — không chiếm focus, Anh chỉ thấy kết quả trong popup. Tab chỉ được đưa lên trước khi provider bắt đăng nhập lại: lúc đó popup báo tên provider cần login và tab đăng nhập được kích hoạt.
 
 ## 2. Tab AI trong dictionary popup
 
@@ -24,15 +24,17 @@ Bôi đen một từ hoặc câu → popup hiện. Toolbar có 2 tab mới:
 
 Mở tab → extension gửi prompt tới provider → câu trả lời hiện ngay khi provider viết xong.
 
-### Chọn provider trong popup
+### Chọn provider và ngôn ngữ trả lời trong popup
 
-Dưới câu trả lời là hàng pill tên provider. Bấm pill để đổi provider cho tab đó rồi hỏi lại.
+Trên đầu panel là nút "Sourced from {provider}" — bấm để mở menu: chọn provider khác (hỏi lại ngay), hoặc chọn ngôn ngữ câu trả lời: **Answer in {native}** / **Answer in {target}**. Nút **Retry** nằm cạnh, ngoài khung câu trả lời.
 
 ### Failover
 
 Provider đang hỏi mà lỗi (timeout, rate limit, chưa login, trang đổi cấu trúc) → extension tự chuyển sang provider kế tiếp theo thứ tự trong Settings. Panel hiện thông báo "đã chuyển từ X".
 
 Tất cả provider đều lỗi → panel hiện lỗi cuối + nút **Retry**. Bấm Retry để hỏi lại.
+
+Nếu lỗi là chưa đăng nhập → panel nói rõ provider nào cần đăng nhập và cửa sổ đăng nhập của provider đó tự mở ra. Đăng nhập xong bấm Retry.
 
 ### Regenerate
 
@@ -84,6 +86,7 @@ AI Breakdown (Gemini):
 | Default provider | Provider được hỏi trước khi Anh không chọn riêng |
 | Failover order | 4 hàng Select = thứ tự thử; lỗi thì nhảy xuống hàng dưới |
 | Sentence translation engine | Google hoặc AI cho tab Translate |
+| AI answer language | Ngôn ngữ AI dùng để giải thích: bản địa (giao diện) hay ngôn ngữ đích |
 | Auto-open on miss | Bật/tắt tự mở tab AI khi dictionary miss |
 | Custom prompts | System + user prompt riêng cho từng feature |
 
@@ -101,6 +104,9 @@ Prompt dùng biến cố định, điền tự động lúc hỏi:
 | `[SENTENCE]` | Câu ngữ cảnh |
 | `[TARGET_LANG]` | Ngôn ngữ đích |
 | `[INTERFACE_LANG]` | Ngôn ngữ giao diện (English/Vietnamese) |
+| `[ANSWER_LANG]` | Ngôn ngữ câu trả lời — theo "AI answer language" (bản địa/đích) |
+
+Prompt cũ đã lưu vẫn dùng `[INTERFACE_LANG]` bình thường — muốn theo cài đặt ngôn ngữ trả lời thì đổi sang `[ANSWER_LANG]` hoặc Reset to default.
 
 Gõ biến lạ (`[CONTEXT]` chẳng hạn) → báo lỗi đỏ và nút Save khóa. Viết prompt bằng English.
 

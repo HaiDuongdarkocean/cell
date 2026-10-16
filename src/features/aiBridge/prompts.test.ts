@@ -19,14 +19,15 @@ jest.mock('@/shared/lib/chrome-apis', () => ({
   }),
 }));
 
-test('fillPrompt replaces all four placeholders', () => {
-  const out = fillPrompt('[SENTENCE] has [WORD] → [TARGET_LANG] for [INTERFACE_LANG]', {
+test('fillPrompt replaces all five placeholders', () => {
+  const out = fillPrompt('[SENTENCE] has [WORD] → [TARGET_LANG] for [INTERFACE_LANG], answer in [ANSWER_LANG]', {
     word: 'bank',
     sentence: 'I sat by the bank.',
     targetLang: 'vi',
     interfaceLang: 'en',
+    answerLang: 'vi',
   });
-  expect(out).toBe('I sat by the bank. has bank → vi for en');
+  expect(out).toBe('I sat by the bank. has bank → vi for en, answer in vi');
 });
 
 test('fillPrompt leaves unknown and unfilled placeholders untouched', () => {

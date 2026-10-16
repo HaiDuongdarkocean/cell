@@ -545,8 +545,10 @@ export interface AiBridgeSettings {
   readonly defaultProvider: AiProviderId;
   /** Ordered failover chain — covers every provider exactly once. */
   readonly providerOrder: readonly AiProviderId[];
-  /** Editable prompt templates per feature. Placeholders: [WORD] [SENTENCE] [TARGET_LANG] [INTERFACE_LANG]. */
+  /** Editable prompt templates per feature. Placeholders: [WORD] [SENTENCE] [TARGET_LANG] [INTERFACE_LANG] [ANSWER_LANG]. */
   readonly prompts: Record<AiFeature, AiPromptTemplate>;
+  /** Language the AI writes its answer in — feeds [ANSWER_LANG]. Default: 'native' (interface language). */
+  readonly answerLanguage: 'native' | 'target';
   /** Sentence-translate engine. Default: 'google'. */
   readonly sentenceTranslateEngine: 'google' | 'ai';
   /** Auto-open the AI tab when dictionary lookup returns no results. Default: true. */

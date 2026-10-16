@@ -1,13 +1,21 @@
 import { DEFAULT_AI_BRIDGE_SETTINGS } from '@/shared/config/config';
 import type { AiFeature, AiPromptTemplate } from '@/entities/settings';
 
-export const PROMPT_PLACEHOLDERS = ['[WORD]', '[SENTENCE]', '[TARGET_LANG]', '[INTERFACE_LANG]'] as const;
+export const PROMPT_PLACEHOLDERS = [
+  '[WORD]',
+  '[SENTENCE]',
+  '[TARGET_LANG]',
+  '[INTERFACE_LANG]',
+  '[ANSWER_LANG]',
+] as const;
 
 export type PromptVars = {
   word?: string;
   sentence?: string;
   targetLang?: string;
   interfaceLang?: string;
+  /** Language the answer is written in (settings.aiBridge.answerLanguage). */
+  answerLang?: string;
 };
 
 export const DEFAULT_PROMPTS: Record<AiFeature, AiPromptTemplate> = DEFAULT_AI_BRIDGE_SETTINGS.prompts;
@@ -17,6 +25,7 @@ const VAR_BY_PLACEHOLDER: Record<string, keyof PromptVars> = {
   '[SENTENCE]': 'sentence',
   '[TARGET_LANG]': 'targetLang',
   '[INTERFACE_LANG]': 'interfaceLang',
+  '[ANSWER_LANG]': 'answerLang',
 };
 
 // Digits included so renamed placeholders like [WORD2] are still caught by validation.

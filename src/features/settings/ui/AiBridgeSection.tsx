@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import { Select } from '@/shared/ui/Select';
+import { PROMPT_PLACEHOLDERS } from '@/features/aiBridge';
 import { Toggle } from '@/shared/ui/Toggle';
 import { Textarea } from '@/shared/ui/Textarea';
 import { Button } from '@/shared/ui/Button';
@@ -150,6 +151,19 @@ export function AiBridgeSection({ settings, onChange, sectionRef }: AiBridgeSect
         />
       </SettingsRow>
 
+      <SettingsRow dense stacked title={t('settings.ai.answerLanguage')} description={t('settings.ai.answerLanguage.hint')} labelFor="set-ai-answer-language">
+        <Select
+          id="set-ai-answer-language"
+          data-tihoka-id="ai-answer-language"
+          value={settings.answerLanguage}
+          options={[
+            { value: 'native', label: t('settings.ai.answerLanguage.native') },
+            { value: 'target', label: t('settings.ai.answerLanguage.target') },
+          ]}
+          onChange={(val) => onChange({ ...settings, answerLanguage: val as 'native' | 'target' })}
+        />
+      </SettingsRow>
+
       <SettingsRow
         dense
         title={t('settings.ai.autoOpenOnMiss')}
@@ -162,35 +176,29 @@ export function AiBridgeSection({ settings, onChange, sectionRef }: AiBridgeSect
         />
       </SettingsRow>
 
+      <div className={styles.promptIntro}>
+        <p>{t('settings.ai.prompts.intro')}</p>
+        <ul className={styles.promptLegend}>
+          {PROMPT_PLACEHOLDERS.map((ph) => (
+            <li key={ph}>
+              <code>{ph}</code> → {t(`settings.ai.prompts.legend.${ph.slice(1, -1).toLowerCase()}` as MessageKey)}
+            </li>
+          ))}
+        </ul>
+        <p>{t('settings.ai.prompts.rulesIntro')}</p>
+        <ol className={styles.promptRules}>
+          <li>{t('settings.ai.prompts.ruleVariables')}</li>
+          <li>{t('settings.ai.prompts.ruleEnglish')}</li>
+        </ol>
+        <p className={styles.promptSyncNote}>{t('settings.ai.prompts.syncNote')}</p>
+      </div>
+
       {FEATURE_ORDER.map((feature) => {
         const keys = FEATURE_KEYS[feature];
         const draft = drafts[feature];
         return (
           <div key={feature} className={styles.promptBlock} data-tihoka-id={`ai-prompt-${feature}`}>
-            <div className={styles.promptHead}>
-              <span className={styles.promptTitle}>{t(keys.title)}</span>
-              <div className={styles.promptActions}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => resetPrompt(feature)}
-                  data-tihoka-id={`ai-prompt-reset-${feature}`}
-                >
-                  {t('settings.ai.prompts.reset')}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={!draft.dirty || draft.invalid.length > 0}
-                  onClick={() => savePrompt(feature)}
-                  data-tihoka-id={`ai-prompt-save-${feature}`}
-                >
-                  {t('settings.ai.prompts.save')}
-                </Button>
-              </div>
-            </div>
+            <span className={styles.promptTitle}>{t(keys.title)}</span>
             <SettingsRow dense stacked title={t(keys.systemLabel)} labelFor={`ai-sys-${feature}`}>
               <Textarea
                 id={`ai-sys-${feature}`}
@@ -216,6 +224,27 @@ export function AiBridgeSection({ settings, onChange, sectionRef }: AiBridgeSect
                 {t('settings.ai.prompts.invalidPlaceholder', [draft.invalid.join(', ')])}
               </p>
             )}
+            <div className={styles.promptActions}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!draft.dirty || draft.invalid.length > 0}
+                onClick={() => savePrompt(feature)}
+                data-tihoka-id={`ai-prompt-save-${feature}`}
+              >
+                {t('settings.ai.prompts.save')}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => resetPrompt(feature)}
+                data-tihoka-id={`ai-prompt-reset-${feature}`}
+              >
+                {t('settings.ai.prompts.reset')}
+              </Button>
+            </div>
           </div>
         );
       })}

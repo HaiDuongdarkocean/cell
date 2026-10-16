@@ -4,7 +4,7 @@ import { Button } from '@/shared/ui/Button';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Spinner } from '@/shared/ui/Spinner';
 import { Skeleton } from '@/shared/ui/Skeleton';
-import { SegmentedControl } from '@/shared/ui/SegmentedControl';
+import { Tooltip } from '@/shared/ui/Tooltip';
 import checkStyles from './DictionaryCheckable.module.css';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './TranslatePanel.module.css';
@@ -20,9 +20,9 @@ export interface TranslatePanelProps {
   readonly selected: boolean;
   readonly onToggle: () => void;
   readonly onTranslate: () => void;
-  /** Google vs AI engine (spec ai-bridge-dictionary REQ-4). Omit for read-only use. */
+  /** Google vs AI engine from settings (spec ai-bridge-dictionary REQ-4).
+   *  Omit for read-only use — the source header is hidden then. */
   readonly engine?: 'google' | 'ai';
-  readonly onEngineChange?: (engine: 'google' | 'ai') => void;
   /** Provider that produced the AI translation — shown as attribution. */
   readonly aiProviderLabel?: string;
 }
@@ -38,19 +38,27 @@ export function TranslatePanel({
   onToggle,
   onTranslate,
   engine,
-  onEngineChange,
   aiProviderLabel,
 }: TranslatePanelProps): React.JSX.Element {
-  const engineSwitch = onEngineChange && engine ? (
-    <SegmentedControl<'google' | 'ai'>
-      ariaLabel={t('dict.translate.engine.aria')}
-      value={engine}
-      onChange={onEngineChange}
-      options={[
-        { value: 'google', label: t('dict.translate.engine.google'), ariaLabel: t('dict.translate.engine.google') },
-        { value: 'ai', label: t('dict.translate.engine.ai'), ariaLabel: t('dict.translate.engine.ai') },
-      ]}
-    />
+  const sourceHead = engine ? (
+    <div className={styles.TihokaTranslateHead}>
+      <span className={styles.TihokaTranslateSource}>
+        {t('dict.ai.sourcedFrom', [engine === 'google' ? 'Google' : (aiProviderLabel ?? t('dict.translate.engine.ai'))])}
+      </span>
+      <Tooltip content={t('dict.ai.retry')}>
+        <Button
+          variant="ghost"
+          size="sm"
+          shape="circle"
+          aria-label={t('dict.ai.retry')}
+          disabled={loading}
+          onClick={onTranslate}
+          data-tihoka-id="translate-retry"
+        >
+          <Icon name="rotateCcw" />
+        </Button>
+      </Tooltip>
+    </div>
   ) : null;
   // Auto-translate once when panel opens with no translation and no error yet
   const autoTranslateFiredRef = useRef(false);
@@ -65,7 +73,7 @@ export function TranslatePanel({
   if (loading && !translation) {
     return (
       <div className={styles.TihokaTranslate} data-tihoka-id="dictionary-translate-panel">
-        {engineSwitch}
+        {sourceHead}
         <TranslateSkeleton />
       </div>
     );
@@ -74,7 +82,7 @@ export function TranslatePanel({
   if (error) {
     return (
       <div className={styles.TihokaTranslate} data-tihoka-id="dictionary-translate-panel">
-        {engineSwitch}
+        {sourceHead}
         <div className={panelStyles.TihokaTranslateError}>{error}</div>
         <EmptyState
           size="md"
@@ -94,7 +102,7 @@ export function TranslatePanel({
   if (translation) {
     return (
       <div className={styles.TihokaTranslate} data-tihoka-id="dictionary-translate-panel">
-        {engineSwitch}
+        {sourceHead}
         <div
           className={`${checkStyles.TihokaTranslateBlock} ${selected ? checkStyles['TihokaTranslateBlock--selected'] : ''}`}
           onClick={onToggle}
@@ -105,9 +113,6 @@ export function TranslatePanel({
           <div className={styles.TihokaTranslateText}>
             <div className={styles.TihokaTranslateTarget}>{translation}</div>
             <div className={styles.TihokaTranslateNative}>{sentence || term}</div>
-            {engine === 'ai' && aiProviderLabel && (
-              <div className={styles.TihokaTranslateSource}>{t('dict.ai.sourcedFrom', [aiProviderLabel])}</div>
-            )}
           </div>
           <span className={`${checkStyles.TihokaDefCheckBox} ${loading ? checkStyles['TihokaDefCheckBox--loading'] : ''}`} aria-hidden="true">
             {loading ? <Spinner size="xl" color="accent" /> : <Icon name="check" size="md" />}
@@ -119,7 +124,7 @@ export function TranslatePanel({
 
   return (
     <div className={styles.TihokaTranslate} data-tihoka-id="dictionary-translate-panel">
-      {engineSwitch}
+      {sourceHead}
       <EmptyState
         size="md"
         icon={<Icon name="languages"  />}

@@ -112,8 +112,12 @@ export interface UseDictionaryToolbarReturn {
   /** Fire (or re-fire) an ask for a feature — tab-open trigger AND retry. */
   /** `fresh` bypasses the tab-session answer cache (retry/regenerate). */
   readonly askAi: (feature: AiFeature, fresh?: boolean) => void;
+  /** [ANSWER_LANG] source: interface ('native') or target language. */
+  readonly aiLanguage: 'native' | 'target';
+  readonly pickAiLanguage: (lang: 'native' | 'target') => void;
   readonly translateEngine: 'google' | 'ai';
-  readonly setTranslateEngine: (engine: 'google' | 'ai') => void;
+  /** Engine that produced the current translation — attribution for the header. */
+  readonly translationSource: 'google' | 'ai' | null;
 
   readonly links: readonly ExternalDictLink[];
   readonly selectedLinkCount: number;
@@ -181,6 +185,8 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
   const [aiPicks, setAiPicks] = useState<Partial<Record<AiFeature, AiProviderId>>>({});
   const aiPicksRef = useRef(aiPicks);
   const [translateEngine, setTranslateEngineState] = useState<'google' | 'ai'>(DEFAULT_AI_BRIDGE_SETTINGS.sentenceTranslateEngine);
+  const [translationSource, setTranslationSource] = useState<'google' | 'ai' | null>(initialTranslation ? 'google' : null);
+  const [aiLanguage, setAiLanguage] = useState<'native' | 'target'>(DEFAULT_AI_BRIDGE_SETTINGS.answerLanguage);
   const googleTranslationRef = useRef(initialTranslation ?? '');
 
   const ensureAiCfg = useCallback(async (): Promise<AiBridgeSettings> => {
@@ -191,19 +197,23 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     if (mountedRef.current) {
       setAiProviders(cfg.providerOrder);
       setTranslateEngineState(cfg.sentenceTranslateEngine);
+      setAiLanguage(cfg.answerLanguage);
     }
     return cfg;
   }, []);
 
   const composeAiPrompt = useCallback(
-    (feature: AiFeature, cfg: AiBridgeSettings): string =>
-      composePrompt(feature, cfg.prompts, {
+    (feature: AiFeature, cfg: AiBridgeSettings): string => {
+      const interfaceName = getLocale() === 'vi' ? 'Vietnamese' : 'English';
+      return composePrompt(feature, cfg.prompts, {
         word: result?.term,
         sentence: contextSentence.trim() || undefined,
         targetLang,
-        interfaceLang: getLocale() === 'vi' ? 'Vietnamese' : 'English',
-      }),
-    [result?.term, contextSentence, targetLang],
+        interfaceLang: interfaceName,
+        answerLang: (cfg.answerLanguage ?? 'native') === 'target' ? targetLang : interfaceName,
+      });
+    },
+    [result?.term, contextSentence, targetLang, aiLanguage],
   );
 
   const askAi = useCallback(
@@ -215,6 +225,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
         const answer = await ai.ask(feature, prompt, aiPicksRef.current[feature], fresh);
         if (feature === 'sentenceTranslate' && answer && mountedRef.current) {
           setTranslation(answer.text);
+          setTranslationSource('ai');
         }
       })();
     },
@@ -226,22 +237,17 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     setAiPicks(aiPicksRef.current);
   }, []);
 
-  const setTranslateEngine = useCallback(
-    (engine: 'google' | 'ai'): void => {
-      setTranslateEngineState(engine);
-      if (engine === 'google') {
-        setTranslation(googleTranslationRef.current);
-      } else {
-        const answer = ai.answers.find((a) => a.feature === 'sentenceTranslate');
-        setTranslation(answer?.text ?? '');
-        if (!answer) askAi('sentenceTranslate');
-      }
+  const pickAiLanguage = useCallback(
+    (lang: 'native' | 'target'): void => {
+      setAiLanguage(lang);
+      // Sync the ref first so a pick→re-ask in the same tick uses the new lang.
+      if (aiCfgRef.current) aiCfgRef.current = { ...aiCfgRef.current, answerLanguage: lang };
       void ensureAiCfg().then((cfg) => {
-        aiCfgRef.current = { ...cfg, sentenceTranslateEngine: engine };
+        aiCfgRef.current = { ...cfg, answerLanguage: lang };
         void saveSettings({ aiBridge: aiCfgRef.current }).catch(() => { /* keep in-memory choice */ });
       });
     },
-    [ai.answers, askAi, ensureAiCfg],
+    [ensureAiCfg],
   );
 
   const mountedRef = useRef(true);
@@ -431,53 +437,55 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     if (!result) return Promise.resolve('');
     const text = contextSentence.trim() || result.term.trim();
     if (!text) return Promise.resolve(translation);
-    if (translateEngine === 'ai') {
-      const answer = ai.answers.find((a) => a.feature === 'sentenceTranslate');
-      if (answer) {
-        if (mountedRef.current) setTranslation(answer.text);
-        return Promise.resolve(answer.text);
-      }
-      setIsTranslating(true);
-      setTranslationError(null);
-      return (async () => {
-        const cfg = await ensureAiCfg();
+    return (async () => {
+      const cfg = await ensureAiCfg();
+      if (cfg.sentenceTranslateEngine === 'ai') {
+        const answer = ai.answers.find((a) => a.feature === 'sentenceTranslate');
+        if (answer) {
+          if (mountedRef.current) {
+            setTranslation(answer.text);
+            setTranslationSource('ai');
+          }
+          return answer.text;
+        }
+        setIsTranslating(true);
+        setTranslationError(null);
         const prompt = composeAiPrompt('sentenceTranslate', cfg);
         const aiAnswer = await ai.ask('sentenceTranslate', prompt, aiPicksRef.current.sentenceTranslate);
         if (mountedRef.current) {
           if (aiAnswer) {
             setTranslation(aiAnswer.text);
+            setTranslationSource('ai');
           } else {
             setTranslationError(t('dict.error.translate'));
           }
           setIsTranslating(false);
         }
         return aiAnswer?.text ?? '';
-      })();
-    }
-    if (translation) return Promise.resolve(translation);
-    if (isTranslating) return Promise.resolve(translation);
-    setIsTranslating(true);
-    setTranslationError(null);
-    return withTimeout(translateSentence(text, sourceLang, targetLang), 10_000)
-      .then((res) => {
+      }
+      if (translation || isTranslating) return translation;
+      setIsTranslating(true);
+      setTranslationError(null);
+      try {
+        const res = await withTimeout(translateSentence(text, sourceLang, targetLang), 10_000);
         if (mountedRef.current) {
           setTranslation(res);
+          setTranslationSource('google');
           googleTranslationRef.current = res;
           if (!res) setTranslationError(t('dict.error.translate'));
         }
         return res;
-      })
-      .catch((err: unknown) => {
+      } catch (err) {
         if (mountedRef.current) {
           console.warn('[dict] translate threw:', err);
           setTranslationError(t('dict.error.translate'));
         }
         return '';
-      })
-      .finally(() => {
+      } finally {
         if (mountedRef.current) setIsTranslating(false);
-      });
-  }, [contextSentence, result, sourceLang, targetLang, translation, isTranslating, translateEngine, ai.answers, ai.ask, ensureAiCfg, composeAiPrompt]);
+      }
+    })();
+  }, [contextSentence, result, sourceLang, targetLang, translation, isTranslating, ai.answers, ai.ask, ensureAiCfg, composeAiPrompt]);
 
   const toggleAudio = useCallback((id: string, selected: boolean): void => {
     setAudioSelection((prev) => new Map(prev).set(id, selected));
@@ -602,8 +610,10 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     aiPicks,
     pickAiProvider,
     askAi,
+    aiLanguage,
+    pickAiLanguage,
     translateEngine,
-    setTranslateEngine,
+    translationSource,
     links,
     selectedLinkCount: links.length,
     fetchAudio,

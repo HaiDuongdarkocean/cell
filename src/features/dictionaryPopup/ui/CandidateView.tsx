@@ -312,9 +312,8 @@ export function CandidateView({
             selected={panel.translationSelected}
             onToggle={panel.toggleTranslation}
             onTranslate={() => { void panel.translate(); }}
-            engine={panel.translateEngine}
-            onEngineChange={panel.setTranslateEngine}
-            aiProviderLabel={panel.translateEngine === 'ai'
+            engine={panel.translationSource ?? panel.translateEngine}
+            aiProviderLabel={(panel.translationSource ?? panel.translateEngine) === 'ai'
               ? t(`dict.ai.provider.${panel.aiAnswers.find((a) => a.feature === 'sentenceTranslate')?.provider ?? 'chatgpt'}`)
               : undefined}
           />
@@ -324,10 +323,16 @@ export function CandidateView({
             state={aiStateForFeature(panel.aiState, panel.aiAnswers, 'wordExplain')}
             providerOrder={panel.aiProviders}
             selectedProvider={panel.aiPicks.wordExplain ?? panel.aiProviders[0] ?? 'chatgpt'}
+            answerLanguage={panel.aiLanguage}
+            targetLang={targetLang}
             busy={panel.aiState.phase === 'loading'}
             onPickProvider={(p: AiProviderId) => {
               panel.pickAiProvider('wordExplain', p);
               panel.askAi('wordExplain');
+            }}
+            onPickLanguage={(lang) => {
+              panel.pickAiLanguage(lang);
+              panel.askAi('wordExplain', true);
             }}
             onRetry={() => panel.askAi('wordExplain', true)}
           />
@@ -337,10 +342,16 @@ export function CandidateView({
             state={aiStateForFeature(panel.aiState, panel.aiAnswers, 'sentenceBreakdown')}
             providerOrder={panel.aiProviders}
             selectedProvider={panel.aiPicks.sentenceBreakdown ?? panel.aiProviders[0] ?? 'chatgpt'}
+            answerLanguage={panel.aiLanguage}
+            targetLang={targetLang}
             busy={panel.aiState.phase === 'loading'}
             onPickProvider={(p: AiProviderId) => {
               panel.pickAiProvider('sentenceBreakdown', p);
               panel.askAi('sentenceBreakdown');
+            }}
+            onPickLanguage={(lang) => {
+              panel.pickAiLanguage(lang);
+              panel.askAi('sentenceBreakdown', true);
             }}
             onRetry={() => panel.askAi('sentenceBreakdown', true)}
           />

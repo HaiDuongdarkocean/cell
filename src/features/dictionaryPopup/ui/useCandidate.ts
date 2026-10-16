@@ -118,8 +118,10 @@ export interface UseCandidateReturn {
   readonly aiPicks: Readonly<Partial<Record<AiFeature, AiProviderId>>>;
   readonly pickAiProvider: (feature: AiFeature, provider: AiProviderId) => void;
   readonly askAi: (feature: AiFeature, fresh?: boolean) => void;
+  readonly aiLanguage: 'native' | 'target';
+  readonly pickAiLanguage: (lang: 'native' | 'target') => void;
   readonly translateEngine: 'google' | 'ai';
-  readonly setTranslateEngine: (engine: 'google' | 'ai') => void;
+  readonly translationSource: 'google' | 'ai' | null;
   readonly playTerm: () => void;
   readonly playSentence: () => void;
   readonly autoplayCount: number;
@@ -563,8 +565,10 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     aiPicks: toolbar.aiPicks,
     pickAiProvider: toolbar.pickAiProvider,
     askAi: toolbar.askAi,
+    aiLanguage: toolbar.aiLanguage,
+    pickAiLanguage: toolbar.pickAiLanguage,
     translateEngine: toolbar.translateEngine,
-    setTranslateEngine: toolbar.setTranslateEngine,
+    translationSource: toolbar.translationSource,
     playTerm,
     playSentence,
     autoplayCount,

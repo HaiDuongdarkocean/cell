@@ -314,7 +314,7 @@ Respond concisely in no more than 100 words.
 
 Specified word(s) MUST be in its original language.
 
-All other explanation text MUST be in language [INTERFACE_LANG].
+All other explanation text MUST be in language [ANSWER_LANG].
 
 In your response:
 
@@ -340,7 +340,7 @@ Output in groups of NUMBERED LISTS, in this format:
 
 'Chunk' MUST be in its original language.
 
-'Meaning' and 'explanation' MUST be in language [INTERFACE_LANG].
+'Meaning' and 'explanation' MUST be in language [ANSWER_LANG].
 
 'Meaning' MUST be markedly different from 'Chunk' text (reworded, definition, synonyms, etc.).
 
@@ -358,7 +358,7 @@ DO NOT OUTPUT quotation marks in the 'chunk' or 'meaning' fields.
 
 DO NOT OUTPUT other text, ONLY OUTPUT numbered lists.
 
-DO NOT OUTPUT any text in [TARGET_LANG]. ONLY output text IN [INTERFACE_LANG].`,
+DO NOT OUTPUT any text in [TARGET_LANG]. ONLY output text IN [ANSWER_LANG].`,
       user: '[SENTENCE]',
     },
     sentenceTranslate: {
@@ -375,6 +375,7 @@ Sentence MUST BE translated into this SPECIFIC language: [TARGET_LANG].`,
     },
   },
   sentenceTranslateEngine: 'google',
+  answerLanguage: 'native',
   autoOpenOnMiss: true,
 };
 

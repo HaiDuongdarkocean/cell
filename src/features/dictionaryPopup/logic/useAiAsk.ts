@@ -30,6 +30,8 @@ export interface AiAskState {
   readonly provider: AiProviderId | null;
   /** Failover notice: a provider failed and the chain moved on. */
   readonly failoverFrom: AiProviderId | null;
+  /** Providers that refused for missing login — shown so the user can sign in. */
+  readonly loginProviders: readonly AiProviderId[];
   readonly error: string | null;
 }
 
@@ -45,6 +47,7 @@ const IDLE: AiAskState = {
   answer: null,
   provider: null,
   failoverFrom: null,
+  loginProviders: [],
   error: null,
 };
 
@@ -59,7 +62,7 @@ export function aiStateForFeature(
   if (state.feature === feature) return state;
   const cached = answers.find((a) => a.feature === feature);
   if (cached) {
-    return { phase: 'answered', feature, answer: cached, provider: cached.provider, failoverFrom: null, error: null };
+    return { phase: 'answered', feature, answer: cached, provider: cached.provider, failoverFrom: null, loginProviders: [], error: null };
   }
   return { ...IDLE, feature };
 }
@@ -93,6 +96,7 @@ export function useAiAsk(): {
           answer,
           provider: answer.provider,
           failoverFrom: null,
+          loginProviders: [],
           error: null,
         });
         return answer;
@@ -105,6 +109,7 @@ export function useAiAsk(): {
         answer: prev.feature === feature ? prev.answer : null,
         provider: provider ?? prev.provider,
         failoverFrom: null,
+        loginProviders: [],
         error: null,
       }));
       try {
@@ -128,6 +133,7 @@ export function useAiAsk(): {
             answer,
             provider: answer.provider,
             failoverFrom: failedAttempt?.provider ?? null,
+            loginProviders: [],
             error: null,
           });
           return answer;
@@ -135,12 +141,17 @@ export function useAiAsk(): {
         setState((prev) => ({
           ...prev,
           phase: 'error',
+          loginProviders:
+            res?.data?.attempts
+              ?.filter((a) => a.error === 'loginRequired')
+              .map((a) => a.provider) ?? [],
           error: res?.error ?? 'no response',
         }));
       } catch (err) {
         setState((prev) => ({
           ...prev,
           phase: 'error',
+          loginProviders: [],
           error: err instanceof Error ? err.message : String(err),
         }));
       } finally {
