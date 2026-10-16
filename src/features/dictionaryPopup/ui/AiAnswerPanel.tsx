@@ -157,7 +157,7 @@ export function AiAnswerPanel({
 
         {state.phase === 'answered' && state.answer && (
           chunks && chunks.length > 0 ? (
-            <div data-tihoka-id="ai-chunk-list">
+            <div className={styles.TihokaAiChunkList} data-tihoka-id="ai-chunk-list">
               {chunks.map((c, i) => {
                 const checked = checkedChunks?.has(i) ?? false;
                 return (
@@ -175,6 +175,13 @@ export function AiAnswerPanel({
                       }
                     }}
                   >
+                    <span
+                      className={`${checkStyles.TihokaDefCheck} ${checked ? checkStyles['TihokaDefCheck--checked'] : ''}`}
+                    >
+                      <span className={checkStyles.TihokaDefCheckBox} aria-hidden="true">
+                        <Icon name="check" size="md" />
+                      </span>
+                    </span>
                     <div className={styles.TihokaAiChunkBody}>
                       <div className={styles.TihokaAiChunkText}>{c.text}</div>
                       {c.meaning && (
@@ -188,13 +195,6 @@ export function AiAnswerPanel({
                         </div>
                       )}
                     </div>
-                    <span
-                      className={`${checkStyles.TihokaDefCheck} ${checked ? checkStyles['TihokaDefCheck--checked'] : ''}`}
-                    >
-                      <span className={checkStyles.TihokaDefCheckBox} aria-hidden="true">
-                        <Icon name="check" size="md" />
-                      </span>
-                    </span>
                   </div>
                 );
               })}

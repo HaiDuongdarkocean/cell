@@ -50,8 +50,13 @@
   white-space: pre-wrap;
 }
 
+.TihokaAiChunkList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 .TihokaAiChunk {
-  justify-content: space-between;
   padding: var(--space-1-5) var(--space-1);
 }
 
