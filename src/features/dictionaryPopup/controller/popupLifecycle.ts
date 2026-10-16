@@ -16,6 +16,7 @@ import {
   type MountPopupDictionaryOptions,
   type PopupDictionaryMountController,
 } from '../ui/mountPopupDictionary';
+import type { AiNoteAnswer } from '@/features/aiBridge';
 import type { WebTriggerPointer } from '@/features/dictionaryPopup/trigger/webTriggerController';
 import { createWordHighlight, type HighlightTarget } from '@/features/dictionaryPopup/ui/wordHighlight';
 import { emitWordStatusChanged } from '@/features/dictionary';
@@ -70,6 +71,9 @@ export interface PopupLifecycleDeps {
     prefill: PopupCardCreatorPrefill,
   ) => OnCardCreatorActionResult;
   readonly onQuickAdd: (level: PopupLevel, prefill: PopupCardCreatorPrefill) => void;
+  /** Late AI answers after send/quick-add → merge into the open card note
+   *  (spec ai-bridge-dictionary REQ-5). */
+  readonly onAiNoteUpdate?: (answers: readonly AiNoteAnswer[]) => void;
 }
 
 export interface PopupLifecycle {
@@ -266,6 +270,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
       onSizeChange: handlePopupSizeChange,
       onSendToCard: (prefill) => deps.onCardCreatorAction(viewLevel(), 'edit-card', prefill),
       onQuickAdd: (prefill) => { void deps.onQuickAdd(viewLevel(), prefill); },
+      onAiNoteUpdate: (answers) => deps.onAiNoteUpdate?.(answers),
       onStatusChange: (term, langCode, status) => handlePopupStatusChange(viewLevel(), term, langCode, status),
       onCandidateChange: (term) => expandHighlightForTerm(viewLevel(), term),
       onOpenSettings: deps.panelController

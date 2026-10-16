@@ -430,6 +430,8 @@ export interface PopupCardCreatorPrefill extends PopupSelectionSnapshot {
   readonly rawDefinitions: readonly string[];
   readonly contextSentence: string;
   readonly translation?: string;
+  /** AI answer blocks (spec ai-bridge-dictionary REQ-5) — appended to the card note. */
+  readonly note?: string;
   readonly wordAudioUrls?: readonly string[];
   readonly sentenceAudioUrls?: readonly string[];
   readonly imageUrls?: readonly string[];

@@ -2307,5 +2307,8 @@
   "srs.variants.fieldInput": "Nghe-viết",
   "srs.variants.fieldTarget": "Từ",
   "srs.variants.presetName": "Tên preset",
-  "srs.variants.inheritingNote": "Phạm vi này đang kế thừa preset mặc định của bộ sưu tập."
+  "srs.variants.inheritingNote": "Phạm vi này đang kế thừa preset mặc định của bộ sưu tập.",
+  "settings.nav.aiBridge": "AI",
+  "settings.ai.providerOrder.hint": "Thử theo thứ tự này; mỗi lỗi chuyển sang nhà cung cấp kế tiếp.",
+  "settings.ai.autoOpenOnMiss.hint": "Khi tra từ không có định nghĩa, tab AI tự mở và giải thích từ."
 }

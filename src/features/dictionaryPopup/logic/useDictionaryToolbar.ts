@@ -8,10 +8,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { markAudio, measureAudio } from '@/shared/lib/perfMarks';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_PRONUNCIATION_SETTINGS } from '@/shared/config/config';
-import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_PRONUNCIATION_SETTINGS, DEFAULT_AI_BRIDGE_SETTINGS } from '@/shared/config/config';
+import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { translateSentence } from '@/features/cardCreator';
 import { PronunciationAudioOrchestrator } from '@/features/pronunciation';
+import { composePrompt } from '@/features/aiBridge';
+import { useAiAsk, type AiAnswer, type AiAskState } from './useAiAsk';
+import type { AiBridgeSettings, AiFeature, AiProviderId } from '@/entities/settings';
+import { getLocale } from '@/shared/i18n';
 import type { MessageResponse } from '@/entities/message/types';
 import type {
   LookupResult,
@@ -96,6 +100,20 @@ export interface UseDictionaryToolbarReturn {
   readonly translate: () => Promise<string>;
   readonly selectedTranslationCount: number;
 
+  // === AI bridge (spec ai-bridge-dictionary) ===
+  readonly aiState: AiAskState;
+  /** Latest answer per feature — feeds panels + the card note blocks. */
+  readonly aiAnswers: readonly AiAnswer[];
+  /** Failover order shown as provider pills (settings providerOrder). */
+  readonly aiProviders: readonly AiProviderId[];
+  /** Per-session provider picks overriding the settings default. */
+  readonly aiPicks: Readonly<Partial<Record<AiFeature, AiProviderId>>>;
+  readonly pickAiProvider: (feature: AiFeature, provider: AiProviderId) => void;
+  /** Fire (or re-fire) an ask for a feature — tab-open trigger AND retry. */
+  readonly askAi: (feature: AiFeature) => void;
+  readonly translateEngine: 'google' | 'ai';
+  readonly setTranslateEngine: (engine: 'google' | 'ai') => void;
+
   readonly links: readonly ExternalDictLink[];
   readonly selectedLinkCount: number;
 
@@ -156,6 +174,75 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
   const [translationError, setTranslationError] = useState<string | null>(null);
   const [translationSelected, setTranslationSelected] = useState(initialTranslationSelected ?? false);
 
+  const ai = useAiAsk();
+  const aiCfgRef = useRef<AiBridgeSettings | null>(null);
+  const [aiProviders, setAiProviders] = useState<readonly AiProviderId[]>(DEFAULT_AI_BRIDGE_SETTINGS.providerOrder);
+  const [aiPicks, setAiPicks] = useState<Partial<Record<AiFeature, AiProviderId>>>({});
+  const aiPicksRef = useRef(aiPicks);
+  const [translateEngine, setTranslateEngineState] = useState<'google' | 'ai'>(DEFAULT_AI_BRIDGE_SETTINGS.sentenceTranslateEngine);
+  const googleTranslationRef = useRef(initialTranslation ?? '');
+
+  const ensureAiCfg = useCallback(async (): Promise<AiBridgeSettings> => {
+    if (aiCfgRef.current) return aiCfgRef.current;
+    const s = await withTimeout(loadSettings(), 5_000).catch(() => null);
+    const cfg = s?.aiBridge ?? DEFAULT_AI_BRIDGE_SETTINGS;
+    aiCfgRef.current = cfg;
+    if (mountedRef.current) {
+      setAiProviders(cfg.providerOrder);
+      setTranslateEngineState(cfg.sentenceTranslateEngine);
+    }
+    return cfg;
+  }, []);
+
+  const composeAiPrompt = useCallback(
+    (feature: AiFeature, cfg: AiBridgeSettings): string =>
+      composePrompt(feature, cfg.prompts, {
+        word: result?.term,
+        sentence: contextSentence.trim() || undefined,
+        targetLang,
+        interfaceLang: getLocale() === 'vi' ? 'Vietnamese' : 'English',
+      }),
+    [result?.term, contextSentence, targetLang],
+  );
+
+  const askAi = useCallback(
+    (feature: AiFeature): void => {
+      if (!result) return;
+      void (async () => {
+        const cfg = await ensureAiCfg();
+        const prompt = composeAiPrompt(feature, cfg);
+        const answer = await ai.ask(feature, prompt, aiPicksRef.current[feature]);
+        if (feature === 'sentenceTranslate' && answer && mountedRef.current) {
+          setTranslation(answer.text);
+        }
+      })();
+    },
+    [result, ensureAiCfg, composeAiPrompt, ai.ask],
+  );
+
+  const pickAiProvider = useCallback((feature: AiFeature, provider: AiProviderId): void => {
+    aiPicksRef.current = { ...aiPicksRef.current, [feature]: provider };
+    setAiPicks(aiPicksRef.current);
+  }, []);
+
+  const setTranslateEngine = useCallback(
+    (engine: 'google' | 'ai'): void => {
+      setTranslateEngineState(engine);
+      if (engine === 'google') {
+        setTranslation(googleTranslationRef.current);
+      } else {
+        const answer = ai.answers.find((a) => a.feature === 'sentenceTranslate');
+        setTranslation(answer?.text ?? '');
+        if (!answer) askAi('sentenceTranslate');
+      }
+      void ensureAiCfg().then((cfg) => {
+        aiCfgRef.current = { ...cfg, sentenceTranslateEngine: engine };
+        void saveSettings({ aiBridge: aiCfgRef.current }).catch(() => { /* keep in-memory choice */ });
+      });
+    },
+    [ai.answers, askAi, ensureAiCfg],
+  );
+
   const mountedRef = useRef(true);
   useEffect(() => {
     mountedRef.current = true;
@@ -191,6 +278,10 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     setTranslation(nextTranslation ?? '');
     setTranslationError(null);
     setTranslationSelected(nextTranslationSelected ?? false);
+    googleTranslationRef.current = nextTranslation ?? '';
+    ai.reset();
+    aiPicksRef.current = {};
+    setAiPicks({});
   }, []);
 
   useEffect(() => {
@@ -339,6 +430,29 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     if (!result) return Promise.resolve('');
     const text = contextSentence.trim() || result.term.trim();
     if (!text) return Promise.resolve(translation);
+    if (translateEngine === 'ai') {
+      const answer = ai.answers.find((a) => a.feature === 'sentenceTranslate');
+      if (answer) {
+        if (mountedRef.current) setTranslation(answer.text);
+        return Promise.resolve(answer.text);
+      }
+      setIsTranslating(true);
+      setTranslationError(null);
+      return (async () => {
+        const cfg = await ensureAiCfg();
+        const prompt = composeAiPrompt('sentenceTranslate', cfg);
+        const aiAnswer = await ai.ask('sentenceTranslate', prompt, aiPicksRef.current.sentenceTranslate);
+        if (mountedRef.current) {
+          if (aiAnswer) {
+            setTranslation(aiAnswer.text);
+          } else {
+            setTranslationError(t('dict.error.translate'));
+          }
+          setIsTranslating(false);
+        }
+        return aiAnswer?.text ?? '';
+      })();
+    }
     if (translation) return Promise.resolve(translation);
     if (isTranslating) return Promise.resolve(translation);
     setIsTranslating(true);
@@ -347,6 +461,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
       .then((res) => {
         if (mountedRef.current) {
           setTranslation(res);
+          googleTranslationRef.current = res;
           if (!res) setTranslationError(t('dict.error.translate'));
         }
         return res;
@@ -361,7 +476,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
       .finally(() => {
         if (mountedRef.current) setIsTranslating(false);
       });
-  }, [contextSentence, result, sourceLang, targetLang, translation, isTranslating]);
+  }, [contextSentence, result, sourceLang, targetLang, translation, isTranslating, translateEngine, ai.answers, ai.ask, ensureAiCfg, composeAiPrompt]);
 
   const toggleAudio = useCallback((id: string, selected: boolean): void => {
     setAudioSelection((prev) => new Map(prev).set(id, selected));
@@ -409,6 +524,23 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
       void fetchImagesRef.current();
     }
   }, [activeTab, result?.term, result?.langCode, imageQuery]);
+
+  // AI tabs fire their ask when opened (spec ai-bridge-dictionary REQ-1/REQ-3).
+  // Re-opening after an answer returns the cached answer; after an error the
+  // ask is re-issued so a tab toggle doubles as a retry.
+  const aiAskRef = useRef(askAi);
+  const aiAnswersRef = useRef(ai.answers);
+  useEffect(() => {
+    aiAskRef.current = askAi;
+    aiAnswersRef.current = ai.answers;
+  });
+  useEffect(() => {
+    const feature: AiFeature | null =
+      activeTab === 'ai' ? 'wordExplain' : activeTab === 'breakdown' ? 'sentenceBreakdown' : null;
+    if (!feature) return;
+    if (aiAnswersRef.current.some((a) => a.feature === feature)) return;
+    aiAskRef.current(feature);
+  }, [activeTab, result?.term, result?.langCode]);
 
   // Preload audio, image and translation in the integrated panel so the user
   // can press Send to Card immediately without opening every tab.
@@ -463,6 +595,14 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     toggleTranslation,
     translate,
     selectedTranslationCount,
+    aiState: ai.state,
+    aiAnswers: ai.answers,
+    aiProviders,
+    aiPicks,
+    pickAiProvider,
+    askAi,
+    translateEngine,
+    setTranslateEngine,
     links,
     selectedLinkCount: links.length,
     fetchAudio,

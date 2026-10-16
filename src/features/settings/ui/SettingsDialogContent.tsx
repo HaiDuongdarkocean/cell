@@ -9,10 +9,12 @@ import {
   DEFAULT_DICTIONARY_POPUP_SETTINGS,
   DEFAULT_PRONUNCIATION_SETTINGS,
   DEFAULT_TTS_SETTINGS,
+  DEFAULT_AI_BRIDGE_SETTINGS,
 } from '@/shared/config/config';
 import { SUBTITLE_LANGUAGES } from '@/shared/config/languageRegistry';
 import { MultiSelect } from '@/shared/ui/MultiSelect';
 import { DictionaryPopupSettingsPanel } from './DictionaryPopupSettingsPanel';
+import { AiBridgeSection } from './AiBridgeSection';
 import { WordBadgeSettingsPanel } from './WordBadgeSettingsPanel';
 import { AudioPanel } from '@/features/audio';
 
@@ -209,6 +211,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
     { id: 'media', label: t('settings.nav.media'), icon: 'video' },
     { id: 'block', label: t('settings.nav.block'), icon: 'captions' },
     { id: 'dictionaryPopup', label: t('settings.nav.dictionaryPopup'), icon: 'bookOpen' },
+    { id: 'aiBridge', label: t('settings.nav.aiBridge'), icon: 'atom' },
     { id: 'wordBadge', label: t('settings.nav.wordBadge'), icon: 'move' },
     { id: 'audio', label: t('settings.nav.audio'), icon: 'audioWave' },
     { id: 'download', label: t('settings.nav.download'), icon: 'download' },
@@ -522,6 +525,13 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                 onChange={(dp) => onChange({ ...settings, dictionaryPopup: dp })}
               />
             </SettingsSection>
+
+            {/* === AI bridge (spec ai-bridge-dictionary) === */}
+            <AiBridgeSection
+              sectionRef={sectionRef('aiBridge')}
+              settings={settings.aiBridge ?? DEFAULT_AI_BRIDGE_SETTINGS}
+              onChange={(aiBridge) => onChange({ ...settings, aiBridge })}
+            />
 
             {/* === Word badge === */}
             <SettingsSection

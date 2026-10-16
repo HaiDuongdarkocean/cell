@@ -16,6 +16,9 @@ import { PosVariantNav } from './PosVariantNav';
 import { PronunciationAudioPanel } from './PronunciationAudioPanel';
 import { ImagePanel } from './ImagePanel';
 import { TranslatePanel } from './TranslatePanel';
+import { AiAnswerPanel } from './AiAnswerPanel';
+import { aiStateForFeature, type AiAnswer } from '../logic/useAiAsk';
+import type { AiProviderId } from '@/entities/settings';
 import { LinksPanel } from './LinksPanel';
 import { DictionaryToolbar } from './DictionaryToolbar';
 import { Tooltip } from '@/shared/ui/Tooltip';
@@ -60,6 +63,9 @@ export interface CandidateViewProps {
   readonly targetLang: string;
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
+  /** Pushes the updated AI answer set after a send so an open card dialog can
+   *  merge late blocks into the note field (spec ai-bridge-dictionary REQ-5). */
+  readonly onAiNoteUpdate?: (answers: readonly AiAnswer[]) => void;
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Called from the empty-definitions state to open Settings → Resources. */
   readonly onOpenSettings?: () => void;
@@ -81,6 +87,7 @@ export function CandidateView({
   targetLang,
   onSendToCard,
   onQuickAdd,
+  onAiNoteUpdate,
   onStatusChange,
   onOpenSettings,
   defaultActiveTab,
@@ -95,6 +102,7 @@ export function CandidateView({
     targetLang,
     onSendToCard,
     onQuickAdd,
+    onAiNoteUpdate,
     onStatusChange,
     defaultActiveTab,
     selectionSnapshot,
@@ -300,10 +308,41 @@ export function CandidateView({
             targetLang={targetLang}
             translation={panel.translation}
             error={panel.translationError}
-            loading={panel.isTranslating}
+            loading={panel.isTranslating || (panel.translateEngine === 'ai' && panel.aiState.phase === 'loading' && panel.aiState.feature === 'sentenceTranslate')}
             selected={panel.translationSelected}
             onToggle={panel.toggleTranslation}
             onTranslate={() => { void panel.translate(); }}
+            engine={panel.translateEngine}
+            onEngineChange={panel.setTranslateEngine}
+            aiProviderLabel={panel.translateEngine === 'ai'
+              ? t(`dict.ai.provider.${panel.aiAnswers.find((a) => a.feature === 'sentenceTranslate')?.provider ?? 'chatgpt'}`)
+              : undefined}
+          />
+        )}
+        {panel.activeTab === 'ai' && (
+          <AiAnswerPanel
+            state={aiStateForFeature(panel.aiState, panel.aiAnswers, 'wordExplain')}
+            providerOrder={panel.aiProviders}
+            selectedProvider={panel.aiPicks.wordExplain ?? panel.aiProviders[0] ?? 'chatgpt'}
+            busy={panel.aiState.phase === 'loading'}
+            onPickProvider={(p: AiProviderId) => {
+              panel.pickAiProvider('wordExplain', p);
+              panel.askAi('wordExplain');
+            }}
+            onRetry={() => panel.askAi('wordExplain')}
+          />
+        )}
+        {panel.activeTab === 'breakdown' && (
+          <AiAnswerPanel
+            state={aiStateForFeature(panel.aiState, panel.aiAnswers, 'sentenceBreakdown')}
+            providerOrder={panel.aiProviders}
+            selectedProvider={panel.aiPicks.sentenceBreakdown ?? panel.aiProviders[0] ?? 'chatgpt'}
+            busy={panel.aiState.phase === 'loading'}
+            onPickProvider={(p: AiProviderId) => {
+              panel.pickAiProvider('sentenceBreakdown', p);
+              panel.askAi('sentenceBreakdown');
+            }}
+            onRetry={() => panel.askAi('sentenceBreakdown')}
           />
         )}
         {panel.activeTab === 'links' && <LinksPanel links={panel.links} />}

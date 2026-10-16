@@ -22,6 +22,7 @@ export function buildPrefill(
   imageSelection: Map<string, boolean>,
   translationSelected = false,
   variant?: { readonly variant: PosVariant; readonly accentIndex: number },
+  aiNote?: string,
 ): PopupCardCreatorPrefill {
   const defs = selectedDefinitions.length > 0
     ? selectedDefinitions
@@ -73,6 +74,7 @@ export function buildPrefill(
     rawDefinitions: result.rawDefinitions,
     contextSentence,
     translation: translation || undefined,
+    note: aiNote || undefined,
     wordAudioUrls,
     sentenceAudioUrls,
     imageUrls,

@@ -2307,5 +2307,8 @@
   "srs.variants.fieldInput": "Dictation",
   "srs.variants.fieldTarget": "Word",
   "srs.variants.presetName": "Preset name",
-  "srs.variants.inheritingNote": "This scope inherits the collection default preset."
+  "srs.variants.inheritingNote": "This scope inherits the collection default preset.",
+  "settings.nav.aiBridge": "AI",
+  "settings.ai.providerOrder.hint": "Providers are tried in this order; each failure moves to the next.",
+  "settings.ai.autoOpenOnMiss.hint": "When a lookup returns no definitions, the AI tab opens and explains the word automatically."
 }

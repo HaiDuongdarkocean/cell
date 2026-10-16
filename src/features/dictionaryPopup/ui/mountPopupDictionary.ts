@@ -6,6 +6,7 @@ import { PopupDictionary } from './PopupDictionary';
 import { getMountParent, POPUP_Z_INDEX } from './popupGeometry';
 import type { PopupAnchor, PopupLineRect, PopupPointerHint, PopupSize } from './usePopupPosition';
 import type { LookupResult, PopupCardCreatorPrefill, WordStatus, PopupTab } from '@/entities/dictionary';
+import type { AiNoteAnswer } from '@/features/aiBridge';
 
 
 const ORBITAL_BADGE_HOST_CLASS = 'js-Tihoka-orbital-badge-host';
@@ -51,6 +52,8 @@ export interface MountPopupDictionaryOptions {
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   /** Called when the user triggers a quick add. */
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
+  /** Late AI answers after a send — merge into the open card's note field. */
+  readonly onAiNoteUpdate?: (answers: readonly AiNoteAnswer[]) => void;
   /** Called when the user cycles a word's status inside the popup. */
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Called when the user switches to a different candidate. */
@@ -182,6 +185,7 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
     onSizeChange: current.onSizeChange,
     onSendToCard: current.onSendToCard,
     onQuickAdd: current.onQuickAdd,
+    onAiNoteUpdate: current.onAiNoteUpdate,
     onStatusChange: current.onStatusChange,
     onCandidateChange: current.onCandidateChange,
     onOpenSettings: current.onOpenSettings,

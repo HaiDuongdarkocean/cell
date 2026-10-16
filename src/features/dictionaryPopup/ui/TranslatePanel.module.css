@@ -25,6 +25,11 @@
   color: var(--color-text-secondary);
 }
 
+.TihokaTranslateSource {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
 /* Mirrors .TihokaTranslateBlock metrics — same padding/border/radius so the
    skeleton occupies the exact box the loaded block will. */
 .TihokaTranslateSkeletonBlock {
