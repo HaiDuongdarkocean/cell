@@ -297,6 +297,35 @@ export default tseslint.config(
     },
   },
 
+  // Context boundary: the service worker has no DOM — a document/window
+  // reference in background code is a latent crash caught at lint time.
+  {
+    files: ['src/entrypoints/background/**/*.ts', 'src/entrypoints/background/**/*.tsx'],
+    rules: {
+      'no-restricted-globals': ['error',
+        { name: 'document', message: 'Service worker has no DOM — route DOM work through the offscreen document.' },
+        { name: 'window', message: 'Service worker has no window — use self/globalThis or the offscreen document.' },
+      ],
+    },
+  },
+
+  // Context boundary: content scripts do not fetch — cross-origin goes through
+  // offscreenFetch in background. Main-world iifes (page context, cannot reach
+  // extension APIs) and the existing runtimeMessages site are the frozen
+  // exception set — no new fetch call sites.
+  {
+    files: ['src/entrypoints/content/**/*.ts', 'src/entrypoints/content/**/*.tsx'],
+    ignores: [
+      'src/entrypoints/content/**/*.iife.ts',
+      'src/entrypoints/content/runtimeMessages.ts',
+    ],
+    rules: {
+      'no-restricted-globals': ['error',
+        { name: 'fetch', message: 'Context boundary: fetch in a content script goes through offscreenFetch — do not add a new call site.' },
+      ],
+    },
+  },
+
   // Test files — relax some rules
   {
     files: ['**/*.test.ts', '**/*.test.tsx', 'tests/**/*.ts'],
