@@ -1,12 +1,17 @@
 {
   "version": "1.0",
-  "generated": "2026-10-17T13:36:15.848Z",
-  "count": 57,
+  "generated": "2026-10-17T15:35:18.811Z",
+  "count": 58,
   "skills": [
     {
       "name": "animation-vocabulary",
       "description": "Names a motion effect from a vague description ('the bouncy thing' -> Pop in). Use when the user asks what an animation is called.",
       "path": ".agents/skills/animation-vocabulary/SKILL.md"
+    },
+    {
+      "name": "architecture-eval",
+      "description": "Evidence-based architecture evaluation — L0-L4 coverage report plus at least one shipped improvement per run. Use for \"is the architecture good?\" audits over the whole source. Not for per-change review (code-review-and-quality) or design-time audits.",
+      "path": ".agents/skills/architecture-eval/SKILL.md"
     },
     {
       "name": "audit-technical-debt",
