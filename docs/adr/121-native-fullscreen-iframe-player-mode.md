@@ -1,4 +1,4 @@
-# ADR: Native Fullscreen for Child-Iframe Player Mode
+# ADR-121: Native Fullscreen for Child-Iframe Player Mode
 
 ## Context
 

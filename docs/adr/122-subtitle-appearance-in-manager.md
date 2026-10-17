@@ -1,4 +1,4 @@
-# ADR: Subtitle Appearance in Manager Panel
+# ADR-122: Subtitle Appearance in Manager Panel
 
 **Date:** 2026-08-13
 **Status:** Accepted

@@ -1,4 +1,4 @@
-# ADR-110: Foldered Google Drive layout with dual-read migration and automatic remote GC
+# ADR-120: Foldered Google Drive layout with dual-read migration and automatic remote GC
 
 ## Status
 

@@ -133,7 +133,7 @@ src/entrypoints/design-system-showcase/pages/SubtitleOverlayPage.showcase.tsx  #
 ```
 docs/2-architechture-system.md   # Tree + dependency + function index cho subtitle/ui
 docs/0-wiki.md                   # Mục lục (nếu thêm spec/ADR mới)
-docs/adr/NNN-subtitle-panels-atom-decomposition.md  # WHY: lý do tách (chỉ WHY, không HOW)
+docs/adr/080-subtitle-panels-atom-decomposition.md  # WHY: lý do tách (chỉ WHY, không HOW)
 ```
 
 ## Code Style
@@ -243,7 +243,7 @@ export function ManagerLayer({ manager, isMobile, exiting, onClose, sheetHeightV
 13. **DOM selector preservation** `[REVIEW FIX]` — tất cả `data-tihoka-id` ở C5 vẫn tồn tại sau refactor. Metric: grep + DOM query trong test.
 14. **Browser verify pass** `[REVIEW FIX]` — 4 environment (text + video + anti-automation + mock iframe) pass checklist observable ở Testing Strategy. No console error, no visual regression.
 15. **`docs/2-architechture-system.md` cập nhật** — tree + dependency + CSS manifest + function index cho `subtitle/ui` phản ánh molecule mới.
-16. **ADR tạo** — `docs/adr/NNN-subtitle-panels-atom-decomposition.md` ghi WHY tách (chỉ WHY).
+16. **ADR tạo** — `docs/adr/080-subtitle-panels-atom-decomposition.md` ghi WHY tách (chỉ WHY).
 17. **No new dependency** — `package.json` không thêm package.
 18. **Negative AC** `[REVIEW FIX]` — Nếu bất kỳ criterion 9-14 fail → không merge, revert + bug task (xem Rollback plan).
 

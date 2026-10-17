@@ -186,7 +186,7 @@ docs/
   specs/
     subtitle-search.md                 # THIS
   adr/
-    NNN-subtitle-search.md             # NEW — WHY: client-only keys, SubDL-first, no bundled key, background-owns-network
+    079-subtitle-search.md             # NEW — WHY: client-only keys, SubDL-first, no bundled key, background-owns-network
 ```
 
 ## Code Style

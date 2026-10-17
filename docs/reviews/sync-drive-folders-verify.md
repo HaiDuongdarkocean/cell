@@ -1,6 +1,6 @@
 # Verify — sync-drive-folders
 
-Fresh-context review of the shipped implementation (commits `7990ded4`, `4ff4f5d3` + hardening fixes) against `docs/specs/sync-drive-folders.md` (v4 approved) and `docs/adr/110-sync-drive-folders-and-remote-gc.md`.
+Fresh-context review of the shipped implementation (commits `7990ded4`, `4ff4f5d3` + hardening fixes) against `docs/specs/sync-drive-folders.md` (v4 approved) and `docs/adr/120-sync-drive-folders-and-remote-gc.md`.
 
 VERDICT: PASS
 

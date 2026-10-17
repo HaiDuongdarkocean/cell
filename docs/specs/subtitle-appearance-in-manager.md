@@ -81,7 +81,7 @@ docs/mockups/
 docs/specs/
   subtitle-appearance-in-manager.md      # this spec
 docs/adr/
-  NNN-subtitle-appearance-in-manager.md  # [REVIEW FIX] NEW — ADR for why appearance moved
+  122-subtitle-appearance-in-manager.md  # [REVIEW FIX] NEW — ADR for why appearance moved
 docs/0-wiki.md                           # [REVIEW FIX] + list new spec
 docs/2-architechture-system.md           # [REVIEW FIX] + update tree/dependency/function index
 ```
@@ -304,7 +304,7 @@ export const appearanceShadowCss = [
 18. `SubtitleStylePanel` dùng shared `Slider` từ `@/shared/ui`
 19. 4 appearance components moved to `src/features/subtitle/ui/appearance/`
 20. `appearanceShadowCss.ts` manifest created và injected vào shadow root
-21. ADR created tại `docs/adr/NNN-subtitle-appearance-in-manager.md`
+21. ADR created tại `docs/adr/122-subtitle-appearance-in-manager.md`
 22. `docs/2-architechture-system.md` updated (tree + dependency + function index)
 23. `docs/0-wiki.md` updated (list new spec)
 24. All unit tests pass
