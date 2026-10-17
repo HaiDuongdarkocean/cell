@@ -379,12 +379,18 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     setAiPicks({});
   }, []);
 
+  const lookupIdentity = `${result?.term ?? ''}|${result?.langCode ?? ''}`;
+  const prevLookupRef = useRef(lookupIdentity);
   useEffect(() => {
     setActiveTab(defaultActiveTab ?? null);
-    resetMediaState();
+    // Settings load (defaultActiveTab) and async initial-* hydration must not
+    // reset AI state — a mid-flight ask's resolution is generation-guarded,
+    // so a spurious reset strands the popup in 'loading' forever.
+    const changed = lookupIdentity !== prevLookupRef.current;
+    prevLookupRef.current = lookupIdentity;
+    if (changed) resetMediaState();
   }, [
-    result?.term,
-    result?.langCode,
+    lookupIdentity,
     defaultActiveTab,
     resetMediaState,
     initialAudioItems,

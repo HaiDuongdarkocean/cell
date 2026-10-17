@@ -31,6 +31,7 @@ import {
   isStreaming,
   waitForAssistantReply,
   captureAssistantBaseline,
+  assistantUnits,
   newAssistantUnit,
   unitText,
 } from '@/features/aiBridge/dom';
@@ -251,9 +252,14 @@ async function ask(
     const emit = streamPartials(askId, adapter.id);
     const tail = setInterval(() => {
       if (!emit || inFlightAskId !== null) { clearInterval(tail); return; }
-      const unit = newAssistantUnit(adapter, document, baseline);
+      // newAssistantUnit can lose the row after remount/reload — fall back
+      // to the last unit, and only emit real growth of the settled answer
+      // (prefix match keeps an unrelated older turn from overwriting it).
+      const unit =
+        newAssistantUnit(adapter, document, baseline) ??
+        assistantUnits(adapter, document).at(-1);
       const grown = unit ? unitText(adapter, unit) : '';
-      if (grown && grown !== text) emit(grown);
+      if (grown && grown !== text && grown.startsWith(text)) emit(grown);
     }, TAIL_POLL_MS);
     setTimeout(() => clearInterval(tail), TAIL_WATCH_MS);
     return { success: true, text, provider: adapter.id };

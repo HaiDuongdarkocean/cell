@@ -114,13 +114,29 @@ export function useAiAsk(): {
 
   const ask = useCallback(
     async (feature: AiFeature, prompt: string, provider?: AiProviderId, fresh = false): Promise<AiAnswer | null> => {
+      if (!prompt.trim()) return null;
       if (inFlightRef.current) {
         // Same-feature re-ask (retry / provider pick) abandons the running
-        // ask; a different feature keeps the single-slot serialization.
-        if (lastAskRef.current?.feature !== feature) return null;
-        cancel();
+        // ask; a different feature keeps the single-slot serialization by
+        // queuing behind it — a dropped ask never lands, never errors, and
+        // the auto-ask effect never refires, stranding the tab in limbo.
+        if (lastAskRef.current?.feature !== feature) {
+          setState({
+            phase: 'loading',
+            feature,
+            answer: null,
+            provider: provider ?? null,
+            failoverFrom: null,
+            loginProviders: [],
+            error: null,
+          });
+          while (inFlightRef.current) {
+            await new Promise((r) => setTimeout(r, 300));
+          }
+        } else {
+          cancel();
+        }
       }
-      if (!prompt.trim()) return null;
       const gen = ++generationRef.current;
       const cacheKey = aiAnswerCacheKey(feature, provider, prompt);
       const cached = fresh ? undefined : getAiAnswer(cacheKey);

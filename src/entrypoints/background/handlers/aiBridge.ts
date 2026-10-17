@@ -125,7 +125,13 @@ async function focusBridgeTab(tabId: number): Promise<void> {
 
 async function pingBridge(tabId: number): Promise<BridgePing | null> {
   try {
-    return await sendTabMessage<BridgePing>(tabId, { type: MESSAGE_TYPES.AI_PING });
+    // A dead/stale content script can leave the message pending forever —
+    // no rejection, no reply. Without a cap the whole ask chain wedges at
+    // awaitBridgeReady before its deadline checks ever run.
+    return await Promise.race([
+      sendTabMessage<BridgePing>(tabId, { type: MESSAGE_TYPES.AI_PING }),
+      sleep(3_000).then(() => null),
+    ]);
   } catch {
     return null;
   }
@@ -314,7 +320,10 @@ async function runAskChain(ctx: BackgroundContext, data: AskPayload): Promise<As
     currentAskId = undefined;
     dbg(`ask seq=${seq} slot freed`);
     if (askId !== undefined) {
-      pendingStreams.delete(askId);
+      // The provider-side tail watch keeps emitting AI_STREAM growth after
+      // the chain returns (up to ~45s) — keep the route mapped so those
+      // late partials still reach the popup, then reap it.
+      setTimeout(() => pendingStreams.delete(askId), 50_000);
       abortedAskIds.delete(askId);
       streamedAsks.delete(askId);
     }
@@ -347,10 +356,18 @@ export function registerAiBridgeHandlers(ctx: BackgroundContext): void {
         return { success: false, error: `Invalid AI_ASK payload: ${parsed.error.message}` };
       }
       const data = parsed.data as AskPayload;
+      // MV3 suspends an idle worker mid-ask — the provider reply then never
+      // reaches the popup (silent hang until the client timeout). A chrome.*
+      // call every 20s counts as activity and keeps the worker alive for the
+      // whole chain, queued waits included.
+      const keepalive = setInterval(() => {
+        void chrome.runtime.getPlatformInfo().catch(() => {});
+      }, 20_000);
       dbg(`ask in id=${data.askId} inFlight=${askInFlight} cur=${currentAskId} pending=${pendingAsk?.payload.askId}`);
       if (askInFlight) {
         // Duplicate of the running ask — reject, never queue.
         if (data.askId === undefined || data.askId === currentAskId) {
+          clearInterval(keepalive);
           return { success: false, error: 'AI ask already in flight' };
         }
         // New askId supersedes: abort the running chain (setup-phase checks
@@ -360,7 +377,10 @@ export function registerAiBridgeHandlers(ctx: BackgroundContext): void {
         void broadcastCancel(currentAskId);
         return new Promise<AskResult>((resolve) => {
           pendingAsk?.resolve({ success: false, error: 'cancelled' });
-          pendingAsk = { payload: data, resolve };
+          pendingAsk = {
+            payload: data,
+            resolve: (r) => { clearInterval(keepalive); resolve(r); },
+          };
           dbg(`ask queued id=${data.askId}`);
         });
       }
@@ -370,6 +390,7 @@ export function registerAiBridgeHandlers(ctx: BackgroundContext): void {
         pendingAsk = null;
         next.resolve(await runAskChain(ctx, next.payload));
       }
+      clearInterval(keepalive);
       return res;
     },
   );
