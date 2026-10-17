@@ -22,6 +22,10 @@ export type AiDoneSignal =
       idleDoneMs?: number;
       /** Quiet-text fallback while the DOM still claims streaming (stuck signal). */
       stuckIdleMs?: number;
+      /** completeValue is a settle candidate only — settle after this much
+       *  text-stability so a flag that flicks false mid-stream (Claude
+       *  pauses between chunks) can't clip the tail. */
+      completeIdleMs?: number;
     }
   | { kind: 'stability'; silenceMs: number };
 
@@ -162,6 +166,8 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderAdapter> = {
       attr: 'data-perf-row-streaming',
       streamingValue: 'true',
       completeValue: 'false',
+      idleDoneMs: 8_000,
+      completeIdleMs: 2_500,
     },
     streamingIndicators: [],
     sendButtonSelectors: ['button[aria-label*="Send" i]'],

@@ -157,7 +157,13 @@ export function waitForAssistantReply(
       const state = host?.getAttribute(done.attr);
       if (state === done.completeValue) {
         const finalText = unitText(adapter, unit);
-        if (finalText && !isEcho(finalText)) return settle(finalText);
+        if (finalText && !isEcho(finalText)) {
+          if (!done.completeIdleMs) return settle(finalText);
+          if (finalText !== lastText) onPartial?.(finalText);
+          lastText = finalText;
+          wasStreaming = false;
+          return armStability(done.completeIdleMs);
+        }
       }
       const streaming = state === done.streamingValue || isStreaming(adapter, doc);
       const text = unitText(adapter, unit);
