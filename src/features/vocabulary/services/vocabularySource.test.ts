@@ -2,6 +2,23 @@ const sendMessage = jest.fn() as jest.MockedFunction<(message: unknown) => Promi
 
 jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
   sendMessage: (message: unknown) => sendMessage(message),
+  requestMessage: async (
+    type: string,
+    payload: unknown,
+    opts: { mapError?: (error: string) => string; fallback?: string } = {},
+  ) => {
+    const res = (await sendMessage({ type, payload })) as
+      | { success?: boolean; error?: string; data?: unknown }
+      | undefined;
+    if (!res?.success) {
+      throw new Error(
+        res?.error && opts.mapError
+          ? opts.mapError(res.error)
+          : (res?.error ?? opts.fallback ?? 'request failed'),
+      );
+    }
+    return res.data;
+  },
 }));
 
 import { createVocabularySource } from './vocabularySource';

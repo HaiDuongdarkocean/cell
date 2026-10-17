@@ -9,6 +9,23 @@ jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
   onMessage: jest.fn(),
   removeOnMessageListener: jest.fn(),
   sendMessage: (...args: unknown[]) => mockSendMessage(...args),
+  requestMessage: async (
+    type: string,
+    payload: unknown,
+    opts: { mapError?: (error: string) => string; fallback?: string } = {},
+  ) => {
+    const res = (await mockSendMessage({ type, payload })) as
+      | { success?: boolean; error?: string; data?: unknown }
+      | undefined;
+    if (!res?.success) {
+      throw new Error(
+        res?.error && opts.mapError
+          ? opts.mapError(res.error)
+          : (res?.error ?? opts.fallback ?? 'request failed'),
+      );
+    }
+    return res.data;
+  },
 }));
 
 function makeResult(term: string, overrides: Partial<import('@/entities/dictionary').LookupResult> = {}): import('@/entities/dictionary').LookupResult {

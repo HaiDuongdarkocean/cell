@@ -14,7 +14,7 @@
 // `import-run` — chrome messages are JSON-only but the channel structured-
 // clones blobs); page-origin senders ship bytes as windowed base64 chunks.
 
-import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { requestMessage, sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { subscribeJobEvents } from '@/features/jobs';
 import { isTerminalJob } from '@/entities/job/types';
@@ -50,14 +50,6 @@ interface ImportCallbacks {
   readonly onDuplicate?: (existing: ResourceInfo) => DuplicateDecision | Promise<DuplicateDecision>;
   /** Called after each base64 chunk is acknowledged by the background. */
   readonly onUploadProgress?: (sent: number, total: number) => void;
-}
-
-async function request<T>(type: string, payload: unknown): Promise<T> {
-  const res = await sendMessage<MessageResponse<T>>({ type, payload });
-  if (!res?.success) {
-    throw new Error(res?.error ?? t('resources.error.request', [type]));
-  }
-  return res.data as T;
 }
 
 type ResourceChangeListener = (langCode: string) => void;
@@ -109,7 +101,7 @@ export async function deleteResource(
   langCode: string,
   resourceId: number,
 ): Promise<{ jobId: string }> {
-  const data = await request<{ jobId: string }>(MESSAGE_TYPES.RESOURCE_DELETE, { langCode, resourceId });
+  const data = await requestMessage<{ jobId: string }>(MESSAGE_TYPES.RESOURCE_DELETE, { langCode, resourceId }, { fallback: t('resources.error.request', [MESSAGE_TYPES.RESOURCE_DELETE]) });
   notifyResourcesChanged(langCode);
   return data;
 }
@@ -118,17 +110,17 @@ export async function reorderResources(
   langCode: string,
   orderedIds: readonly number[],
 ): Promise<void> {
-  await request(MESSAGE_TYPES.RESOURCE_REORDER, { langCode, orderedIds: [...orderedIds] });
+  await requestMessage(MESSAGE_TYPES.RESOURCE_REORDER, { langCode, orderedIds: [...orderedIds] }, { fallback: t('resources.error.request', [MESSAGE_TYPES.RESOURCE_REORDER]) });
   notifyResourcesChanged(langCode);
 }
 
 export async function setResourceEnabled(langCode: string, resourceId: number, enabled: boolean): Promise<void> {
-  await request(MESSAGE_TYPES.RESOURCE_SET_ENABLED, { langCode, resourceId, enabled });
+  await requestMessage(MESSAGE_TYPES.RESOURCE_SET_ENABLED, { langCode, resourceId, enabled }, { fallback: t('resources.error.request', [MESSAGE_TYPES.RESOURCE_SET_ENABLED]) });
   notifyResourcesChanged(langCode);
 }
 
 export async function renameResource(langCode: string, resourceId: number, name: string): Promise<void> {
-  await request(MESSAGE_TYPES.RESOURCE_RENAME, { langCode, resourceId, name });
+  await requestMessage(MESSAGE_TYPES.RESOURCE_RENAME, { langCode, resourceId, name }, { fallback: t('resources.error.request', [MESSAGE_TYPES.RESOURCE_RENAME]) });
   notifyResourcesChanged(langCode);
 }
 
@@ -137,7 +129,7 @@ export async function setResourceProfiles(
   resourceId: number,
   profileIds: readonly string[],
 ): Promise<void> {
-  await request(MESSAGE_TYPES.RESOURCE_SET_PROFILES, { langCode, resourceId, profileIds: [...profileIds] });
+  await requestMessage(MESSAGE_TYPES.RESOURCE_SET_PROFILES, { langCode, resourceId, profileIds: [...profileIds] }, { fallback: t('resources.error.request', [MESSAGE_TYPES.RESOURCE_SET_PROFILES]) });
   notifyResourcesChanged(langCode);
 }
 
@@ -146,9 +138,9 @@ export async function setResourceComponents(
   resourceId: number,
   disabledComponents: readonly DictionaryComponent[],
 ): Promise<void> {
-  await request(MESSAGE_TYPES.RESOURCE_SET_COMPONENTS, {
+  await requestMessage(MESSAGE_TYPES.RESOURCE_SET_COMPONENTS, {
     langCode, resourceId, disabledComponents: [...disabledComponents],
-  });
+  }, { fallback: t('resources.error.request', [MESSAGE_TYPES.RESOURCE_SET_COMPONENTS]) });
   notifyResourcesChanged(langCode);
 }
 
@@ -158,8 +150,9 @@ export async function getResourceComponents(
   langCode: string,
   resourceId: number,
 ): Promise<readonly DictionaryComponent[]> {
-  const data = await request<{ components: readonly DictionaryComponent[] }>(
+  const data = await requestMessage<{ components: readonly DictionaryComponent[] }>(
     MESSAGE_TYPES.RESOURCE_COMPONENTS, { langCode, resourceId },
+    { fallback: t('resources.error.request', [MESSAGE_TYPES.RESOURCE_COMPONENTS]) },
   );
   return data?.components ?? [];
 }
@@ -220,7 +213,7 @@ async function tryDirectImport(
   }
   const duplicateDecision = input.decision === 'replace' ? ('replace' as const) : undefined;
   try {
-    const res = await request<{ direct?: boolean; jobId?: string }>(
+    const res = await requestMessage<{ direct?: boolean; jobId?: string }>(
       MESSAGE_TYPES.RESOURCE_IMPORT_BEGIN,
       {
         jobId: input.jobId,
@@ -229,6 +222,7 @@ async function tryDirectImport(
         signature: input.signature,
         duplicateDecision,
       },
+      { fallback: t('resources.error.request', [MESSAGE_TYPES.RESOURCE_IMPORT_BEGIN]) },
     );
     if (res.direct !== true) return undefined;
     const jobId = res.jobId ?? input.jobId;
@@ -317,7 +311,7 @@ export async function importResourceFile(
         : bytesToBase64(new Uint8Array(await file.slice(start, start + IMPORT_CHUNK_BYTES).arrayBuffer()));
       const selection = getComponents?.() ?? components;
       try {
-        const res = await request<{ received?: number; jobId?: string }>(
+        const res = await requestMessage<{ received?: number; jobId?: string }>(
           MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK,
           {
             jobId,
@@ -332,6 +326,7 @@ export async function importResourceFile(
             signature,
             duplicateDecision: decision === 'replace' ? 'replace' : undefined,
           },
+          { fallback: t('resources.error.request', [MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK]) },
         );
         completed += 1;
         onUploadProgress?.(completed, total);

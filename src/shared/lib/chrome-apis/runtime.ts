@@ -6,6 +6,8 @@
  * Docs: https://developer.chrome.com/docs/extensions/reference/api/runtime
  */
 
+import type { MessageResponse } from '@/entities/message';
+
 export function sendMessage<T = unknown>(
   message: unknown,
 ): Promise<T> {
@@ -28,6 +30,18 @@ export function sendMessage<T = unknown>(
       );
     },
   );
+}
+
+export async function requestMessage<T>(
+  type: string,
+  payload: unknown,
+  opts: { mapError?: (error: string) => string; fallback?: string } = {},
+): Promise<T> {
+  const res = await sendMessage<MessageResponse<T>>({ type, payload });
+  if (!res?.success) {
+    throw new Error(res?.error && opts.mapError ? opts.mapError(res.error) : (res?.error ?? opts.fallback ?? 'request failed'));
+  }
+  return res.data as T;
 }
 
 type MessageListener = Parameters<typeof chrome.runtime.onMessage.addListener>[0];

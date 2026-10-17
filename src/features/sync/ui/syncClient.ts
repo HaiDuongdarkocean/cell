@@ -4,9 +4,8 @@ import type { MessageKey } from '@/shared/i18n';
 import {
   onMessage,
   removeOnMessageListener,
-  sendMessage,
+  requestMessage,
 } from '@/shared/lib/chrome-apis/runtime';
-import type { MessageResponse } from '@/entities/message';
 import { messagePayload } from '@/entities/message/payload';
 import type { ConnectionId, ProviderId, Scope } from '../domain/types';
 import type { CycleResult } from '../app/SyncEngine';
@@ -41,48 +40,46 @@ function syncErrorText(error: string): string {
   return key === undefined ? error : t(key);
 }
 
-async function request<T>(type: string, payload: Record<string, unknown>): Promise<T> {
-  const response = await sendMessage<MessageResponse<T>>({ type, payload });
-  if (!response?.success) {
-    throw new Error(response?.error ? syncErrorText(response.error) : t('settings.sync.error.requestFailed'));
-  }
-  return response.data as T;
-}
+const syncRequestOpts = (): { mapError: (error: string) => string; fallback: string } => ({
+  mapError: syncErrorText,
+  fallback: t('settings.sync.error.requestFailed'),
+});
 
 export function getSyncStatus(): Promise<SyncStatusView> {
-  return request<SyncStatusView>(MESSAGE_TYPES.SYNC_GET_STATUS, { tabId: -1 });
+  return requestMessage<SyncStatusView>(MESSAGE_TYPES.SYNC_GET_STATUS, { tabId: -1 }, syncRequestOpts());
 }
 
 export function syncNow(): Promise<CycleResult> {
-  return request<CycleResult>(MESSAGE_TYPES.SYNC_NOW, { tabId: -1 });
+  return requestMessage<CycleResult>(MESSAGE_TYPES.SYNC_NOW, { tabId: -1 }, syncRequestOpts());
 }
 
 export function connectProviderAccount(providerId: ProviderId): Promise<ConnectResult> {
-  return request<ConnectResult>(MESSAGE_TYPES.SYNC_CONNECT, { tabId: -1, providerId });
+  return requestMessage<ConnectResult>(MESSAGE_TYPES.SYNC_CONNECT, { tabId: -1, providerId }, syncRequestOpts());
 }
 
 export function disconnectConnection(connectionId: ConnectionId): Promise<DisconnectResult> {
-  return request<DisconnectResult>(MESSAGE_TYPES.SYNC_DISCONNECT, {
+  return requestMessage<DisconnectResult>(MESSAGE_TYPES.SYNC_DISCONNECT, {
     tabId: -1,
     connectionId,
-  });
+  }, syncRequestOpts());
 }
 
 export function disconnectConnectionLocally(
   connectionId: ConnectionId,
 ): Promise<DisconnectResult> {
-  return request<DisconnectResult>(MESSAGE_TYPES.SYNC_DISCONNECT_LOCAL, {
+  return requestMessage<DisconnectResult>(MESSAGE_TYPES.SYNC_DISCONNECT_LOCAL, {
     tabId: -1,
     connectionId,
-  });
+  }, syncRequestOpts());
 }
 
 export function setSystemConnection(
   connectionId: ConnectionId,
 ): Promise<RebindResult | ReconcileResult | null> {
-  return request<RebindResult | ReconcileResult | null>(
+  return requestMessage<RebindResult | ReconcileResult | null>(
     MESSAGE_TYPES.SYNC_SET_SYSTEM_CONNECTION,
     { tabId: -1, connectionId },
+    syncRequestOpts(),
   );
 }
 
@@ -90,23 +87,23 @@ export function setScopeBinding(
   scope: Scope,
   destination: ConnectionId | 'local',
 ): Promise<RebindResult | ReconcileResult | null> {
-  return request<RebindResult | ReconcileResult | null>(MESSAGE_TYPES.SYNC_SET_BINDING, {
+  return requestMessage<RebindResult | ReconcileResult | null>(MESSAGE_TYPES.SYNC_SET_BINDING, {
     tabId: -1,
     scope,
     destination,
-  });
+  }, syncRequestOpts());
 }
 
 export function cancelScopeRebind(scope: Scope): Promise<void> {
-  return request<void>(MESSAGE_TYPES.SYNC_CANCEL_REBIND, { tabId: -1, scope });
+  return requestMessage<void>(MESSAGE_TYPES.SYNC_CANCEL_REBIND, { tabId: -1, scope }, syncRequestOpts());
 }
 
 export function deleteOldCopy(scope: Scope, connectionId: ConnectionId): Promise<void> {
-  return request<void>(MESSAGE_TYPES.SYNC_DELETE_OLD_COPY, {
+  return requestMessage<void>(MESSAGE_TYPES.SYNC_DELETE_OLD_COPY, {
     tabId: -1,
     scope,
     connectionId,
-  });
+  }, syncRequestOpts());
 }
 
 export function onSyncStatusChanged(callback: (status: SyncStatusView) => void): () => void {
