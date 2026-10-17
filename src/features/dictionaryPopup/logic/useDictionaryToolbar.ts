@@ -305,8 +305,12 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
   const pickAiLanguage = useCallback(
     (lang: 'native' | 'target'): void => {
       setAiLanguage(lang);
-      // Sync the ref first so a pick→re-ask in the same tick uses the new lang.
-      if (aiCfgRef.current) aiCfgRef.current = { ...aiCfgRef.current, answerLanguage: lang };
+      // Stamp the ref synchronously — even before the first settings load —
+      // so a pick→re-ask in the same tick composes with the new language.
+      aiCfgRef.current = {
+        ...(aiCfgRef.current ?? DEFAULT_AI_BRIDGE_SETTINGS),
+        answerLanguage: lang,
+      };
       void ensureAiCfg().then((cfg) => {
         aiCfgRef.current = { ...cfg, answerLanguage: lang };
         void saveSettings({ aiBridge: aiCfgRef.current }).catch(() => { /* keep in-memory choice */ });
