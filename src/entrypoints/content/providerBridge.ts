@@ -194,9 +194,15 @@ async function ask(
     return { success: false, error: 'busy', provider: adapter.id };
   }
 
+  const isSignedOut = (): boolean =>
+    adapter.signedOutSelectors?.some((sel) => document.querySelector(sel) !== null) ?? false;
+  if (isSignedOut()) {
+    return { success: false, error: 'loginRequired', provider: adapter.id };
+  }
   /** Provider-side error notices (rate-limit toast, capacity banner) — a
    *  prompt that can't be accepted is 'rateLimit', not a dom failure. */
   const providerErrorKind = (): string | null => {
+    if (isSignedOut()) return 'loginRequired';
     const bodyText = document.body?.innerText ?? '';
     if (/(too many|rate.?limit|try again later|capacity|whoa, slow down)/i.test(bodyText)) {
       return 'rateLimit';

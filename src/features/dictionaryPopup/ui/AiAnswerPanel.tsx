@@ -5,6 +5,8 @@ import { Skeleton } from '@/shared/ui/Skeleton';
 import { Tooltip } from '@/shared/ui/Tooltip';
 import { Menu, MenuItem, MenuSeparator } from '@/shared/ui/Menu';
 import { getLocale, t } from '@/shared/i18n';
+import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { isoCodeToLabel } from '@/shared/config/languageRegistry';
 import { AiStreamStatus } from './AiStreamStatus';
 import { Panel, PanelCard, PanelHead, PanelItem, PanelItemHead, PanelItemMeta, PanelNotice } from './PopupPanel';
@@ -217,6 +219,22 @@ export function AiAnswerPanel({
                   ? t('dict.ai.rateLimit')
                   : t('dict.ai.errorHint')}
             </p>
+            {state.loginProviders.map((p) => (
+              <button
+                key={p}
+                type="button"
+                className={styles.TihokaAiLoginLink}
+                data-tihoka-id="dictionary-ai-login-link"
+                onClick={() =>
+                  void sendMessage({
+                    type: MESSAGE_TYPES.AI_OPEN_PROVIDER,
+                    payload: { provider: p },
+                  })
+                }
+              >
+                {t('dict.ai.loginLink', [providerLabel(p)])}
+              </button>
+            ))}
           </PanelItem>
         )}
 

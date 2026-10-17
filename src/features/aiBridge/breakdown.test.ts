@@ -54,6 +54,22 @@ describe('parseBreakdown', () => {
     expect(chunks[1]).toEqual({ text: 'baz qux', meaning: 'other thing', explanation: undefined });
   });
 
+  it('parses bare line-start numbers with inline #2/#3 (Gemini variant)', () => {
+    const text = `1 Quick, as an adjective, #2 Nhanh chóng, mau lẹ, #3 Từ đóng vai trò là tính từ.
+
+1 refers to something, #2 chỉ một sự vật nào đó, #3 Cụm động từ chỉ sự quy chiếu.
+
+1 moving with high speed. #2 di chuyển với tốc độ lớn. #3 Cụm phân từ bổ nghĩa cho danh từ.`;
+    const chunks = parseBreakdown(text);
+    expect(chunks).toHaveLength(3);
+    expect(chunks[0]).toEqual({
+      text: 'Quick, as an adjective',
+      meaning: 'Nhanh chóng, mau lẹ',
+      explanation: 'Từ đóng vai trò là tính từ.',
+    });
+    expect(chunks[2].text).toBe('moving with high speed.');
+  });
+
   it('returns empty for plain prose', () => {
     expect(parseBreakdown('This is just a normal answer without numbers.')).toEqual([]);
     expect(parseBreakdown('#1 only one chunk')).toEqual([]);

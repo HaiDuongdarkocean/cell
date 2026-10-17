@@ -80,6 +80,7 @@ export type MessageType =
   | 'AI_ASK'
   | 'AI_STREAM'
   | 'AI_CANCEL'
+  | 'AI_OPEN_PROVIDER'
   | 'CARD_CREATOR_REQUEST'
   | 'FETCH_COMMUNITY_AUDIO'
   | 'FETCH_LOCAL_AUDIO'

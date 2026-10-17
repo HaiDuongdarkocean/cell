@@ -191,6 +191,7 @@
   "dict.ai.rateLimit": "Nguồn đang bận — đợi một lúc rồi thử lại nhé.",
   "dict.ai.allFailed": "Mọi nhà cung cấp đều lỗi.",
   "dict.ai.loginRequired": "$1 chưa đăng nhập — mở tab của nó và đăng nhập, hoặc chọn nhà cung cấp khác.",
+  "dict.ai.loginLink": "Đăng nhập $1",
   "dict.ai.provider.chatgpt": "ChatGPT",
   "dict.ai.provider.gemini": "Gemini",
   "dict.ai.provider.deepseek": "DeepSeek",

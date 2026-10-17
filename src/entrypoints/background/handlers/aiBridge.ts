@@ -16,6 +16,7 @@ import type { AiProviderId } from '@/entities/message/dictionarySchemas';
 import {
   AiAskPayloadSchema,
   AiCancelPayloadSchema,
+  AiOpenProviderPayloadSchema,
   AiPingPayloadSchema,
   AiStreamPayloadSchema,
 } from '@/entities/message/dictionarySchemas';
@@ -261,6 +262,11 @@ async function askOnProvider(
       }
       outcome = await round().catch(classifyErr);
     }
+    if (!outcome.ok && outcome.error === 'loginRequired' && outcome.loginTabId === undefined) {
+      // CS-side signed-out detection returns no tab — the bridge tab is
+      // still the one the user must log in on.
+      outcome.loginTabId = tabId;
+    }
     if (!outcome.ok) {
       console.warn(`[aiBridge] ${adapter.id} failed: ${outcome.error}`);
     }
@@ -409,6 +415,24 @@ export function registerAiBridgeHandlers(ctx: BackgroundContext): void {
       }
       await broadcastCancel(askId, provider);
       return { success: true };
+    },
+  );
+
+  ctx.on(
+    MESSAGE_TYPES.AI_OPEN_PROVIDER,
+    async (request): Promise<MessageResponse> => {
+      const parsed = AiOpenProviderPayloadSchema.safeParse(request.payload);
+      if (!parsed.success) {
+        return { success: false, error: `Invalid AI_OPEN_PROVIDER payload: ${parsed.error.message}` };
+      }
+      try {
+        const adapter = AI_PROVIDERS[parsed.data.provider];
+        const tabId = await ensureBridgeTabId(adapter);
+        await focusBridgeTab(tabId);
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+      }
     },
   );
 

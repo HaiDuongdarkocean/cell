@@ -73,6 +73,7 @@ import {
 import {
   AiAskPayloadSchema,
   AiCancelPayloadSchema,
+  AiOpenProviderPayloadSchema,
   AiPingPayloadSchema,
   AiStreamPayloadSchema,
   DictionaryChangedPayloadSchema,
@@ -461,6 +462,12 @@ export const MESSAGE_REGISTRY = {
   [MESSAGE_TYPES.AI_CANCEL]: {
     type: MESSAGE_TYPES.AI_CANCEL,
     schema: AiCancelPayloadSchema,
+    direction: 'panel->bg',
+    owner: 'background/handlers/aiBridge',
+  },
+  [MESSAGE_TYPES.AI_OPEN_PROVIDER]: {
+    type: MESSAGE_TYPES.AI_OPEN_PROVIDER,
+    schema: AiOpenProviderPayloadSchema,
     direction: 'panel->bg',
     owner: 'background/handlers/aiBridge',
   },

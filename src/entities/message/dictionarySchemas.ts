@@ -564,6 +564,11 @@ export const AiPingPayloadSchema = z
   })
   .optional();
 
+/** Popup -> background: surface the provider tab so the user can sign in. */
+export const AiOpenProviderPayloadSchema = z.object({
+  provider: AiProviderIdSchema,
+});
+
 // === Quick Add (spec §9.4 B — QUICK_ADD) ===
 
 export const QuickAddPayloadMessageSchema = QuickAddPayloadSchema.extend({

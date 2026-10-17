@@ -46,6 +46,10 @@ export interface AiProviderAdapter {
    *  handler fast-fail loginRequired instead of waiting out the composer
    *  grace window on a logged-out session. */
   loginUrlPatterns?: string[];
+  /** DOM markers that only exist on the signed-out page — detects
+   *  logged-out sessions whose URL never redirects (ChatGPT keeps the
+   *  composer-looking layout, so URL + composer checks miss it). */
+  signedOutSelectors?: string[];
   composer: {
     selectors: string[];
     isTextarea?: boolean;
@@ -77,6 +81,12 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderAdapter> = {
     tabUrlPatterns: ['https://chatgpt.com/*'],
     host: 'chatgpt.com',
     loginUrlPatterns: ['auth.openai.com', 'chatgpt.com/auth/login'],
+    signedOutSelectors: [
+      'a[href*="/auth/login"]',
+      'a[href*="/auth/signup"]',
+      'button[data-testid*="login" i]',
+      '[data-testid="signup-button"]',
+    ],
     composer: {
       selectors: [
         '#prompt-textarea',
