@@ -17,7 +17,7 @@ function clean(segment: string): string {
   return segment.replace(LABEL_RE, '').trim();
 }
 
-export function parseBreakdown(answer: string): BreakdownChunk[] {
+export function parseBreakdown(answer: string, minChunks = 2): BreakdownChunk[] {
   const segments = answer
     .split(NUMBER_RE)
     .map((s) => s.trim())
@@ -33,5 +33,5 @@ export function parseBreakdown(answer: string): BreakdownChunk[] {
       explanation: clean(segments[i + 2] ?? '') || undefined,
     });
   }
-  return chunks.length >= 2 ? chunks : [];
+  return chunks.length >= minChunks ? chunks : [];
 }

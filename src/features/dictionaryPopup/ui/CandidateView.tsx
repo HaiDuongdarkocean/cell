@@ -162,7 +162,11 @@ export function CandidateView({
   const breakdownAnswer =
     (panel.aiState.feature === 'sentenceBreakdown' ? panel.aiState.answer : null) ??
     panel.aiAnswers.find((a) => a.feature === 'sentenceBreakdown');
-  const breakdownChunks = breakdownAnswer ? parseBreakdown(breakdownAnswer.text) : undefined;
+  const breakdownLoading =
+    panel.aiState.feature === 'sentenceBreakdown' && panel.aiState.phase === 'loading';
+  const breakdownChunks = breakdownAnswer
+    ? parseBreakdown(breakdownAnswer.text, breakdownLoading ? 1 : 2)
+    : undefined;
 
   return (
     <article

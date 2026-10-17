@@ -56,6 +56,9 @@ export interface AiProviderAdapter {
    *  the answer body exists — without this the status settles as the
    *  answer. True = a unit without its answerBody counts as no answer yet. */
   answerBodyRequired?: boolean;
+  /** Lines matching this inside the answer body are status noise, not
+   *  answer text — stripped before settle/stream. */
+  stripLinePattern?: RegExp;
 }
 
 export const AI_PROVIDERS: Record<AiProviderId, AiProviderAdapter> = {
@@ -153,6 +156,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderAdapter> = {
     assistantUnit: '[data-testid="transcript-row"][data-perf-row="assistant"]',
     answerBody: '.standard-markdown',
     answerBodyRequired: true,
+    stripLinePattern: /^warming up\b/i,
     doneSignal: {
       kind: 'attribute',
       attr: 'data-perf-row-streaming',

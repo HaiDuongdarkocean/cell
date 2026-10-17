@@ -60,7 +60,13 @@ function unitText(adapter: AiProviderAdapter, unit: Element): string {
   const body = unit.querySelector<HTMLElement>(adapter.answerBody);
   if (!body && adapter.answerBodyRequired) return '';
   const el = (body ?? unit) as HTMLElement;
-  return (el.innerText || el.textContent || '').trim();
+  const raw = (el.innerText || el.textContent || '').trim();
+  if (!adapter.stripLinePattern || !raw) return raw;
+  return raw
+    .split('\n')
+    .filter((line) => !adapter.stripLinePattern!.test(line))
+    .join('\n')
+    .trim();
 }
 
 export function lastAssistantText(adapter: AiProviderAdapter, doc: Document): string {

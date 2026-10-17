@@ -145,14 +145,38 @@ export function AiAnswerPanel({
 
       <PanelCard id="dictionary-ai-answer">
         {state.phase === 'loading' && (
-          <PanelItem padded>
-            {state.failoverFrom && (
-              <PanelNotice>
-                {t('dict.ai.failoverNotice', [providerLabel(state.failoverFrom), providerLabel(state.provider ?? state.failoverFrom)])}
-              </PanelNotice>
-            )}
-            <AiStreamStatus text={state.answer?.text} />
-          </PanelItem>
+          chunks && chunks.length > 0 ? (
+            <>
+              {chunks.map((c, i) => (
+                <PanelItem
+                  key={i}
+                  padded
+                  checked={checkedChunks?.has(i) ?? false}
+                  onToggle={() => onToggleChunk?.(i)}
+                >
+                  <PanelItemHead>{c.text}</PanelItemHead>
+                  {c.meaning && (
+                    <PanelItemMeta label={t('dict.ai.chunkMeaning')}>{c.meaning}</PanelItemMeta>
+                  )}
+                  {c.explanation && (
+                    <PanelItemMeta label={t('dict.ai.chunkExplanation')}>{c.explanation}</PanelItemMeta>
+                  )}
+                </PanelItem>
+              ))}
+              <PanelItem padded>
+                <AiStreamStatus />
+              </PanelItem>
+            </>
+          ) : (
+            <PanelItem padded>
+              {state.failoverFrom && (
+                <PanelNotice>
+                  {t('dict.ai.failoverNotice', [providerLabel(state.failoverFrom), providerLabel(state.provider ?? state.failoverFrom)])}
+                </PanelNotice>
+              )}
+              <AiStreamStatus text={state.answer?.text} />
+            </PanelItem>
+          )
         )}
 
         {state.phase === 'answered' && state.answer && (
