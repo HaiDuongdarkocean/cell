@@ -161,7 +161,7 @@ export function TranslatePanel({
     );
   }
 
-  if (displayText) {
+  if (displayText || (loading && engine === 'ai')) {
     return (
       <Panel id="dictionary-translate-panel">
         {sourceHead}
@@ -173,7 +173,9 @@ export function TranslatePanel({
             onToggle={onToggle}
           >
             <div className={styles.TihokaTranslateText}>
-              <div className={styles.TihokaTranslateTarget} data-tihoka-id="translate-target">{displayText}</div>
+              <div className={styles.TihokaTranslateTarget} data-tihoka-id="translate-target">
+                {displayText ?? <AiStreamStatus />}
+              </div>
               <div className={styles.TihokaTranslateNative}>{sentence || term}</div>
             </div>
           </PanelItem>
@@ -186,11 +188,7 @@ export function TranslatePanel({
     return (
       <Panel id="dictionary-translate-panel">
         {sourceHead}
-        {engine === 'ai' ? (
-          <AiStreamStatus />
-        ) : (
-          <TranslateSkeleton />
-        )}
+        <TranslateSkeleton />
       </Panel>
     );
   }
