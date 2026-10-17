@@ -95,7 +95,7 @@
 - KHI thêm dependency → kiểm bundle size trước.
 - KHI sửa `manifest.json` → test trên Chrome thật.
 - KHI dùng Chrome API → cite developer.chrome.com/docs/extensions/reference/.
-- KHI quyết định kiến trúc → ghi `docs/adr/` ngay lúc quyết định (status Proposed → Accepted khi verify pass), cấm viết ngược sau ship.
+- KHI quyết định kiến trúc → ghi `docs/adr/` qua skill `documentation-and-adrs`, ngay lúc quyết định (status Proposed → Accepted khi verify pass), cấm viết ngược sau ship.
 - KHI sửa file có comment `ADR-NNN` → đọc ADR đó trước khi sửa; đổi quyết định = ADR mới supersede, CẤM sửa/xóa ADR cũ.
 - Ship: `npm run build && npm run ship:dist` → Google Drive (`scripts/ship.config.json`).
 - Commit message sạch — CẤM attribution AI trong commit của Anh.

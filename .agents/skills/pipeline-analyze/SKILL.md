@@ -126,7 +126,7 @@ Never open with a question template. Sequence:
 - [ ] Intent doc has every required section incl. `## Journey` (AS-IS+TO-BE, ≥3 steps each) and `## Decision`
 - [ ] Every need cites evidence or `[assumption]` + confidence
 - [ ] Review artifact exists, ends `VERDICT: <token>`, newer than intent doc
-- [ ] Hard-to-change decisions surfaced during analysis are listed in the intent doc as ADR candidates
+- [ ] Hard-to-change decisions surfaced during analysis are listed in the intent doc as ADR candidates (`documentation-and-adrs`)
 - [ ] Decision go → `transition --to specify` exits 0; no-go → `--to dropped` and backlog shows `dropped`
 - [ ] `all` mode: zero user questions; audit artifact is fresh-context, not self-audit
 

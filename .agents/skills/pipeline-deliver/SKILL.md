@@ -89,7 +89,7 @@ All mutations require ownership: `owner` is claimed at `init`/`activate`/first m
 - [ ] All required gates `pass` fresh (or npm re-run green in `all` mode)
 - [ ] Verify artifact verdict `PASS`, written by fresh-context lane
 - [ ] Mockup dir deleted if it existed
-- [ ] One-way-door decisions found mid-build were written as ADR Proposed before continuing, flipped to Accepted when gates pass
+- [ ] One-way-door decisions found mid-build were written as ADR Proposed via `documentation-and-adrs` before continuing, flipped to Accepted when gates pass
 - [ ] Edited files containing `ADR-NNN` comments → those ADRs read; changed decisions superseded by new ADR (old record never edited/deleted)
 - [ ] `transition --to shipped` exits 0 and `active` cleared; backlog row → `shipped` + commit hash; wiki changelog line
 
