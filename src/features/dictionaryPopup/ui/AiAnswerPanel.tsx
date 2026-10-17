@@ -80,7 +80,6 @@ export function AiAnswerPanel({
   const cap = (s: string) => s.replace(/^./, (c) => c.toUpperCase());
   const nativeLang = cap(isoCodeToLabel(targetLang) ?? targetLang);
   const targetLangName = cap(isoCodeToLabel(sourceLang) ?? sourceLang);
-  const loginNames = state.loginProviders.map(providerLabel).join(', ');
   const [loginCountdown, setLoginCountdown] = useState(0);
   const firstLoginProvider = state.loginProviders[0];
   useEffect(() => {
@@ -227,36 +226,33 @@ export function AiAnswerPanel({
 
         {state.phase === 'error' && (
           <PanelItem padded>
-            <p className={styles.TihokaAiError} data-tihoka-id="dictionary-ai-error">
-              {loginNames
-                ? t('dict.ai.loginRequired', [loginNames])
-                : state.error === 'rateLimit'
-                  ? t('dict.ai.rateLimit')
-                  : t('dict.ai.errorHint')}
-            </p>
-            {firstLoginProvider && (
-              <p className={styles.TihokaAiError} data-tihoka-id="dictionary-ai-login-countdown">
+            {firstLoginProvider ? (
+              <p className={styles.TihokaAiError} data-tihoka-id="dictionary-ai-error">
+                {t('dict.ai.notSignedIn')}
+                {' — '}
+                {t('dict.ai.openPre')}
+                <button
+                  type="button"
+                  className={styles.TihokaAiLoginLink}
+                  data-tihoka-id="dictionary-ai-login-link"
+                  onClick={() =>
+                    void sendMessage({
+                      type: MESSAGE_TYPES.AI_OPEN_PROVIDER,
+                      payload: { provider: firstLoginProvider },
+                    })
+                  }
+                >
+                  {providerLabel(firstLoginProvider)}
+                </button>
                 {loginCountdown > 0
-                  ? t('dict.ai.loginRedirect', [providerLabel(firstLoginProvider), String(loginCountdown)])
-                  : t('dict.ai.loginOpening', [providerLabel(firstLoginProvider)])}
+                  ? t('dict.ai.openPostCountdown', [String(loginCountdown)])
+                  : t('dict.ai.openPostNow')}
+              </p>
+            ) : (
+              <p className={styles.TihokaAiError} data-tihoka-id="dictionary-ai-error">
+                {state.error === 'rateLimit' ? t('dict.ai.rateLimit') : t('dict.ai.errorHint')}
               </p>
             )}
-            {state.loginProviders.map((p) => (
-              <button
-                key={p}
-                type="button"
-                className={styles.TihokaAiLoginLink}
-                data-tihoka-id="dictionary-ai-login-link"
-                onClick={() =>
-                  void sendMessage({
-                    type: MESSAGE_TYPES.AI_OPEN_PROVIDER,
-                    payload: { provider: p },
-                  })
-                }
-              >
-                {t('dict.ai.loginLink', [providerLabel(p)])}
-              </button>
-            ))}
           </PanelItem>
         )}
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { render, screen, act } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
 import { AiAnswerPanel } from './AiAnswerPanel';
 import type { AiAskState } from '../logic/useAiAsk';
 
@@ -27,11 +27,12 @@ describe('AiAnswerPanel login guidance', () => {
       error: 'all_failed',
     };
     render(<AiAnswerPanel state={state} {...base} />);
-    expect(document.querySelector('[data-tihoka-id="dictionary-ai-login-countdown"]')?.textContent).toContain('5');
+    const err = () => document.querySelector('[data-tihoka-id="dictionary-ai-error"]')?.textContent;
+    expect(err()).toContain('5');
     act(() => { jest.advanceTimersByTime(2_000); });
-    expect(document.querySelector('[data-tihoka-id="dictionary-ai-login-countdown"]')?.textContent).toContain('3');
+    expect(err()).toContain('3');
     act(() => { jest.advanceTimersByTime(3_000); });
-    expect(document.querySelector('[data-tihoka-id="dictionary-ai-login-countdown"]')?.textContent).toContain('Opening');
+    expect(err()).toContain('…');
     jest.useRealTimers();
   });
 
