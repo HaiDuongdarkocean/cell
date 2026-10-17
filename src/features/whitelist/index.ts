@@ -4,7 +4,6 @@
  * Public API:
  * - isWhitelisted, getWhitelist, addToWhitelist, removeFromWhitelist
  * - normalizeUrl (URL normalization for whitelist comparison)
- * - addCurrentTabToWhitelist, isCurrentTabWhitelisted (tab helpers)
  */
 export {
   isWhitelisted,

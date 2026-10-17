@@ -1,7 +1,7 @@
 import type { MessageType } from '@/entities/message';
 
 // === Message Type Constants ===
-// Must match MessageType union in src/types/message.ts
+// Must match MessageType union in src/entities/message/types.ts
 
 export const MESSAGE_TYPES = {
   GET_DETECTED_MEDIA: 'GET_DETECTED_MEDIA',
