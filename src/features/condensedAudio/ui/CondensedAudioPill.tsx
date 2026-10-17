@@ -4,6 +4,7 @@ import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { Icon } from '@/shared/ui/Icon';
 import { Text } from '@/shared/ui/Text';
 import { t } from '@/shared/i18n';
+import { formatMediaTimeMs } from '@/shared/lib/formatMediaTime';
 import styles from './CondensedAudioPill.module.css';
 
 export type CondensedAudioPillPhase = 'live' | 'done' | 'ready';
@@ -17,16 +18,6 @@ export interface CondensedAudioPillProps {
   readonly onDiscard: () => void;
   readonly onOpenLibrary: () => void;
   readonly onDismissDone: () => void;
-}
-
-function formatElapsed(ms: number): string {
-  const totalSec = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  const mm = String(m).padStart(2, '0');
-  const ss = String(s).padStart(2, '0');
-  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
 export function CondensedAudioPill({
@@ -55,7 +46,7 @@ export function CondensedAudioPill({
             {t('condensedAudio.pill.done')}
           </span>
           <Text variant="body" className={styles.elapsed}>
-            {formatElapsed(elapsedMs)}
+            {formatMediaTimeMs(elapsedMs)}
           </Text>
         </span>
       </div>
@@ -76,7 +67,7 @@ export function CondensedAudioPill({
             {t('condensedAudio.pill.listen')}
           </span>
           <Text variant="body" className={styles.elapsed}>
-            {formatElapsed(elapsedMs)}
+            {formatMediaTimeMs(elapsedMs)}
           </Text>
         </button>
         <Button
@@ -102,7 +93,7 @@ export function CondensedAudioPill({
             {paused ? t('condensedAudio.pill.paused') : t('condensedAudio.pill.recording')}
           </span>
           <Text variant="body" className={styles.elapsed}>
-            {formatElapsed(elapsedMs)}
+            {formatMediaTimeMs(elapsedMs)}
           </Text>
         </span>
         <Button

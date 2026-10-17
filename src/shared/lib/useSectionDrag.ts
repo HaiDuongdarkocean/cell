@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { findScrollableAncestor } from '@/shared/lib/dom/collapseOnScroll';
 import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 
 export interface SectionDrag {
@@ -42,20 +43,7 @@ function slotElements(list: HTMLElement, slotPrefix: string): HTMLElement[] {
   return Array.from(list.querySelectorAll<HTMLElement>(`[data-tihoka-id^="${slotPrefix}"]`));
 }
 
-function findScrollParent(el: HTMLElement): HTMLElement | null {
-  let node = el.parentElement;
-  while (node) {
-    const { overflowY } = getComputedStyle(node);
-    if ((overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight) {
-      return node;
-    }
-    node = node.parentElement;
-  }
-  return null;
-}
-
 export interface UseSectionDragOptions {
-  /** `data-tihoka-id` prefix identifying draggable slot wrappers. Default 'slot-'. */
   readonly slotPrefix?: string;
 }
 
@@ -147,7 +135,7 @@ export function useSectionDrag(
       draggedEl: el,
       draggedId,
       slotPrefix,
-      scrollParent: findScrollParent(list),
+      scrollParent: findScrollableAncestor(list, true),
       grabOffsetY: e.clientY - rect.top,
       fromTop: el.offsetTop,
       cardHeight: rect.height,

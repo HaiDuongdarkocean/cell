@@ -1,26 +1,9 @@
 import type { SrtCue, SrtSubtitle } from '@/entities/media';
+import { timePartsToMs } from '@/shared/utils/timeUtils';
 import { stripSubtitleTags } from './srtNormalizer';
 
-/**
- * Parses SubRip (.srt) subtitle content into a structured SrtSubtitle object.
- *
- * SRT format:
- *   <index>
- *   HH:MM:SS,mmm --> HH:MM:SS,mmm
- *   <cue text (one or more lines)>
- *   <blank line>
- *
- * Edge cases handled:
- *  - BOM character stripped
- *  - CRLF line endings normalized
- *  - Missing cue index → sequential numbering
- *  - Malformed timing → cue skipped
- *  - Empty content → throws Error
- */
 export function parseSrt(content: string): SrtSubtitle {
-  // Strip BOM if present
   const stripped = content.replace(/^\uFEFF/, '');
-  // Normalize CRLF to LF
   const normalized = stripped.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
   if (normalized.trim().length === 0) {
@@ -40,14 +23,12 @@ export function parseSrt(content: string): SrtSubtitle {
     const lines = trimmedBlock.split('\n');
     let lineIndex = 0;
 
-    // Determine whether the first line is a cue index (numeric only)
     let cueIndex: number | undefined;
     if (lines.length > 0 && /^\d+$/.test(lines[0].trim())) {
       cueIndex = parseInt(lines[0].trim(), 10);
       lineIndex = 1;
     }
 
-    // Need at least a timing line
     if (lineIndex >= lines.length) {
       continue;
     }
@@ -55,10 +36,6 @@ export function parseSrt(content: string): SrtSubtitle {
     let timingLine = lines[lineIndex].trim();
     let timing = parseTimingLine(timingLine);
 
-    // Non-standard SRT (kisskh.buzz/angkortv): first line is a literal like
-    // "None" instead of a numeric index. Skip non-timing lines until we find
-    // the timing line — without this, every cue is skipped and auto-load
-    // fails with "No cues found in SRT content".
     while (timing === null && lineIndex + 1 < lines.length) {
       lineIndex += 1;
       timingLine = lines[lineIndex].trim();
@@ -66,7 +43,6 @@ export function parseSrt(content: string): SrtSubtitle {
     }
 
     if (timing === null) {
-      // No timing line found in this block → skip
       continue;
     }
     lineIndex += 1;
@@ -100,13 +76,13 @@ function parseTimingLine(line: string): ParsedTiming | null {
     return null;
   }
 
-  const start = toMilliseconds(
+  const start = timePartsToMs(
     match[1],
     match[2],
     match[3],
     match[4],
   );
-  const end = toMilliseconds(
+  const end = timePartsToMs(
     match[5],
     match[6],
     match[7],
@@ -114,18 +90,4 @@ function parseTimingLine(line: string): ParsedTiming | null {
   );
 
   return { start, end };
-}
-
-function toMilliseconds(
-  hours: string,
-  minutes: string,
-  seconds: string,
-  milliseconds: string,
-): number {
-  return (
-    parseInt(hours, 10) * 3_600_000 +
-    parseInt(minutes, 10) * 60_000 +
-    parseInt(seconds, 10) * 1_000 +
-    parseInt(milliseconds, 10)
-  );
 }

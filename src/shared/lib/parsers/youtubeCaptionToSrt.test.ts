@@ -5,7 +5,7 @@ describe('youtubeTimedtextBodyToSrt', () => {
     const srv3 = `<?xml version="1.0" encoding="utf-8" ?><timedtext format="3"><body><p t="1000" d="2000"><s>Hello</s> <s>world</s></p><p t="3500" d="1500">Second line</p></body></timedtext>`;
     const srt = youtubeTimedtextBodyToSrt(srv3);
     expect(srt).toBe(
-      '1\n00:00:01,000 --> 00:00:03,000\nHello world\n\n2\n00:00:03,500 --> 00:00:05,000\nSecond line',
+      '1\n00:00:01,000 --> 00:00:03,000\nHello world\n\n2\n00:00:03,500 --> 00:00:05,000\nSecond line\n',
     );
   });
 
@@ -19,7 +19,7 @@ describe('youtubeTimedtextBodyToSrt', () => {
     });
     const srt = youtubeTimedtextBodyToSrt(json3);
     expect(srt).toBe(
-      '1\n00:01:01,000 --> 00:01:02,000\nHi\nthere\n\n2\n00:01:02,000 --> 00:01:04,000\nBye',
+      '1\n00:01:01,000 --> 00:01:02,000\nHi\nthere\n\n2\n00:01:02,000 --> 00:01:04,000\nBye\n',
     );
   });
 

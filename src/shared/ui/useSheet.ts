@@ -2,32 +2,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent, RefObject } from 'react';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 
-// ─── Sheet atom — shared bottom sheet logic (SSOT) ───
-// Extracted from dictionary popup's usePopupPosition sheet logic.
-// Used by: Dictionary popup (mobile), SubtitleManager (mobile).
-//
-// Provides: sheet height state, drag-handle resize (1:1 drag = height),
-// content drag-to-dismiss (translateY + snap-back spring), click-on-handle close.
-
-/** Layout constants — synced with popupGeometry.ts. */
 const SHEET_MIN_HEIGHT_PX = 200;
 const SHEET_DEFAULT_HEIGHT_PX = 300;
-const SHEET_MARGIN_PX = 8; // equals --space-2
-const SHEET_CLICK_THRESHOLD_PX = 4;
-const SHEET_DISMISS_THRESHOLD_PX = 100;
-/** Sheet closes when its height drops below this fraction of viewport height. */
-const SHEET_DISMISS_RATIO = 0.2;
+const SHEET_MARGIN_PX = 8;
+export const SHEET_CLICK_THRESHOLD_PX = 4;
+export const SHEET_DISMISS_THRESHOLD_PX = 100;
+export const SHEET_DISMISS_RATIO = 0.2;
 const CLICK_SWALLOW_WINDOW_MS = 500;
 
 let releaseClickSwallower: (() => void) | null = null;
 
-/**
- * Closing the sheet on pointerup unmounts the pointer's target, so the browser
- * retargets the trailing `click` to whatever now sits under the cursor — which
- * can be a lookup trigger beneath the sheet (ghost click). Arm a one-shot
- * capture listener that eats that click. Keyboard clicks (detail === 0) pass
- * through and keep the swallower armed for the real pointer click.
- */
 function armClickSwallower(): void {
   releaseClickSwallower?.();
   const release = (): void => {
@@ -46,7 +30,6 @@ function armClickSwallower(): void {
   document.addEventListener('click', onClick, true);
 }
 
-/** Guard against NaN/negative/non-finite height values from storage or props. */
 function safeHeight(value: number | undefined, fallback: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return fallback;
   return value;
@@ -71,33 +54,19 @@ interface SheetSession {
 }
 
 export interface UseSheetOptions {
-  /** Initial sheet height in px. Default: 300. */
   readonly initialHeight?: number;
-  /** Max sheet height in px. Default: viewport - margin. */
   readonly maxHeight?: number;
-  /** Called when sheet requests close (drag dismiss, click handle). */
   readonly onClose?: () => void;
-  /** Called when sheet height changes (for persistence). */
   readonly onHeightChange?: (height: number) => void;
-  /** Storage key for built-in height persistence (stored as %vh, clamped
-   *  20–95). When set, the sheet restores its last height on mount and saves
-   *  on every drag/keyboard resize — consumers stop re-rolling storage. */
   readonly persistKey?: string;
 }
 
 export interface UseSheetResult {
-  /** Ref to attach to the sheet container element. */
   readonly sheetRef: RefObject<HTMLDivElement | null>;
-  /** Current sheet height in px. */
   readonly sheetHeight: number;
-  /** Inline style for the sheet container. */
   readonly style: CSSProperties;
-  /** Attach to drag handle element's onPointerDown. */
   readonly onPointerDownHandle: (e: PointerEvent<HTMLDivElement>) => void;
-  /** Attach to drag handle element's onKeyDown — ArrowUp/Down resize,
-   *  Home/End → max/min (WAI-ARIA window-splitter pattern). */
   readonly onKeyDownHandle: (e: React.KeyboardEvent<HTMLDivElement>) => void;
-  /** Attach to content element's onPointerDown. */
   readonly onPointerDownContent: (e: PointerEvent<HTMLDivElement>) => void;
 }
 
@@ -119,12 +88,9 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
 
   const getAvailableHeight = useCallback((): number => {
     if (typeof maxHeight === 'number' && Number.isFinite(maxHeight) && maxHeight > 0) return maxHeight;
-    // Subtract only the top gap — the sheet is edge-to-edge (bottom is flush).
-    // Matches CSS max-height: calc(100vh - var(--space-2)).
     return Math.max(0, getClientHeight() - SHEET_MARGIN_PX);
   }, [maxHeight]);
 
-  /** Effective min — clamps to avail on tiny viewports so state/viz never mismatch. */
   const getEffectiveMin = useCallback((): number => {
     return Math.min(SHEET_MIN_HEIGHT_PX, getAvailableHeight());
   }, [getAvailableHeight]);
@@ -146,9 +112,6 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
 
   useEffect(() => { sheetHeightRef.current = sheetHeight; }, [sheetHeight]);
 
-  // Height persistence — restore once on mount. Same %vh unit + 20–95 clamp
-  // the existing sheet storage keys use. Skipped while a drag session is
-  // active so a slow load can't fight the user's finger.
   useEffect(() => {
     if (!persistKey) return;
     let cancelled = false;
@@ -175,11 +138,6 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
     void setStorage({ [persistKey]: vh }).catch(() => undefined);
   }, [persistKey]);
 
-  // Sync to initialHeight when it arrives after mount (e.g. async storage
-  // load in HostManagerSheet). useState initializer only runs once, so a
-  // late initialHeight prop change must be applied via effect. Guard against
-  // 0/NaN and clamp to available range. Skip while a drag session is active
-  // (user is actively resizing — don't fight their finger).
   useEffect(() => {
     if (sessionRef.current) return;
     if (typeof initialHeight !== 'number' || !Number.isFinite(initialHeight) || initialHeight <= 0) return;
@@ -190,7 +148,6 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
     setSheetHeight(next);
   }, [initialHeight, getAvailableHeight, getEffectiveMin]);
 
-  // Recompute on viewport resize.
   useEffect(() => {
     const onResize = (): void => {
       const avail = getAvailableHeight();
@@ -203,7 +160,6 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
     return () => window.removeEventListener('resize', onResize);
   }, [getAvailableHeight, getEffectiveMin]);
 
-  // Clear snap-back timer on unmount.
   useEffect(() => {
     return () => {
       if (snapBackTimerRef.current) clearTimeout(snapBackTimerRef.current);
@@ -213,7 +169,7 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
   const endSession = useCallback((clientX: number, clientY: number) => {
     const session = sessionRef.current;
     if (!session) return;
-    try { session.target.releasePointerCapture(session.pointerId); } catch { /* ignore */ }
+    try { session.target.releasePointerCapture(session.pointerId); } catch {}
     sessionRef.current = null;
     setWillChange(undefined);
     setTransition(undefined);
@@ -230,13 +186,11 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
     };
 
     if (session.fromHandle) {
-      // Click (no meaningful movement) on handle = close.
       const dx = clientX - session.startX;
       if (Math.hypot(dx, dy) <= SHEET_CLICK_THRESHOLD_PX) {
         closeFromPointer();
         return;
       }
-      // Drag is 1:1 with height — dismiss if dragged past 20% of vh.
       const rawHeight = session.startHeight - dy;
       if (rawHeight < vh * SHEET_DISMISS_RATIO) {
         closeFromPointer();
@@ -246,12 +200,10 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
       return;
     }
 
-    // Content drag dismiss.
     if (dy > SHEET_DISMISS_THRESHOLD_PX) {
       closeFromPointer();
       return;
     }
-    // Spring back to resting position.
     setTransition('transform var(--duration-normal) var(--ease-spring)');
     setTransform('translateY(0)');
     if (snapBackTimerRef.current) clearTimeout(snapBackTimerRef.current);
@@ -267,8 +219,6 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
     if (!session) return;
     const dy = clientY - session.startY;
     if (session.fromHandle) {
-      // 1:1 drag = height. Sheet anchored at bottom, so growing/shrinking
-      // height moves the top edge with the finger.
       const avail = getAvailableHeight();
       const min = getEffectiveMin();
       const next = Math.max(min, Math.min(session.startHeight - dy, avail));
@@ -328,10 +278,10 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
       pointerId: e.pointerId,
     };
     setWillChange('height');
-    try { target.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+    try { target.setPointerCapture(e.pointerId); } catch {}
   }, []);
 
-  const SHEET_KEY_STEP_PX = 32; // equals --space-8
+  const SHEET_KEY_STEP_PX = 32;
   const onKeyDownHandle = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     const avail = getAvailableHeight();
     const min = getEffectiveMin();
@@ -351,8 +301,6 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
   const onPointerDownContent = useCallback((e: PointerEvent<HTMLDivElement>) => {
     if (isInteractiveTarget(e.target)) return;
     if (e.currentTarget.scrollTop > 0) return;
-    // Do NOT preventDefault — kills native touch scrolling. Upward drags
-    // scroll natively; downward drags at scrollTop=0 trigger dismiss.
     e.stopPropagation();
     sessionRef.current = {
       startX: e.clientX,

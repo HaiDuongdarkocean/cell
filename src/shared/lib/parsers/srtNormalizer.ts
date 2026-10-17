@@ -1,70 +1,13 @@
-import { msToSrtTime } from '@/shared/utils/timeUtils';
-
-/**
- * # SRT Format
- *
- * A valid SRT file is a sequence of cue blocks separated by a blank line:
- *
- *     1
- *     00:00:01,000 --> 00:00:05,000
- *     Hello World
- *
- *     2
- *     00:00:06,000 --> 00:00:10,000
- *     Second cue
- *
- * Rules:
- * 1. Sequential 1-based index.
- * 2. Timing line: `HH:MM:SS,mmm --> HH:MM:SS,mmm` — comma as the
- *    millisecond separator (NOT a dot).
- * 3. Cue text is plain text — no HTML/VTT/ASS inline tags.
- * 4. One blank line between cues.
- * 5. No header (no `WEBVTT`, no `[Script Info]`).
- *
- * # What `normalizeSrt` handles
- *
- * Real-world `.srt` files (or files renamed to `.srt`) often violate the
- * rules above. `normalizeSrt` accepts any SRT-like content and produces
- * clean, standard-compliant SRT:
- *
- * - Strips BOM and `WEBVTT` headers (file was actually VTT).
- * - Strips all inline tags: `{\an8}`, `<i>`, `<b>`, `<u>`, `<c>`, `<v>`, …
- * - Converts `.` to `,` in timestamps (VTT-style → SRT-style).
- * - Handles `MM:SS.mmm` timestamps (no hours) → pads to `HH:MM:SS,mmm`.
- * - Strips cue settings from the timing line (`align:start position:50%`).
- * - Re-numbers cues sequentially from 1.
- * - Ensures exactly one blank line between cues.
- * - Drops cues that become empty after stripping tags.
- */
+import { msToSrtTime, timePartsToMs } from '@/shared/utils/timeUtils';
 
 interface NormalizedCue {
-  start: number; // milliseconds
-  end: number; // milliseconds
+  start: number;
+  end: number;
   text: string;
 }
 
-/**
- * Regex matching a timing line in either SRT or VTT style.
- *
- * - Hours are optional (VTT allows `MM:SS.mmm`).
- * - Decimal separator can be `,` (SRT) or `.` (VTT).
- * - Optional cue settings may follow the end timestamp (VTT).
- */
 const TIMING_RE =
   /(?:(\d{1,2}):)?(\d{2}):(\d{2})[.,](\d{3})\s*-->\s*(?:(\d{1,2}):)?(\d{2}):(\d{2})[.,](\d{3})/;
-
-function toMs(
-  hh: string | undefined,
-  mm: string,
-  ss: string,
-  mmm: string,
-): number {
-  const h = hh ? Number.parseInt(hh, 10) : 0;
-  const m = Number.parseInt(mm, 10);
-  const s = Number.parseInt(ss, 10);
-  const ms = Number.parseInt(mmm, 10);
-  return h * 3_600_000 + m * 60_000 + s * 1_000 + ms;
-}
 
 const NAMED_SUBTITLE_ENTITIES: Record<string, string> = {
   nbsp: ' ',
@@ -75,12 +18,6 @@ const NAMED_SUBTITLE_ENTITIES: Record<string, string> = {
   apos: "'",
 };
 
-/**
- * Decode HTML entities in cue text with a single pass. Named entities use a
- * small allowlist; numeric (&#160;) and hex (&#xA0;) entities decode via
- * code point. Unknown entities pass through unchanged, so `&amp;nbsp;`
- * correctly becomes the literal text "&nbsp;".
- */
 function decodeSubtitleEntities(text: string): string {
   return text.replace(/&([a-zA-Z]+|#\d+|#x[0-9a-fA-F]+);/g, (match, body: string) => {
     if (body.startsWith('#')) {
@@ -92,50 +29,31 @@ function decodeSubtitleEntities(text: string): string {
   });
 }
 
-/**
- * Strip all inline tags from cue text, leaving only plain text (newlines preserved).
- *
- * Removes:
- * - VTT/ASS override tags: `{\an8}`, `{\b1}`, …
- * - All HTML/VTT tags: `<i>`, `</i>`, `<b>`, `<c.yellow>`, `<v Bob>`, …
- *
- * Then decodes HTML entities (`&nbsp;` → space, `&amp;` → &, numeric/hex).
- * Decoding runs AFTER tag stripping so escaped markup like `&lt;i&gt;`
- * stays literal text instead of being treated as a tag.
- *
- * Does NOT collapse blank lines or trim — callers that need collapsed
- * plain text (e.g. `normalizeSrt`) should post-process. Used by the
- * display path (`parseSrt`/`parseVtt`) so cue text rendered via
- * `textContent` / React text children shows no literal `<i>` markup.
- */
 export function stripSubtitleTags(text: string): string {
   const stripped = text.replace(/\{[^}]*\}/g, '').replace(/<[^>]*>/g, '');
   return decodeSubtitleEntities(stripped).replace(/\u00A0/g, ' ');
 }
 
-/**
- * Strip inline tags AND collapse to non-empty trimmed lines (SRT block form).
- * Wraps {@link stripSubtitleTags} + line collapse for `normalizeSrt` output.
- */
-function stripInlineTags(text: string): string {
-  return stripSubtitleTags(text)
+export function collapseCueTextLines(text: string): string {
+  return text
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
     .join('\n');
 }
 
-/**
- * Parse SRT-like content (which may also be VTT-like) into a list of cues.
- *
- * Handles:
- * - BOM
- * - `WEBVTT` header (and optional metadata lines before the first cue)
- * - Cue IDs (numeric or arbitrary text on a line before the timing line)
- * - Timing lines with `,` or `.` as the millisecond separator
- * - Optional hours (`MM:SS.mmm` → padded to `HH:MM:SS,mmm`)
- * - Cue settings after the end timestamp
- */
+export function stripInlineTags(text: string): string {
+  return collapseCueTextLines(stripSubtitleTags(text));
+}
+
+export function emitSrtBlocks(cues: readonly { start: number; end: number; text: string }[]): string {
+  const blocks = cues.map((cue, index) => {
+    const timing = `${msToSrtTime(cue.start)} --> ${msToSrtTime(cue.end)}`;
+    return [String(index + 1), timing, cue.text].join('\n');
+  });
+  return blocks.length > 0 ? `${blocks.join('\n\n')}\n` : '';
+}
+
 function parseSrtLike(content: string): NormalizedCue[] {
   const stripped = content.replace(/^\uFEFF/, '');
   const lines = stripped.split(/\r\n|\r|\n/);
@@ -143,13 +61,11 @@ function parseSrtLike(content: string): NormalizedCue[] {
   const cues: NormalizedCue[] = [];
   let i = 0;
 
-  // Skip leading blank lines and optional WEBVTT header / metadata.
   while (i < lines.length && lines[i].trim().length === 0) {
     i++;
   }
   if (i < lines.length && lines[i].trim().toUpperCase().startsWith('WEBVTT')) {
     i++;
-    // Skip metadata lines (non-blank, no timing) until first blank line.
     while (i < lines.length && lines[i].trim().length !== 0) {
       i++;
     }
@@ -158,20 +74,17 @@ function parseSrtLike(content: string): NormalizedCue[] {
   while (i < lines.length) {
     const line = lines[i];
 
-    // Skip blank lines between cues.
     if (line.trim().length === 0) {
       i++;
       continue;
     }
 
-    // Is this line a timing line, or a cue ID followed by a timing line?
     const timingMatch = line.match(TIMING_RE);
     let timingLine: string;
 
     if (timingMatch) {
       timingLine = line;
     } else {
-      // Could be a cue ID. Peek next non-blank line.
       let nextIdx = i + 1;
       while (nextIdx < lines.length && lines[nextIdx].trim().length === 0) {
         nextIdx++;
@@ -180,7 +93,6 @@ function parseSrtLike(content: string): NormalizedCue[] {
         timingLine = lines[nextIdx];
         i = nextIdx;
       } else {
-        // Not a recognizable cue start; skip.
         i++;
         continue;
       }
@@ -192,15 +104,14 @@ function parseSrtLike(content: string): NormalizedCue[] {
       continue;
     }
 
-    const start = toMs(match[1], match[2], match[3], match[4]);
-    const end = toMs(match[5], match[6], match[7], match[8]);
+    const start = timePartsToMs(match[1], match[2], match[3], match[4]);
+    const end = timePartsToMs(match[5], match[6], match[7], match[8]);
 
     if (Number.isNaN(start) || Number.isNaN(end)) {
       i++;
       continue;
     }
 
-    // Collect text lines until blank or EOF.
     i++;
     const textLines: string[] = [];
     while (i < lines.length && lines[i].trim().length !== 0) {
@@ -217,25 +128,9 @@ function parseSrtLike(content: string): NormalizedCue[] {
   return cues;
 }
 
-/**
- * Normalize any SRT-like content into clean, standard-compliant SRT.
- *
- * @param content - Raw subtitle content (SRT, non-standard SRT, or VTT
- *                  renamed as SRT).
- * @returns Clean SRT string with sequential numbering, comma timestamps,
- *          plain-text cues, and blank-line separation.
- */
 export function normalizeSrt(content: string): string {
   if (!content || content.trim().length === 0) {
     return '';
   }
-
-  const cues = parseSrtLike(content);
-
-  const blocks = cues.map((cue, index) => {
-    const timing = `${msToSrtTime(cue.start)} --> ${msToSrtTime(cue.end)}`;
-    return [String(index + 1), timing, cue.text].join('\n');
-  });
-
-  return blocks.length > 0 ? `${blocks.join('\n\n')}\n` : '';
+  return emitSrtBlocks(parseSrtLike(content));
 }

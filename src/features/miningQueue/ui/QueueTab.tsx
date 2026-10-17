@@ -11,15 +11,13 @@ import {
 } from '@/shared/ui';
 import { t } from '@/shared/i18n';
 import type { MiningQueueItem, MiningQueueRow } from '@/entities/miningQueue';
+import { formatMediaTimeMs } from '@/shared/lib/formatMediaTime';
 import { queueGet, queueList, queueRemove, onQueueChanged } from '../services/miningQueueClient';
 import styles from './QueueTab.module.css';
 
 export interface QueueTabProps {
-  /** Cardify: mount fetches the full item and replays it into card creator. */
   readonly onCardify: (item: MiningQueueItem) => void;
-  /** Quick-add (term rows only): replay through the configured sink. */
   readonly onQuickAdd: (item: MiningQueueItem) => void;
-  /** Surface a failed action (toast etc.). */
   readonly onActionError?: (message: string) => void;
 }
 
@@ -31,13 +29,6 @@ function formatAge(createdAt: number, now: number): string {
   if (diffHr < 24) return t('queue.age.hours', [String(diffHr)]);
   const diffDay = Math.floor(diffHr / 24);
   return t('queue.age.days', [String(diffDay)]);
-}
-
-function formatCueTime(ms: number): string {
-  const total = Math.floor(ms / 1000);
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${String(s).padStart(2, '0')}`;
 }
 
 function QueueRow({
@@ -72,7 +63,7 @@ function QueueRow({
         </Text>
         <Text as="span" variant="supporting" color="secondary" className={styles.rowMeta}>
           {row.sourceLabel ?? t('queue.source.unknown')}
-          {row.cueStart !== undefined ? ` · ${formatCueTime(row.cueStart)}` : ''}
+          {row.cueStart !== undefined ? ` · ${formatMediaTimeMs(row.cueStart)}` : ''}
           {' · '}
           {formatAge(row.createdAt, now)}
         </Text>

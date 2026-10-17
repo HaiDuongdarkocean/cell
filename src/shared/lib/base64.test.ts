@@ -1,5 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
-import { decodeBase64ToArrayBuffer, encodeBase64 } from './base64';
+import {
+  bytesToDataUrl,
+  dataUrlToArrayBuffer,
+  decodeBase64ToArrayBuffer,
+  encodeBase64,
+} from './base64';
 
 describe('base64 helpers', () => {
   it('round-trips an ArrayBuffer', () => {
@@ -25,5 +30,38 @@ describe('base64 helpers', () => {
     const bytes = new Uint8Array(70_000).map((_, i) => i % 256);
     const decoded = new Uint8Array(decodeBase64ToArrayBuffer(encodeBase64(bytes)));
     expect(decoded).toEqual(bytes);
+  });
+});
+
+describe('dataUrlToArrayBuffer', () => {
+  it('decodes a base64 data URL', () => {
+    const bytes = new Uint8Array([1, 2, 3, 255]);
+    const url = `data:audio/wav;base64,${encodeBase64(bytes)}`;
+    expect(new Uint8Array(dataUrlToArrayBuffer(url))).toEqual(bytes);
+  });
+
+  it('decodes a percent-encoded non-base64 data URL', () => {
+    const url = `data:text/plain,${encodeURIComponent('héllo wörld')}`;
+    const decoded = new TextDecoder().decode(dataUrlToArrayBuffer(url));
+    expect(decoded).toBe('héllo wörld');
+  });
+
+  it('throws on a URL without a comma', () => {
+    expect(() => dataUrlToArrayBuffer('data:invalid')).toThrow('Invalid data URL');
+  });
+});
+
+describe('bytesToDataUrl', () => {
+  it('builds a base64 data URL that round-trips', () => {
+    const bytes = new Uint8Array([9, 8, 7]);
+    const url = bytesToDataUrl(bytes, 'image/png');
+    expect(url.startsWith('data:image/png;base64,')).toBe(true);
+    expect(new Uint8Array(dataUrlToArrayBuffer(url))).toEqual(bytes);
+  });
+
+  it('accepts an ArrayBuffer', () => {
+    const bytes = new Uint8Array([5]);
+    const url = bytesToDataUrl(bytes.buffer, 'audio/wav');
+    expect(new Uint8Array(dataUrlToArrayBuffer(url))).toEqual(bytes);
   });
 });
