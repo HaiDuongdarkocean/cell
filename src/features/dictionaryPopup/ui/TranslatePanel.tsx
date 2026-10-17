@@ -167,7 +167,7 @@ export function TranslatePanel({
         {sourceHead}
         <PanelCard id="dictionary-translate-answer">
           <PanelItem
-            checkMode="row"
+            checkMode="dot"
             checked={selected}
             onToggle={onToggle}
           >

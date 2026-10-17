@@ -175,7 +175,7 @@ export function AiAnswerPanel({
             ))
           ) : (
             <PanelItem
-              checkMode="row"
+              checkMode="dot"
               checked={checked}
               onToggle={onToggle}
             >
