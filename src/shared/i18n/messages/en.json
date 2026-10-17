@@ -192,7 +192,7 @@
   "dict.ai.allFailed": "All providers failed to answer.",
   "dict.ai.loginRequired": "$1 is not signed in — open its tab and log in, or pick another provider.",
   "dict.ai.notSignedIn": "Not signed in",
-  "dict.ai.openPre": "opening ",
+  "dict.ai.openPre": "opening",
   "dict.ai.openPostCountdown": "in $1s",
   "dict.ai.openPostNow": "…",
   "dict.ai.provider.chatgpt": "ChatGPT",

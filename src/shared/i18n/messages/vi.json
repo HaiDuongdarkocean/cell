@@ -192,7 +192,7 @@
   "dict.ai.allFailed": "Mọi nhà cung cấp đều lỗi.",
   "dict.ai.loginRequired": "$1 chưa đăng nhập — mở tab của nó và đăng nhập, hoặc chọn nhà cung cấp khác.",
   "dict.ai.notSignedIn": "Bạn chưa đăng nhập",
-  "dict.ai.openPre": "mở ",
+  "dict.ai.openPre": "mở",
   "dict.ai.openPostCountdown": "trong $1s",
   "dict.ai.openPostNow": "…",
   "dict.ai.provider.chatgpt": "ChatGPT",

@@ -231,6 +231,7 @@ export function AiAnswerPanel({
                 {t('dict.ai.notSignedIn')}
                 {' — '}
                 {t('dict.ai.openPre')}
+                {' '}
                 <button
                   type="button"
                   className={styles.TihokaAiLoginLink}
@@ -244,6 +245,7 @@ export function AiAnswerPanel({
                 >
                   {providerLabel(firstLoginProvider)}
                 </button>
+                {' '}
                 {loginCountdown > 0
                   ? t('dict.ai.openPostCountdown', [String(loginCountdown)])
                   : t('dict.ai.openPostNow')}
