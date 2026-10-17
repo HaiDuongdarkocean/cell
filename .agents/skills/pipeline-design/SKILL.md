@@ -112,6 +112,7 @@ Rules: `Component:` and `Icon:` field conventions are what `check-design-brief.m
 - [ ] Every element in mapping has reuse/extend/redesign/create decision + token + icon
 - [ ] Every user-facing interaction traces journey step → REQ → function → feature
 - [ ] `node scripts/check-design-brief.mjs <slug>` exits 0
+- [ ] Contract-changing structural decisions (mount contract, component API, event ownership) → ADR Proposed
 - [ ] Review artifact verdict APPROVE*/PASS, mtime ≥ mapping mtime
 - [ ] `transition --to deliver` exits 0 (it re-runs the linter itself)
 

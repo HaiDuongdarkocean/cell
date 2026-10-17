@@ -148,6 +148,7 @@ Wrong-need discovery → `transition --to analyze` (loops += 1, cap 3 → `flagg
 - [ ] No actor-side behavior inside a system step
 - [ ] Function↔feature table complete — no orphan on either side
 - [ ] `## Success Criteria` present, testable, need-traced
+- [ ] Every one-way-door decision in the spec has an ADR at status Proposed in `docs/adr/` (see `documentation-and-adrs`)
 - [ ] `docs/reviews/<slug>-spec.md` verdict APPROVE* and mtime ≥ spec mtime
 - [ ] `transition` exits 0 toward `design` (uiSurface=yes) or `deliver` (uiSurface=no)
 

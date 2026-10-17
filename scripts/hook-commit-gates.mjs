@@ -45,6 +45,22 @@ readPayload((payload) => {
     emitContext('PreToolUse', `COMMIT GATE: ${warnings.join(' | ')}`);
   }
 
+  // ADR gate: deleting an ADR orphans every `ADR-NNN` comment in src/ — the
+  // 001–078 wipe left 162 files pointing at deleted memory. Deleting = never;
+  // superseding = new ADR file, not a deletion.
+  const dels = spawnSync('git', ['diff', '--cached', '--diff-filter=D', '--name-only'], { cwd: ROOT, encoding: 'utf8' });
+  const adrDels = (dels.stdout ?? '').split('\n').map((l) => l.trim())
+    .filter((f) => /^docs\/adr\/\d{3}-.+\.md$/.test(f));
+  if (adrDels.length) {
+    const hint = adrDels.map((f) => {
+      const n = f.match(/^docs\/adr\/(\d{3})/)[1];
+      const g = spawnSync('git', ['grep', '-l', `ADR-${n}`, '--', 'src/'], { cwd: ROOT, encoding: 'utf8' });
+      const users = (g.stdout ?? '').split('\n').filter(Boolean).length;
+      return `${f} (${users} src refs will dangle)`;
+    });
+    emitContext('PreToolUse', `ADR GATE: deleting ${hint.join('; ')}. ADRs are never deleted — supersede with a new record instead (AGENTS.md).`);
+  }
+
   // Lesson gate: a fix commit is the end of a debug loop — AGENTS.md requires
   // an experience atom when the root cause is reusable. Warn unless a new atom
   // is staged/untracked or was added in the last 10 commits.

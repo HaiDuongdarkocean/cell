@@ -17,7 +17,8 @@
 - KHI autonomous pipeline (`idea-pick-off all`, mode `all`) → tự làm tới cùng, chỉ dừng ở gate pipeline tự bắt.
 - KHI work ad-hoc và yêu cầu chưa rõ → PHẢI hỏi trước khi sửa; đã rõ → tự làm tới cùng.
 - KHI destructive/credentials/đổi scope/đụng shared UI → hỏi Anh trước ở mọi mode.
-- Không viết comment trong code — code tự giải thích qua naming/cấu trúc.
+- Không viết comment trong code — code tự giải thích qua naming/cấu trúc; NGOẠI LỆ duy nhất: comment trỏ ADR dạng `(ADR-NNN)`.
+- KHI phát hiện comment không trỏ ADR → xóa ngay trong cùng edit.
 - Gọi user "Anh yêu", xưng "em".
 - Trả lời câu ngắn, từ đơn giản (ASD-STE100 ~80%).
 - KHI giải thích hệ thống nhiều thành phần → vẽ sơ đồ.
@@ -94,7 +95,8 @@
 - KHI thêm dependency → kiểm bundle size trước.
 - KHI sửa `manifest.json` → test trên Chrome thật.
 - KHI dùng Chrome API → cite developer.chrome.com/docs/extensions/reference/.
-- KHI quyết định kiến trúc → ghi `docs/adr/`.
+- KHI quyết định kiến trúc → ghi `docs/adr/` ngay lúc quyết định (status Proposed → Accepted khi verify pass), cấm viết ngược sau ship.
+- KHI sửa file có comment `ADR-NNN` → đọc ADR đó trước khi sửa; đổi quyết định = ADR mới supersede, CẤM sửa/xóa ADR cũ.
 - Ship: `npm run build && npm run ship:dist` → Google Drive (`scripts/ship.config.json`).
 - Commit message sạch — CẤM attribution AI trong commit của Anh.
 - KHÔNG commit/in secrets.

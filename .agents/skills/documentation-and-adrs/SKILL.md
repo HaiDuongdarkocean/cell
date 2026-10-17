@@ -29,9 +29,9 @@ Document decisions, not just code. Code shows *what*; docs explain *why it was b
 
 ## Inline documentation
 
-- **Comment the why, not the what.** `// increment counter` is noise; "sliding window resets at boundary to prevent burst attacks" is signal.
-- **Don't:** narrate self-explanatory code; leave `// TODO` for things you should do now; leave commented-out code (git has history).
-- **Do document gotchas:** "must be called before first render or FOUC — see ADR-003".
+House rule (AGENTS.md): **the only allowed comment is an ADR pointer** — `// <why it binds> (ADR-NNN)`. Everything else is deleted on sight: narration, TODOs, commented-out code. If a gotcha is worth explaining, it earns an ADR first, then the comment links it.
+
+**When an ADR is written:** at the moment the decision is made — status `Proposed` during deliberate/implement, flip to `Accepted` when verification passes. Never written retroactively after ship (that's rationalization — rejected alternatives get reconstructed, not remembered). Exception: retroactive records from audit/incident discovery are still written, marked as discovered.
 
 ## API docs
 

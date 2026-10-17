@@ -91,7 +91,7 @@ UI designs features only after functions are understood.
 - [ ] `npm run typecheck && npm run lint && npm run test:unit && npm run build` green
 - [ ] UI changes pass design-system check if touching TSX/CSS
 - [ ] Feature-specific verification (browser smoke, migration test, …)
-- [ ] Canon docs updated (arch / wiki / ADR where decisions were made)
+- [ ] One-way-door decisions → ADR at status Proposed in `docs/adr/`; canon docs updated (arch/wiki)
 
 ## Open Questions / Accepted Risks
 
