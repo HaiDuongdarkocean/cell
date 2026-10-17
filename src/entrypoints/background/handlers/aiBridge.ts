@@ -133,9 +133,20 @@ async function pingBridge(tabId: number): Promise<BridgePing | null> {
 
 async function awaitBridgeReady(tabId: number): Promise<BridgePing> {
   const deadline = Date.now() + BRIDGE_READY_TIMEOUT_MS;
+  // 'complete' + no ping must persist briefly before it counts as a stale
+  // content script — right after a reload/navigation the status still reads
+  // 'complete' for a beat while the new page (and its bridge) come up.
+  let staleSince: number | undefined;
   for (;;) {
     const ping = await pingBridge(tabId);
     if (ping?.ok) return ping;
+    const tab = await getTab(tabId).catch(() => null);
+    if (!tab) throw new Error('bridge tab gone');
+    const stale = tab.status === 'complete';
+    staleSince = stale ? (staleSince ?? Date.now()) : undefined;
+    if (staleSince !== undefined && Date.now() - staleSince > 2_000) {
+      throw new Error('bridge script missing (stale page)');
+    }
     if (Date.now() >= deadline) throw new Error('bridge tab not ready (still loading or script missing)');
     await sleep(1_000);
   }
@@ -161,18 +172,28 @@ async function awaitComposer(
   return ping;
 }
 
+type AskOutcome =
+  | { ok: true; text: string }
+  | { ok: false; error: AiAskFailureKind; loginTabId?: number };
+
+const classifyErr = (e: unknown): AskOutcome => ({
+  ok: false,
+  error: classifyAskError(e instanceof Error ? e.message : String(e)),
+});
+
 async function askOnProvider(
   adapter: AiProviderAdapter,
   prompt: string,
   askId?: string,
-): Promise<{ ok: true; text: string } | { ok: false; error: AiAskFailureKind; loginTabId?: number }> {
+): Promise<AskOutcome> {
   const isAborted = () => askId !== undefined && abortedAskIds.has(askId);
+  let tabId: number;
   try {
-    const tabId = await ensureBridgeTabId(adapter);
-    if (isAborted()) return { ok: false, error: 'cancelled' };
-    const ping = await awaitComposer(tabId, adapter, await awaitBridgeReady(tabId));
-    if (isAborted()) return { ok: false, error: 'cancelled' };
-    if (!ping.composer) return { ok: false, error: 'loginRequired', loginTabId: tabId };
+    tabId = await ensureBridgeTabId(adapter);
+  } catch (err) {
+    return { ok: false, error: classifyAskError(err instanceof Error ? err.message : String(err)) };
+  }
+  try {
     const sendOnce = async (): Promise<BridgeReply | null> => {
       const t0 = Date.now();
       const settled = sendTabMessage<BridgeReply>(tabId, {
@@ -201,16 +222,27 @@ async function askOnProvider(
       if (reply?.success && reply.text) return { ok: true, text: reply.text };
       return { ok: false, error: classifyAskError(reply?.error ?? 'noAnswer') };
     };
-    let outcome = await attempt();
+    // Setup lives inside round() — a stale bridge CS (extension reloaded,
+    // page not) throws here and still flows through the recovery ladder.
+    const round = async (): Promise<AskOutcome> => {
+      if (isAborted()) return { ok: false, error: 'cancelled' };
+      const ping = await awaitComposer(tabId, adapter, await awaitBridgeReady(tabId));
+      if (isAborted()) return { ok: false, error: 'cancelled' };
+      if (!ping.composer) return { ok: false, error: 'loginRequired', loginTabId: tabId };
+      return attempt();
+    };
+
+    let outcome = await round().catch(classifyErr);
     // 'busy' right after a cancelled ask is transient — the provider page is
     // still unwinding its stopped generation. One grace retry absorbs it.
     if (!outcome.ok && outcome.error === 'busy') {
       await sleep(1_500);
-      outcome = await attempt();
+      outcome = await round().catch(classifyErr);
     }
-    // Recovery ladder — a page that never responded: 1) reload the bridge
-    // tab, 2) start a new conversation in it. busy/loginRequired/rateLimit/
-    // cancelled mean the page is alive and answerable — no recovery value.
+    // Recovery ladder — a page that never answered (dead bridge CS, dropped
+    // prompt, silent timeout): 1) reload the bridge tab, 2) start a new
+    // conversation in it. busy/loginRequired/rateLimit/cancelled mean the
+    // page is alive and answerable — no recovery value.
     const recoverable = (e: AiAskFailureKind): boolean =>
       e === 'domError' || e === 'noAnswer' || e === 'timeout';
     for (const step of ['reload', 'newChat'] as const) {
@@ -221,21 +253,14 @@ async function askOnProvider(
       } else {
         await updateTab(tabId, { url: adapter.url }).catch(() => {});
       }
-      await awaitBridgeReady(tabId);
-      if (isAborted()) return { ok: false, error: 'cancelled' };
-      const ping2 = await awaitComposer(tabId, adapter, (await pingBridge(tabId)) ?? {});
-      if (!ping2.composer) return { ok: false, error: 'loginRequired', loginTabId: tabId };
-      outcome = await attempt();
+      outcome = await round().catch(classifyErr);
     }
     if (!outcome.ok) {
       console.warn(`[aiBridge] ${adapter.id} failed: ${outcome.error}`);
     }
     return outcome;
   } catch (err) {
-    return {
-      ok: false,
-      error: classifyAskError(err instanceof Error ? err.message : String(err)),
-    };
+    return classifyErr(err);
   }
 }
 
