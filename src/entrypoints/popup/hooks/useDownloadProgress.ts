@@ -67,10 +67,6 @@ export function useDownloadProgress(): {
         ...(convertProgress !== undefined ? { convertProgress } : {}),
       };
 
-      // If this download isn't in the store yet, add a stub entry so the
-      // popup can display progress/error state. This handles cases where
-      // the download was started by DOWNLOAD_ALL or the addDownload call
-      // from the popup hasn't been processed yet.
       const exists = usePopupStore
         .getState()
         .downloads.some((d) => d.id === itemId);

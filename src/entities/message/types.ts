@@ -31,8 +31,6 @@ import type {
 import type { MESSAGE_TYPES } from '@/shared/config/messages';
 
 // === Message Types ===
-// SSOT: the MESSAGE_TYPES const in shared/config/messages.ts — this union
-// derives from its values so the two can never drift.
 
 export type MessageType = (typeof MESSAGE_TYPES)[keyof typeof MESSAGE_TYPES];
 

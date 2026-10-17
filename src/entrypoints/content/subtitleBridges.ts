@@ -4,6 +4,7 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { subtitleSignalSchema } from '@/features/detection/subtitleDiscovery/schema';
 import { isTihokaDebug } from './debugLog';
 import { isResolvableHttpOrigin } from '@/shared/lib/dom/frameOrigin';
+import { newId } from '@/shared/lib/id';
 
 function relayToBackground(
   message: { type: string; payload: Record<string, unknown> },
@@ -107,9 +108,7 @@ export function installMainWorldBridge(): void {
           if (arr.length > 200) arr.splice(0, arr.length - 200);
           document.documentElement.setAttribute('data-tihoka-iframe-discovery-log', JSON.stringify(arr));
         }
-        const nonce = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const nonce = newId();
         relayToBackground(
           {
             type: MESSAGE_TYPES.SUBTITLE_DISCOVERY_SIGNAL,

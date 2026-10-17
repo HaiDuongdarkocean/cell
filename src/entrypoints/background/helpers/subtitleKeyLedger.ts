@@ -46,9 +46,6 @@ function toMap(record: LedgerRecord | undefined): Map<string, KeyLedgerEntry> {
 
 // === Promise-chain serialization ===
 
-// SW is single-threaded but async storage ops can interleave. A simple
-// promise chain serializes all mutations so load-modify-save is atomic —
-// one failure doesn't block subsequent mutations.
 const runSerialized = serialQueue();
 
 // === Public API ===

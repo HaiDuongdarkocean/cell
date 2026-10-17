@@ -218,7 +218,7 @@ function notifyChildByIframe(entered: boolean): void {
  * subtitle overlay.
  */
 export async function toggleTopFramePlayerMode(): Promise<void> {
-  if (isChildFrame()) return; // only top frame
+  if (isChildFrame()) return;
   if (topState) {
     const ok = await exitTopFramePlayerMode();
     if (ok) notifyChildByIframe(false);

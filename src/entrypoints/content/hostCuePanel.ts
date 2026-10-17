@@ -111,9 +111,6 @@ function installHostCuePanelOnce(): () => void {
       );
       mount = m;
       m.host.id = 'Tihoka-host-cue-panel';
-      // z-overlay-video (10000) — the cue sheet is a video-adjacent surface and
-      // must sit UNDER settings/popup/manager layers (10001+). The old max-int
-      // value placed it above the universal panel + dict popup sheet.
       m.host.style.cssText =
         'position:fixed;inset:0;pointer-events:none;z-index:var(--z-overlay-video);';
       m.rootEl.style.pointerEvents = 'auto';

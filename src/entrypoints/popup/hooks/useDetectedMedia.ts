@@ -8,11 +8,6 @@ import type {
   DetectedMediaUpdatePayload,
 } from '@/entities/message';
 
-/**
- * Subscribes to detected media from the background script, scoped to the
- * active tab. Broadcasts for other tabs are filtered out by the shared
- * subscription. The fetch retries while the service worker wakes.
- */
 export function useDetectedMedia(): {
   videos: DetectedVideo[];
   subtitles: DetectedSubtitle[];
