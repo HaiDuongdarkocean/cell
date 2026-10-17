@@ -123,6 +123,21 @@ export function waitForAssistantReply(
     let silenceTimer: ReturnType<typeof setTimeout> | undefined;
     let lastText = '';
     let wasStreaming = false;
+    const resolveUnit = (): Element | undefined => {
+      if (typeof baseline === 'number') {
+        const units = assistantUnits(adapter, doc);
+        return units[baseline] ?? (units.length - 1 >= baseline ? units.at(-1) : undefined);
+      }
+      const u = newAssistantUnit(adapter, doc, anchor);
+      if (u) return u;
+      // Unit identity can drop during remounts — fall back to the newest
+      // assistant row, but only while it still extends the text we last
+      // saw (otherwise it's an older turn and we keep waiting).
+      const last = assistantUnits(adapter, doc).at(-1);
+      if (!last || !lastText) return undefined;
+      const t = unitText(adapter, last);
+      return t && t.startsWith(lastText) ? last : undefined;
+    };
     const settle = (text: string | null) => {
       observer.disconnect();
       clearTimeout(timer);
@@ -131,16 +146,18 @@ export function waitForAssistantReply(
     };
     const armStability = (ms: number) => {
       if (silenceTimer) clearTimeout(silenceTimer);
-      silenceTimer = setTimeout(() => settle(lastText), ms);
+      silenceTimer = setTimeout(() => {
+        const unitNow = (() => { try { return resolveUnit(); } catch { return undefined; } })();
+        const fresh = unitNow ? unitText(adapter, unitNow) : '';
+        settle(fresh && lastText && fresh.length >= lastText.length ? fresh : lastText);
+      }, ms);
     };
     const anchor: AssistantBaseline =
       typeof baseline === 'number'
         ? { units: assistantUnits(adapter, doc).slice(0, baseline), texts: new Set<string>() }
         : baseline;
     const check = () => {
-      const unit = typeof baseline === 'number'
-        ? assistantUnits(adapter, doc)[baseline]
-        : newAssistantUnit(adapter, doc, anchor);
+      const unit = resolveUnit();
       if (!unit) return;
       if (adapter.scrollIntoViewWhileObserving) unit.scrollIntoView?.({ block: 'nearest' });
       if (done.kind === 'stability') {

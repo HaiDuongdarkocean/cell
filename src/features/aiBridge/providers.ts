@@ -180,7 +180,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderAdapter> = {
       attr: 'data-perf-row-streaming',
       streamingValue: 'true',
       completeValue: 'false',
-      idleDoneMs: 45_000,
+      idleDoneMs: 8_000,
       stuckIdleMs: 45_000,
       completeIdleMs: 1_500,
       completeSelector: '[data-testid="message-actions"]',

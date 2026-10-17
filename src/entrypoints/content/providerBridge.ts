@@ -63,7 +63,7 @@ function streamPartials(
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const SUBMIT_CONFIRM_MS = 15_000;
 const TAIL_WATCH_MS = 45_000;
-const TAIL_POLL_MS = 1_500;
+const TAIL_POLL_MS = 600;
 
 interface AskReply {
   success: boolean;
