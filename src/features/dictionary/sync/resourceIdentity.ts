@@ -1,4 +1,5 @@
 import { stableJson } from '@/features/sync';
+import { bytesToHex } from '@/shared/lib/codec';
 import { idbRequest } from '@/shared/lib/storage/idb';
 import { stagedRowsForResource, STORES } from '../repositories/baseRepository';
 import { blobRowsForResource } from '../repositories/entryBlobStore';
@@ -55,7 +56,7 @@ export function deserializeResourcePortable(bytes: Uint8Array): {
 
 export async function sha256Hex(bytes: Uint8Array): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', bytes.buffer as ArrayBuffer);
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  return bytesToHex(digest);
 }
 
 export function resourceRecordToken(resource: Pick<ResourceInfo, 'contentHash' | 'signature'>): string {

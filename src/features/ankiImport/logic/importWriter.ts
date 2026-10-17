@@ -19,6 +19,7 @@ import {
   SrsReviewRecordSchema,
 } from '@/entities/srs/schemas';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { txDone } from '@/shared/lib/storage/idb';
 import {
   audioAssetId,
   createDefaultNotetype,
@@ -518,12 +519,8 @@ export async function importNormalized(input: ImportRunInput): Promise<ImportRep
   async function commitBundle(bundle: Bundle): Promise<void> {
     if (bundle.cardIds.length === 0) return;
     const tx = db.transaction(IMPORT_WRITE_STORES, 'readwrite');
-    const txDone = new Promise<void>((resolve, reject) => {
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error);
-    });
-    void txDone.catch(() => undefined);
+    const done = txDone(tx);
+    void done.catch(() => undefined);
     const notesStore = tx.objectStore(SRS_STORES.NOTES);
     for (const n of bundle.notes) notesStore.put(n);
     const cardsStore = tx.objectStore(SRS_STORES.CARDS);
@@ -543,7 +540,7 @@ export async function importNormalized(input: ImportRunInput): Promise<ImportRep
         ...bundle.events.map((e) => captureChange(notesStore, { scope, dataClass: 'srsReviewEvent', key: `reviewEvents:${e.id}`, op: 'put' })),
       ]);
     }
-    await txDone;
+    await done;
   }
 }
 

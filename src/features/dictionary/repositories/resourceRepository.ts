@@ -4,6 +4,7 @@
 // findBySignature (dedupe), count, deleteAll.
 
 import { getDB, getStore, awaitTx, STORES, INDEXES } from './baseRepository';
+import { idbRequest } from '@/shared/lib/storage/idb';
 import type { DictionaryComponent, ImportFormat, ResourceInfo } from '@/entities/dictionary';
 import { captureChange, ensureSyncRuntime, isCaptureEnabled, scopeForTarget, stableJson, targetOf, type Scope } from '@/features/sync';
 
@@ -72,11 +73,7 @@ export async function addResource(langCode: string, resource: Omit<ResourceInfo,
   const db = await getDB(langCode);
   await ensureSyncRuntime();
   const store = getStore(db, WRITE_STORES);
-  const request = store.add(resource);
-  const id = await new Promise<number>((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result as number);
-    request.onerror = () => reject(request.error);
-  });
+  const id = (await idbRequest(store.add(resource))) as number;
   if (isCaptureEnabled()) {
     const scope = resourceScope(langCode);
     const token = recordTokenOf(resource as ResourceInfo);
@@ -90,34 +87,24 @@ export async function addResource(langCode: string, resource: Omit<ResourceInfo,
 /** Get a resource by id. */
 export async function getResource(langCode: string, id: number): Promise<ResourceInfo | undefined> {
   const db = await getDB(langCode);
-  return new Promise((resolve, reject) => {
-    const store = getStore(db, STORES.RESOURCE, 'readonly');
-    const request = store.get(id);
-    request.onsuccess = () => resolve(migrateResource(request.result as ResourceInfo | undefined));
-    request.onerror = () => reject(request.error);
-  });
+  const store = getStore(db, STORES.RESOURCE, 'readonly');
+  return migrateResource((await idbRequest(store.get(id))) as ResourceInfo | undefined);
 }
 
 /** Get all resources (priority asc, then resourceId desc as the default fallback). */
 export async function getAllResources(langCode: string): Promise<ResourceInfo[]> {
   const db = await getDB(langCode);
-  return new Promise((resolve, reject) => {
-    const store = getStore(db, STORES.RESOURCE, 'readonly');
-    const index = store.index(INDEXES.by_order);
-    const request = index.getAll();
-    request.onsuccess = () => {
-      const results = (request.result as ResourceInfo[]).map((r) => migrateResource(r)!);
-      // priority lower wins; absent priority is treated as Infinity so it comes last
-      results.sort((a, b) => {
-        const aPriority = a.priority ?? Number.POSITIVE_INFINITY;
-        const bPriority = b.priority ?? Number.POSITIVE_INFINITY;
-        if (aPriority !== bPriority) return aPriority - bPriority;
-        return (b.id ?? 0) - (a.id ?? 0);
-      });
-      resolve(results);
-    };
-    request.onerror = () => reject(request.error);
+  const store = getStore(db, STORES.RESOURCE, 'readonly');
+  const results = ((await idbRequest(store.index(INDEXES.by_order).getAll())) as ResourceInfo[])
+    .map((r) => migrateResource(r)!);
+  // priority lower wins; absent priority is treated as Infinity so it comes last
+  results.sort((a, b) => {
+    const aPriority = a.priority ?? Number.POSITIVE_INFINITY;
+    const bPriority = b.priority ?? Number.POSITIVE_INFINITY;
+    if (aPriority !== bPriority) return aPriority - bPriority;
+    return (b.id ?? 0) - (a.id ?? 0);
   });
+  return results;
 }
 
 /** Update a resource (full replace by id); capture emits one record per changed synced field. */
@@ -126,19 +113,9 @@ export async function updateResource(langCode: string, resource: ResourceInfo): 
   await ensureSyncRuntime();
   const store = getStore(db, WRITE_STORES);
   const prev = isCaptureEnabled() && resource.id !== undefined
-    ? migrateResource(
-        await new Promise<ResourceInfo | undefined>((resolve, reject) => {
-          const getReq = store.get(resource.id!);
-          getReq.onsuccess = () => resolve(getReq.result as ResourceInfo | undefined);
-          getReq.onerror = () => reject(getReq.error);
-        }),
-      )
+    ? migrateResource((await idbRequest(store.get(resource.id!))) as ResourceInfo | undefined)
     : undefined;
-  await new Promise<void>((resolve, reject) => {
-    const putReq = store.put(resource);
-    putReq.onsuccess = () => resolve();
-    putReq.onerror = () => reject(putReq.error);
-  });
+  await idbRequest(store.put(resource));
   if (isCaptureEnabled()) {
     const scope = resourceScope(langCode);
     const token = recordTokenOf(resource);
@@ -163,17 +140,9 @@ export async function deleteResource(langCode: string, id: number): Promise<void
   await ensureSyncRuntime();
   const store = getStore(db, WRITE_STORES);
   const prev = isCaptureEnabled()
-    ? await new Promise<ResourceInfo | undefined>((resolve, reject) => {
-        const getReq = store.get(id);
-        getReq.onsuccess = () => resolve(getReq.result as ResourceInfo | undefined);
-        getReq.onerror = () => reject(getReq.error);
-      })
+    ? ((await idbRequest(store.get(id))) as ResourceInfo | undefined)
     : undefined;
-  await new Promise<void>((resolve, reject) => {
-    const delReq = store.delete(id);
-    delReq.onsuccess = () => resolve();
-    delReq.onerror = () => reject(delReq.error);
-  });
+  await idbRequest(store.delete(id));
   if (isCaptureEnabled() && prev?.signature) {
     await captureResourceTombstones(store, resourceScope(langCode), recordTokenOf(prev));
   }
@@ -183,13 +152,9 @@ export async function deleteResource(langCode: string, id: number): Promise<void
 /** Find a resource by signature (dedupe check — ADR-023 D7). */
 export async function findResourceBySignature(langCode: string, signature: string): Promise<ResourceInfo | undefined> {
   const db = await getDB(langCode);
-  return new Promise((resolve, reject) => {
-    const store = getStore(db, STORES.RESOURCE, 'readonly');
-    const index = store.index(INDEXES.by_signature);
-    const request = index.get(signature);
-    request.onsuccess = () => resolve(migrateResource(request.result as ResourceInfo | undefined));
-    request.onerror = () => reject(request.error);
-  });
+  const store = getStore(db, STORES.RESOURCE, 'readonly');
+  const result = (await idbRequest(store.index(INDEXES.by_signature).get(signature))) as ResourceInfo | undefined;
+  return migrateResource(result);
 }
 
 /** Reorder resources along the single global priority axis — writes
@@ -268,12 +233,8 @@ export async function setResourceComponents(
 /** Count resources. */
 export async function countResources(langCode: string): Promise<number> {
   const db = await getDB(langCode);
-  return new Promise((resolve, reject) => {
-    const store = getStore(db, STORES.RESOURCE, 'readonly');
-    const request = store.count();
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
+  const store = getStore(db, STORES.RESOURCE, 'readonly');
+  return idbRequest(store.count());
 }
 
 /** Delete all resources (test cleanup). */
@@ -282,22 +243,11 @@ export async function deleteAllResources(langCode: string): Promise<void> {
   await ensureSyncRuntime();
   const store = getStore(db, WRITE_STORES);
   const tokens = isCaptureEnabled()
-    ? await new Promise<string[]>((resolve, reject) => {
-        const getReq = store.getAll();
-        getReq.onsuccess = () =>
-          resolve(
-            (getReq.result as ResourceInfo[])
-              .map((r) => recordTokenOf(r))
-              .filter((s): s is string => typeof s === 'string' && s.length > 0),
-          );
-        getReq.onerror = () => reject(getReq.error);
-      })
+    ? ((await idbRequest(store.getAll())) as ResourceInfo[])
+        .map((r) => recordTokenOf(r))
+        .filter((s): s is string => typeof s === 'string' && s.length > 0)
     : [];
-  await new Promise<void>((resolve, reject) => {
-    const clearReq = store.clear();
-    clearReq.onsuccess = () => resolve();
-    clearReq.onerror = () => reject(clearReq.error);
-  });
+  await idbRequest(store.clear());
   const scope = resourceScope(langCode);
   for (const token of tokens) {
     await captureResourceTombstones(store, scope, token);

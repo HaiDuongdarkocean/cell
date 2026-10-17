@@ -5,7 +5,7 @@
 // freq rows stamped `kind: 'freq'`). Singleton getDB() — 1 connection per lang.
 
 import { getDbHash } from '@/shared/lib/storage/dbHash';
-import { idbRequest } from '@/shared/lib/storage/idb';
+import { idbRequest, txDone } from '@/shared/lib/storage/idb';
 
 /** IndexedDB schema version (ADR-023 D2 + ADR-037 §7.1 — v10 adds langPhraseIndex, v12 adds langWordTrash, v13 adds sync capture stores, v14 unifies entry store, v15 adds immutable entry-blob stores). */
 export const DB_SCHEMA_VERSION = 15;
@@ -343,11 +343,7 @@ export function getStore(
 
 /** Wait for a transaction to complete (raw IDBTransaction has no .done promise). */
 export function awaitTx(tx: IDBTransaction): Promise<void> {
-  return new Promise((resolve, reject) => {
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-  });
+  return txDone(tx);
 }
 
 /** Reverse a string for backwardTerm index (suffix search via prefix). */
@@ -377,31 +373,15 @@ export async function deleteRowsByIndex(
 ): Promise<void> {
   const range = IDBKeyRange.bound([key], [key, []]);
   const resourceIndex = INDEXES.by_resource;
-  const probe = await new Promise<{ first?: number; last?: number }>((resolve, reject) => {
-    const index = getStore(db, storeName, 'readonly').index(resourceIndex);
-    let first: number | undefined;
-    let last: number | undefined;
-    let done = 0;
-    const finish = () => {
-      if (++done === 2) resolve({ first, last });
-    };
-    const fwd = index.openKeyCursor(IDBKeyRange.only(key));
-    fwd.onsuccess = () => {
-      const pk = fwd.result?.primaryKey;
-      first = typeof pk === 'number' ? pk : undefined;
-      fwd.onerror = () => reject(fwd.error);
-      finish();
-    };
-    fwd.onerror = () => reject(fwd.error);
-    const rev = index.openKeyCursor(IDBKeyRange.only(key), 'prev');
-    rev.onsuccess = () => {
-      const pk = rev.result?.primaryKey;
-      last = typeof pk === 'number' ? pk : undefined;
-      rev.onerror = () => reject(rev.error);
-      finish();
-    };
-    rev.onerror = () => reject(rev.error);
-  });
+  const probeIndex = getStore(db, storeName, 'readonly').index(resourceIndex);
+  const [fwdCursor, revCursor] = await Promise.all([
+    idbRequest(probeIndex.openKeyCursor(IDBKeyRange.only(key))),
+    idbRequest(probeIndex.openKeyCursor(IDBKeyRange.only(key), 'prev')),
+  ]);
+  const probe: { first?: number; last?: number } = {
+    first: typeof fwdCursor?.primaryKey === 'number' ? fwdCursor.primaryKey : undefined,
+    last: typeof revCursor?.primaryKey === 'number' ? revCursor.primaryKey : undefined,
+  };
   if (probe.first === undefined || probe.last === undefined) return;
   const estimate = Math.max(1, probe.last - probe.first + 1);
   try {
@@ -409,18 +389,16 @@ export async function deleteRowsByIndex(
   } catch {}
   let done = 0;
   for (;;) {
-    const page = await new Promise<IDBValidKey[]>((resolve, reject) => {
+    const page = await (async (): Promise<IDBValidKey[]> => {
       const tx = db.transaction(storeName, 'readwrite', { durability: 'relaxed' });
-      const request = tx.objectStore(storeName).index(indexName).getAllKeys(range, SWEEP_CHUNK);
-      request.onsuccess = () => {
-        const keys = request.result;
-        const store = tx.objectStore(storeName);
-        for (const k of keys) store.delete(k);
-      };
-      tx.oncomplete = () => resolve(request.result);
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error);
-    });
+      const keys = await idbRequest(
+        tx.objectStore(storeName).index(indexName).getAllKeys(range, SWEEP_CHUNK),
+      );
+      const store = tx.objectStore(storeName);
+      for (const k of keys) store.delete(k);
+      await txDone(tx);
+      return keys;
+    })();
     done += page.length;
     try {
       onProgress?.(done, Math.max(done, estimate));
@@ -466,28 +444,20 @@ export async function deleteDB(dbName: string): Promise<void> {
 /** Clear all stores for a lang (test isolation — call in beforeEach). */
 export async function clearAllStores(langCode: string): Promise<void> {
   const entryDb = await getEntryDB(langCode);
-  await new Promise<void>((resolve, reject) => {
-    const tx = entryDb.transaction([STORES.ENTRY], 'readwrite');
-    tx.objectStore(STORES.ENTRY).clear();
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-  });
+  const entryTx = entryDb.transaction([STORES.ENTRY], 'readwrite');
+  entryTx.objectStore(STORES.ENTRY).clear();
+  await txDone(entryTx);
   const db = await getDB(langCode);
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction([STORES.RESOURCE, STORES.ENTRY, STORES.PHRASE_INDEX, STORES.ENTRY_CHUNK, STORES.ENTRY_META, STORES.ENTRY_BWD, STORES.WORD_STATUS, STORES.WORD_TRASH, STORES.SYNC_OUTBOX, STORES.SYNC_META], 'readwrite');
-    tx.objectStore(STORES.RESOURCE).clear();
-    tx.objectStore(STORES.ENTRY).clear();
-    tx.objectStore(STORES.ENTRY_CHUNK).clear();
-    tx.objectStore(STORES.ENTRY_META).clear();
-    tx.objectStore(STORES.ENTRY_BWD).clear();
-    tx.objectStore(STORES.PHRASE_INDEX).clear();
-    tx.objectStore(STORES.WORD_STATUS).clear();
-    tx.objectStore(STORES.WORD_TRASH).clear();
-    tx.objectStore(STORES.SYNC_OUTBOX).clear();
-    tx.objectStore(STORES.SYNC_META).clear();
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-  });
+  const tx = db.transaction([STORES.RESOURCE, STORES.ENTRY, STORES.PHRASE_INDEX, STORES.ENTRY_CHUNK, STORES.ENTRY_META, STORES.ENTRY_BWD, STORES.WORD_STATUS, STORES.WORD_TRASH, STORES.SYNC_OUTBOX, STORES.SYNC_META], 'readwrite');
+  tx.objectStore(STORES.RESOURCE).clear();
+  tx.objectStore(STORES.ENTRY).clear();
+  tx.objectStore(STORES.ENTRY_CHUNK).clear();
+  tx.objectStore(STORES.ENTRY_META).clear();
+  tx.objectStore(STORES.ENTRY_BWD).clear();
+  tx.objectStore(STORES.PHRASE_INDEX).clear();
+  tx.objectStore(STORES.WORD_STATUS).clear();
+  tx.objectStore(STORES.WORD_TRASH).clear();
+  tx.objectStore(STORES.SYNC_OUTBOX).clear();
+  tx.objectStore(STORES.SYNC_META).clear();
+  await txDone(tx);
 }

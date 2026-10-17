@@ -7,6 +7,7 @@
 // by_resource) serve both. Resource-scoped deletes/counts cover all kinds.
 
 import { getEntryDB, getStore, entryDBs, STORES, INDEXES, reverseString, deleteRowsByIndex } from './baseRepository';
+import { idbRequest, txDone } from '@/shared/lib/storage/idb';
 import {
   blobEntriesForResource,
   blobFindByPrefix,
@@ -47,24 +48,16 @@ const toWireDict = ({ backwardTerm: _bt, ...entry }: StoredDictionaryEntry): Dic
 export async function addDictionaryEntry(langCode: string, entry: Omit<DictionaryEntry, 'id'>): Promise<number> {
   const db = await getEntryDB(langCode);
   const stored: StoredDictionaryEntry = { ...entry, backwardTerm: reverseString(entry.term) };
-  return new Promise((resolve, reject) => {
-    const store = getStore(db, STORES.ENTRY);
-    const request = store.add(stored);
-    request.onsuccess = () => resolve(request.result as number);
-    request.onerror = () => reject(request.error);
-  });
+  const store = getStore(db, STORES.ENTRY);
+  return (await idbRequest(store.add(stored))) as number;
 }
 
 /** Add a single frequency entry. Returns auto-generated id. */
 export async function addFrequencyEntry(langCode: string, entry: Omit<FrequencyEntry, 'id'>): Promise<number> {
   const db = await getEntryDB(langCode);
   const stored: StoredFrequencyEntry = { ...entry, kind: 'freq', backwardTerm: reverseString(entry.term) };
-  return new Promise((resolve, reject) => {
-    const store = getStore(db, STORES.ENTRY);
-    const request = store.add(stored);
-    request.onsuccess = () => resolve(request.result as number);
-    request.onerror = () => reject(request.error);
-  });
+  const store = getStore(db, STORES.ENTRY);
+  return (await idbRequest(store.add(stored))) as number;
 }
 
 /** Bulk insert dictionary entries (1 transaction per batch — ADR-023 D8).
@@ -75,17 +68,13 @@ export async function bulkInsertDictionaryEntries(
   entries: ReadonlyArray<Omit<DictionaryEntry, 'id'>>,
 ): Promise<void> {
   const db = await getEntryDB(langCode);
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORES.ENTRY, 'readwrite', { durability: 'relaxed' });
-    const store = tx.objectStore(STORES.ENTRY);
-    for (const entry of entries) {
-      store.add({ ...entry, backwardTerm: reverseString(entry.term) });
-    }
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-    tx.commit();
-  });
+  const tx = db.transaction(STORES.ENTRY, 'readwrite', { durability: 'relaxed' });
+  const store = tx.objectStore(STORES.ENTRY);
+  for (const entry of entries) {
+    store.add({ ...entry, backwardTerm: reverseString(entry.term) });
+  }
+  tx.commit();
+  await txDone(tx);
 }
 
 /** Bulk insert frequency entries — each row stamped `kind: 'freq'`. */
@@ -94,17 +83,13 @@ export async function bulkInsertFrequencyEntries(
   entries: ReadonlyArray<Omit<FrequencyEntry, 'id'>>,
 ): Promise<void> {
   const db = await getEntryDB(langCode);
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORES.ENTRY, 'readwrite', { durability: 'relaxed' });
-    const store = tx.objectStore(STORES.ENTRY);
-    for (const entry of entries) {
-      store.add({ ...entry, kind: 'freq', backwardTerm: reverseString(entry.term) });
-    }
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-    tx.commit();
-  });
+  const tx = db.transaction(STORES.ENTRY, 'readwrite', { durability: 'relaxed' });
+  const store = tx.objectStore(STORES.ENTRY);
+  for (const entry of entries) {
+    store.add({ ...entry, kind: 'freq', backwardTerm: reverseString(entry.term) });
+  }
+  tx.commit();
+  await txDone(tx);
 }
 
 /** Collect rows for a resource of one kind via the by_resource index.
@@ -116,12 +101,9 @@ async function findByResource<T extends StoredResourceEntry>(
   keep: (v: StoredResourceEntry) => v is T,
 ): Promise<T[]> {
   const dbs = await entryDBs(langCode);
-  const rows = await Promise.all(dbs.map((db) => new Promise<StoredResourceEntry[]>((resolve, reject) => {
-    const store = getStore(db, STORES.ENTRY, 'readonly');
-    const request = store.index(INDEXES.by_resource).getAll(resourceId);
-    request.onsuccess = () => resolve(request.result as StoredResourceEntry[]);
-    request.onerror = () => reject(request.error);
-  })));
+  const rows = await Promise.all(dbs.map((db) =>
+    idbRequest(getStore(db, STORES.ENTRY, 'readonly').index(INDEXES.by_resource).getAll(resourceId)) as Promise<StoredResourceEntry[]>,
+  ));
   return rows.flat().filter(keep);
 }
 
@@ -133,12 +115,9 @@ async function findByIndex<T extends StoredResourceEntry>(
   keep: (v: StoredResourceEntry) => v is T,
 ): Promise<T[]> {
   const dbs = await entryDBs(langCode);
-  const rows = await Promise.all(dbs.map((db) => new Promise<StoredResourceEntry[]>((resolve, reject) => {
-    const store = getStore(db, STORES.ENTRY, 'readonly');
-    const request = store.index(indexName).getAll(range);
-    request.onsuccess = () => resolve(request.result as StoredResourceEntry[]);
-    request.onerror = () => reject(request.error);
-  })));
+  const rows = await Promise.all(dbs.map((db) =>
+    idbRequest(getStore(db, STORES.ENTRY, 'readonly').index(indexName).getAll(range)) as Promise<StoredResourceEntry[]>,
+  ));
   return rows.flat().filter(keep);
 }
 
@@ -278,25 +257,18 @@ async function scanTermsCursor<S extends StoredResourceEntry, T>(
   const unique = [...new Set(sortedTerms)];
   for (let start = 0; start < unique.length; start += 64) {
     const slice = unique.slice(start, start + 64);
-    await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(STORES.ENTRY, 'readonly');
-      const index = tx.objectStore(STORES.ENTRY).index(INDEXES.by_term);
-      let pending = slice.length;
-      for (const term of slice) {
-        const request = index.getAll(term);
-        request.onsuccess = () => {
-          for (const value of request.result as StoredResourceEntry[]) {
-            if (keep(value) && !metas.has(value.resourceId) && (!resourceIds || resourceIds.has(value.resourceId))) {
-              const entries = result.get(term) ?? [];
-              entries.push(toWire(value));
-              result.set(term, entries);
-            }
-          }
-          if (--pending === 0) resolve();
-        };
-        request.onerror = () => reject(request.error);
+    const tx = db.transaction(STORES.ENTRY, 'readonly');
+    const index = tx.objectStore(STORES.ENTRY).index(INDEXES.by_term);
+    await Promise.all(slice.map(async (term) => {
+      const values = (await idbRequest(index.getAll(term))) as StoredResourceEntry[];
+      for (const value of values) {
+        if (keep(value) && !metas.has(value.resourceId) && (!resourceIds || resourceIds.has(value.resourceId))) {
+          const entries = result.get(term) ?? [];
+          entries.push(toWire(value));
+          result.set(term, entries);
+        }
       }
-    });
+    }));
     if (start + 64 < unique.length) {
       await new Promise((r) => setTimeout(r, 0));
     }
@@ -321,7 +293,7 @@ export async function findFrequencyByTerms(
     result.set(term, []);
   }
 
-  let rows = result;
+  const rows = result;
   if (rowScanUseful(metas, resourceIds)) {
     for (const db of await entryDBs(langCode)) {
       await scanTermsCursor(db, sortedTerms, result, metas, resourceIds, isFreqRow, toWireFreq);
@@ -353,7 +325,7 @@ export async function findDictionaryByTerms(
     result.set(term, []);
   }
 
-  let rows = result;
+  const rows = result;
   if (rowScanUseful(metas, resourceIds)) {
     for (const db of await entryDBs(langCode)) {
       await scanTermsCursor(db, sortedTerms, result, metas, resourceIds, isDictRow, toWireDict);
@@ -475,9 +447,7 @@ async function countByResource(
     const store = getStore(db, STORES.ENTRY, 'readonly');
     const index = store.index(INDEXES.by_resource);
     if (!keep) {
-      const request = index.count(resourceId);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      idbRequest(index.count(resourceId)).then(resolve, reject);
       return;
     }
     let n = 0;
@@ -540,14 +510,10 @@ export async function deleteEntriesByResource(
   const dbs = await entryDBs(langCode);
   const spans = await Promise.all(dbs.map(async (db) => {
     const index = getStore(db, STORES.ENTRY, 'readonly').index(INDEXES.by_resource);
-    const probe = (dir: IDBCursorDirection) => new Promise<number>((resolve, reject) => {
-      const request = index.openKeyCursor(IDBKeyRange.only(resourceId), dir);
-      request.onsuccess = () => {
-        const pk = request.result?.primaryKey;
-        resolve(typeof pk === 'number' ? pk : NaN);
-      };
-      request.onerror = () => reject(request.error);
-    });
+    const probe = async (dir: IDBCursorDirection): Promise<number> => {
+      const pk = (await idbRequest(index.openKeyCursor(IDBKeyRange.only(resourceId), dir)))?.primaryKey;
+      return typeof pk === 'number' ? pk : NaN;
+    };
     const [first, last] = await Promise.all([probe('next'), probe('prev')]);
     return Number.isNaN(first) || Number.isNaN(last) ? 0 : last - first + 1;
   }));

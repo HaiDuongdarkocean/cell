@@ -8,6 +8,7 @@
 // only live-store writes are ~256-entry chunk puts with an interleave gap.
 
 import { getDB, entryDBs, STORES, INDEXES, reverseString, deleteRowsByIndex } from './baseRepository';
+import { idbRequest, txDone } from '@/shared/lib/storage/idb';
 import { getAllResources } from './resourceRepository';
 import type {
   DictionaryEntry,
@@ -74,13 +75,9 @@ const isFreq = (v: StoredResourceEntry | DictionaryEntry | FrequencyEntry): v is
 /* ------------------------------ compile ------------------------------ */
 
 function putInTx(db: IDBDatabase, storeName: string, record: object): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(storeName, 'readwrite', { durability: 'relaxed' });
-    tx.objectStore(storeName).put(record);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-  });
+  const tx = db.transaction(storeName, 'readwrite', { durability: 'relaxed' });
+  tx.objectStore(storeName).put(record);
+  return txDone(tx);
 }
 
 export async function dropStagedRows(langCode: string, resourceId: number): Promise<void> {
@@ -149,14 +146,10 @@ class ChunkBuilder {
 async function writeBwdRows(db: IDBDatabase, rows: readonly StoredBwdRow[]): Promise<void> {
   for (let i = 0; i < rows.length; i += 256) {
     const slice = rows.slice(i, i + 256);
-    await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(STORES.ENTRY_BWD, 'readwrite', { durability: 'relaxed' });
-      const store = tx.objectStore(STORES.ENTRY_BWD);
-      for (const r of slice) store.add(r);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error);
-    });
+    const tx = db.transaction(STORES.ENTRY_BWD, 'readwrite', { durability: 'relaxed' });
+    const store = tx.objectStore(STORES.ENTRY_BWD);
+    for (const r of slice) store.add(r);
+    await txDone(tx);
     if (i + 256 < rows.length) await gap();
   }
 }
@@ -194,14 +187,12 @@ export async function compileEntryBlob(langCode: string, resourceId: number): Pr
     let boundaryEmitted = 0;
     for (;;) {
       const limit = PAGE + boundaryEmitted;
-      const rows = await new Promise<StoredResourceEntry[]>((resolve, reject) => {
-        const tx = srcDb.transaction(STORES.ENTRY, 'readonly');
-        const request = tx.objectStore(STORES.ENTRY)
+      const rows = (await idbRequest(
+        srcDb.transaction(STORES.ENTRY, 'readonly')
+          .objectStore(STORES.ENTRY)
           .index(INDEXES.by_resource_term)
-          .getAll(IDBKeyRange.bound(lowerBound, [resourceId, []]), limit);
-        request.onsuccess = () => resolve(request.result as StoredResourceEntry[]);
-        request.onerror = () => reject(request.error);
-      });
+          .getAll(IDBKeyRange.bound(lowerBound, [resourceId, []]), limit),
+      )) as StoredResourceEntry[];
       if (rows.length === 0) break;
       let start = 0;
       if (boundaryTerm !== null) {
@@ -270,28 +261,17 @@ export async function deleteEntryBlobArtifacts(langCode: string, resourceId: num
   const CHUNK_WINDOW = 64;
   const chunkRange = IDBKeyRange.bound([resourceId, -Infinity], [resourceId, []]);
   for (;;) {
-    const deleted = await new Promise<number>((resolve, reject) => {
-      const tx = db.transaction(STORES.ENTRY_CHUNK, 'readwrite', { durability: 'relaxed' });
-      const request = tx.objectStore(STORES.ENTRY_CHUNK).getAllKeys(chunkRange, CHUNK_WINDOW);
-      request.onsuccess = () => {
-        const keys = request.result;
-        const store = tx.objectStore(STORES.ENTRY_CHUNK);
-        for (const k of keys) store.delete(k);
-      };
-      tx.oncomplete = () => resolve(request.result.length);
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error);
-    });
-    if (deleted < CHUNK_WINDOW) break;
+    const tx = db.transaction(STORES.ENTRY_CHUNK, 'readwrite', { durability: 'relaxed' });
+    const keys = await idbRequest(tx.objectStore(STORES.ENTRY_CHUNK).getAllKeys(chunkRange, CHUNK_WINDOW));
+    const store = tx.objectStore(STORES.ENTRY_CHUNK);
+    for (const k of keys) store.delete(k);
+    await txDone(tx);
+    if (keys.length < CHUNK_WINDOW) break;
     await gap();
   }
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(STORES.ENTRY_META, 'readwrite', { durability: 'relaxed' });
-    tx.objectStore(STORES.ENTRY_META).delete(resourceId);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-  });
+  const metaTx = db.transaction(STORES.ENTRY_META, 'readwrite', { durability: 'relaxed' });
+  metaTx.objectStore(STORES.ENTRY_META).delete(resourceId);
+  await txDone(metaTx);
   freqTermIndex.delete(`${langCode}:${resourceId}`);
   await deleteRowsByIndex(db, STORES.ENTRY_BWD, INDEXES.by_resource_bterm, resourceId);
 }
@@ -376,24 +356,18 @@ export async function prewarmFreqIndex(langCode: string): Promise<void> {
  *  commit point needs no invalidation bookkeeping (cheap: ≤1 row per dict). */
 export async function getEntryBlobMetas(langCode: string): Promise<Map<number, EntryBlobMeta>> {
   const db = await getDB(langCode);
-  const rows = await new Promise<EntryBlobMeta[]>((resolve, reject) => {
-    const tx = db.transaction(STORES.ENTRY_META, 'readonly');
-    const request = tx.objectStore(STORES.ENTRY_META).getAll();
-    request.onsuccess = () => resolve(request.result as EntryBlobMeta[]);
-    request.onerror = () => reject(request.error);
-  });
+  const rows = (await idbRequest(
+    db.transaction(STORES.ENTRY_META, 'readonly').objectStore(STORES.ENTRY_META).getAll(),
+  )) as EntryBlobMeta[];
   return new Map(rows.map((r) => [r.resourceId, r]));
 }
 
 /** Meta for one resource — undefined means row-backed. */
 export async function getEntryBlobMeta(langCode: string, resourceId: number): Promise<EntryBlobMeta | undefined> {
   const db = await getDB(langCode);
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORES.ENTRY_META, 'readonly');
-    const request = tx.objectStore(STORES.ENTRY_META).get(resourceId);
-    request.onsuccess = () => resolve(request.result as EntryBlobMeta | undefined);
-    request.onerror = () => reject(request.error);
-  });
+  return (await idbRequest(
+    db.transaction(STORES.ENTRY_META, 'readonly').objectStore(STORES.ENTRY_META).get(resourceId),
+  )) as EntryBlobMeta | undefined;
 }
 
 /** Sample the first `limit` entries of one kind — decodes chunks in order
@@ -416,12 +390,9 @@ export async function blobSampleForResource(
 }
 
 function loadChunk(db: IDBDatabase, resourceId: number, seq: number): Promise<StoredEntryChunk | undefined> {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORES.ENTRY_CHUNK, 'readonly');
-    const request = tx.objectStore(STORES.ENTRY_CHUNK).get([resourceId, seq]);
-    request.onsuccess = () => resolve(request.result as StoredEntryChunk | undefined);
-    request.onerror = () => reject(request.error);
-  });
+  return idbRequest(
+    db.transaction(STORES.ENTRY_CHUNK, 'readonly').objectStore(STORES.ENTRY_CHUNK).get([resourceId, seq]),
+  ) as Promise<StoredEntryChunk | undefined>;
 }
 
 /** Many chunk gets, batched — one readonly transaction per ≤64 keys pipelines
@@ -437,19 +408,11 @@ async function loadChunks(
   const out: Array<StoredEntryChunk | undefined> = new Array(keys.length);
   for (let start = 0; start < keys.length; start += LOAD_CHUNKS_BATCH) {
     const slice = keys.slice(start, start + LOAD_CHUNKS_BATCH);
-    await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(STORES.ENTRY_CHUNK, 'readonly');
-      const store = tx.objectStore(STORES.ENTRY_CHUNK);
-      let pending = slice.length;
-      slice.forEach(({ resourceId, seq }, i) => {
-        const request = store.get([resourceId, seq]);
-        request.onsuccess = () => {
-          out[start + i] = request.result as StoredEntryChunk | undefined;
-          if (--pending === 0) resolve();
-        };
-        request.onerror = () => reject(request.error);
-      });
-    });
+    const tx = db.transaction(STORES.ENTRY_CHUNK, 'readonly');
+    const store = tx.objectStore(STORES.ENTRY_CHUNK);
+    await Promise.all(slice.map(async ({ resourceId, seq }, i) => {
+      out[start + i] = (await idbRequest(store.get([resourceId, seq]))) as StoredEntryChunk | undefined;
+    }));
     if (start + LOAD_CHUNKS_BATCH < keys.length) {
       await new Promise((r) => setTimeout(r, 0));
     }
@@ -672,14 +635,12 @@ export async function blobFindBySuffix(
   const upper = reversed + '￿';
   const out: Array<DictionaryEntry | FrequencyEntry> = [];
   for (const meta of metas.values()) {
-    const rows = await new Promise<StoredBwdRow[]>((resolve, reject) => {
-      const tx = db.transaction(STORES.ENTRY_BWD, 'readonly');
-      const request = tx.objectStore(STORES.ENTRY_BWD)
+    const rows = (await idbRequest(
+      db.transaction(STORES.ENTRY_BWD, 'readonly')
+        .objectStore(STORES.ENTRY_BWD)
         .index(INDEXES.by_resource_bterm)
-        .getAll(IDBKeyRange.bound([meta.resourceId, reversed], [meta.resourceId, upper]));
-      request.onsuccess = () => resolve(request.result as StoredBwdRow[]);
-      request.onerror = () => reject(request.error);
-    });
+        .getAll(IDBKeyRange.bound([meta.resourceId, reversed], [meta.resourceId, upper])),
+    )) as StoredBwdRow[];
     const seqs = [...new Set(rows.filter((r) => r.kind === kind).map((r) => r.seq))];
     for (const seq of seqs) {
       const entries = await chunkEntries(db, meta.resourceId, seq);
@@ -700,12 +661,9 @@ export async function blobTermsForResource(
   const metas = await getEntryBlobMetas(langCode);
   if (!metas.has(resourceId)) return undefined;
   const db = await getDB(langCode);
-  const record = await new Promise<StoredTermsRecord | undefined>((resolve, reject) => {
-    const tx = db.transaction(STORES.ENTRY_CHUNK, 'readonly');
-    const request = tx.objectStore(STORES.ENTRY_CHUNK).get([resourceId, TERMS_SEQ]);
-    request.onsuccess = () => resolve(request.result as StoredTermsRecord | undefined);
-    request.onerror = () => reject(request.error);
-  });
+  const record = (await idbRequest(
+    db.transaction(STORES.ENTRY_CHUNK, 'readonly').objectStore(STORES.ENTRY_CHUNK).get([resourceId, TERMS_SEQ]),
+  )) as StoredTermsRecord | undefined;
   return [...(kind === 'dict' ? record?.dictTerms : record?.freqTerms) ?? []];
 }
 
@@ -790,12 +748,10 @@ export async function migrateEntriesToBlobs(langCode: string): Promise<number> {
     if (r.id === undefined || r.installationFinished === false) continue;
     if (metas.has(r.id)) {
       for (const db of dbs) {
-        const staged = await new Promise<boolean>((resolve, reject) => {
-          const request = db.transaction(STORES.ENTRY, 'readonly')
-            .objectStore(STORES.ENTRY).index(INDEXES.by_resource).openKeyCursor(r.id!);
-          request.onsuccess = () => resolve(request.result !== null);
-          request.onerror = () => reject(request.error);
-        });
+        const staged = (await idbRequest(
+          db.transaction(STORES.ENTRY, 'readonly')
+            .objectStore(STORES.ENTRY).index(INDEXES.by_resource).openKeyCursor(r.id!),
+        )) !== null;
         if (staged) await deleteRowsByIndex(db, STORES.ENTRY, INDEXES.by_resource_term, r.id).catch(() => undefined);
       }
       continue;

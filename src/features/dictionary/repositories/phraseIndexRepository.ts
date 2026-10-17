@@ -4,6 +4,7 @@
 // Blob is a compact ArrayBuffer produced by phraseIndexCompiler.
 
 import { getDB, STORES, INDEXES } from './baseRepository';
+import { idbRequest } from '@/shared/lib/storage/idb';
 
 /** Stored phrase index record (langPhraseIndex store). */
 export interface StoredPhraseIndex {
@@ -38,101 +39,67 @@ export async function putPhraseIndex(
   meta: { readonly compilerVersion: number; readonly termCount: number },
 ): Promise<void> {
   const db = await getDB(langCode);
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORES.PHRASE_INDEX, 'readwrite');
-    const store = tx.objectStore(STORES.PHRASE_INDEX);
-    const record: InternalPhraseIndex = {
-      resourceId,
-      compilerVersion: meta.compilerVersion,
-      termCount: meta.termCount,
-      blob,
-    };
-    const request = store.put(record);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-  });
+  const tx = db.transaction(STORES.PHRASE_INDEX, 'readwrite');
+  const store = tx.objectStore(STORES.PHRASE_INDEX);
+  const record: InternalPhraseIndex = {
+    resourceId,
+    compilerVersion: meta.compilerVersion,
+    termCount: meta.termCount,
+    blob,
+  };
+  await idbRequest(store.put(record));
 }
 
 /** Get a phrase index by resourceId. Returns undefined if not found. */
 export async function getPhraseIndex(langCode: string, resourceId: number): Promise<StoredPhraseIndex | undefined> {
   const db = await getDB(langCode);
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORES.PHRASE_INDEX, 'readonly');
-    const store = tx.objectStore(STORES.PHRASE_INDEX);
-    const request = store.get(resourceId);
-    request.onsuccess = () => {
-      try {
-        const raw = request.result as InternalPhraseIndex | undefined;
-        if (!raw) { resolve(undefined); return; }
-        const ab = blobToArrayBuffer(raw.blob);
-        if (Array.isArray(raw.blob)) {
-          void putPhraseIndex(langCode, raw.resourceId, ab, {
-            compilerVersion: raw.compilerVersion,
-            termCount: raw.termCount,
-          }).catch(() => undefined);
-        }
-        resolve({
-          resourceId: raw.resourceId,
-          compilerVersion: raw.compilerVersion,
-          termCount: raw.termCount,
-          blob: ab,
-        });
-      } catch (err) {
-        reject(err);
-      }
-    };
-    request.onerror = () => reject(request.error);
-    tx.onerror = () => reject(tx.error);
-  });
+  const tx = db.transaction(STORES.PHRASE_INDEX, 'readonly');
+  const store = tx.objectStore(STORES.PHRASE_INDEX);
+  const raw = (await idbRequest(store.get(resourceId))) as InternalPhraseIndex | undefined;
+  if (!raw) return undefined;
+  const ab = blobToArrayBuffer(raw.blob);
+  if (Array.isArray(raw.blob)) {
+    void putPhraseIndex(langCode, raw.resourceId, ab, {
+      compilerVersion: raw.compilerVersion,
+      termCount: raw.termCount,
+    }).catch(() => undefined);
+  }
+  return {
+    resourceId: raw.resourceId,
+    compilerVersion: raw.compilerVersion,
+    termCount: raw.termCount,
+    blob: ab,
+  };
 }
 
 /** Check whether a phrase index exists for a resource. */
 export async function hasPhraseIndex(langCode: string, resourceId: number): Promise<boolean> {
   const db = await getDB(langCode);
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORES.PHRASE_INDEX, 'readonly');
-    const store = tx.objectStore(STORES.PHRASE_INDEX);
-    const index = store.index(INDEXES.by_resource);
-    const request = index.count(resourceId);
-    request.onsuccess = () => resolve(request.result > 0);
-    request.onerror = () => reject(request.error);
-    tx.onerror = () => reject(tx.error);
-  });
+  const tx = db.transaction(STORES.PHRASE_INDEX, 'readonly');
+  const store = tx.objectStore(STORES.PHRASE_INDEX);
+  const index = store.index(INDEXES.by_resource);
+  return (await idbRequest(index.count(resourceId))) > 0;
 }
 
 /** Delete a phrase index by resourceId. No-op if not found. */
 export async function deletePhraseIndex(langCode: string, resourceId: number): Promise<void> {
   const db = await getDB(langCode);
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORES.PHRASE_INDEX, 'readwrite');
-    const store = tx.objectStore(STORES.PHRASE_INDEX);
-    const request = store.delete(resourceId);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-    tx.onerror = () => reject(tx.error);
-  });
+  const tx = db.transaction(STORES.PHRASE_INDEX, 'readwrite');
+  const store = tx.objectStore(STORES.PHRASE_INDEX);
+  await idbRequest(store.delete(resourceId));
 }
 
 /** Get all phrase indexes for a lang (usually 1 per dictionary resource). */
 export async function getAllPhraseIndexes(langCode: string): Promise<StoredPhraseIndex[]> {
   const db = await getDB(langCode);
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORES.PHRASE_INDEX, 'readonly');
-    const store = tx.objectStore(STORES.PHRASE_INDEX);
-    const request = store.getAll();
-    request.onsuccess = () => {
-      const raw = request.result as InternalPhraseIndex[] | undefined;
-      if (!raw || raw.length === 0) { resolve([]); return; }
-      resolve(raw.map((r) => ({
-        resourceId: r.resourceId,
-        compilerVersion: r.compilerVersion,
-        termCount: r.termCount,
-        blob: blobToArrayBuffer(r.blob),
-      })));
-    };
-    request.onerror = () => reject(request.error);
-    tx.onerror = () => reject(tx.error);
-  });
+  const tx = db.transaction(STORES.PHRASE_INDEX, 'readonly');
+  const store = tx.objectStore(STORES.PHRASE_INDEX);
+  const raw = (await idbRequest(store.getAll())) as InternalPhraseIndex[] | undefined;
+  if (!raw || raw.length === 0) return [];
+  return raw.map((r) => ({
+    resourceId: r.resourceId,
+    compilerVersion: r.compilerVersion,
+    termCount: r.termCount,
+    blob: blobToArrayBuffer(r.blob),
+  }));
 }
