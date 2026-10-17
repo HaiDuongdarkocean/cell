@@ -56,7 +56,7 @@ export function newAssistantUnit(
   return undefined;
 }
 
-function unitText(adapter: AiProviderAdapter, unit: Element): string {
+export function unitText(adapter: AiProviderAdapter, unit: Element): string {
   const body = unit.querySelector<HTMLElement>(adapter.answerBody);
   if (!body && adapter.answerBodyRequired) return '';
   const el = (body ?? unit) as HTMLElement;

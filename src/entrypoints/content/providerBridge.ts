@@ -32,6 +32,7 @@ import {
   waitForAssistantReply,
   captureAssistantBaseline,
   newAssistantUnit,
+  unitText,
 } from '@/features/aiBridge/dom';
 
 const COMPOSER_TIMEOUT_MS = 15_000;
@@ -60,6 +61,8 @@ function streamPartials(
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const SUBMIT_CONFIRM_MS = 15_000;
+const TAIL_WATCH_MS = 45_000;
+const TAIL_POLL_MS = 1_500;
 
 interface AskReply {
   success: boolean;
@@ -240,9 +243,22 @@ async function ask(
   if (text === '__cancelled__') {
     return { success: false, error: 'cancelled', provider: adapter.id };
   }
-  return text
-    ? { success: true, text, provider: adapter.id }
-    : { success: false, error: 'noAnswer', provider: adapter.id };
+  if (text) {
+    // Tail guard: provider pages sometimes keep generating after our done
+    // signal fired (flickering streaming attrs, Claude's burst pauses). The
+    // page is ground truth — forward any grown text so the popup converges
+    // to the real full answer instead of a truncated one.
+    const emit = streamPartials(askId, adapter.id);
+    const tail = setInterval(() => {
+      if (!emit || inFlightAskId !== null) { clearInterval(tail); return; }
+      const unit = newAssistantUnit(adapter, document, baseline);
+      const grown = unit ? unitText(adapter, unit) : '';
+      if (grown && grown !== text) emit(grown);
+    }, TAIL_POLL_MS);
+    setTimeout(() => clearInterval(tail), TAIL_WATCH_MS);
+    return { success: true, text, provider: adapter.id };
+  }
+  return { success: false, error: 'noAnswer', provider: adapter.id };
 }
 
 const adapter = adapterForHost(location.host);

@@ -164,12 +164,21 @@ export function useAiAsk(): {
         const text = typeof msg.payload.text === 'string' ? msg.payload.text.trim() : '';
         const streamProvider = msg.payload.provider as AiProviderId | undefined;
         if (!text || !streamProvider) return;
-        setState((prev) =>
-          prev.feature === feature && prev.phase === 'loading'
-            ? { ...prev, answer: { feature, text, provider: streamProvider }, provider: streamProvider }
-            : prev,
-        );
+        setState((prev) => {
+          if (prev.feature !== feature) return prev;
+          if (prev.phase === 'loading') {
+            return { ...prev, answer: { feature, text, provider: streamProvider }, provider: streamProvider };
+          }
+          if (prev.phase === 'answered' && prev.answer && text.length > prev.answer.text.length) {
+            const upd = { ...prev.answer, provider: streamProvider, text };
+            setAnswers((a) => a.map((x) => (x.feature === feature ? upd : x)));
+            setAiAnswer(cacheKey, upd);
+            return { ...prev, answer: upd, provider: streamProvider };
+          }
+          return prev;
+        });
       };
+      if (streamListenerRef.current) removeOnMessageListener(streamListenerRef.current);
       streamListenerRef.current = onStream;
       onMessage(onStream);
       try {
@@ -234,8 +243,6 @@ export function useAiAsk(): {
       } finally {
         if (gen === generationRef.current) inFlightRef.current = false;
         if (askIdRef.current === askId) askIdRef.current = null;
-        if (streamListenerRef.current === onStream) streamListenerRef.current = null;
-        removeOnMessageListener(onStream);
       }
       return null;
     },
