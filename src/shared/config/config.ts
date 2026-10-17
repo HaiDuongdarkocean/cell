@@ -345,17 +345,17 @@ OUTPUT FORMAT — respond with ONLY a sequence of <chunk> elements, exactly this
 <explanation>...</explanation>
 </chunk>
 
-Example for the sentence "the cat sat":
+Example for the sentence "the cat sat" (meaning/explanation shown in [ANSWER_LANG]):
 
 <chunk>
 <text>the cat</text>
-<meaning>con mèo</meaning>
-<explanation>Cụm danh từ làm chủ ngữ của câu.</explanation>
+<meaning>reworded meaning of "the cat" in [ANSWER_LANG]</meaning>
+<explanation>grammar note about "the cat" in [ANSWER_LANG]</explanation>
 </chunk>
 <chunk>
 <text>sat</text>
-<meaning>ngồi xuống</meaning>
-<explanation>Động từ "sit" ở thì quá khứ đơn.</explanation>
+<meaning>reworded meaning of "sat" in [ANSWER_LANG]</meaning>
+<explanation>grammar note about "sat" in [ANSWER_LANG]</explanation>
 </chunk>
 
 Rules:
