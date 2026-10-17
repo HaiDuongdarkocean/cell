@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "generated": "2026-10-15T07:45:19.578Z",
-  "count": 56,
+  "generated": "2026-10-17T13:36:15.848Z",
+  "count": 57,
   "skills": [
     {
       "name": "animation-vocabulary",
@@ -207,6 +207,11 @@
       "name": "review-animations",
       "description": "Review animation code against a high craft bar (Kowalski philosophy). Use when reviewing a motion diff, not auditing a codebase.",
       "path": ".agents/skills/review-animations/SKILL.md"
+    },
+    {
+      "name": "sa",
+      "description": "Software architecture handbook - visual-first durable concepts (system, element, boundary, hard-to-change decisions, tradeoffs, ISO 25010). Use when discussing, evaluating, or learning software architecture. Not for writing code or project specs.",
+      "path": ".agents/skills/sa/SKILL.md"
     },
     {
       "name": "security-and-hardening",
