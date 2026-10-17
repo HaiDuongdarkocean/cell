@@ -187,7 +187,7 @@ test('waitForAssistantReply reports partials as the unit text grows', async () =
   expect(partials).toEqual(['chunk', 'chunk and more']);
 });
 
-test('waitForAssistantReply resolves on claude perf-row-streaming flip', async () => {
+test('waitForAssistantReply resolves on claude message-actions mount', async () => {
   const reply = waitForAssistantReply(claude, document, 0, 5_000);
   document.body.insertAdjacentHTML(
     'beforeend',
@@ -195,9 +195,9 @@ test('waitForAssistantReply resolves on claude perf-row-streaming flip', async (
       '<div class="standard-markdown">claude answer</div></div>',
   );
   await sleep(0);
-  document
-    .querySelector('[data-perf-row-streaming]')!
-    .setAttribute('data-perf-row-streaming', 'false');
+  const row = document.querySelector('[data-perf-row="assistant"]')!;
+  row.setAttribute('data-perf-row-streaming', 'false');
+  row.insertAdjacentHTML('beforeend', '<div data-testid="message-actions"></div>');
   await expect(reply).resolves.toContain('claude answer');
 });
 

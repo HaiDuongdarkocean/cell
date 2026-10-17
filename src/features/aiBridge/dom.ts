@@ -155,7 +155,11 @@ export function waitForAssistantReply(
       }
       const host = done.scopeSelector ? unit.closest(done.scopeSelector) : unit;
       const state = host?.getAttribute(done.attr);
-      if (state === done.completeValue) {
+      const streaming = state === done.streamingValue || isStreaming(adapter, doc);
+      const complete = done.completeSelector
+        ? !!host?.querySelector(done.completeSelector)
+        : state === done.completeValue;
+      if (complete && !streaming) {
         const finalText = unitText(adapter, unit);
         if (finalText && !isEcho(finalText)) {
           if (!done.completeIdleMs) return settle(finalText);
@@ -165,7 +169,6 @@ export function waitForAssistantReply(
           return armStability(done.completeIdleMs);
         }
       }
-      const streaming = state === done.streamingValue || isStreaming(adapter, doc);
       const text = unitText(adapter, unit);
       if (!text || isEcho(text)) {
         if (silenceTimer) clearTimeout(silenceTimer);

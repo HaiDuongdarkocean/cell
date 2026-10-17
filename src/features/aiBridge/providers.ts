@@ -26,6 +26,10 @@ export type AiDoneSignal =
        *  text-stability so a flag that flicks false mid-stream (Claude
        *  pauses between chunks) can't clip the tail. */
       completeIdleMs?: number;
+      /** Presence-based completion — an element that only mounts once the
+       *  reply is fully done (Claude's message-actions bar). Beats the
+       *  attr value, which flips false during stream pauses. */
+      completeSelector?: string;
     }
   | { kind: 'stability'; silenceMs: number };
 
@@ -166,10 +170,12 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderAdapter> = {
       attr: 'data-perf-row-streaming',
       streamingValue: 'true',
       completeValue: 'false',
-      idleDoneMs: 8_000,
-      completeIdleMs: 2_500,
+      idleDoneMs: 45_000,
+      stuckIdleMs: 45_000,
+      completeIdleMs: 1_500,
+      completeSelector: '[data-testid="message-actions"]',
     },
-    streamingIndicators: [],
+    streamingIndicators: ['button[aria-label*="Stop" i]'],
     sendButtonSelectors: ['button[aria-label*="Send" i]'],
     stopButtonSelectors: ['button[aria-label*="Stop" i]'],
   },
