@@ -346,6 +346,7 @@ export function CandidateView({
             providerOrder={panel.aiProviders}
             selectedProvider={panel.aiPicks.wordExplain ?? panel.aiProviders[0] ?? 'chatgpt'}
             answerLanguage={panel.aiLanguage}
+            sourceLang={sourceLang}
             targetLang={targetLang}
             onPickProvider={(p: AiProviderId) => {
               panel.pickAiProvider('wordExplain', p);
@@ -366,6 +367,7 @@ export function CandidateView({
             providerOrder={panel.aiProviders}
             selectedProvider={panel.aiPicks.sentenceBreakdown ?? panel.aiProviders[0] ?? 'chatgpt'}
             answerLanguage={panel.aiLanguage}
+            sourceLang={sourceLang}
             targetLang={targetLang}
             onPickProvider={(p: AiProviderId) => {
               panel.pickAiProvider('sentenceBreakdown', p);

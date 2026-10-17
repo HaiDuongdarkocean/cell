@@ -4,7 +4,7 @@ import { Button } from '@/shared/ui/Button';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { Tooltip } from '@/shared/ui/Tooltip';
 import { Menu, MenuItem, MenuSeparator } from '@/shared/ui/Menu';
-import { getLocale, t } from '@/shared/i18n';
+import { t } from '@/shared/i18n';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { isoCodeToLabel } from '@/shared/config/languageRegistry';
@@ -35,7 +35,9 @@ export interface AiAnswerPanelProps {
   readonly selectedProvider: AiProviderId;
   /** [ANSWER_LANG] choice: interface ('native') or the learned language. */
   readonly answerLanguage: 'native' | 'target';
-  /** Display name of the target language (e.g. "English"). */
+  /** Display name of the learned language (e.g. "English"). */
+  readonly sourceLang: string;
+  /** Display name of the learner's native language (e.g. "Vietnamese"). */
   readonly targetLang: string;
   readonly onPickProvider: (provider: AiProviderId) => void;
   readonly onPickLanguage: (lang: 'native' | 'target') => void;
@@ -58,6 +60,7 @@ export function AiAnswerPanel({
   providerOrder,
   selectedProvider,
   answerLanguage,
+  sourceLang,
   targetLang,
   onPickProvider,
   onPickLanguage,
@@ -74,8 +77,9 @@ export function AiAnswerPanel({
     AI_PROVIDER_IDS.filter((p) => !providerOrder.includes(p)),
   );
   const activeProvider = state.provider ?? selectedProvider;
-  const nativeLang = getLocale() === 'vi' ? 'Vietnamese' : 'English';
-  const targetLangName = (isoCodeToLabel(targetLang) ?? targetLang).replace(/^./, (c) => c.toUpperCase());
+  const cap = (s: string) => s.replace(/^./, (c) => c.toUpperCase());
+  const nativeLang = cap(isoCodeToLabel(targetLang) ?? targetLang);
+  const targetLangName = cap(isoCodeToLabel(sourceLang) ?? sourceLang);
   const loginNames = state.loginProviders.map(providerLabel).join(', ');
 
   return (
