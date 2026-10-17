@@ -312,7 +312,9 @@ async function runAskChain(ctx: BackgroundContext, data: AskPayload): Promise<As
       return { success: false, error: 'cancelled' };
     }
     if (outcome.error === 'loginRequired' && outcome.loginTabId !== undefined) {
-      void focusBridgeTab(outcome.loginTabId);
+      // Give the popup's countdown time to tell the user a login tab is
+      // about to open — jumping instantly leaves them stranded.
+      void sleep(5_000).then(() => focusBridgeTab(outcome.loginTabId!));
     }
     return {
       success: false,

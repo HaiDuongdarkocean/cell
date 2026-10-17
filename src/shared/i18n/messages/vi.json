@@ -192,6 +192,8 @@
   "dict.ai.allFailed": "Mọi nhà cung cấp đều lỗi.",
   "dict.ai.loginRequired": "$1 chưa đăng nhập — mở tab của nó và đăng nhập, hoặc chọn nhà cung cấp khác.",
   "dict.ai.loginLink": "Đăng nhập $1",
+  "dict.ai.loginRedirect": "Đang mở đăng nhập $1 sau $2s…",
+  "dict.ai.loginOpening": "Đang mở đăng nhập $1…",
   "dict.ai.provider.chatgpt": "ChatGPT",
   "dict.ai.provider.gemini": "Gemini",
   "dict.ai.provider.deepseek": "DeepSeek",

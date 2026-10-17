@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import { Skeleton } from '@/shared/ui/Skeleton';
@@ -81,6 +81,17 @@ export function AiAnswerPanel({
   const nativeLang = cap(isoCodeToLabel(targetLang) ?? targetLang);
   const targetLangName = cap(isoCodeToLabel(sourceLang) ?? sourceLang);
   const loginNames = state.loginProviders.map(providerLabel).join(', ');
+  const [loginCountdown, setLoginCountdown] = useState(0);
+  const firstLoginProvider = state.loginProviders[0];
+  useEffect(() => {
+    if (state.phase !== 'error' || !firstLoginProvider) {
+      setLoginCountdown(0);
+      return;
+    }
+    setLoginCountdown(5);
+    const t = setInterval(() => setLoginCountdown((c) => (c > 0 ? c - 1 : 0)), 1_000);
+    return () => clearInterval(t);
+  }, [state.phase, firstLoginProvider]);
 
   return (
     <Panel id="dictionary-ai-panel">
@@ -223,6 +234,13 @@ export function AiAnswerPanel({
                   ? t('dict.ai.rateLimit')
                   : t('dict.ai.errorHint')}
             </p>
+            {firstLoginProvider && (
+              <p className={styles.TihokaAiError} data-tihoka-id="dictionary-ai-login-countdown">
+                {loginCountdown > 0
+                  ? t('dict.ai.loginRedirect', [providerLabel(firstLoginProvider), String(loginCountdown)])
+                  : t('dict.ai.loginOpening', [providerLabel(firstLoginProvider)])}
+              </p>
+            )}
             {state.loginProviders.map((p) => (
               <button
                 key={p}
