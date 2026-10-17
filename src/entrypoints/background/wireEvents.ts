@@ -33,9 +33,7 @@ import {
   clearBadge,
   saveSessionMedia,
   saveSessionDownloads,
-  clearSessionMedia,
   clearSessionDownloads,
-  saveSessionAutoDownloadedTabs,
   loadSettings,
   maybeAutoDownload,
   pushAutoLoadSubtitles,
@@ -43,6 +41,8 @@ import {
   findMediaForDownloadItem,
   isMediaRelevantUrlChange,
 } from './helpers';
+import { broadcastDetectedMedia, clearTabState } from './helpers/broadcast';
+import { sleep } from '@/shared/lib/async';
 // SubtitleDiscoveryService is exposed on BackgroundContext; see subtitleDiscoveryService.ts.
 import type {
   DetectedVideo,
@@ -57,7 +57,6 @@ import type {
   MessageRequest,
   MessageResponse,
   AutoLoadSubtitlesPayload,
-  DetectedMediaUpdatePayload,
   DownloadProgressUpdatePayload,
   ConvertTsToMp4V2Payload,
   ConvertTsToMp4V2ResultPayload,
@@ -99,16 +98,8 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
         updateBadgeForTab(ctx, firstVideo.tabId);
       }
 
-      ctx.messageBus.broadcast({
-        type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE,
-        payload: {
-          videos: enrichedVideos,
-          subtitles,
-          tabId: firstVideo?.tabId ?? 0,
-        } satisfies DetectedMediaUpdatePayload,
-      });
-
       const tabId = firstVideo?.tabId ?? 0;
+      broadcastDetectedMedia(ctx, tabId, { videos: enrichedVideos, subtitles });
       if (tabId !== 0) {
         saveSessionMedia(ctx, tabId, enrichedVideos, subtitles);
       }
@@ -357,7 +348,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
                 openGateOnce();
                 return;
               }
-              await new Promise((resolve) => setTimeout(resolve, 250));
+              await sleep(250);
             }
           })();
 
@@ -464,13 +455,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
     // they are caught by webNavigation.onHistoryStateUpdated below.
     if (changeInfo.status === 'loading') {
       if (tab?.url) lastCommittedTopUrl.set(tabId, tab.url);
-      ctx.autoDownloadedTabs.delete(tabId);
-      saveSessionAutoDownloadedTabs(ctx);
-      ctx.networkInterceptor.clearTab(tabId);
-      clearSessionMedia(ctx, tabId);
-      ctx.lastCuesByTab.delete(tabId);
-      ctx.immersionTracker.closeTab(tabId);
-      updateBadgeForTab(ctx, tabId);
+      clearTabState(ctx, tabId);
     }
   };
 
@@ -487,13 +472,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
     const prevUrl = lastCommittedTopUrl.get(details.tabId);
     lastCommittedTopUrl.set(details.tabId, details.url);
     if (!isMediaRelevantUrlChange(prevUrl, details.url)) return;
-    ctx.autoDownloadedTabs.delete(details.tabId);
-    saveSessionAutoDownloadedTabs(ctx);
-    ctx.networkInterceptor.clearTab(details.tabId);
-    clearSessionMedia(ctx, details.tabId);
-    ctx.lastCuesByTab.delete(details.tabId);
-    ctx.immersionTracker.closeTab(details.tabId);
-    updateBadgeForTab(ctx, details.tabId);
+    clearTabState(ctx, details.tabId);
     // Tell every frame's content-script the media switched — without this the
     // overlay keeps showing the previous video's cues on sites whose detection
     // arrives late or finds no tracks (generic, non-YouTube SPAs).
@@ -515,15 +494,9 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
   // 9. Tab removal clear
   const onTabRemoved = (tabId: number): void => {
     lastCommittedTopUrl.delete(tabId);
-    ctx.networkInterceptor.clearTab(tabId);
     ctx.downloadQueue.removeByTab(tabId);
-    clearSessionMedia(ctx, tabId);
+    clearTabState(ctx, tabId);
     clearSessionDownloads(ctx, tabId);
-    updateBadgeForTab(ctx, tabId);
-    ctx.autoDownloadedTabs.delete(tabId);
-    saveSessionAutoDownloadedTabs(ctx);
-    ctx.lastCuesByTab.delete(tabId);
-    ctx.immersionTracker.closeTab(tabId);
   };
 
   unsubscribers.push(

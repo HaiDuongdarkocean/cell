@@ -1,20 +1,17 @@
 import type { SrsImageAsset } from '@/entities/srs/types';
 import { getCachedImageAsset, storeImageAsset } from './imageAssetCache';
+import { resolveOrStore } from './quotaManager';
+import { createBlobUrl, revokeBlobUrl } from '@/shared/lib/blobUrl';
+import { bytesToDataUrl } from '@/shared/lib/base64';
 
 /** Create a blob URL for an image asset. Caller must revoke when done. */
 export function createImageBlobUrl(asset: SrsImageAsset): string {
-  const blob = new Blob([asset.bytes], { type: asset.mimeType });
-  if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
-    return URL.createObjectURL(blob);
-  }
-  return `data:${asset.mimeType};base64,${btoa(String.fromCharCode(...new Uint8Array(asset.bytes)))}`;
+  return createBlobUrl(asset.bytes, asset.mimeType);
 }
 
 /** Revoke a blob URL returned by `createImageBlobUrl`. */
 export function revokeImageBlobUrl(url: string): void {
-  if (typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
-    URL.revokeObjectURL(url);
-  }
+  revokeBlobUrl(url);
 }
 
 /**
@@ -27,9 +24,10 @@ export async function resolveImageDataUrl(
   dataUrl: string,
   index = 0,
 ): Promise<SrsImageAsset | undefined> {
-  const cached = await getCachedImageAsset(noteId, fieldId, index);
-  if (cached) return cached;
-  return storeImageAsset(noteId, fieldId, dataUrl, undefined, index);
+  return resolveOrStore(
+    () => getCachedImageAsset(noteId, fieldId, index),
+    () => storeImageAsset(noteId, fieldId, dataUrl, undefined, index),
+  );
 }
 
 /**
@@ -44,6 +42,5 @@ export async function cacheImageBytes(
   index = 0,
 ): Promise<SrsImageAsset> {
   // Store as a data URL so imageAssetCache accepts it; this avoids an external URL.
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(bytes)));
-  return storeImageAsset(noteId, fieldId, `data:${mimeType};base64,${base64}`, mimeType, index);
+  return storeImageAsset(noteId, fieldId, bytesToDataUrl(bytes, mimeType), mimeType, index);
 }

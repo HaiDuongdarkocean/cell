@@ -13,6 +13,7 @@ import type { PaddleLangAbbr } from '@/features/ocr/engine/paddleOcrLanguages';
 import type { OcrEngine } from '@/features/ocr/engine/ocrEngine';
 import { OCR_DEFAULT_ENGINE_KEY } from '@/features/ocr/engine/types';
 import type { ImageSource, OcrResult, OcrConfig, OcrBackend, OcrLanguageMode } from '@/features/ocr/engine/types';
+import { decodeBase64ToArrayBuffer } from '@/shared/lib/base64';
 
 // Catch CSP errors that try-catch misses — CSP violations fire as window.onerror,
 // not as caught exceptions. Without this, EvalError from OpenCV/ORT is silent.
@@ -196,10 +197,7 @@ async function handleOcrRecognize(payload: OcrRecognizePayload): Promise<OcrReco
 }
 
 function decodeBase64ToUint8Clamped(base64: string): Uint8ClampedArray {
-  const binary = atob(base64);
-  const bytes = new Uint8ClampedArray(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
+  return new Uint8ClampedArray(decodeBase64ToArrayBuffer(base64));
 }
 
 async function handleOcrDispose(payload: OcrDisposePayload): Promise<{ ok: true }> {

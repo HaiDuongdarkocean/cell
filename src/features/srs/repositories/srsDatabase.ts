@@ -4,6 +4,7 @@
 // V1 schema version = 1. onupgradeneeded create-all.
 
 import { getDbHash } from '@/shared/lib/storage/dbHash';
+import { txDone } from '@/shared/lib/storage/idb';
 
 /** IndexedDB schema version cho SRS (v3 adds variantPresets store). */
 export const SRS_DB_SCHEMA_VERSION = 3;
@@ -176,11 +177,7 @@ export function getSrsStore(
 
 /** Wait for a transaction to complete. */
 export function awaitSrsTx(tx: IDBTransaction): Promise<void> {
-  return new Promise((resolve, reject) => {
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-  });
+  return txDone(tx);
 }
 
 /** Delete entire SRS database (test cleanup). */
@@ -198,13 +195,9 @@ export async function deleteSrsDB(dbName: string): Promise<void> {
 export async function clearAllSrsStores(): Promise<void> {
   const db = await getSrsDB();
   const storeNames = Object.values(SRS_STORES);
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(storeNames, 'readwrite');
-    for (const name of storeNames) {
-      tx.objectStore(name).clear();
-    }
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-  });
+  const tx = db.transaction(storeNames, 'readwrite');
+  for (const name of storeNames) {
+    tx.objectStore(name).clear();
+  }
+  await txDone(tx);
 }

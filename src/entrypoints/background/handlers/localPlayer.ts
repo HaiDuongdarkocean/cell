@@ -38,6 +38,7 @@ import {
   getHistory,
   type VideoRecord,
 } from '@/features/local-player/services/mediaLibraryRepository';
+import { openExtensionTab } from '../helpers/broadcast';
 
 /** Path to the local player HTML page (matches web_accessible_resources). */
 const LOCAL_PLAYER_PATH = 'src/entrypoints/local-player/index.html';
@@ -54,15 +55,14 @@ export function registerLocalPlayerHandlers(ctx: BackgroundContext): void {
         return { success: false, error: `Invalid OPEN_LOCAL_PLAYER payload: ${parsed.error.message}` };
       }
       const payload = parsed.data;
-      const url = chrome.runtime.getURL(LOCAL_PLAYER_PATH);
-      const fullUrl = payload?.videoId
-        ? `${url}?videoId=${encodeURIComponent(payload.videoId)}`
-        : url;
-      const tab = await chrome.tabs.create({ url: fullUrl });
-      if (tab.id === undefined) {
+      const tabId = await openExtensionTab(
+        LOCAL_PLAYER_PATH,
+        payload?.videoId ? { videoId: payload.videoId } : undefined,
+      );
+      if (tabId === undefined) {
         return { success: false, error: 'Failed to create tab' };
       }
-      return { success: true, data: { tabId: tab.id } };
+      return { success: true, data: { tabId } };
     },
   );
 

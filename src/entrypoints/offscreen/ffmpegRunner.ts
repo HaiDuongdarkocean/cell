@@ -29,6 +29,7 @@ import { condensedAudioMessageListener } from './condensedAudioRunner';
 import './importRunner';
 import { fetchWithTimeout } from '@/shared/lib/fetchWithTimeout';
 import { encodeBase64 } from '@/shared/lib/base64';
+import { runOffscreenBootstrapOnce } from './offscreenBootstrap';
 import type {
   ConvertTsToMp4V2Payload,
   ConvertTsToMp4V2ResultPayload,
@@ -544,25 +545,10 @@ export function resetFFmpeg(): void {
 // Jest test environment).
 // ---------------------------------------------------------------------------
 
-let bootstrapped = false;
-
-/**
- * Auto-register the message listener when loaded in an offscreen document.
- * Safe to call multiple times — only registers once. Skipped in test
- * environments (Jest sets `process.env.JEST_WORKER_ID`).
- */
-function bootstrapOffscreenListener(): void {
-  if (bootstrapped) return;
-  // Skip in Jest/test environments where tests control listener lifecycle.
-  if (typeof process !== 'undefined' && process.env?.JEST_WORKER_ID) return;
-  // Skip if chrome.runtime.onMessage is unavailable (not an extension context).
+runOffscreenBootstrapOnce('ffmpeg', () => {
   if (typeof chrome === 'undefined' || !chrome?.runtime?.onMessage) return;
-
-  bootstrapped = true;
   void startMessageListener().catch((e) => {
     console.error('[OFFSCREEN] startMessageListener error:', e);
   });
-}
-
-bootstrapOffscreenListener();
+});
 

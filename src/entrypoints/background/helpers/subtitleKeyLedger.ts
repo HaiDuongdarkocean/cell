@@ -13,6 +13,7 @@
  */
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { getSessionStorage, setSessionStorage } from '@/shared/lib/chrome-apis';
+import { serialQueue } from '@/shared/lib/async';
 import type { SubtitleApiKey } from '@/entities/settings/types';
 import type { KeyQuotaInfo } from '@/entities/subtitle/searchTypes';
 
@@ -46,16 +47,9 @@ function toMap(record: LedgerRecord | undefined): Map<string, KeyLedgerEntry> {
 // === Promise-chain serialization ===
 
 // SW is single-threaded but async storage ops can interleave. A simple
-// promise chain serializes all mutations so load-modify-save is atomic.
-let chain: Promise<unknown> = Promise.resolve();
-
-function runSerialized<T>(task: () => Promise<T>): Promise<T> {
-  const result = chain.then(task);
-  // Keep the chain alive even if a task rejects, so one failure doesn't
-  // block subsequent mutations.
-  chain = result.catch(() => undefined);
-  return result;
-}
+// promise chain serializes all mutations so load-modify-save is atomic —
+// one failure doesn't block subsequent mutations.
+const runSerialized = serialQueue();
 
 // === Public API ===
 

@@ -14,6 +14,7 @@ import {
   saveSessionMedia,
   buildDetails,
 } from '../helpers';
+import { broadcastDetectedMedia } from '../helpers/broadcast';
 import type {
   NetworkRequest,
 } from '@/entities/media';
@@ -189,12 +190,7 @@ export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
     }
 
     if (addedNew) {
-      const videos = ctx.networkInterceptor.getVideos(tabId);
-      const subtitles = ctx.networkInterceptor.getSubtitles(tabId);
-      ctx.messageBus.broadcast({
-        type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE,
-        payload: { videos, subtitles, tabId } satisfies DetectedMediaUpdatePayload,
-      });
+      broadcastDetectedMedia(ctx, tabId);
       updateBadgeForTab(ctx, tabId);
     }
 

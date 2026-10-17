@@ -1,6 +1,9 @@
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { MessageResponse } from '@/entities/message/types';
+import { dataUrlToArrayBuffer } from '@/shared/lib/base64';
+
+export { dataUrlToArrayBuffer };
 
 interface FetchMediaUrlResponse {
   readonly url: string;
@@ -29,28 +32,4 @@ export async function fetchMediaAsArrayBuffer(url: string): Promise<ArrayBuffer>
     if (!res?.success || !res.data?.url) throw new Error(`Could not fetch media: ${url}`);
     return dataUrlToArrayBuffer(res.data.url);
   }
-}
-
-/** Decode a data URL into an ArrayBuffer. */
-export function dataUrlToArrayBuffer(dataUrl: string): ArrayBuffer {
-  const comma = dataUrl.indexOf(',');
-  if (comma === -1) throw new Error('Invalid data URL');
-
-  const meta = dataUrl.slice(0, comma);
-  const body = dataUrl.slice(comma + 1);
-  const isBase64 = meta.includes(';base64');
-
-  if (isBase64) {
-    const binary = atob(body);
-    const len = binary.length;
-    const buf = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      buf[i] = binary.charCodeAt(i);
-    }
-    return buf.buffer;
-  }
-
-  const decoded = decodeURIComponent(body);
-  const encoder = new TextEncoder();
-  return encoder.encode(decoded).buffer;
 }

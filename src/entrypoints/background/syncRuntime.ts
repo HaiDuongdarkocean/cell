@@ -33,10 +33,8 @@ import { createGoogleDriveStorageProvider } from '@/features/sync/adapters/googl
 import type { StorageProvider } from '@/features/sync/ports/storageProvider';
 import { scopeForTarget, targetOf } from '@/features/sync/domain/scope';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import {
-  queryTabs,
-  sendMessageToAllFramesInTab,
-} from '@/shared/lib/chrome-apis/tabs';
+import { sendMessageToAllTabs } from './helpers/broadcast';
+import { sleep } from '@/shared/lib/async';
 import { createSrsLocalSource } from '@/features/srs/sync/srsLocalSource';
 import type { SrsDataClass } from '@/features/srs/sync/srsLocalSource';
 import { createReaderLocalSource } from '@/features/reader/sync/readerLocalSource';
@@ -227,23 +225,7 @@ export async function broadcastApplied(payload: SyncAppliedPayload): Promise<voi
     clearDictionaryProbeCache();
   }
   runtimeDeps.broadcast('SYNC_DATA_APPLIED', payload);
-  try {
-    const tabs = await queryTabs({});
-    await Promise.allSettled(
-      tabs
-        .filter((tab) => tab.id !== undefined)
-        .map((tab) =>
-          sendMessageToAllFramesInTab(tab.id!, {
-            type: MESSAGE_TYPES.SYNC_DATA_APPLIED,
-            payload,
-          }),
-        ),
-    );
-  } catch (error) {
-    logger.warn('sync: applied-data tab fan-out failed', {
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
+  await sendMessageToAllTabs({ type: MESSAGE_TYPES.SYNC_DATA_APPLIED, payload });
 }
 
 async function persistClockWall(built: BuiltRuntime): Promise<void> {
@@ -333,7 +315,7 @@ async function withServiceLock<T>(
       cycleId,
     );
     if (lock === null) {
-      await new Promise((resolve) => setTimeout(resolve, SERVICE_LOCK_RETRY_MS));
+      await sleep(SERVICE_LOCK_RETRY_MS);
     }
   }
   if (lock === null) {

@@ -10,16 +10,7 @@ import { t } from '@/shared/i18n';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse, FetchMediaUrlResponse } from '@/entities/message/types';
 import { FetchMediaUrlPayloadSchema } from '@/entities/message/dictionarySchemas';
-
-/** Convert an ArrayBuffer to a base64 string. */
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]!);
-  }
-  return btoa(binary);
-}
+import { bytesToDataUrl } from '@/shared/lib/base64';
 
 /** Register the FETCH_MEDIA_URL message handler. */
 export function registerFetchMediaUrlHandlers(ctx: BackgroundContext): void {
@@ -43,8 +34,7 @@ export function registerFetchMediaUrlHandlers(ctx: BackgroundContext): void {
         return { success: false, error: t('media.error.empty') };
       }
       const mimeType = response.headers.get('content-type') ?? (kind === 'image' ? 'image/png' : 'audio/mpeg');
-      const base64 = arrayBufferToBase64(arrayBuffer);
-      const dataUrl = `data:${mimeType};base64,${base64}`;
+      const dataUrl = bytesToDataUrl(arrayBuffer, mimeType);
       return { success: true, data: { url: dataUrl } };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);

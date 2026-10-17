@@ -20,6 +20,7 @@ import { t } from '@/shared/i18n';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import { JobDuplicateError, type JobRegistry } from '@/features/jobs/logic/jobRegistry';
+import { decodeBase64ToArrayBuffer } from '@/shared/lib/base64';
 import { getJobRegistry, whenJobsReady } from './jobs';
 import { broadcastDictionaryChanged } from './dictionaryBroadcast';
 import type { Job } from '@/entities/job/types';
@@ -145,17 +146,8 @@ function toError(err: unknown): MessageResponse<never> {
   return { success: false, error: err instanceof Error ? err.message : String(err) };
 }
 
-function base64ToBytes(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
-
-const nativeFromBase64 = (Uint8Array as unknown as { fromBase64?: (data: string) => Uint8Array }).fromBase64;
-
 function decodeChunk(data: string): Uint8Array {
-  return nativeFromBase64 !== undefined ? nativeFromBase64(data) : base64ToBytes(data);
+  return new Uint8Array(decodeBase64ToArrayBuffer(data));
 }
 
 function drainGunzip(pending: PendingImport): void {

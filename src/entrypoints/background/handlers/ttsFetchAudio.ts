@@ -17,6 +17,7 @@ import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import type { TtsFetchAudioResponse } from '@/entities/dictionary';
 import { TtsFetchAudioPayloadSchema } from '@/entities/message/dictionarySchemas';
+import { bytesToDataUrl } from '@/shared/lib/base64';
 
 /** Google Translate unofficial TTS endpoint. */
 const GOOGLE_TTS_ENDPOINT = 'https://translate.google.com/translate_tts';
@@ -95,16 +96,6 @@ function buildTtsUrl(text: string, langCode: string): string {
   return `${GOOGLE_TTS_ENDPOINT}?${params.toString()}`;
 }
 
-/** Convert an ArrayBuffer to a base64 string. */
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]!);
-  }
-  return btoa(binary);
-}
-
 /** Register the TTS_FETCH_AUDIO message handler. */
 export function registerTtsFetchAudioHandlers(ctx: BackgroundContext): void {
   ctx.on(MESSAGE_TYPES.TTS_FETCH_AUDIO, async (request): Promise<MessageResponse<TtsFetchAudioResponse>> => {
@@ -131,8 +122,7 @@ export function registerTtsFetchAudioHandlers(ctx: BackgroundContext): void {
       if (arrayBuffer.byteLength === 0) {
         return { success: false, error: t('tts.error.emptyAudio') };
       }
-      const base64 = arrayBufferToBase64(arrayBuffer);
-      const dataUrl = `data:audio/mpeg;base64,${base64}`;
+      const dataUrl = bytesToDataUrl(arrayBuffer, 'audio/mpeg');
       return { success: true, data: { url: dataUrl } };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);

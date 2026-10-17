@@ -31,6 +31,7 @@ import {
 } from '@/features/pronunciation/repositories/lingvoDslIndexRepository';
 import { getFileHandle } from '@/shared/lib/storage/localFileHandleStorage';
 import { getJobRegistry, whenJobsReady } from './jobs';
+import { openExtensionTab } from '../helpers/broadcast';
 import { DEFAULT_PRONUNCIATION_SETTINGS } from '@/shared/config/config';
 
 let cachedProvider: { key: string; provider: LingvoDslAudioProvider } | null = null;
@@ -181,12 +182,10 @@ export function registerLocalAudioHandlers(ctx: BackgroundContext): void {
   });
 
   ctx.on(MESSAGE_TYPES.LOCAL_AUDIO_OPEN_RECONNECT, async (): Promise<MessageResponse<{ tabId: number }>> => {
-    const tab = await chrome.tabs.create({
-      url: chrome.runtime.getURL('src/entrypoints/popup/index.html?settings=1'),
-    });
-    if (tab.id === undefined) {
+    const tabId = await openExtensionTab('src/entrypoints/popup/index.html', { settings: '1' });
+    if (tabId === undefined) {
       return { success: false, error: 'Failed to create tab' };
     }
-    return { success: true, data: { tabId: tab.id } };
+    return { success: true, data: { tabId } };
   });
 }

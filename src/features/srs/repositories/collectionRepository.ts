@@ -4,6 +4,7 @@ import { captureChange, ensureSyncRuntime, isCaptureEnabled, readRecordMeta } fr
 import { SRS_STORES, SRS_INDEXES } from './srsDatabase';
 import { withReadonlyStore, withStore, getById, putRecord, deleteRecord, getByIndex } from './srsRepositoryHelpers';
 import { collectionScope, announceStudyConfig } from './srsSyncScope';
+import { idbRequest } from '@/shared/lib/storage/idb';
 
 const WRITE_STORES = [SRS_STORES.COLLECTIONS, SRS_STORES.SYNC_OUTBOX, SRS_STORES.SYNC_META];
 
@@ -65,11 +66,7 @@ export async function getCollectionByLanguageProfileId(
 
 export async function getAllCollections(): Promise<readonly SrsCollection[]> {
   return withReadonlyStore(SRS_STORES.COLLECTIONS, async (store) => {
-    const request = store.getAll();
-    const records = await new Promise<SrsCollection[]>((resolve, reject) => {
-      request.onsuccess = () => resolve(request.result as SrsCollection[]);
-      request.onerror = () => reject(request.error);
-    });
+    const records = await idbRequest(store.getAll());
     return Object.freeze(records.map((r) => Object.freeze(r))) as unknown as readonly SrsCollection[];
   });
 }

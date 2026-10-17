@@ -5,6 +5,7 @@ import { captureChange, ensureSyncRuntime, isCaptureEnabled, readRecordMeta } fr
 import { SRS_STORES, SRS_INDEXES } from './srsDatabase';
 import { withReadonlyStore, withStore, getById, putRecord, deleteRecord, getAllByIndex } from './srsRepositoryHelpers';
 import { scopeOfCollection } from './srsSyncScope';
+import { idbRequest } from '@/shared/lib/storage/idb';
 
 const WRITE_STORES = [SRS_STORES.NOTETYPES, SRS_STORES.COLLECTIONS, SRS_STORES.SYNC_OUTBOX, SRS_STORES.SYNC_META];
 
@@ -85,11 +86,7 @@ export async function getNotetypesByIds(ids: readonly string[]): Promise<SrsNote
 
 export async function getAllNotetypes(): Promise<readonly SrsNotetype[]> {
   return withReadonlyStore(SRS_STORES.NOTETYPES, async (store) => {
-    const request = store.getAll();
-    const records = await new Promise<SrsNotetype[]>((resolve, reject) => {
-      request.onsuccess = () => resolve(request.result as SrsNotetype[]);
-      request.onerror = () => reject(request.error);
-    });
+    const records = await idbRequest(store.getAll());
     return Object.freeze(records.map((r) => Object.freeze(r))) as unknown as readonly SrsNotetype[];
   });
 }

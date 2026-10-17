@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { addHistoryEntry } from '@/features/local-player/services/mediaLibraryRepository';
 import { accumulateDelta, FLUSH_INTERVAL_MS } from '@/features/local-player/logic/immersionClock';
+import { serialQueue } from '@/shared/lib/async';
 
 interface Segment {
   id: string;
@@ -28,7 +29,7 @@ export function useImmersionSession(
     if (!video || !videoId) return;
 
     let segment: Segment | null = null;
-    let chain: Promise<void> = Promise.resolve();
+    const enqueue = serialQueue();
 
     const flush = (final: boolean): void => {
       const seg = segment;
@@ -44,12 +45,10 @@ export function useImmersionSession(
         watchDurationMs: Math.round(value),
         positionMs: video.currentTime * 1000,
       };
-      chain = chain
-        .then(() => addHistoryEntry(record))
-        .then(() => {
-          seg.flushedAcc = Math.max(seg.flushedAcc, value);
-        })
-        .catch(() => {});
+      void enqueue(async () => {
+        await addHistoryEntry(record);
+        seg.flushedAcc = Math.max(seg.flushedAcc, value);
+      }).catch(() => {});
     };
 
     const closeSegment = (): void => {

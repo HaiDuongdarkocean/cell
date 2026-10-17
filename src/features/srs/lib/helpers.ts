@@ -1,4 +1,5 @@
 import type { SrsFieldValue, SrsNotetype } from '@/entities/srs/types';
+import { newId } from '@/shared/lib/id';
 
 export const COMPONENT_TYPES: readonly ('meaning' | 'sound' | 'spelling')[] = [
   'sound',
@@ -85,14 +86,7 @@ export function isDataUrl(s: string): boolean {
  * Generate a unique id. Uses `crypto.randomUUID` when available, otherwise a
  * time + random fallback suitable for tests and jsdom.
  */
-export function generateId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  const time = Date.now().toString(36);
-  const random = Math.random().toString(36).slice(2);
-  return `${time}-${random}`;
-}
+export const generateId = newId;
 
 export interface DictionaryToSrsFieldsInput {
   readonly term: string;

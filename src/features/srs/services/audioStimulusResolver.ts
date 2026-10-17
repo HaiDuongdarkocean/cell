@@ -6,21 +6,17 @@ import {
   fetchAndCacheWordAudio,
   fetchAndCacheSentenceAudio,
 } from './audioAssetCache';
+import { resolveOrStore } from './quotaManager';
+import { createBlobUrl, revokeBlobUrl } from '@/shared/lib/blobUrl';
 
 /** Create a blob URL for an audio asset. Caller must revoke when done. */
 export function createAudioBlobUrl(asset: SrsAudioAsset): string {
-  const blob = new Blob([asset.bytes], { type: asset.mimeType });
-  if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
-    return URL.createObjectURL(blob);
-  }
-  return `data:${asset.mimeType};base64,${btoa(String.fromCharCode(...new Uint8Array(asset.bytes)))}`;
+  return createBlobUrl(asset.bytes, asset.mimeType);
 }
 
 /** Revoke a blob URL returned by `createAudioBlobUrl`. */
 export function revokeAudioBlobUrl(url: string): void {
-  if (typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
-    URL.revokeObjectURL(url);
-  }
+  revokeBlobUrl(url);
 }
 
 /** Resolve or reuse cached word audio for a note field. */
@@ -31,9 +27,10 @@ export async function resolveWordAudio(
   langCode: string,
   settings: PronunciationSettings,
 ): Promise<SrsAudioAsset | undefined> {
-  const cached = await getCachedAudioAsset(noteId, fieldId);
-  if (cached) return cached;
-  return fetchAndCacheWordAudio(noteId, fieldId, term, langCode, settings);
+  return resolveOrStore(
+    () => getCachedAudioAsset(noteId, fieldId),
+    () => fetchAndCacheWordAudio(noteId, fieldId, term, langCode, settings),
+  );
 }
 
 /** Resolve or reuse cached sentence audio for a note field. */
@@ -43,9 +40,10 @@ export async function resolveSentenceAudio(
   text: string,
   langCode: string,
 ): Promise<SrsAudioAsset | undefined> {
-  const cached = await getCachedAudioAsset(noteId, fieldId);
-  if (cached) return cached;
-  return fetchAndCacheSentenceAudio(noteId, fieldId, text, langCode);
+  return resolveOrStore(
+    () => getCachedAudioAsset(noteId, fieldId),
+    () => fetchAndCacheSentenceAudio(noteId, fieldId, text, langCode),
+  );
 }
 
 /**

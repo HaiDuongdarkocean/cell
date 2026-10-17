@@ -19,7 +19,7 @@ import { translateSentence } from '@/features/cardCreator/media/translation';
 import { fetchMediaList } from '@/features/cardCreator/state/prefillMerge';
 import { mediaUrlKeyMap, type MediaListKind } from '@/features/cardCreator/state/mediaListKinds';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
-import { getActiveProfileSettings } from '@/entities/settings/lib/profileResolution';
+import { getActiveProfileSettings, resolveResourceLangCode } from '@/entities/settings/lib/profileResolution';
 import type { CardCreatorPrefill } from '@/features/cardCreator/types';
 import type { SrsField } from '@/entities/srs/types';
 import styles from './SrsEditCardPanel.module.css';
@@ -243,9 +243,10 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
 
   async function resolveLangs(): Promise<{ target: string; native: string }> {
     if (!langsRef.current) {
-      const profile = getActiveProfileSettings(await loadSettings());
+      const settings = await loadSettings();
+      const profile = getActiveProfileSettings(settings);
       langsRef.current = {
-        target: profile?.resourceLangCode ?? 'en',
+        target: resolveResourceLangCode(settings, 'en'),
         native: profile?.native ?? 'en',
       };
     }

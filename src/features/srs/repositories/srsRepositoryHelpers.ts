@@ -1,30 +1,19 @@
 import { getSrsDB } from './srsDatabase';
+import { idbRequest, txDone } from '@/shared/lib/storage/idb';
 
 /** Read a single record by primary key. */
 export function getById<T>(store: IDBObjectStore, id: string): Promise<T | undefined> {
-  return new Promise((resolve, reject) => {
-    const request = store.get(id);
-    request.onsuccess = () => resolve(request.result as T | undefined);
-    request.onerror = () => reject(request.error);
-  });
+  return idbRequest(store.get(id)).then((result) => result as T | undefined);
 }
 
 /** Write a record (add or update) and return the written value. */
 export function putRecord<T>(store: IDBObjectStore, value: T): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const request = store.put(value);
-    request.onsuccess = () => resolve(value);
-    request.onerror = () => reject(request.error);
-  });
+  return idbRequest(store.put(value)).then(() => value);
 }
 
 /** Delete a record by primary key. */
 export function deleteRecord(store: IDBObjectStore, id: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const request = store.delete(id);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
+  return idbRequest(store.delete(id)).then(() => undefined);
 }
 
 /** Count records matching an index key or range. */
@@ -33,12 +22,7 @@ export function countByIndex(
   indexName: string,
   key: IDBValidKey | IDBKeyRange,
 ): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const index = store.index(indexName);
-    const request = index.count(key);
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
+  return idbRequest(store.index(indexName).count(key));
 }
 
 /** Get the first record matching an index key. */
@@ -47,12 +31,9 @@ export function getByIndex<T>(
   indexName: string,
   key: IDBValidKey,
 ): Promise<T | undefined> {
-  return new Promise((resolve, reject) => {
-    const index = store.index(indexName);
-    const request = index.get(key);
-    request.onsuccess = () => resolve(request.result as T | undefined);
-    request.onerror = () => reject(request.error);
-  });
+  return idbRequest(store.index(indexName).get(key)).then(
+    (result) => result as T | undefined,
+  );
 }
 
 /** Collect all records from an index in a range, up to maxResults. */
@@ -62,14 +43,11 @@ export function getAllByIndex<T>(
   key?: IDBValidKey | IDBKeyRange | null,
   maxResults?: number,
 ): Promise<T[]> {
-  return new Promise((resolve, reject) => {
-    const index = store.index(indexName);
-    const request: IDBRequest = key !== undefined && key !== null
-      ? index.getAll(key, maxResults)
-      : index.getAll(maxResults);
-    request.onsuccess = () => resolve(request.result as T[]);
-    request.onerror = () => reject(request.error);
-  });
+  const index = store.index(indexName);
+  const request: IDBRequest = key !== undefined && key !== null
+    ? index.getAll(key, maxResults)
+    : index.getAll(maxResults);
+  return idbRequest(request).then((result) => result as T[]);
 }
 
 /** Open a readwrite transaction over the given stores; fn receives the first store plus the tx. */
@@ -82,11 +60,7 @@ export async function withStore<T>(
   const tx = db.transaction(names, 'readwrite');
   const store = tx.objectStore(names[0]!);
   const result = await fn(store, tx);
-  await new Promise<void>((resolve, reject) => {
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-  });
+  await txDone(tx);
   return result;
 }
 
@@ -99,10 +73,6 @@ export async function withReadonlyStore<T>(
   const tx = db.transaction(storeName, 'readonly');
   const store = tx.objectStore(storeName);
   const result = await fn(store);
-  await new Promise<void>((resolve, reject) => {
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-  });
+  await txDone(tx);
   return result;
 }

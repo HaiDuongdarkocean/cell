@@ -29,15 +29,13 @@ import {
   getActiveTabId,
   updateBadgeForTab,
   pushAutoLoadSubtitles,
-  saveSessionAutoDownloadedTabs,
-  clearSessionMedia,
 } from '../helpers';
+import { broadcastDetectedMedia, clearTabState } from '../helpers/broadcast';
 import type {
   MessageResponse,
   AutoLoadSubtitlesPayload,
 } from '@/entities/message';
 import { DetectedSubtitlesPayloadSchema } from '@/entities/message/schema';
-import type { DetectedMediaUpdatePayload } from '@/entities/message';
 import type { DetectedSubtitle } from '@/entities/media';
 
 /** Register the unified DETECTED_SUBTITLES handler (ADR-028). */
@@ -105,20 +103,8 @@ export function registerDetectionDispatchHandlers(
         // the overlay does not persist into the new video. Broadcast empty
         // media update + send AUTO_LOAD_SUBTITLES with null target/native so
         // the content-script overlay clears its cues. (Clone ADR-020 logic.)
-        ctx.networkInterceptor.clearTab(tabId);
-        ctx.autoDownloadedTabs.delete(tabId);
-        saveSessionAutoDownloadedTabs(ctx);
-        clearSessionMedia(ctx, tabId);
-        ctx.lastCuesByTab.delete(tabId);
-        ctx.messageBus.broadcast({
-          type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE,
-          payload: {
-            videos: ctx.networkInterceptor.getVideos(tabId),
-            subtitles: [],
-            tabId,
-          } satisfies DetectedMediaUpdatePayload,
-        });
-        updateBadgeForTab(ctx, tabId);
+        clearTabState(ctx, tabId);
+        broadcastDetectedMedia(ctx, tabId);
         await sendTabMessage(tabId, {
           type: MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
           payload: {
@@ -137,14 +123,7 @@ export function registerDetectionDispatchHandlers(
 
       if (added > 0) {
         const allSubtitles = ctx.networkInterceptor.getSubtitles(tabId);
-        ctx.messageBus.broadcast({
-          type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE,
-          payload: {
-            videos: ctx.networkInterceptor.getVideos(tabId),
-            subtitles: allSubtitles,
-            tabId,
-          } satisfies DetectedMediaUpdatePayload,
-        });
+        broadcastDetectedMedia(ctx, tabId);
         updateBadgeForTab(ctx, tabId);
         void pushAutoLoadSubtitles(ctx, tabId, allSubtitles, undefined, {
           pushNullWhenNoMatch: true,

@@ -17,23 +17,17 @@ import {
   removeQueueItem,
 } from '@/features/miningQueue/services/miningQueueRepository';
 import type { MiningQueueInput } from '@/entities/miningQueue';
-import { queryTabs, sendMessageToAllFramesInTab } from '@/shared/lib/chrome-apis/tabs';
+import { broadcastToAllContexts } from '../helpers/broadcast';
 
 function errMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
 async function broadcastQueueChanged(ctx: BackgroundContext): Promise<void> {
-  const message = { type: MESSAGE_TYPES.QUEUE_CHANGED, payload: { tabId: -1 } };
-  const tabs = await queryTabs({});
-  await Promise.allSettled(
-    tabs
-      .filter((tab) => tab.id !== undefined)
-      .map((tab) => sendMessageToAllFramesInTab(tab.id!, message)),
-  );
-  // Extension pages (local-player etc.) are not tabs' content frames —
-  // runtime broadcast reaches them.
-  ctx.messageBus.broadcast(message);
+  await broadcastToAllContexts(ctx, {
+    type: MESSAGE_TYPES.QUEUE_CHANGED,
+    payload: { tabId: -1 },
+  });
 }
 
 export function registerMiningQueueHandlers(ctx: BackgroundContext): void {

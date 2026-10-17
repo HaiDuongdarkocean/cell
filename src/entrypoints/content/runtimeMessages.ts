@@ -1,4 +1,5 @@
 import { waitForCachedSubtitleBody } from '@/features/subtitle/logic/subtitleResponseCache';
+import { fetchWithTimeout } from '@/shared/lib/fetchWithTimeout';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { messagePayload } from '@/entities/message/payload';
 import { isTihokaDebug } from './debugLog';
@@ -63,13 +64,7 @@ export function installRuntimeMessageListener(): void {
             sendResponse({ success: true, content: cached });
             return;
           }
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 15_000);
-          const response = await fetch(url, {
-            credentials: 'same-origin',
-            signal: controller.signal,
-          });
-          clearTimeout(timeoutId);
+          const response = await fetchWithTimeout(url, { credentials: 'same-origin' }, 15_000);
           if (!response.ok) {
             sendResponse({ success: false, error: `HTTP ${response.status}` });
             return;

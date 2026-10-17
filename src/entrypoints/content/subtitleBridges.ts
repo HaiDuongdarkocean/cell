@@ -5,22 +5,6 @@ import { subtitleSignalSchema } from '@/features/detection/subtitleDiscovery/sch
 import { isTihokaDebug } from './debugLog';
 import { isResolvableHttpOrigin } from '@/shared/lib/dom/frameOrigin';
 
-// Dedup state for the MAIN-world re-post handshakes (ADR-020/028/029). The
-// MAIN world re-posts the same video's tracks when it receives the readiness
-// announcement, so only the first post per ID is relayed to the background.
-let lastRelayedVideoId: string | undefined;
-let lastRelayedTvid: string | undefined;
-let lastRelayedMovieId: string | undefined;
-
-export function getLastRelayedVideoId(): string | undefined {
-  return lastRelayedVideoId;
-}
-
-// Firefox's non-persistent background page drops the first post-resume
-// message ("Could not establish connection") — the wake it triggers races
-// listener re-registration. These relays are one-shot with no outer retry,
-// so retry here; onDropped resets the dedup mark so the next MAIN-world
-// repost can try again instead of being swallowed for the page lifetime.
 function relayToBackground(
   message: { type: string; payload: Record<string, unknown> },
   onDropped: () => void,
@@ -36,6 +20,45 @@ function relayToBackground(
     });
   };
   attempt(2);
+}
+
+// Dedup state for the MAIN-world re-post handshakes (ADR-020/028/029). The
+// MAIN world re-posts the same video's tracks when it receives the readiness
+// announcement, so only the first post per ID is relayed to the background.
+// onDropped resets the dedup mark so the next MAIN-world repost can try again
+// instead of being swallowed for the page lifetime.
+function createTrackRelayer(debugKey: string): {
+  relay(id: string, extra: Record<string, unknown>): void;
+  lastRelayed(): string | undefined;
+} {
+  let lastRelayed: string | undefined;
+  return {
+    lastRelayed: () => lastRelayed,
+    relay(id, extra) {
+      if (id !== '' && lastRelayed === id) return;
+      lastRelayed = id;
+      if (isTihokaDebug()) {
+        (window as unknown as Record<string, unknown>)[debugKey] = id;
+      }
+      relayToBackground(
+        {
+          type: MESSAGE_TYPES.DETECTED_SUBTITLES,
+          payload: { tabId: undefined, ...extra },
+        },
+        () => {
+          if (lastRelayed === id) lastRelayed = undefined;
+        },
+      );
+    },
+  };
+}
+
+const ytRelayer = createTrackRelayer('__YT_LAST_RELAYED_VIDEO_ID');
+const iqRelayer = createTrackRelayer('__IQ_LAST_RELAYED_TVID');
+const nfRelayer = createTrackRelayer('__NF_LAST_RELAYED_MOVIE_ID');
+
+export function getLastRelayedVideoId(): string | undefined {
+  return ytRelayer.lastRelayed();
 }
 
 // ADR-020 race fix: notify the MAIN-world YouTube script that our message
@@ -143,24 +166,10 @@ export function installMainWorldBridge(): void {
       // Dedup by videoId: MAIN world re-posts on __YT_CS_READY handshake, so the
       // same videoId may arrive twice. Only relay once per videoId to avoid
       // duplicate auto-load (ADR-020 race fix).
-      if (videoId && lastRelayedVideoId === videoId) return;
-      lastRelayedVideoId = videoId;
-      if (isTihokaDebug()) {
-        (window as unknown as Record<string, unknown>).__YT_LAST_RELAYED_VIDEO_ID = videoId;
-      }
-      relayToBackground(
-        {
-          type: MESSAGE_TYPES.DETECTED_SUBTITLES,
-          payload: {
-            tabId: undefined,
-            tracks: (data as { tracks?: unknown[] }).tracks ?? [],
-            videoId,
-          },
-        },
-        () => {
-          if (lastRelayedVideoId === videoId) lastRelayedVideoId = undefined;
-        },
-      );
+      ytRelayer.relay(videoId, {
+        tracks: (data as { tracks?: unknown[] }).tracks ?? [],
+        videoId,
+      });
       return;
     }
     if (data?.type === '__YT_INNERTUBE_FALLBACK') {
@@ -187,26 +196,12 @@ export function installMainWorldBridge(): void {
       // so the same tvid may arrive twice. Only relay once per tvid to avoid duplicate
       // auto-load (ADR-028 race fix, clone ADR-020). iQIYI's `tvid` is the unique
       // video identifier; `vid` is a streaming session ID reused across videos.
-      if (tvid && lastRelayedTvid === tvid) return;
-      lastRelayedTvid = tvid;
-      if (isTihokaDebug()) {
-        (window as unknown as Record<string, unknown>).__IQ_LAST_RELAYED_TVID = tvid;
-      }
-      relayToBackground(
-        {
-          type: MESSAGE_TYPES.DETECTED_SUBTITLES,
-          payload: {
-            tabId: undefined,
-            tracks: (data as { tracks?: unknown[] }).tracks ?? [],
-            tvid,
-            source: 'iqiyi',
-            origin: (data as { origin?: string }).origin,
-          },
-        },
-        () => {
-          if (lastRelayedTvid === tvid) lastRelayedTvid = undefined;
-        },
-      );
+      iqRelayer.relay(tvid, {
+        tracks: (data as { tracks?: unknown[] }).tracks ?? [],
+        tvid,
+        source: 'iqiyi',
+        origin: (data as { origin?: string }).origin,
+      });
     }
     // === Netflix MAIN-world bridge (ADR-029) ===
     // netflix-main-world.iife.ts hooks JSON.parse and posts raw timedtexttracks.
@@ -217,25 +212,11 @@ export function installMainWorldBridge(): void {
       // Dedup by movieId (per-video ID): MAIN world re-posts on __NF_CS_READY handshake,
       // so the same movieId may arrive twice. Use string-based dedup (clone YouTube/iQIYI `?? ''`
       // pattern — NOT `?? 0` which is falsy and would re-post for movieId 0).
-      if (movieId !== '' && lastRelayedMovieId === movieId) return;
-      lastRelayedMovieId = movieId;
-      if (isTihokaDebug()) {
-        (window as unknown as Record<string, unknown>).__NF_LAST_RELAYED_MOVIE_ID = movieId;
-      }
-      relayToBackground(
-        {
-          type: MESSAGE_TYPES.DETECTED_SUBTITLES,
-          payload: {
-            tabId: undefined,
-            tracks: (data as { tracks?: unknown[] }).tracks ?? [],
-            movieId,
-            source: 'netflix',
-          },
-        },
-        () => {
-          if (lastRelayedMovieId === movieId) lastRelayedMovieId = undefined;
-        },
-      );
+      nfRelayer.relay(movieId, {
+        tracks: (data as { tracks?: unknown[] }).tracks ?? [],
+        movieId,
+        source: 'netflix',
+      });
     }
   });
 

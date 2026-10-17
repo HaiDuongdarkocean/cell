@@ -49,10 +49,7 @@ import {
   type TrashedWordEntry,
 } from '@/features/dictionary/services/wordTrashStore';
 import type { WordStatus } from '@/entities/dictionary';
-import {
-  queryTabs,
-  sendMessageToAllFramesInTab,
-} from '@/shared/lib/chrome-apis/tabs';
+import { sendMessageToAllTabs } from '../helpers/broadcast';
 import {
   isFirstStatusesGetForTab,
   requestRemoteCheck,
@@ -75,11 +72,9 @@ async function broadcastToOtherTabs(
   type: string,
   payload: Record<string, unknown>,
 ): Promise<void> {
-  const tabs = await queryTabs({});
-  const message = { type, payload: { tabId: sourceTabId, ...payload } };
-  const targets = tabs.filter((tab) => tab.id !== undefined && tab.id !== sourceTabId);
-  await Promise.allSettled(
-    targets.map((tab) => sendMessageToAllFramesInTab(tab.id!, message)),
+  await sendMessageToAllTabs(
+    { type, payload: { tabId: sourceTabId, ...payload } },
+    { excludeTabId: sourceTabId },
   );
 }
 

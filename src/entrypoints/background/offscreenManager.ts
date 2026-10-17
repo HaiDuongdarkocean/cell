@@ -19,6 +19,7 @@ import {
   dispatchOffscreenMessage,
 } from '@/shared/lib/chrome-apis';
 import type { MessageRequest } from '@/entities/message';
+import { sleep } from '@/shared/lib/async';
 
 /** URL of the offscreen document relative to the extension root. */
 const OFFSCREEN_DOCUMENT_URL = 'src/entrypoints/offscreen/ffmpeg.html';
@@ -308,10 +309,5 @@ export class OffscreenManager {
       this.idleCloseTimer = null;
     }
   }
-}
-
-/** Promise-based sleep helper. */
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 

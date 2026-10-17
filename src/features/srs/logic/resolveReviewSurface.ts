@@ -11,16 +11,8 @@ import type {
 import { SRS_INPUT_FIELD_ID } from '@/entities/srs/types';
 import { audioAssetId, escapeRegExp, imageAssetId, isDataUrl, mediaFieldValues } from '@/features/srs/lib/helpers';
 import { hasVariantMaterial } from '@/features/srs/lib/variantFront';
+import { createBlobUrl } from '@/shared/lib/blobUrl';
 import type { SrsFrontTemplate } from '@/entities/srs/types';
-
-function blobUrl(blob: Blob): string {
-  if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
-    return URL.createObjectURL(blob);
-  }
-  const bytes = new Uint8Array(blob as unknown as ArrayBuffer);
-  const b64 = btoa(String.fromCharCode(...bytes));
-  return `data:${(blob as unknown as { type?: string }).type ?? 'unknown'};base64,${b64}`;
-}
 
 /** Mask every case-insensitive occurrence of the target word in a sentence. */
 export function maskSentence(sentence: string, targetWord: string): string {
@@ -46,7 +38,7 @@ function resolveFieldValue(
     mediaFieldValues(value).forEach((v, i) => {
       const cached = audioCache.get(audioAssetId(note.id, fieldId, value.source, i));
       if (cached) {
-        urls.push(blobUrl(new Blob([cached.bytes], { type: cached.mimeType })));
+        urls.push(createBlobUrl(cached.bytes, cached.mimeType));
       } else if (isDataUrl(v) || /^https?:|^blob:/.test(v)) {
         urls.push(v);
       }
@@ -59,7 +51,7 @@ function resolveFieldValue(
     mediaFieldValues(value).forEach((v, i) => {
       const cached = imageCache.get(imageAssetId(note.id, fieldId, i));
       if (cached) {
-        urls.push(blobUrl(new Blob([cached.bytes], { type: cached.mimeType })));
+        urls.push(createBlobUrl(cached.bytes, cached.mimeType));
       } else if (isDataUrl(v) || /^https?:|^blob:/.test(v)) {
         urls.push(v);
       }

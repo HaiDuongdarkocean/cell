@@ -8,6 +8,7 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { t } from '@/shared/i18n';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { isTihokaDebug } from '@/shared/lib/TihokaDebug';
+import { encodeBase64 } from '@/shared/lib/base64';
 import type { MessageResponse } from '@/entities/message';
 import { OCR_DEFAULT_ENGINE_KEY } from '@/features/ocr/engine/types';
 import type { OcrBackend, OcrLanguageMode, ImageSource, OcrResult } from '@/features/ocr/engine/types';
@@ -74,12 +75,7 @@ export class OcrController {
       const bytes = image.data instanceof Uint8ClampedArray
         ? new Uint8Array(image.data.buffer)
         : new Uint8Array(image.data as number[]);
-      const CHUNK = 0x8000;
-      let binary = '';
-      for (let i = 0; i < bytes.length; i += CHUNK) {
-        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK) as unknown as number[]);
-      }
-      const base64 = btoa(binary);
+      const base64 = encodeBase64(bytes);
       const tSerialize = performance.now();
       const response = await Promise.race([
         sendMessage<{ success: boolean; data?: { results: OcrResult[] }; error?: string; results?: OcrResult[] }>({

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import type { DetectedVideo, VideoQuality } from '@/entities/media';
 import { Card } from '@/shared/ui/Card';
 import { Center } from '@/shared/ui/Center';
@@ -6,7 +6,7 @@ import { Button, Flex, HStack, VStack, Select } from '@/shared/ui';
 import { Spinner } from '@/shared/ui/Spinner';
 import cardAnimations from '@/shared/ui/CardAnimations.module.css';
 import { Icon } from '@/shared/ui/Icon';
-import { COPY_FEEDBACK_DURATION_MS } from '@/shared/config/config';
+import { useCopyFlash } from '@/entrypoints/popup/hooks/useCopyFlash';
 import { t } from '@/shared/i18n';
 import { formatFileSizeOrUnknown } from '@/entrypoints/popup/utils/format';
 import styles from './VideoCard.module.css';
@@ -34,14 +34,7 @@ export function VideoCard({
   const selectedVariant = video.variants[0];
 
   const [urlExpanded, setUrlExpanded] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
-    };
-  }, []);
+  const { copied, copy } = useCopyFlash();
 
   const handleCardClick = (): void => {
     if (downloading) return;
@@ -66,20 +59,9 @@ export function VideoCard({
     setUrlExpanded((prev) => !prev);
   };
 
-  const handleUrlClick = async (e: React.MouseEvent): Promise<void> => {
+  const handleUrlClick = (e: React.MouseEvent): void => {
     e.stopPropagation();
-    try {
-      await navigator.clipboard.writeText(video.url);
-      setCopied(true);
-      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
-      copiedTimerRef.current = setTimeout(() => setCopied(false), COPY_FEEDBACK_DURATION_MS);
-    } catch {
-      const range = document.createRange();
-      const target = e.target as HTMLElement;
-      range.selectNode(target);
-      window.getSelection()?.removeAllRanges();
-      window.getSelection()?.addRange(range);
-    }
+    void copy(video.url, e.target as HTMLElement);
   };
 
   return (

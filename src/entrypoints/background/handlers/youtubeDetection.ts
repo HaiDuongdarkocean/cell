@@ -25,9 +25,9 @@ import {
   updateBadgeForTab,
   pushAutoLoadSubtitles,
 } from '../helpers';
+import { broadcastDetectedMedia } from '../helpers/broadcast';
 import type {
   MessageResponse,
-  DetectedMediaUpdatePayload,
 } from '@/entities/message';
 import { InnertubeFallbackPayloadSchema } from '@/entities/message/schema';
 
@@ -73,14 +73,7 @@ export function registerYouTubeFallbackHandlers(
       const added = ctx.networkInterceptor.addDetectedSubtitles(subtitles);
       if (added > 0) {
         const allSubtitles = ctx.networkInterceptor.getSubtitles(tabId);
-        ctx.messageBus.broadcast({
-          type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE,
-          payload: {
-            videos: ctx.networkInterceptor.getVideos(tabId),
-            subtitles: allSubtitles,
-            tabId,
-          } satisfies DetectedMediaUpdatePayload,
-        });
+        broadcastDetectedMedia(ctx, tabId);
         updateBadgeForTab(ctx, tabId);
         void pushAutoLoadSubtitles(ctx, tabId, allSubtitles, undefined, {
           pushNullWhenNoMatch: true,

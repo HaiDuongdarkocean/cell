@@ -1,16 +1,12 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { usePopupStore } from '@/entrypoints/popup/store/popupStore';
-import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveContentTab';
-import { sendMessage, onMessage, removeOnMessageListener } from '@/shared/lib/chrome-apis';
-import { messagePayload } from '@/entities/message/payload';
 import type { DownloadItem } from '@/entities/media';
 import type {
-  MessageRequest,
-  MessageResponse,
   DownloadProgressUpdatePayload,
   DownloadListResponse,
 } from '@/entities/message';
 import { t } from '@/shared/i18n';
+import { useActiveTabSubscription } from './useActiveTabSubscription';
 
 /**
  * Subscribes to download progress updates from the background script, scoped
@@ -35,125 +31,70 @@ export function useDownloadProgress(): {
   const addDownload = usePopupStore((state) => state.addDownload);
   const setDownloads = usePopupStore((state) => state.setDownloads);
 
-  // Keep the active tabId in a ref so the broadcast listener (created once)
-  // always reads the latest value without re-subscribing.
-  const tabIdRef = useRef<number | undefined>(undefined);
+  useActiveTabSubscription<DownloadProgressUpdatePayload, DownloadListResponse>({
+    updateType: 'DOWNLOAD_PROGRESS_UPDATE',
+    onUpdate: (payload) => {
+      const {
+        itemId,
+        status,
+        progress,
+        error,
+        fileSize,
+        downloadedBytes,
+        processedBytes,
+        conversionPhase,
+        workerCount,
+        usedWorkers,
+        currentSegment,
+        totalSegments,
+        downloadProgress,
+        convertProgress,
+      } = payload.progress;
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const listener = (
-      request: MessageRequest,
-      _sender: chrome.runtime.MessageSender,
-      _sendResponse: (response: MessageResponse) => void,
-    ): boolean => {
-      if (request.type === 'DOWNLOAD_PROGRESS_UPDATE') {
-        const payload = messagePayload<DownloadProgressUpdatePayload>(request, 'DOWNLOAD_PROGRESS_UPDATE');
-        // Only apply updates for the active tab; ignore other tabs.
-        if (payload && payload.tabId === tabIdRef.current) {
-          const {
-            itemId,
-            status,
-            progress,
-            error,
-            fileSize,
-            downloadedBytes,
-            processedBytes,
-            conversionPhase,
-            workerCount,
-            usedWorkers,
-            currentSegment,
-            totalSegments,
-            downloadProgress,
-            convertProgress,
-          } = payload.progress;
-
-          const patch = {
-            status,
-            progress,
-            ...(error !== undefined ? { error } : {}),
-            ...(fileSize !== undefined ? { fileSize } : {}),
-            ...(downloadedBytes !== undefined ? { downloadedBytes } : {}),
-            ...(processedBytes !== undefined ? { processedBytes } : {}),
-            ...(conversionPhase !== undefined ? { conversionPhase } : {}),
-            ...(workerCount !== undefined ? { workerCount } : {}),
-            ...(usedWorkers !== undefined ? { usedWorkers } : {}),
-            ...(currentSegment !== undefined ? { currentSegment } : {}),
-            ...(totalSegments !== undefined ? { totalSegments } : {}),
-            ...(downloadProgress !== undefined ? { downloadProgress } : {}),
-            ...(convertProgress !== undefined ? { convertProgress } : {}),
-          };
-
-          // If this download isn't in the store yet, add a stub entry so the
-          // popup can display progress/error state. This handles cases where
-          // the download was started by DOWNLOAD_ALL or the addDownload call
-          // from the popup hasn't been processed yet.
-          const exists = usePopupStore
-            .getState()
-            .downloads.some((d) => d.id === itemId);
-          if (!exists) {
-            addDownload({
-              id: itemId,
-              mediaType: 'subtitle',
-              url: '',
-              title: t('downloads.item.fallbackTitle'),
-              tabId: tabIdRef.current ?? 0,
-              startedAt: Date.now(),
-              ...patch,
-            });
-          } else {
-            updateDownload(itemId, patch);
-          }
-        }
-      }
-      return false;
-    };
-
-    onMessage(listener as unknown as Parameters<typeof onMessage>[0]);
-
-    // Query the active *content* tab (skips chrome-extension app-windows,
-    // e.g. Edge's dictionary sidebar — see getActiveContentTab), then fetch
-    // existing downloads for that tab so they persist across popup reopens.
-    const init = async (): Promise<void> => {
-      let activeTabId: number | undefined;
-      try {
-        activeTabId = await getActiveContentTabId();
-      } catch {
-        // leave activeTabId undefined
-      }
-
-      if (cancelled) return;
-      tabIdRef.current = activeTabId;
-
-      if (activeTabId === undefined) {
-        return;
-      }
-
-      const request: MessageRequest = {
-        type: 'GET_DOWNLOAD_PROGRESS',
-        payload: { tabId: activeTabId },
+      const patch = {
+        status,
+        progress,
+        ...(error !== undefined ? { error } : {}),
+        ...(fileSize !== undefined ? { fileSize } : {}),
+        ...(downloadedBytes !== undefined ? { downloadedBytes } : {}),
+        ...(processedBytes !== undefined ? { processedBytes } : {}),
+        ...(conversionPhase !== undefined ? { conversionPhase } : {}),
+        ...(workerCount !== undefined ? { workerCount } : {}),
+        ...(usedWorkers !== undefined ? { usedWorkers } : {}),
+        ...(currentSegment !== undefined ? { currentSegment } : {}),
+        ...(totalSegments !== undefined ? { totalSegments } : {}),
+        ...(downloadProgress !== undefined ? { downloadProgress } : {}),
+        ...(convertProgress !== undefined ? { convertProgress } : {}),
       };
 
-      try {
-        const response = (await sendMessage(
-          request,
-        )) as MessageResponse<DownloadListResponse> | undefined;
-        if (cancelled) return;
-        if (response?.success && response.data?.downloads) {
-          setDownloads(response.data.downloads);
-        }
-      } catch {
-        // Service worker may be waking up; ignore — live updates will fill in.
+      // If this download isn't in the store yet, add a stub entry so the
+      // popup can display progress/error state. This handles cases where
+      // the download was started by DOWNLOAD_ALL or the addDownload call
+      // from the popup hasn't been processed yet.
+      const exists = usePopupStore
+        .getState()
+        .downloads.some((d) => d.id === itemId);
+      if (!exists) {
+        addDownload({
+          id: itemId,
+          mediaType: 'subtitle',
+          url: '',
+          title: t('downloads.item.fallbackTitle'),
+          tabId: payload.tabId ?? 0,
+          startedAt: Date.now(),
+          ...patch,
+        });
+      } else {
+        updateDownload(itemId, patch);
       }
-    };
-
-    void init();
-
-    return () => {
-      cancelled = true;
-      removeOnMessageListener(listener as unknown as Parameters<typeof removeOnMessageListener>[0]);
-    };
-  }, [updateDownload, addDownload, setDownloads]);
+    },
+    fetchType: 'GET_DOWNLOAD_PROGRESS',
+    onFetch: (data) => {
+      if (data.downloads) {
+        setDownloads(data.downloads);
+      }
+    },
+  });
 
   const totalProgress = useMemo(() => {
     if (downloads.length === 0) {

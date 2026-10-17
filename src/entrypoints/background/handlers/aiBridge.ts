@@ -30,11 +30,11 @@ import {
 } from '@/features/aiBridge/providers';
 import { createTab, getTab, queryTabs, reloadTab, sendTabMessage, updateTab } from '@/shared/lib/chrome-apis/tabs';
 import { updateWindow } from '@/shared/lib/chrome-apis/windows';
+import { sleep } from '@/shared/lib/async';
 
 const BRIDGE_READY_TIMEOUT_MS = 30_000;
 const COMPOSER_WAIT_MS = 15_000;
 const ATTEMPT_TIMEOUT_MS = 90_000;
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 interface BridgePing {
   ok?: boolean;

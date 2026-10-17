@@ -9,10 +9,9 @@ import type { SerializedManagerState, ManagerAction } from '@/features/subtitle/
 
 interface SheetRenderDeps {
   createElement: typeof import('react').createElement;
-  createRoot: typeof import('react-dom/client').createRoot;
+  mountReactShadow: typeof import('@/shared/lib/shadowRoot/mountReactShadow').mountReactShadow;
   HostManagerSheet: typeof import('@/features/subtitle/ui/HostManagerSheet').HostManagerSheet;
   ShadowThemeProvider: typeof import('@/features/theme/ui/ShadowThemeProvider').ShadowThemeProvider;
-  injectShadowCss: typeof import('@/shared/lib/shadowRoot/injectShadowCss').injectShadowCss;
   hostManagerSheetShadowCss: string[];
 }
 
@@ -28,34 +27,29 @@ function installHostManagerSheetOnce(): void {
   const loadDeps = (): Promise<SheetRenderDeps> =>
     (depsPromise ??= Promise.all([
       import('react'),
-      import('react-dom/client'),
+      import('@/shared/lib/shadowRoot/mountReactShadow'),
       import('@/features/subtitle/ui/HostManagerSheet'),
       import('@/features/theme/ui/ShadowThemeProvider'),
-      import('@/shared/lib/shadowRoot/injectShadowCss'),
       import('@/features/subtitle/ui/hostManagerSheetShadowCss'),
-    ]).then(([react, reactDom, sheet, theme, css, sheetCss]) => ({
+    ]).then(([react, mount, sheet, theme, sheetCss]) => ({
       createElement: react.createElement,
-      createRoot: reactDom.createRoot,
+      mountReactShadow: mount.mountReactShadow,
       HostManagerSheet: sheet.HostManagerSheet,
       ShadowThemeProvider: theme.ShadowThemeProvider,
-      injectShadowCss: css.injectShadowCss,
       hostManagerSheetShadowCss: sheetCss.hostManagerSheetShadowCss,
     })));
 
-  let hostSheetRoot: ReturnType<SheetRenderDeps['createRoot']> | null = null;
-  let hostSheetHost: HTMLDivElement | null = null;
-  let hostSheetInner: HTMLDivElement | null = null;
-  let sheetCssCleanup: (() => void) | null = null;
+  let sheetMount: ReturnType<SheetRenderDeps['mountReactShadow']> | null = null;
   let currentFrameSrc = '';
   let currentState: SerializedManagerState | null = null;
 
   function renderHostSheet(deps: SheetRenderDeps): void {
-    if (!hostSheetRoot || !currentState || !hostSheetInner) return;
+    if (!sheetMount || !currentState) return;
     const frameSrc = currentFrameSrc;
-    hostSheetRoot.render(
+    sheetMount.root.render(
       deps.createElement(
         deps.ShadowThemeProvider,
-        { container: hostSheetInner },
+        { container: sheetMount.rootEl },
         deps.createElement(deps.HostManagerSheet, {
           state: currentState,
           onAction: (action: ManagerAction, args: Record<string, unknown>) =>
@@ -66,42 +60,38 @@ function installHostManagerSheetOnce(): void {
     );
   }
 
+  function closeSheet(): void {
+    sheetMount?.unmount();
+    sheetMount = null;
+    currentFrameSrc = '';
+    currentState = null;
+  }
+
   setHostSheetCallbacks({
     onOpen: (state: SerializedManagerState, frameSrc: string): void => {
-      // Tear down any existing sheet before opening a new one.
-      if (hostSheetRoot) {
-        hostSheetRoot.unmount();
-        hostSheetRoot = null;
-      }
-      if (hostSheetHost) {
-        hostSheetHost.remove();
-        hostSheetHost = null;
-      }
-      if (sheetCssCleanup) {
-        sheetCssCleanup();
-        sheetCssCleanup = null;
-      }
+      closeSheet();
 
       currentFrameSrc = frameSrc;
       currentState = state;
 
-      hostSheetHost = document.createElement('div');
-      hostSheetHost.id = 'Tihoka-host-manager-sheet';
-      hostSheetHost.style.cssText =
-        'position:fixed;inset:0;pointer-events:auto;z-index:2147483647;';
-      document.body.appendChild(hostSheetHost);
-
       void loadDeps().then((deps) => {
-        if (!hostSheetHost || currentState !== state) return;
-        const shadow = hostSheetHost.shadowRoot ?? hostSheetHost.attachShadow({ mode: 'open' });
-        sheetCssCleanup = deps.injectShadowCss(shadow, { css: deps.hostManagerSheetShadowCss });
-
-        hostSheetInner = document.createElement('div');
-        hostSheetInner.style.display = 'contents';
-        shadow.appendChild(hostSheetInner);
-
-        hostSheetRoot = deps.createRoot(hostSheetInner);
-        renderHostSheet(deps);
+        if (currentState !== state) return;
+        const m = deps.mountReactShadow(
+          deps.createElement(deps.HostManagerSheet, {
+            state,
+            onAction: (action: ManagerAction, args: Record<string, unknown>) =>
+              sendManagerActionToChild(frameSrc, action, args),
+            onClose: () => sendManagerCloseToChild(frameSrc),
+          }),
+          {
+            provider: deps.ShadowThemeProvider,
+            css: deps.hostManagerSheetShadowCss,
+          },
+        );
+        sheetMount = m;
+        m.host.id = 'Tihoka-host-manager-sheet';
+        m.host.style.cssText =
+          'position:fixed;inset:0;pointer-events:auto;z-index:2147483647;';
       }).catch((err: unknown) => {
         console.warn('[content-script] host manager sheet init failed', err);
       });
@@ -112,21 +102,7 @@ function installHostManagerSheetOnce(): void {
       void loadDeps().then(renderHostSheet);
     },
     onClose: (_frameSrc: string): void => {
-      if (hostSheetRoot) {
-        hostSheetRoot.unmount();
-        hostSheetRoot = null;
-      }
-      if (hostSheetHost) {
-        hostSheetHost.remove();
-        hostSheetHost = null;
-      }
-      hostSheetInner = null;
-      if (sheetCssCleanup) {
-        sheetCssCleanup();
-        sheetCssCleanup = null;
-      }
-      currentFrameSrc = '';
-      currentState = null;
+      closeSheet();
     },
   });
 

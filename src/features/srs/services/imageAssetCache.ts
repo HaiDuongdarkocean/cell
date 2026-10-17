@@ -1,8 +1,8 @@
 import type { SrsImageAsset } from '@/entities/srs/types';
 import { generateId } from '@/features/srs/lib/helpers';
 import { getImageAssetsByNote, putImageAsset } from '@/features/srs/repositories/imageAssetRepository';
-import { evictImageIfNeeded, touchImageAsset } from './quotaManager';
-import { dataUrlToArrayBuffer } from './fetchMedia';
+import { evictImageIfNeeded, touchImageAsset, getCachedAsset, findExistingAsset, persistAsset } from './quotaManager';
+import { dataUrlToArrayBuffer } from '@/shared/lib/base64';
 
 function isDataUrl(s: string): boolean {
   return s.startsWith('data:');
@@ -14,11 +14,7 @@ function buildAssetId(noteId: string, fieldId: string): string {
 
 /** Find a cached image asset for the given note and field. */
 export async function getCachedImageAsset(noteId: string, fieldId: string, index = 0): Promise<SrsImageAsset | undefined> {
-  const assets = await getImageAssetsByNote(noteId);
-  const asset = assets.find((a) => a.fieldId === fieldId && (a.index ?? 0) === index);
-  if (!asset) return undefined;
-  await touchImageAsset(asset.id);
-  return asset;
+  return getCachedAsset(getImageAssetsByNote, touchImageAsset, noteId, fieldId, index);
 }
 
 /**
@@ -50,12 +46,9 @@ export async function storeImageAsset(
     lastAccessed: Date.now(),
     createdAt: existing?.createdAt ?? Date.now(),
   };
-  await putImageAsset(asset);
-  await evictImageIfNeeded(50, new Set([asset.id]));
-  return asset;
+  return persistAsset(putImageAsset, (ids) => evictImageIfNeeded(50, ids), asset);
 }
 
 async function findExisting(noteId: string, fieldId: string, index: number): Promise<SrsImageAsset | undefined> {
-  const assets = await getImageAssetsByNote(noteId);
-  return assets.find((a) => a.fieldId === fieldId && (a.index ?? 0) === index);
+  return findExistingAsset(getImageAssetsByNote, noteId, fieldId, index);
 }

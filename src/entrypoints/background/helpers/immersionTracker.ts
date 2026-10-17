@@ -4,6 +4,7 @@ import {
   SESSION_IDLE_MS,
 } from '@/features/local-player/logic/immersionClock';
 import type { HistoryRecord } from '@/features/local-player/services/mediaLibraryRepository';
+import { serialQueue } from '@/shared/lib/async';
 
 export interface ImmersionTrackerDeps {
   addEntry: (record: HistoryRecord) => Promise<void>;
@@ -46,7 +47,7 @@ export function createImmersionTracker(deps: ImmersionTrackerDeps): ImmersionTra
   // = assume playing (a tab emitting timeupdate usually is); an explicit
   // pause flips it and drops subsequent updates.
   const playingByTab = new Map<number, boolean>();
-  let chain: Promise<void> = Promise.resolve();
+  const enqueue = serialQueue();
 
   const hostFor = (tabId: number): Promise<string> => {
     let p = hosts.get(tabId);
@@ -68,12 +69,10 @@ export function createImmersionTracker(deps: ImmersionTrackerDeps): ImmersionTra
       watchDurationMs: Math.round(value),
       positionMs: seg.positionMs,
     };
-    chain = chain
-      .then(() => deps.addEntry(record))
-      .then(() => {
-        seg.flushedAcc = Math.max(seg.flushedAcc, value);
-      })
-      .catch(() => {});
+    void enqueue(async () => {
+      await deps.addEntry(record);
+      seg.flushedAcc = Math.max(seg.flushedAcc, value);
+    }).catch(() => {});
   };
 
   const flush = (seg: Segment, final: boolean): void => {

@@ -18,6 +18,7 @@ import {
   type ImportChannelPort,
   type ImportRunRequest,
 } from '@/features/dictionary/logic/importChannel';
+import { runOffscreenBootstrapOnce } from './offscreenBootstrap';
 
 const queue: ImportRunRequest[] = [];
 let draining = false;
@@ -75,20 +76,12 @@ async function executeImportRun(
   }
 }
 
-let bootstrapped = false;
-
-function bootstrapImportRunner(): void {
-  if (bootstrapped) return;
-  if (typeof process !== 'undefined' && process.env?.JEST_WORKER_ID) return;
+runOffscreenBootstrapOnce('import', () => {
   if (typeof BroadcastChannel === 'undefined') return;
   if (typeof chrome === 'undefined' || !chrome?.runtime?.id) return;
-
-  bootstrapped = true;
   try {
     startImportRunner(openImportChannel());
   } catch (err) {
     console.error('[offscreen-import] runner start failed:', err);
   }
-}
-
-bootstrapImportRunner();
+});

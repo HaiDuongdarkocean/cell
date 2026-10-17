@@ -23,6 +23,8 @@ import {
   setBadgeTextColor,
 } from '@/shared/lib/chrome-apis';
 import { loadSettings as loadSettingsFromStore, saveSettings as saveSettingsToStore } from '@/shared/lib/storage/settingsStore';
+import { newId } from '@/shared/lib/id';
+import { broadcastDetectedMedia } from './helpers/broadcast';
 import { tryAutoDownload } from '@/features/download';
 import { findSubtitlesForOverlay, type SubtitlePreference } from '@/features/subtitle';
 import { detectLanguage, labelToIsoCode } from '@/features/detection';
@@ -38,18 +40,13 @@ import type {
   MediaType,
   VideoVariant,
 } from '@/entities/media';
-import type { DetectedMediaUpdatePayload, AutoLoadSubtitlesPayload } from '@/entities/message';
+import type { AutoLoadSubtitlesPayload } from '@/entities/message';
 
 /**
  * Generate a unique identifier, preferring `crypto.randomUUID` and falling back
  * to a timestamp + random combination.
  */
-export function generateId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-}
+export const generateId = newId;
 
 /**
  * Extract a base filename (without extension) from a URL path.
@@ -226,14 +223,7 @@ export function enrichVideo(ctx: BackgroundContext, video: DetectedVideo): Detec
       title: tab.title && tab.title.length > 0 ? tab.title : video.title,
     };
     ctx.networkInterceptor.updateVideo(video.id, enriched);
-    ctx.messageBus.broadcast({
-      type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE,
-      payload: {
-        videos: ctx.networkInterceptor.getVideos(video.tabId),
-        subtitles: ctx.networkInterceptor.getSubtitles(video.tabId),
-        tabId: video.tabId,
-      } satisfies DetectedMediaUpdatePayload,
-    });
+    broadcastDetectedMedia(ctx, video.tabId);
     updateBadgeForTab(ctx, video.tabId);
   }).catch((err: unknown) => {
     console.warn(`[background] Failed to enrich video for tab ${video.tabId}:`, err);
@@ -279,14 +269,7 @@ export function enrichM3u8Variants(ctx: BackgroundContext, video: DetectedVideo)
 
       ctx.networkInterceptor.updateVideo(video.id, enriched);
       saveSessionMedia(ctx, video.tabId, ctx.networkInterceptor.getVideos(video.tabId), ctx.networkInterceptor.getSubtitles(video.tabId));
-      ctx.messageBus.broadcast({
-        type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE,
-        payload: {
-          videos: ctx.networkInterceptor.getVideos(video.tabId),
-          subtitles: ctx.networkInterceptor.getSubtitles(video.tabId),
-          tabId: video.tabId,
-        } satisfies DetectedMediaUpdatePayload,
-      });
+      broadcastDetectedMedia(ctx, video.tabId);
     } catch {
       // Network/CORS errors are expected for some playlists; ignore.
     }

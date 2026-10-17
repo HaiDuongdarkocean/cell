@@ -25,6 +25,7 @@ import { getNotetypesByCollection } from '@/features/srs/repositories/notetypeRe
 import { getAllLinks, getLinksByTerm } from '@/features/ankiStatusSync/repositories/statusSyncStorage';
 import { normalizeTerm } from '@/features/dictionary';
 import { broadcastSrsCardsChanged } from './srsCardsBroadcast';
+import { openExtensionTab } from '../helpers/broadcast';
 
 const SRS_STUDY_PATH = 'src/entrypoints/srs-study/index.html';
 
@@ -115,27 +116,22 @@ export function registerSrsHandlers(ctx: BackgroundContext): void {
       if (!parsed.success) {
         return { success: false, error: `Invalid payload: ${parsed.error.message}` };
       }
-      let url = chrome.runtime.getURL(SRS_STUDY_PATH);
       const payload = parsed.data as SrsOpenStudyPagePayload;
-      const params = new URLSearchParams();
+      const params: Record<string, string> = {};
       if (payload?.deckId) {
-        params.set('deckId', payload.deckId);
+        params['deckId'] = payload.deckId;
       }
       if (payload?.view) {
-        params.set('view', payload.view);
+        params['view'] = payload.view;
       }
       if (payload?.term) {
-        params.set('term', payload.term);
+        params['term'] = payload.term;
       }
-      const qs = params.toString();
-      if (qs) {
-        url += `?${qs}`;
-      }
-      const tab = await chrome.tabs.create({ url });
-      if (tab.id === undefined) {
+      const tabId = await openExtensionTab(SRS_STUDY_PATH, params);
+      if (tabId === undefined) {
         return { success: false, error: 'Failed to create tab' };
       }
-      return { success: true, data: { tabId: tab.id } };
+      return { success: true, data: { tabId } };
     },
   );
 

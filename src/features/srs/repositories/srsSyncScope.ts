@@ -2,6 +2,7 @@ import { captureChange, readRecordMeta, scopeForTarget, targetOf, type Scope } f
 import type { SrsCard, SrsCollection, SrsDeck, SrsNote, SrsReviewRecord } from '@/entities/srs/types';
 import { SRS_STORES } from './srsDatabase';
 import { getById } from './srsRepositoryHelpers';
+import { idbRequest } from '@/shared/lib/storage/idb';
 
 type AnySrsAsset = { noteId: string };
 
@@ -68,9 +69,5 @@ export async function announceStudyConfig(
 }
 
 function getAll<T>(store: IDBObjectStore): Promise<T[]> {
-  return new Promise((resolve, reject) => {
-    const request = store.getAll();
-    request.onsuccess = () => resolve(request.result as T[]);
-    request.onerror = () => reject(request.error);
-  });
+  return idbRequest(store.getAll()).then((result) => result as T[]);
 }

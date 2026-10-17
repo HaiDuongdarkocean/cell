@@ -2,6 +2,7 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { OpenReaderPayloadSchema } from '@/entities/message/schema';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
+import { openExtensionTab } from '../helpers/broadcast';
 
 const READER_PATH = 'src/entrypoints/reader/index.html';
 
@@ -17,16 +18,14 @@ export function registerReaderHandlers(ctx: BackgroundContext): void {
         };
       }
 
-      const url = chrome.runtime.getURL(READER_PATH);
-      const fullUrl = parsed.data?.bookId
-        ? `${url}?bookId=${encodeURIComponent(parsed.data.bookId)}`
-        : url;
-
-      const tab = await chrome.tabs.create({ url: fullUrl });
-      if (tab.id === undefined) {
+      const tabId = await openExtensionTab(
+        READER_PATH,
+        parsed.data?.bookId ? { bookId: parsed.data.bookId } : undefined,
+      );
+      if (tabId === undefined) {
         return { success: false, error: 'Failed to create tab' };
       }
-      return { success: true, data: { tabId: tab.id } };
+      return { success: true, data: { tabId } };
     },
   );
 }

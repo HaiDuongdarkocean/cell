@@ -1,6 +1,7 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { logger } from '@/shared/lib/logger';
 import { sendMessage } from '@/shared/lib/chrome-apis';
+import { extToMime } from '@/shared/lib/mime';
 import { messagePayload } from '@/entities/message/payload';
 import { ensureDownloadSubdir, readFile as opfsReadFile } from '@/shared/lib/storage/opfsStorage';
 import { getVideo } from '@/features/local-player/services/mediaLibraryRepository';
@@ -279,7 +280,7 @@ async function createBlobUrl(recordId: string): Promise<CondenseAudioBlobUrlResu
   for (const ext of ['mp3', 'm4a', 'opus']) {
     try {
       const file = await opfsReadFile(dir, outputNameFor(recordId, ext));
-      const mimeType = ext === 'mp3' ? 'audio/mpeg' : ext === 'm4a' ? 'audio/mp4' : 'audio/ogg';
+      const mimeType = extToMime(ext);
       const blob = file.type === mimeType ? file : file.slice(0, file.size, mimeType);
       const url = URL.createObjectURL(blob);
       blobUrls.set(url, true);

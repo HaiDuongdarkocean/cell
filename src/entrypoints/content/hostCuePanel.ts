@@ -22,10 +22,9 @@ import type {
 
 interface PanelDeps {
   createElement: typeof import('react').createElement;
-  createRoot: typeof import('react-dom/client').createRoot;
+  mountReactShadow: typeof import('@/shared/lib/shadowRoot/mountReactShadow').mountReactShadow;
   HostCuePanel: typeof import('@/features/subtitle/ui/HostCuePanel').HostCuePanel;
   ShadowThemeProvider: typeof import('@/features/theme/ui/ShadowThemeProvider').ShadowThemeProvider;
-  injectShadowCss: typeof import('@/shared/lib/shadowRoot/injectShadowCss').injectShadowCss;
   allModuleCss: string[];
   buildTokenSpanCssForShadow: () => string;
 }
@@ -33,18 +32,16 @@ interface PanelDeps {
 const loadDeps = (): Promise<PanelDeps> =>
   Promise.all([
     import('react'),
-    import('react-dom/client'),
+    import('@/shared/lib/shadowRoot/mountReactShadow'),
     import('@/features/subtitle/ui/HostCuePanel'),
     import('@/features/theme/ui/ShadowThemeProvider'),
-    import('@/shared/lib/shadowRoot/injectShadowCss'),
     import('@/shared/lib/shadowRoot/allModuleCss'),
     import('@/features/tokenize'),
-  ]).then(([react, reactDom, panel, theme, css, moduleCss, tokenize]) => ({
+  ]).then(([react, mount, panel, theme, moduleCss, tokenize]) => ({
     createElement: react.createElement,
-    createRoot: reactDom.createRoot,
+    mountReactShadow: mount.mountReactShadow,
     HostCuePanel: panel.HostCuePanel,
     ShadowThemeProvider: theme.ShadowThemeProvider,
-    injectShadowCss: css.injectShadowCss,
     allModuleCss: moduleCss.allModuleCss,
     buildTokenSpanCssForShadow: tokenize.buildTokenSpanCssForShadow,
   }));
@@ -61,9 +58,7 @@ function installHostCuePanelOnce(): () => void {
   let depsPromise: Promise<PanelDeps> | null = null;
   const deps = (): Promise<PanelDeps> => (depsPromise ??= loadDeps());
 
-  let root: ReturnType<PanelDeps['createRoot']> | null = null;
-  let host: HTMLDivElement | null = null;
-  let cssCleanup: (() => void) | null = null;
+  let mount: ReturnType<PanelDeps['mountReactShadow']> | null = null;
   let childWin: Window | null = null;
   let childOrigin: string | null = null;
   // The 't' relay needs the route to survive close (toggle back ON) —
@@ -87,48 +82,41 @@ function installHostCuePanelOnce(): () => void {
   }
 
   function render(): void {
-    if (!root || !latestState) return;
+    if (!mount || !latestState) return;
     void deps().then((d) => {
-      if (!root || !latestState) return;
-      root.render(
+      if (!mount || !latestState) return;
+      mount.root.render(
         d.createElement(
           d.ShadowThemeProvider,
-          { container: rootEl()! },
+          { container: mount.rootEl },
           d.createElement(d.HostCuePanel, { state: latestState, post: postAction }),
         ),
       );
     });
   }
 
-  let innerEl: HTMLDivElement | null = null;
-  function rootEl(): HTMLDivElement | null {
-    return innerEl;
-  }
-
   function open(state: SerializedCuePanelState): void {
     closeLocal();
     latestState = state;
-    host = document.createElement('div');
-    host.id = 'Tihoka-host-cue-panel';
-    // z-overlay-video (10000) — the cue sheet is a video-adjacent surface and
-    // must sit UNDER settings/popup/manager layers (10001+). The old max-int
-    // value placed it above the universal panel + dict popup sheet.
-    host.style.cssText =
-      'position:fixed;inset:0;pointer-events:none;z-index:var(--z-overlay-video);';
-    document.body.appendChild(host);
-    const shadow = host.attachShadow({ mode: 'open' });
     void deps().then((d) => {
       // Only bail if the panel was closed — state refreshes mid-load are
       // normal (throttled time ticks) and must not cancel the mount.
-      if (!host) return;
-      cssCleanup = d.injectShadowCss(shadow, {
-        css: [...d.allModuleCss, d.buildTokenSpanCssForShadow()],
-      });
-      innerEl = document.createElement('div');
-      innerEl.style.cssText = 'display:contents;pointer-events:auto;';
-      shadow.appendChild(innerEl);
-      root = d.createRoot(innerEl);
-      render();
+      if (latestState !== state) return;
+      const m = d.mountReactShadow(
+        d.createElement(d.HostCuePanel, { state, post: postAction }),
+        {
+          provider: d.ShadowThemeProvider,
+          css: [...d.allModuleCss, d.buildTokenSpanCssForShadow()],
+        },
+      );
+      mount = m;
+      m.host.id = 'Tihoka-host-cue-panel';
+      // z-overlay-video (10000) — the cue sheet is a video-adjacent surface and
+      // must sit UNDER settings/popup/manager layers (10001+). The old max-int
+      // value placed it above the universal panel + dict popup sheet.
+      m.host.style.cssText =
+        'position:fixed;inset:0;pointer-events:none;z-index:var(--z-overlay-video);';
+      m.rootEl.style.pointerEvents = 'auto';
     }).catch((err) => {
       console.warn('[Tihoka] host cue panel mount failed', err);
       closeLocal();
@@ -136,13 +124,8 @@ function installHostCuePanelOnce(): () => void {
   }
 
   function closeLocal(): void {
-    root?.unmount();
-    root = null;
-    host?.remove();
-    host = null;
-    innerEl = null;
-    cssCleanup?.();
-    cssCleanup = null;
+    mount?.unmount();
+    mount = null;
     latestState = null;
     childWin = null;
     childOrigin = null;
@@ -191,7 +174,7 @@ function installHostCuePanelOnce(): () => void {
     routeOrigin = e.origin;
     if (state.shortcuts) routeBindings = state.shortcuts;
     if (state.open) {
-      if (!root) {
+      if (!mount) {
         open(state);
       } else {
         latestState = state;
