@@ -17,6 +17,7 @@ import type {
   SubtitleSearchProvider,
   SubtitleSearchResult,
 } from '@/entities/subtitle/searchTypes';
+import { strFromU8, unzipSync } from 'fflate';
 
 const SUBDL_BASE_URL = 'https://api.subdl.com' as const;
 
@@ -267,70 +268,20 @@ function buildDownloadRequest(
 
 /**
  * Unzip a single-file ZIP archive (SubDL downloads are .zip containing one .srt).
- * Uses DecompressionStream('deflate-raw') for deflate-compressed entries,
- * raw copy for stored entries. Returns the extracted file content as string.
+ * Returns the first entry's content as string; non-ZIP payloads decode as text.
  *
- * ponytail: minimal ZIP parser — reads only the first local file entry.
- * Ceiling: multi-file ZIPs only return the first file. SubDL always packs
- * one .srt per .zip, so this is sufficient.
+ * ponytail: fflate over a hand-rolled parser — reads the central directory
+ * correctly (data descriptors, any compression method).
  */
-async function unzipFirstEntry(bytes: ArrayBuffer): Promise<string> {
-  const view = new DataView(bytes);
-  // Check PK\x03\x04 magic
-  if (view.getUint16(0, true) !== 0x4b50 || view.getUint16(2, true) !== 0x0403) {
-    // Not a ZIP — return as text
-    return new TextDecoder().decode(bytes);
+function unzipFirstEntry(bytes: ArrayBuffer): string {
+  const u8 = new Uint8Array(bytes);
+  if (u8.length < 4 || u8[0] !== 0x50 || u8[1] !== 0x4b) return new TextDecoder().decode(u8);
+  try {
+    const first = Object.values(unzipSync(u8))[0];
+    return first ? strFromU8(first) : '';
+  } catch {
+    return new TextDecoder().decode(u8);
   }
-  // ZIP local file header layout:
-  // 0-3: signature, 4-5: version, 6-7: flags, 8-9: compression method,
-  // 10-11: mod time, 12-13: mod date, 14-17: CRC-32,
-  // 18-21: compressed size, 22-25: uncompressed size,
-  // 26-27: filename length, 28-29: extra field length, 30+: filename + extra + data
-  const flags = view.getUint16(6, true);
-  const compressionMethod = view.getUint16(8, true);
-  let compressedSize = view.getUint32(18, true);
-  const filenameLen = view.getUint16(26, true);
-  const extraLen = view.getUint16(28, true);
-  const dataOffset = 30 + filenameLen + extraLen;
-
-  // If data descriptor flag (bit 3) is set, compressed size in local header is 0.
-  // The actual size is in a data descriptor after the compressed data, or we can
-  // read the central directory. For simplicity, use the rest of the buffer.
-  const hasDataDescriptor = (flags & 0x08) !== 0;
-  if (hasDataDescriptor || compressedSize === 0) {
-    compressedSize = bytes.byteLength - dataOffset;
-  }
-
-  const compressedData = bytes.slice(dataOffset, dataOffset + compressedSize);
-
-  if (compressionMethod === 0) {
-    // Store (no compression)
-    return new TextDecoder().decode(compressedData);
-  }
-  if (compressionMethod === 8) {
-    // Deflate — use DecompressionStream with 'deflate-raw' (no zlib header)
-    const ds = new DecompressionStream('deflate-raw');
-    const writer = ds.writable.getWriter();
-    void writer.write(compressedData);
-    void writer.close();
-    const reader = ds.readable.getReader();
-    const chunks: Uint8Array[] = [];
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      if (value) chunks.push(value);
-    }
-    const total = chunks.reduce((sum, c) => sum + c.length, 0);
-    const merged = new Uint8Array(total);
-    let offset = 0;
-    for (const chunk of chunks) {
-      merged.set(chunk, offset);
-      offset += chunk.length;
-    }
-    return new TextDecoder().decode(merged);
-  }
-  // Unknown compression — return raw as fallback
-  return new TextDecoder().decode(compressedData);
 }
 
 async function decodeDownload(
