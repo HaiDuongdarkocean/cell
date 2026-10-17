@@ -27,10 +27,11 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { AiProviderId } from '@/entities/message/dictionarySchemas';
 import { adapterForHost, type AiProviderAdapter } from '@/features/aiBridge/providers';
 import {
-  assistantTurnCount,
   findComposer,
   isStreaming,
   waitForAssistantReply,
+  captureAssistantBaseline,
+  newAssistantUnit,
 } from '@/features/aiBridge/dom';
 
 const COMPOSER_TIMEOUT_MS = 15_000;
@@ -199,7 +200,7 @@ async function ask(
     return null;
   };
 
-  const baseline = assistantTurnCount(adapter, document);
+  const baseline = captureAssistantBaseline(adapter, document);
   inFlightAskId = askId ?? null;
   const reply = waitForAssistantReply(
     adapter,
@@ -227,7 +228,7 @@ async function ask(
   // 15s, the provider silently dropped the prompt (rate limit, unsent
   // composer) — fail fast instead of waiting the full 90s.
   const dropped = waitFor(
-    () => assistantTurnCount(adapter, document) > baseline,
+    () => newAssistantUnit(adapter, document, baseline),
     SUBMIT_CONFIRM_MS,
   ).then((ok) => (ok ? new Promise<string>(() => {}) : '__noturn__'));
   const text = await Promise.race([reply, cancelled, dropped]);

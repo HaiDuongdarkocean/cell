@@ -31,6 +31,37 @@ export function assistantTurnCount(adapter: AiProviderAdapter, doc: Document): n
   return assistantUnits(adapter, doc).length;
 }
 
+/** Snapshot of the units present when the ask started — virtualized
+ *  transcripts (DeepSeek) remount offscreen rows as NEW elements, so an
+ *  index anchor drifts. Identity covers remounts; text covers a remounted
+ *  turn that an index would happily settle on. */
+export interface AssistantBaseline {
+  readonly units: readonly Element[];
+  readonly texts: ReadonlySet<string>;
+}
+
+export function captureAssistantBaseline(adapter: AiProviderAdapter, doc: Document): AssistantBaseline {
+  const units = [...assistantUnits(adapter, doc)];
+  return { units, texts: new Set(units.map((u) => unitText(adapter, u))) };
+}
+
+/** First assistant unit that wasn't on the page at baseline — remounted
+ *  rows (element not in the set) are only new when their text is too. */
+export function newAssistantUnit(
+  adapter: AiProviderAdapter,
+  doc: Document,
+  baseline: AssistantBaseline,
+): Element | undefined {
+  const seen = new Set(baseline.units);
+  for (const u of assistantUnits(adapter, doc)) {
+    if (seen.has(u)) continue;
+    const text = unitText(adapter, u);
+    if (text && baseline.texts.has(text)) continue;
+    return u;
+  }
+  return undefined;
+}
+
 function unitText(adapter: AiProviderAdapter, unit: Element): string {
   const body = unit.querySelector<HTMLElement>(adapter.answerBody);
   if (!body && adapter.answerBodyRequired) return '';
@@ -76,7 +107,7 @@ const ATTR_IDLE_STUCK_MS = 12_000;
 export function waitForAssistantReply(
   adapter: AiProviderAdapter,
   doc: Document,
-  baseline: number,
+  baseline: number | AssistantBaseline,
   timeoutMs: number,
   onPartial?: (text: string) => void,
   ignoreText?: string,
@@ -102,8 +133,14 @@ export function waitForAssistantReply(
       if (silenceTimer) clearTimeout(silenceTimer);
       silenceTimer = setTimeout(() => settle(lastText), ms);
     };
+    const anchor: AssistantBaseline =
+      typeof baseline === 'number'
+        ? { units: assistantUnits(adapter, doc).slice(0, baseline), texts: new Set<string>() }
+        : baseline;
     const check = () => {
-      const unit = assistantUnits(adapter, doc)[baseline];
+      const unit = typeof baseline === 'number'
+        ? assistantUnits(adapter, doc)[baseline]
+        : newAssistantUnit(adapter, doc, anchor);
       if (!unit) return;
       if (adapter.scrollIntoViewWhileObserving) unit.scrollIntoView?.({ block: 'nearest' });
       if (done.kind === 'stability') {
