@@ -74,5 +74,24 @@ readPayload((payload) => {
       emitContext('PreToolUse', 'LESSON GATE: fix commit with no new learning atom — if the root cause is reusable, write experience/<id>.json + index.json entry + run validate.cjs; if trivial/one-off, ignore.');
     }
   }
+
+  // Secrets gate: AGENTS.md bans committing secrets — scan added lines for
+  // high-confidence secret signatures. Warn-only: low-signal strings are
+  // intentionally excluded to keep false positives near zero.
+  const diff = spawnSync('git', ['diff', '--cached'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
+  const added = (diff.stdout ?? '').split('\n').filter((l) => l.startsWith('+') && !l.startsWith('+++'));
+  const SECRET_RES = [
+    /-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----/,
+    /\bAIza[0-9A-Za-z_-]{35}\b/,
+    /\bAKIA[0-9A-Z]{16}\b/,
+    /\b(?:ghp|gho|ghu|ghs|ghr)_[0-9A-Za-z]{36,}\b/,
+    /\bgithub_pat_[0-9A-Za-z_]{22,}\b/,
+    /\bxox[bpoas]-[0-9A-Za-z-]{10,}\b/,
+    /\bBearer\s+[0-9A-Za-z._-]{20,}\b/,
+  ];
+  const leaks = added.filter((l) => SECRET_RES.some((re) => re.test(l)));
+  if (leaks.length) {
+    emitContext('PreToolUse', `SECRETS GATE: staged diff contains ${leaks.length} line(s) matching secret signatures — verify and remove before committing.`);
+  }
   process.exit(0);
 });
