@@ -15,6 +15,7 @@ jest.mock('@/shared/lib/chrome-apis', () => ({
 import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveContentTab';
 import { sendMessage, onMessage, removeOnMessageListener } from '@/shared/lib/chrome-apis';
 import { useActiveTabSubscription } from './useActiveTabSubscription';
+import type { MessageType } from '@/entities/message';
 
 const getTabMock = getActiveContentTabId as jest.MockedFunction<typeof getActiveContentTabId>;
 const sendMock = sendMessage as jest.MockedFunction<typeof sendMessage>;
@@ -33,9 +34,9 @@ beforeEach(() => {
 });
 
 const opts = () => ({
-  updateType: 'THING_UPDATE',
+  updateType: 'THING_UPDATE' as MessageType,
   onUpdate: jest.fn(),
-  fetchType: 'GET_THING',
+  fetchType: 'GET_THING' as MessageType,
   onFetch: jest.fn(),
 });
 

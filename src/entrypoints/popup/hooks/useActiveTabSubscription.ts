@@ -11,9 +11,9 @@ import type {
 const RETRY_DELAY_MS = 500;
 
 export function useActiveTabSubscription<TUpdate, TFetch>(opts: {
-  updateType: string;
+  updateType: MessageType;
   onUpdate: (payload: TUpdate) => void;
-  fetchType: string;
+  fetchType: MessageType;
   onFetch: (data: TFetch) => void;
   retries?: number;
 }): void {
@@ -33,7 +33,7 @@ export function useActiveTabSubscription<TUpdate, TFetch>(opts: {
       if (request.type === updateType) {
         const payload = messagePayload<TUpdate & { tabId?: number }>(
           request,
-          updateType as MessageType,
+          updateType,
         );
         if (payload && payload.tabId === tabIdRef.current) {
           callbacksRef.current.onUpdate(payload);

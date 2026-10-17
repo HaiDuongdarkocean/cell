@@ -4,7 +4,7 @@ import {
   sendMessageToAllFramesInTab,
 } from '@/shared/lib/chrome-apis/tabs';
 import type { BackgroundContext } from '../context';
-import type { DetectedMediaUpdatePayload } from '@/entities/message';
+import type { DetectedMediaUpdatePayload, MessageType } from '@/entities/message';
 import type { DetectedVideo, DetectedSubtitle } from '@/entities/media';
 import {
   saveSessionAutoDownloadedTabs,
@@ -13,7 +13,7 @@ import {
 } from '../helpers';
 
 export async function sendMessageToAllTabs(
-  message: { type: string; payload: unknown },
+  message: { type: MessageType; payload: unknown },
   opts?: { excludeTabId?: number },
 ): Promise<void> {
   try {
@@ -28,7 +28,7 @@ export async function sendMessageToAllTabs(
 
 export async function broadcastToAllContexts(
   ctx: BackgroundContext,
-  message: { type: string; payload: unknown },
+  message: { type: MessageType; payload: unknown },
 ): Promise<void> {
   try {
     ctx.messageBus.broadcast(message);

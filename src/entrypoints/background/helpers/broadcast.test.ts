@@ -15,6 +15,7 @@ import { queryTabs, sendMessageToAllFramesInTab } from '@/shared/lib/chrome-apis
 import { saveSessionAutoDownloadedTabs, clearSessionMedia, updateBadgeForTab } from '../helpers';
 import { sendMessageToAllTabs, broadcastDetectedMedia, clearTabState } from './broadcast';
 import type { BackgroundContext } from '../context';
+import type { MessageType } from '@/entities/message';
 
 const queryTabsMock = queryTabs as jest.MockedFunction<typeof queryTabs>;
 const sendAllMock = sendMessageToAllFramesInTab as jest.MockedFunction<typeof sendMessageToAllFramesInTab>;
@@ -42,7 +43,7 @@ test('sendMessageToAllTabs sends to every tab with an id', async () => {
     { id: 2 },
     { id: undefined },
   ] as chrome.tabs.Tab[]);
-  await sendMessageToAllTabs({ type: 'X', payload: {} });
+  await sendMessageToAllTabs({ type: 'X' as MessageType, payload: {} });
   expect(sendAllMock).toHaveBeenCalledTimes(2);
   expect(sendAllMock).toHaveBeenCalledWith(1, { type: 'X', payload: {} });
   expect(sendAllMock).toHaveBeenCalledWith(2, { type: 'X', payload: {} });
@@ -52,7 +53,7 @@ test('sendMessageToAllTabs respects excludeTabId and swallows send failures', as
   queryTabsMock.mockResolvedValue([{ id: 1 }, { id: 2 }] as chrome.tabs.Tab[]);
   sendAllMock.mockRejectedValue(new Error('no receiver'));
   await expect(
-    sendMessageToAllTabs({ type: 'X', payload: null }, { excludeTabId: 1 }),
+    sendMessageToAllTabs({ type: 'X' as MessageType, payload: null }, { excludeTabId: 1 }),
   ).resolves.toBeUndefined();
   expect(sendAllMock).toHaveBeenCalledTimes(1);
   expect(sendAllMock).toHaveBeenCalledWith(2, { type: 'X', payload: null });
@@ -60,7 +61,7 @@ test('sendMessageToAllTabs respects excludeTabId and swallows send failures', as
 
 test('sendMessageToAllTabs swallows query failure', async () => {
   queryTabsMock.mockRejectedValue(new Error('denied'));
-  await expect(sendMessageToAllTabs({ type: 'X', payload: null })).resolves.toBeUndefined();
+  await expect(sendMessageToAllTabs({ type: 'X' as MessageType, payload: null })).resolves.toBeUndefined();
 });
 
 test('broadcastDetectedMedia reads videos+subtitles for the tab', () => {

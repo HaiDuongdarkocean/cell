@@ -9,7 +9,7 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { t } from '@/shared/i18n';
 import type { BackgroundContext } from '../context';
-import type { MessageResponse } from '@/entities/message';
+import type { MessageResponse, MessageType } from '@/entities/message';
 import {
   WordStatusGetPayloadSchema,
   WordStatusesGetPayloadSchema,
@@ -69,7 +69,7 @@ async function aggregateTermStatus(langCode: string, term: string): Promise<Word
 /** Broadcast a status change/delete to content scripts in all other tabs. */
 async function broadcastToOtherTabs(
   sourceTabId: number,
-  type: string,
+  type: MessageType,
   payload: Record<string, unknown>,
 ): Promise<void> {
   await sendMessageToAllTabs(
