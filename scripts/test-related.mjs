@@ -20,11 +20,14 @@ const dirtySources = () => {
 
 const args = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 const targets = args.length ? args : dirtySources();
-const mode = args.length ? 'explicit' : targets.length ? 'git-dirty' : 'fallback-full';
-const jestArgs = targets.length
-  ? ['--selectProjects', 'unit', '--findRelatedTests', ...targets, '--passWithNoTests']
-  : ['--selectProjects', 'unit', '--passWithNoTests'];
+const allTestFiles = targets.length && targets.every((t) => /\.test\.tsx?$/.test(t));
+const mode = allTestFiles ? 'explicit-tests' : args.length ? 'explicit' : targets.length ? 'git-dirty' : 'fallback-full';
+const jestArgs = allTestFiles
+  ? ['--selectProjects', 'unit', '--runTestsByPath', ...targets]
+  : targets.length
+    ? ['--selectProjects', 'unit', '--findRelatedTests', ...targets, '--passWithNoTests']
+    : ['--selectProjects', 'unit', '--passWithNoTests'];
 
 console.error(`test:related [${mode}] ${targets.length ? targets.join(', ') : 'full unit suite'}`);
-const bin = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-process.exit(spawnSync(bin, ['jest', ...jestArgs], { cwd: ROOT, stdio: 'inherit' }).status ?? 1);
+const jestBin = join(ROOT, 'node_modules', 'jest', 'bin', 'jest.js');
+process.exit(spawnSync(process.execPath, [jestBin, ...jestArgs], { cwd: ROOT, stdio: 'inherit' }).status ?? 1);

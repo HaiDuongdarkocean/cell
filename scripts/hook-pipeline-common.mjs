@@ -61,7 +61,15 @@ function mtimeOf(abs) {
   }
 }
 
+const normPath = (p) => (p ?? '').replace(/\\/g, '/').replace(/\/$/, '').toLowerCase();
+
 export function gitSnapshot() {
+  // Guard against parent-repo leakage: when ROOT is not itself a repo root
+  // (e.g. test fixtures under %TEMP% on a machine whose home dir is a repo),
+  // git walks upward and reports a stranger's dirty tree. Only trust the
+  // snapshot when the resolved toplevel is ROOT itself.
+  const top = spawnSync('git', ['rev-parse', '--show-toplevel'], { cwd: ROOT, encoding: 'utf8' });
+  if (top.status !== 0 || normPath(top.stdout.trim()) !== normPath(ROOT)) return null;
   const br = spawnSync('git', ['branch', '--show-current'], { cwd: ROOT, encoding: 'utf8' });
   if (br.status !== 0) return null;
   const st = spawnSync('git', ['status', '--porcelain'], { cwd: ROOT, encoding: 'utf8' });
