@@ -12,6 +12,7 @@ import {
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import { mediaFieldValues } from '@/features/srs/lib/helpers';
+import { claimExclusiveAudio } from '@/shared/lib/exclusiveAudio';
 import type { SrsAudioAsset, SrsFieldValue, SrsImageAsset } from '@/entities/srs/types';
 import styles from './SrsReviewCard.module.css';
 
@@ -19,14 +20,19 @@ export function playAudio(asset: SrsAudioAsset): void {
   const blob = new Blob([asset.bytes], { type: asset.mimeType });
   const url = URL.createObjectURL(blob);
   const audio = new Audio(url);
-  audio.play().catch(() => {});
+  const release = claimExclusiveAudio(() => audio.pause());
+  audio.play().catch(() => { release(); });
   audio.onended = () => {
+    release();
     URL.revokeObjectURL(url);
   };
 }
 
 export function playAudioUrl(url: string): void {
-  void new Audio(url).play().catch(() => {});
+  const audio = new Audio(url);
+  const release = claimExclusiveAudio(() => audio.pause());
+  audio.onended = release;
+  void audio.play().catch(() => { release(); });
 }
 
 export function playableUrl(value: string): string | undefined {
@@ -35,7 +41,7 @@ export function playableUrl(value: string): string | undefined {
 
 export function sequentialAudio(sources: readonly (SrsAudioAsset | string)[]): () => void {
   let cancelled = false;
-  let current: HTMLAudioElement | null = null;
+  let stopCurrent: (() => void) | null = null;
   const run = async (): Promise<void> => {
     for (const src of sources) {
       if (cancelled) return;
@@ -43,20 +49,25 @@ export function sequentialAudio(sources: readonly (SrsAudioAsset | string)[]): (
         ? src
         : URL.createObjectURL(new Blob([src.bytes], { type: src.mimeType }));
       const audio = new Audio(url);
-      current = audio;
       await new Promise<void>((resolve) => {
-        audio.onended = () => resolve();
-        audio.onerror = () => resolve();
-        void audio.play().then(() => undefined, () => resolve());
+        stopCurrent = () => {
+          cancelled = true;
+          audio.pause();
+          resolve();
+        };
+        const release = claimExclusiveAudio(() => stopCurrent?.());
+        audio.onended = () => { release(); resolve(); };
+        audio.onerror = () => { release(); resolve(); };
+        void audio.play().then(() => undefined, () => { release(); resolve(); });
       });
-      current = null;
+      stopCurrent = null;
       if (typeof src !== 'string') URL.revokeObjectURL(url);
     }
   };
   void run();
   return () => {
     cancelled = true;
-    current?.pause();
+    stopCurrent?.();
   };
 }
 

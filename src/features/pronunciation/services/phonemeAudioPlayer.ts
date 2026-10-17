@@ -1,6 +1,8 @@
+import { claimExclusiveAudio } from '@/shared/lib/exclusiveAudio';
 import type { Phoneme, PronunciationAudio } from '../types';
 
 let sharedContext: AudioContext | null = null;
+let playToken = 0;
 
 function getAudioContext(): AudioContext {
   if (!sharedContext) {
@@ -22,6 +24,7 @@ export function playPhoneme(
   audio: PronunciationAudio | null,
   phoneme: Phoneme,
 ): Promise<void> {
+  const token = ++playToken;
   if (!audio) return Promise.resolve();
 
   const ctx = getAudioContext();
@@ -45,8 +48,13 @@ export function playPhoneme(
     if (ctx.state === 'suspended') {
       await ctx.resume();
     }
+    if (token !== playToken) return;
     return new Promise<void>((resolve) => {
-      source.onended = () => resolve();
+      const release = claimExclusiveAudio(() => source.stop());
+      source.onended = () => {
+        release();
+        resolve();
+      };
       source.start(0);
     });
   })();

@@ -3,6 +3,7 @@ import { Icon } from '@/shared/ui/Icon';
 import { InkTabs } from '@/shared/ui/InkTabs';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { claimExclusiveAudio } from '@/shared/lib/exclusiveAudio';
 import { markAudio, measureAudio, clearAudioMarks } from '@/shared/lib/perfMarks';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { useAudioItemUrlMap } from '@/features/pronunciation';
@@ -75,18 +76,16 @@ export function PronunciationAudioPanel({
   const playQueue = useCallback((urls: readonly string[]): void => {
     const url = urls[0];
     if (!url) return;
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
     const audio = new Audio(url);
     audioRef.current = audio;
+    const release = claimExclusiveAudio(() => audio.pause());
     audio.addEventListener('ended', () => {
+      release();
       if (audioRef.current === audio) audioRef.current = null;
       playQueue(urls.slice(1));
     });
     audio.addEventListener('pause', () => { if (audioRef.current === audio) audioRef.current = null; }, { once: true });
-    void audio.play().catch(() => { /* best-effort */ });
+    void audio.play().catch(() => { release(); });
   }, []);
 
   const playItem = useCallback((item: AudioItem): void => {

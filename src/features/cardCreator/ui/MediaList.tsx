@@ -17,6 +17,7 @@ import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
+import { claimExclusiveAudio } from '@/shared/lib/exclusiveAudio';
 import type { MediaFile } from '../media/mediaFile';
 import styles from './MediaList.module.css';
 
@@ -486,23 +487,27 @@ export function MediaList({
 
   /** Play an audio file via Blob URL. */
   const playAudio = (file: MediaFile): void => {
+    const audio = audioRef.current;
+    if (!audio) return;
     const blob = new Blob([file.data], { type: file.mimeType });
     const url = URL.createObjectURL(blob);
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = url;
-      audioRef.current.onended = () => URL.revokeObjectURL(url);
-      void audioRef.current.play().catch((err) => {
-        console.error('[MediaList] audio play failed', {
-          err,
-          blobSize: blob.size,
-          mimeType: file.mimeType,
-          dataType: typeof file.data,
-          dataByteLength: file.data?.byteLength,
-        });
-        URL.revokeObjectURL(url);
+    const release = claimExclusiveAudio(() => audio.pause());
+    audio.src = url;
+    audio.onended = () => {
+      release();
+      URL.revokeObjectURL(url);
+    };
+    void audio.play().catch((err) => {
+      release();
+      URL.revokeObjectURL(url);
+      console.error('[MediaList] audio play failed', {
+        err,
+        blobSize: blob.size,
+        mimeType: file.mimeType,
+        dataType: typeof file.data,
+        dataByteLength: file.data?.byteLength,
       });
-    }
+    });
   };
 
   /** Process dropped files: filter by kind, convert, and call onFilesDrop. */

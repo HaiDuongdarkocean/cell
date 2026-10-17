@@ -5,7 +5,8 @@ function createMockAudioBufferSource(): AudioBufferSourceNode {
     buffer: null as AudioBuffer | null,
     connect: jest.fn(),
     start: jest.fn(),
-    onended: null as (() => void) | null,
+    stop: jest.fn(() => { source.onended?.({} as Event); }),
+    onended: null as ((ev: Event) => void) | null,
   } as unknown as AudioBufferSourceNode;
   return source;
 }
@@ -51,5 +52,40 @@ describe('playPhoneme', () => {
     // Simulate playback ended.
     if (source.onended) source.onended({} as Event);
     await expect(promise).resolves.toBeUndefined();
+  });
+
+  it('stops the previous clip so only one phoneme sounds at a time', async () => {
+    jest.resetModules();
+    const { playPhoneme: play } = await import('./phonemeAudioPlayer');
+
+    const sources: AudioBufferSourceNode[] = [];
+    const ctx = {
+      state: 'running',
+      resume: jest.fn(),
+      createBuffer: jest.fn().mockReturnValue({
+        getChannelData: jest.fn().mockReturnValue(new Float32Array(4)),
+      }),
+      createBufferSource: jest.fn(() => {
+        const s = createMockAudioBufferSource();
+        sources.push(s);
+        return s;
+      }),
+      destination: {} as AudioDestinationNode,
+    } as unknown as AudioContext;
+    global.AudioContext = jest.fn(() => ctx) as unknown as typeof AudioContext;
+
+    const audio = { samples: new Float32Array(4), sampleRate: 22050, duration: 1, source: 'native' as const };
+    const phoneme = { ipa: 'h', startMs: 0, endMs: 100, type: 'consonant' as const };
+
+    const p1 = play(audio, phoneme);
+    const p2 = play(audio, phoneme);
+    await Promise.resolve();
+
+    expect(sources[0].stop).toHaveBeenCalledTimes(1);
+    expect(sources[1].start).toHaveBeenCalledWith(0);
+
+    if (sources[1].onended) sources[1].onended({} as Event);
+    await expect(p1).resolves.toBeUndefined();
+    await expect(p2).resolves.toBeUndefined();
   });
 });

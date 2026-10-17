@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { t } from '@/shared/i18n';
+import { claimExclusiveAudio, stopExclusiveAudio } from '@/shared/lib/exclusiveAudio';
 import { Button, Icon, SettingsRow, Text } from '@/shared/ui';
 import { OVERLAY_LANGUAGE_OPTIONS, isoCodeToLabel } from '@/shared/config/languageRegistry';
 import { createTtsEngine } from '@/features/tts';
@@ -68,7 +69,7 @@ export function BrowserVoicePanel({
     return () => {
       alive = false;
       clearInterval(timer);
-      engine.stop();
+      stopExclusiveAudio();
     };
   }, []);
 
@@ -114,11 +115,15 @@ export function BrowserVoicePanel({
       const engine = engineRef.current;
       if (!engine) return;
       setPlaying(v.voiceName);
+      const release = claimExclusiveAudio(() => engine.stop());
       engine.speak(t('tts.testDefault'), {
         voiceName: v.voiceName,
         langCode: v.lang ?? targetLang,
       }).catch(() => {})
-        .finally(() => setPlaying((p) => (p === v.voiceName ? null : p)));
+        .finally(() => {
+          release();
+          setPlaying((p) => (p === v.voiceName ? null : p));
+        });
     },
     [targetLang],
   );

@@ -18,6 +18,7 @@
 
 import { useMemo, useState, type ReactElement } from 'react';
 import { t, type MessageKey } from '@/shared/i18n';
+import { claimExclusiveAudio } from '@/shared/lib/exclusiveAudio';
 import { Button, HintIcon, Icon, Input, SegmentedControl, Select, SettingsGroup, SettingsPanel, SettingsRow } from '@/shared/ui';
 import type {
   AudioEngineKind,
@@ -137,10 +138,12 @@ export function AudioPanel({
         return;
       }
       const audio = new Audio(url);
+      const release = claimExclusiveAudio(() => audio.pause());
       audio.addEventListener('ended', () => {
+        release();
         if (!item.url) URL.revokeObjectURL(url);
       });
-      await audio.play();
+      await audio.play().catch((e) => { release(); throw e; });
       setTestStatus(t('audio.tester.playing', [item.label]));
     } catch (e) {
       setTestStatus(t('audio.tester.failed', [String(e)]));

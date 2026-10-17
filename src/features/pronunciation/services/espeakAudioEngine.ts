@@ -146,31 +146,12 @@ export async function synthesizeEspeakWord(text: string): Promise<PronunciationA
  */
 export async function playEspeakWord(text: string): Promise<void> {
   const audio = await synthesizeEspeakWord(text);
-
-  const ctx = getAudioContext();
-  const buffer = ctx.createBuffer(1, audio.samples.length, audio.sampleRate);
-  buffer.getChannelData(0).set(audio.samples);
-
-  const source = ctx.createBufferSource();
-  source.buffer = buffer;
-  source.connect(ctx.destination);
-
-  if (ctx.state === 'suspended') {
-    await ctx.resume();
-  }
-
-  return new Promise((resolve) => {
-    source.onended = () => resolve();
-    source.start(0);
+  await playPhoneme(audio, {
+    ipa: text,
+    type: 'consonant',
+    startMs: 0,
+    endMs: audio.duration * 1000,
   });
-}
-
-function getAudioContext(): AudioContext {
-  const Ctor = globalThis.AudioContext as typeof AudioContext | undefined;
-  if (!Ctor) {
-    throw new Error('AudioContext is not available in this environment');
-  }
-  return new Ctor();
 }
 
 /**

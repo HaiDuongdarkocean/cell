@@ -14,6 +14,7 @@
 
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { t, type MessageKey } from '@/shared/i18n';
+import { claimExclusiveAudio } from '@/shared/lib/exclusiveAudio';
 import { Button, Chip, Icon, Input, SettingsRow, Text, Toggle } from '@/shared/ui';
 import type { ChipColor } from '@/shared/ui/Chip';
 import type { AudioEngineKind, PronunciationSettings, TtsSettings } from '@/entities/settings/types';
@@ -161,10 +162,12 @@ function SourceTester({ engine, pronunciation, targetLang }: SourceTesterProps):
         return;
       }
       const audio = new Audio(url);
+      const release = claimExclusiveAudio(() => audio.pause());
       audio.addEventListener('ended', () => {
+        release();
         if (!item.url) URL.revokeObjectURL(url);
       });
-      await audio.play();
+      await audio.play().catch((e) => { release(); throw e; });
       setTestStatus(t('audio.tester.playing', [item.label]));
     } catch (e) {
       setTestStatus(t('audio.tester.failed', [String(e)]));

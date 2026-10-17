@@ -4,6 +4,7 @@ import type { ButtonHTMLAttributes } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { Spinner } from '@/shared/ui';
 import { t } from '@/shared/i18n';
+import { claimExclusiveAudio } from '@/shared/lib/exclusiveAudio';
 import styles from './PronunciationButton.module.css';
 
 export interface PronunciationButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label'> {
@@ -39,12 +40,18 @@ export function PronunciationButton({
       } else {
         audioRef.current.src = audioUrl;
       }
+      const audio = audioRef.current;
+      const release = claimExclusiveAudio(() => audio.pause());
+      audio.onended = release;
       setBusy(true);
-      void audioRef.current.play().finally(() => setBusy(false));
+      void audio.play().finally(() => setBusy(false));
       return;
     }
     if (typeof speechSynthesis !== 'undefined') {
       const utterance = new SpeechSynthesisUtterance(word);
+      const release = claimExclusiveAudio(() => speechSynthesis.cancel());
+      utterance.onend = release;
+      utterance.onerror = release;
       speechSynthesis.speak(utterance);
     }
   }, [audioUrl, word, loading, busy]);

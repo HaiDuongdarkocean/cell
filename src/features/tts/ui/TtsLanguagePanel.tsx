@@ -1,8 +1,9 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { t } from '@/shared/i18n';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { decodeBase64ToArrayBuffer } from '@/shared/lib/base64';
+import { claimExclusiveAudio, stopExclusiveAudio } from '@/shared/lib/exclusiveAudio';
 import {
   deleteVoice,
   deleteVoicePack,
@@ -48,7 +49,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
   const [error, setError] = useState<string | null>(null);
   const [selectedAdd, setSelectedAdd] = useState<string>('');
   const [playingVoice, setPlayingVoice] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+
 
   // The background JobRegistry owns downloads — the panel observes jobs and
   // the completion effect (downloadedLanguages/localTtsLanguage) lands via
@@ -178,7 +179,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
 
   const previewVoice = useCallback(
     async (voice: string) => {
-      audioRef.current?.pause();
+      stopExclusiveAudio();
       if (playingVoice === voice) {
         setPlayingVoice(null);
         return;
@@ -192,8 +193,11 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
         const bytes = response.success ? response.data?.items?.[0]?.audioBytesB64 : null;
         if (!bytes) throw new Error(response.success ? 'empty' : response.error ?? 'failed');
         const audio = new Audio(URL.createObjectURL(new Blob([decodeBase64ToArrayBuffer(bytes)], { type: 'audio/wav' })));
-        audioRef.current = audio;
-        audio.onended = () => setPlayingVoice((p) => (p === voice ? null : p));
+        const release = claimExclusiveAudio(() => audio.pause());
+        audio.onended = () => {
+          release();
+          setPlayingVoice((p) => (p === voice ? null : p));
+        };
         void audio.play();
       } catch (err) {
         setPlayingVoice((p) => (p === voice ? null : p));
