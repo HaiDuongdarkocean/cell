@@ -94,12 +94,25 @@ risk themes (each cites its driver)
 
 ## Unguarded / undecided (explicit, no hiding)
 - storage ownership: needs ADR before guard (119 call sites)
+
+## Forecast — notification to Anh
+Health now: <posture + per-layer %, confidence H/M/L per layer>
+  e.g. "structure SOUND (L0/L1 >70% guarded, high confidence),
+  behavior UNPROVEN (L2/L4 <25%, low evidence — not failure)"
+Headroom if this eval ships: +N% coverage achievable
+  via <named cheap fixes> — expected next-report numbers.
+Remaining headroom after run: +M% reachable only via
+  <decisions/ADRs needed> · rest needs L4 instrumentation.
 ```
+
+The forecast is the only place a % band is allowed — always tagged
+with confidence and cited reasons, never a single score. If a layer's
+number would be a guess, write `low confidence` + what would raise it.
 
 ## Hard rules
 
 - Score measures **evidence coverage** — "not instrumented" ≠ "failed", and never pretend otherwise.
-- No scalar "architecture score" — the map IS the answer.
+- No scalar "architecture score" as the verdict — the map IS the answer. The Forecast section may give % bands, always with a confidence tag and cited reasons.
 - Every finding cites its decision (ADR #/code locus) + affected QA(s); uncited findings are vibes and get dropped.
 - Never ship a change without its gate (typecheck/lint/test:related/build per `pre-commit-gate`) AND a fresh-context verify.
 - If a finding is bigger than a run can fix → it becomes an ADR candidate or backlog item, not a half-shipped change.
