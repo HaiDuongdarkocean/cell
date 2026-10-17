@@ -149,18 +149,10 @@ export function TranslatePanel({
     }
   }, [translation, error, loading, onTranslate]);
 
-  if (loading && !translation) {
-    return (
-      <Panel id="dictionary-translate-panel">
-        {sourceHead}
-        {engine === 'ai' && aiStreamText !== undefined ? (
-          <AiStreamStatus text={aiStreamText || undefined} />
-        ) : (
-          <TranslateSkeleton />
-        )}
-      </Panel>
-    );
-  }
+  // Streamed partials land directly in the card's target slot — same layout
+  // as the finished translation, with the check slot spinning until done.
+  const streamText = engine === 'ai' && aiStreamText ? aiStreamText : undefined;
+  const displayText = translation || streamText;
 
   if (error) {
     return (
@@ -171,7 +163,7 @@ export function TranslatePanel({
     );
   }
 
-  if (translation) {
+  if (displayText) {
     return (
       <Panel id="dictionary-translate-panel">
         {sourceHead}
@@ -182,10 +174,23 @@ export function TranslatePanel({
           onToggle={onToggle}
         >
           <div className={styles.TihokaTranslateText}>
-            <div className={styles.TihokaTranslateTarget}>{translation}</div>
+            <div className={styles.TihokaTranslateTarget} data-tihoka-id="translate-target">{displayText}</div>
             <div className={styles.TihokaTranslateNative}>{sentence || term}</div>
           </div>
         </PanelItem>
+      </Panel>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Panel id="dictionary-translate-panel">
+        {sourceHead}
+        {engine === 'ai' ? (
+          <AiStreamStatus />
+        ) : (
+          <TranslateSkeleton />
+        )}
       </Panel>
     );
   }
