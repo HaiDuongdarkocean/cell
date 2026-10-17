@@ -54,6 +54,32 @@ describe('parseBreakdown', () => {
     expect(chunks[1]).toEqual({ text: 'baz qux', meaning: 'other thing', explanation: undefined });
   });
 
+  it('parses XML chunk blocks (current prompt contract)', () => {
+    const text = `<chunk>
+<text>the cat</text>
+<meaning>con mèo</meaning>
+<explanation>Cụm danh từ làm chủ ngữ.</explanation>
+</chunk>
+<chunk>
+<text>sat</text>
+<meaning>ngồi xuống</meaning>
+<explanation>Động từ thì quá khứ đơn.</explanation>
+</chunk>`;
+    const chunks = parseBreakdown(text);
+    expect(chunks).toEqual([
+      { text: 'the cat', meaning: 'con mèo', explanation: 'Cụm danh từ làm chủ ngữ.' },
+      { text: 'sat', meaning: 'ngồi xuống', explanation: 'Động từ thì quá khứ đơn.' },
+    ]);
+  });
+
+  it('parses a trailing open chunk mid-stream', () => {
+    const text = `<chunk><text>a</text><meaning>x</meaning><explanation>y</explanation></chunk>
+<chunk><text>b</text><meaning>z</meaning><explanation>in progress`;
+    const chunks = parseBreakdown(text);
+    expect(chunks).toHaveLength(2);
+    expect(chunks[1].explanation).toBe('in progress');
+  });
+
   it('parses bare line-start numbers with inline #2/#3 (Gemini variant)', () => {
     const text = `1 Quick, as an adjective, #2 Nhanh chóng, mau lẹ, #3 Từ đóng vai trò là tính từ.
 

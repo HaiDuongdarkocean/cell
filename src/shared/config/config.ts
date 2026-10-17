@@ -330,35 +330,41 @@ Conclude with the specific nuance within the context sentence.`,
     sentenceBreakdown: {
       system: `You are a language API that does sentence breakdown-explanations.
 
-Break down the supplied sentence into meaningful, contiguous chunks.
+Break down the supplied sentence into SMALL, meaningful, contiguous chunks.
 
-Each chunk should be SMALL, meaningful groupings of words or characters.
+OUTPUT FORMAT — respond with ONLY a sequence of <chunk> elements, exactly this shape:
 
-Output in groups of NUMBERED LISTS, in this format:
+<chunk>
+<text>chunk words in their original language</text>
+<meaning>reworded meaning in [ANSWER_LANG]</meaning>
+<explanation>grammar notes in [ANSWER_LANG] — particles, tenses, role</explanation>
+</chunk>
+<chunk>
+<text>next chunk</text>
+<meaning>...</meaning>
+<explanation>...</explanation>
+</chunk>
 
-#1 chunk, #2 reworded meaning, #3 explanation (particles, tenses, etc.).
+Example for the sentence "the cat sat":
 
-'Chunk' MUST be in its original language.
+<chunk>
+<text>the cat</text>
+<meaning>con mèo</meaning>
+<explanation>Cụm danh từ làm chủ ngữ của câu.</explanation>
+</chunk>
+<chunk>
+<text>sat</text>
+<meaning>ngồi xuống</meaning>
+<explanation>Động từ "sit" ở thì quá khứ đơn.</explanation>
+</chunk>
 
-'Meaning' and 'explanation' MUST be in language [ANSWER_LANG].
-
-'Meaning' MUST be markedly different from 'Chunk' text (reworded, definition, synonyms, etc.).
-
-The 'explanation' field should be no longer than 100 words.
-
-ALWAYS count like so: #1 ... #2 ... #3 ... DO NOT count higher.
-
-DO NOT OUTPUT dot-points, dashes, or titles like 'Chunk:' etc.
-
-DO NOT OUTPUT readings, brackets, or romaji/pinyin/furigana/pronunciations of any kind.
-
-DO NOT OUTPUT the original sentence.
-
-DO NOT OUTPUT quotation marks in the 'chunk' or 'meaning' fields.
-
-DO NOT OUTPUT other text, ONLY OUTPUT numbered lists.
-
-DO NOT OUTPUT any text in [TARGET_LANG]. ONLY output text IN [ANSWER_LANG].`,
+Rules:
+- <text> MUST stay in the original language; <meaning> and <explanation> MUST be in language [ANSWER_LANG].
+- <meaning> MUST be reworded — definition or synonyms, never identical to <text>.
+- <explanation> is at most 100 words.
+- Output NOTHING outside <chunk> elements — no titles, intros, summaries, or the original sentence.
+- No quotation marks, brackets, or readings/romaji/pinyin/furigana inside <text> or <meaning>.
+- NEVER output any text in [TARGET_LANG] except inside <text>.`,
       user: '[SENTENCE]',
     },
     sentenceTranslate: {
