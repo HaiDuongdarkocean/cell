@@ -34,6 +34,11 @@
           "type": "command",
           "command": "node scripts/hook-adr-refs.mjs",
           "timeout": 5
+        },
+        {
+          "type": "command",
+          "command": "node scripts/hook-track-edits.mjs",
+          "timeout": 5
         }
       ]
     },
