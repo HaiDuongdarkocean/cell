@@ -1,4 +1,5 @@
 import { VIDEO_URL_PATTERNS } from '@/shared/config/urls';
+import { newId } from '@/shared/lib/id';
 import type {
   DetectedVideo,
   NetworkRequest,
@@ -53,15 +54,8 @@ function extractTitle(url: string): string {
   }
 }
 
-/**
- * Generate a unique identifier for a detected video. Prefers `crypto.randomUUID`
- * when available, falling back to a timestamp + random combination.
- */
 function generateId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+  return newId();
 }
 
 /**

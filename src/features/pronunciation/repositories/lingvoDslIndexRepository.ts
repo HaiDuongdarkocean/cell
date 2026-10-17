@@ -9,6 +9,7 @@
  */
 
 import type { LingvoDslIndexEntry } from '../services/lingvoDslParser';
+import { idbRequest, txDone } from '@/shared/lib/storage/idb';
 import { t } from '@/shared/i18n';
 
 const DB_NAME = 'cell-local-audio-index';
@@ -58,9 +59,8 @@ export async function saveLingvoDslIndex(
     for (const entry of entries) {
       store.put(toStored(entry));
     }
-    return new Promise((resolve, reject) => {
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error ?? new Error(t('pronunciation.error.dbSave')));
+    return txDone(tx).catch(() => {
+      throw tx.error ?? new Error(t('pronunciation.error.dbSave'));
     });
   } finally {
     db.close();
@@ -77,14 +77,11 @@ export async function getLingvoDslAudioPaths(
     const tx = db.transaction(STORE_NAME, 'readonly');
     const store = tx.objectStore(STORE_NAME);
     const id = `${packageId}:${term.normalize('NFC').trim().toLowerCase()}`;
-    return new Promise((resolve, reject) => {
-      const request = store.get(id);
-      request.onsuccess = () => {
-        const record = request.result as StoredEntry | undefined;
-        resolve(record?.audioPaths);
-      };
-      request.onerror = () => reject(request.error ?? new Error(t('pronunciation.error.dbLoad')));
-    });
+    const request = store.get(id);
+    const record = await idbRequest(request).catch((err: unknown) => {
+      throw err ?? new Error(t('pronunciation.error.dbLoad'));
+    }) as StoredEntry | undefined;
+    return record?.audioPaths;
   } finally {
     db.close();
   }
@@ -97,10 +94,9 @@ export async function countLingvoDslIndex(packageId: string): Promise<number> {
     const tx = db.transaction(STORE_NAME, 'readonly');
     const index = tx.objectStore(STORE_NAME).index('packageId_term');
     const range = IDBKeyRange.bound([packageId, ''], [packageId, '￿']);
-    return new Promise((resolve, reject) => {
-      const request = index.count(range);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error ?? new Error(t('pronunciation.error.dbCount')));
+    const request = index.count(range);
+    return idbRequest(request).catch((err: unknown) => {
+      throw err ?? new Error(t('pronunciation.error.dbCount'));
     });
   } finally {
     db.close();
@@ -116,7 +112,7 @@ export async function clearLingvoDslIndex(packageId: string): Promise<void> {
     const index = store.index('packageId_term');
     // Range that covers every term for this packageId on the compound index.
     const range = IDBKeyRange.bound([packageId, ''], [packageId, '\uFFFF']);
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       const cursorReq = index.openCursor(range);
       cursorReq.onsuccess = () => {
         const cursor = cursorReq.result;
@@ -126,8 +122,7 @@ export async function clearLingvoDslIndex(packageId: string): Promise<void> {
         }
       };
       cursorReq.onerror = () => reject(cursorReq.error ?? new Error(t('pronunciation.error.dbClear')));
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error ?? new Error(t('pronunciation.error.dbTx')));
+      txDone(tx).then(resolve, () => reject(tx.error ?? new Error(t('pronunciation.error.dbTx'))));
     });
   } finally {
     db.close();

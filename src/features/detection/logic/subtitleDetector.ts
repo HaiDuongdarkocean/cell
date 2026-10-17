@@ -1,4 +1,5 @@
 import { SUBTITLE_URL_PATTERNS } from '@/shared/config/urls';
+import { newId } from '@/shared/lib/id';
 import { isValidIsoCode, toIso6391, labelToIsoCode } from '@/shared/config/languageRegistry';
 import type {
   DetectedSubtitle,
@@ -22,10 +23,7 @@ const FORMAT_EXTENSIONS: ReadonlyArray<[SubtitleFormat, string]> = [
 const BCP47_PATTERN = /^[a-z]{2,3}(-[a-z0-9]{2,8}){0,3}$/i;
 
 function generateId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+  return newId();
 }
 
 function detectFormat(url: string): SubtitleFormat | null {

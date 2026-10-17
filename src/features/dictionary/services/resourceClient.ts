@@ -15,6 +15,7 @@
 // clones blobs); page-origin senders ship bytes as windowed base64 chunks.
 
 import { requestMessage, sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { encodeBase64 } from '@/shared/lib/base64';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { subscribeJobEvents } from '@/features/jobs';
 import { isTerminalJob } from '@/entities/job/types';
@@ -157,18 +158,6 @@ export async function getResourceComponents(
   return data?.components ?? [];
 }
 
-const nativeToBase64 = (Uint8Array.prototype as { toBase64?: (this: Uint8Array) => string }).toBase64;
-
-function bytesToBase64(bytes: Uint8Array): string {
-  if (nativeToBase64 !== undefined) return nativeToBase64.call(bytes);
-  // 32KB subarray slices keep spread arg counts safely under engine limits.
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += 32 * 1024) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + 32 * 1024));
-  }
-  return btoa(binary);
-}
-
 /** Whole-file gzip when the platform can stream+compress; skipped on
  *  already-compressed containers and unstreamable file-likes. */
 async function gzipUpload(file: ReadableFile): Promise<Uint8Array | undefined> {
@@ -307,8 +296,8 @@ export async function importResourceFile(
       if (seq >= total) return;
       const start = seq * IMPORT_CHUNK_BYTES;
       const data = gzipped !== undefined
-        ? bytesToBase64(gzipped.subarray(start, start + IMPORT_CHUNK_BYTES))
-        : bytesToBase64(new Uint8Array(await file.slice(start, start + IMPORT_CHUNK_BYTES).arrayBuffer()));
+        ? encodeBase64(gzipped.subarray(start, start + IMPORT_CHUNK_BYTES))
+        : encodeBase64(new Uint8Array(await file.slice(start, start + IMPORT_CHUNK_BYTES).arrayBuffer()));
       const selection = getComponents?.() ?? components;
       try {
         const res = await requestMessage<{ received?: number; jobId?: string }>(

@@ -6,7 +6,7 @@ import type {
   DownloadStatus,
   Settings,
 } from '@/entities/media';
-import { DEFAULT_SETTINGS, DEFAULT_KEYBOARD_SHORTCUTS, STORAGE_KEYS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
+import { DEFAULT_SETTINGS, DEFAULT_KEYBOARD_SHORTCUTS, STORAGE_KEYS } from '@/shared/config/config';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 
@@ -160,9 +160,7 @@ export const usePopupStore = create<PopupState>((set) => ({
 
   loadPersistedSettings: async () => {
     try {
-      const raw = await loadSettings();
-      // Migration: defaultSubtitleLanguage (string) → selectedSubtitleLanguages (string[])
-      let settings: Settings = raw;
+      let settings = await loadSettings();
       if (
         (!settings.selectedSubtitleLanguages ||
           settings.selectedSubtitleLanguages.length === 0) &&
@@ -174,45 +172,15 @@ export const usePopupStore = create<PopupState>((set) => ({
           selectedSubtitleLanguages: [settings.defaultSubtitleLanguage],
         };
       }
-      // Fill in new fields with defaults if missing (older saved settings)
-      if (settings.preferredVideoFormat === undefined) {
-        settings = { ...settings, preferredVideoFormat: 'm3u8' };
-      }
-      if (!settings.selectedSubtitleLanguages) {
-        settings = { ...settings, selectedSubtitleLanguages: ['all'] };
-      }
-      // Migration: keyboardShortcuts missing in older saved settings
       if (!settings.keyboardShortcuts || settings.keyboardShortcuts.length === 0) {
         settings = { ...settings, keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS };
       }
-      // Migration: subtitleOverlayNativeLanguage missing in pre-bilingual settings.
-      // Fill 'vi' for backward compat. V4 default đã là 'vi' (config.ts) nên
-      // branch này chỉ chạy cho settings rất cũ chưa có field.
-      if (settings.subtitleOverlayNativeLanguage === undefined) {
-        settings = { ...settings, subtitleOverlayNativeLanguage: 'vi' };
-      }
-      // Migration: normalize subtitleOverlayTargetLanguage to ISO 639-1 (2 lowercase letters)
-      // or empty. Invalid values (e.g. 'english', 'EN-', whitespace) reset to ''.
-      // V4 default đã là 'en' (config.ts) — branch này chỉ normalize user input.
       const targetLang = settings.subtitleOverlayTargetLanguage ?? '';
       const normalizedTarget = targetLang.trim().toLowerCase();
       if (normalizedTarget && !/^[a-z]{2}$/.test(normalizedTarget)) {
         settings = { ...settings, subtitleOverlayTargetLanguage: '' };
       } else if (normalizedTarget !== targetLang) {
         settings = { ...settings, subtitleOverlayTargetLanguage: normalizedTarget };
-      }
-      // Migration: subtitleOverlayTargetStyle/NativeStyle missing in pre-ADR-013 settings.
-      // Fill defaults for existing users (ADR-013 D2).
-      if (!settings.subtitleOverlayTargetStyle) {
-        settings = { ...settings, subtitleOverlayTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET };
-      }
-      if (!settings.subtitleOverlayNativeStyle) {
-        settings = { ...settings, subtitleOverlayNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE };
-      }
-      // Migration: subtitlePreference missing in pre-ADR-014 settings.
-      // Fill {} for existing users (ADR-014 D5).
-      if (!settings.subtitlePreference) {
-        settings = { ...settings, subtitlePreference: {} };
       }
       set({ settings, isSettingsLoaded: true });
     } catch (error) {

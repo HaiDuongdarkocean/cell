@@ -1,7 +1,5 @@
-import type { MessageType } from '@/entities/message';
-
 // === Message Type Constants ===
-// Must match MessageType union in src/entities/message/types.ts
+// SSOT — entities/message/types.ts derives its MessageType union from these values.
 
 export const MESSAGE_TYPES = {
   GET_DETECTED_MEDIA: 'GET_DETECTED_MEDIA',
@@ -182,4 +180,4 @@ export const MESSAGE_TYPES = {
   QUEUE_GET: 'QUEUE_GET',
   QUEUE_REMOVE: 'QUEUE_REMOVE',
   QUEUE_CHANGED: 'QUEUE_CHANGED',
-} as const satisfies Record<string, MessageType>;
+} as const satisfies Record<string, string>;

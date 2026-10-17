@@ -16,6 +16,7 @@
  * via `youtubeTimedtextBodyToSrt`.
  */
 import { youtubeTimedtextBodyToSrt } from '@/shared/lib/parsers/youtubeCaptionToSrt';
+import { newId } from '@/shared/lib/id';
 import type { SubtitleFormat } from '@/entities/subtitle';
 
 const RESPONSE_TIMEOUT_MS = 12_000;
@@ -58,10 +59,7 @@ export function fetchYouTubeCaptionViaPlayer(
   if (!ref || !isYouTubeTimedtextUrl(url)) return Promise.resolve(undefined);
   if (typeof window === 'undefined') return Promise.resolve(undefined);
 
-  const requestId =
-    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const requestId = newId();
 
   return new Promise((resolve) => {
     const timeoutId = setTimeout(() => {

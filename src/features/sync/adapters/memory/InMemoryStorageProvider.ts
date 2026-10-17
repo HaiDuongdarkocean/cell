@@ -1,3 +1,4 @@
+import { bytesToHex } from '@/shared/lib/codec';
 import type { AccountKey, Connection, ConnectionId, ProviderId } from '../../domain/types';
 import type { Clock } from '../../ports/clock';
 import { ProviderError } from '../../ports/storageProvider';
@@ -267,7 +268,5 @@ async function digest(bytes: Uint8Array): Promise<string | undefined> {
   const subtle = globalThis.crypto?.subtle;
   if (!subtle) return undefined;
   const buf = await subtle.digest('SHA-256', new Uint8Array(bytes).buffer);
-  let hex = '';
-  for (const b of new Uint8Array(buf)) hex += b.toString(16).padStart(2, '0');
-  return hex;
+  return bytesToHex(buf);
 }

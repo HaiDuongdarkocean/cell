@@ -5,6 +5,8 @@
 
 import { BREAKPOINTS } from '@/shared/lib/tokens';
 
+export { SHEET_CLICK_THRESHOLD_PX, SHEET_DISMISS_THRESHOLD_PX, SHEET_DISMISS_RATIO } from '@/shared/ui/useSheet';
+
 export const POPUP_Z_INDEX = 'var(--z-overlay-top)'; // top content-script overlay
 export const POPUP_BELOW_PANEL_Z_INDEX = 'var(--z-overlay-settings)';
 
@@ -24,11 +26,6 @@ export function isPlayerModeActive(): boolean {
   return document.documentElement?.dataset.tihokaPlayerMode === 'true';
 }
 export const SHEET_SNAP_THRESHOLD_PX = 40;
-export const SHEET_DISMISS_THRESHOLD_PX = 100;
-/** Sheet closes when its height drops below this fraction of viewport height. */
-export const SHEET_DISMISS_RATIO = 0.2;
-/** Pointer movement below this many px counts as a click (not a drag). */
-export const SHEET_CLICK_THRESHOLD_PX = 4;
 
 /** Sheet snap tiers as fraction of viewport height (high → low). */
 export const SHEET_TIERS = [1.0, 0.75, 0.5, 0.25];

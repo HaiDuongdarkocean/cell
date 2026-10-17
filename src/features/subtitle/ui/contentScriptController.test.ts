@@ -55,6 +55,7 @@ jest.mock('@/features/studyModes', () => ({
 
 jest.mock('@/shared/lib/chrome-apis', () => ({
   sendMessage: jest.fn<Promise<unknown>, []>().mockResolvedValue(undefined),
+  getStorage: jest.fn<Promise<Record<string, unknown>>, [string]>().mockResolvedValue({}),
   onMessage: jest.fn().mockReturnValue(jest.fn()),
   onStorageChanged: jest.fn().mockReturnValue(jest.fn()),
   removeOnMessageListener: jest.fn(),

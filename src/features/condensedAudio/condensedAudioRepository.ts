@@ -1,20 +1,8 @@
 import type { CondensedAudioRecord } from '@/entities/condensedAudio';
 import { getDB, STORES } from '@/features/local-player';
+import { idbRequest, txDone } from '@/shared/lib/storage/idb';
 
-function reqToPromise<T>(request: IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-
-function txDone(tx: IDBTransaction): Promise<void> {
-  return new Promise((resolve, reject) => {
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-  });
-}
+const reqToPromise = idbRequest;
 
 export async function saveRecord(record: CondensedAudioRecord): Promise<void> {
   const db = await getDB();

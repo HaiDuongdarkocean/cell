@@ -1,3 +1,4 @@
+import { bytesToHex } from '@/shared/lib/codec';
 import type { Connection } from '../../domain/types';
 import type { Clock } from '../../ports/clock';
 import type { KeyValueStore } from '../../ports/keyValueStore';
@@ -186,9 +187,7 @@ async function contentHashHex(bytes: Uint8Array): Promise<string> {
   const subtle = globalThis.crypto?.subtle;
   if (subtle) {
     const buf = await subtle.digest('SHA-256', new Uint8Array(bytes).buffer);
-    let hex = '';
-    for (const b of new Uint8Array(buf)) hex += b.toString(16).padStart(2, '0');
-    return hex;
+    return bytesToHex(buf);
   }
   let h0 = 0x811c9dc5;
   let h1 = 0x811c9dc5 ^ 0x9e3779b9;

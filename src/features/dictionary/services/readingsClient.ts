@@ -7,8 +7,7 @@
 // Any failure resolves to an empty map — callers render without readings.
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
-import type { MessageResponse } from '@/entities/message';
+import { batchSendTerms } from '@/shared/lib/batchSendTerms';
 import { normalizeLangCode } from './wordStatusClient';
 
 const READINGS_TERMS_CHUNK = 500;
@@ -17,19 +16,17 @@ export async function getReadings(
   langCode: string,
   terms: readonly string[],
 ): Promise<Map<string, string>> {
-  const out = new Map<string, string>();
-  if (terms.length === 0) return out;
-
-  for (let i = 0; i < terms.length; i += READINGS_TERMS_CHUNK) {
-    const response = await sendMessage<MessageResponse<{ readings: Record<string, string> }>>({
-      type: MESSAGE_TYPES.READINGS_GET,
-      payload: { tabId: -1, langCode: normalizeLangCode(langCode), terms: terms.slice(i, i + READINGS_TERMS_CHUNK) },
-    });
-    if (response?.success && response.data) {
-      for (const [term, reading] of Object.entries(response.data.readings ?? {})) {
-        out.set(term, reading);
+  const out = await batchSendTerms<{ readings: Record<string, string> }, Map<string, string>>({
+    type: MESSAGE_TYPES.READINGS_GET,
+    terms,
+    chunkSize: READINGS_TERMS_CHUNK,
+    makePayload: (chunk) => ({ tabId: -1, langCode: normalizeLangCode(langCode), terms: [...chunk] }),
+    empty: () => new Map<string, string>(),
+    merge: (acc, data) => {
+      for (const [term, reading] of Object.entries(data.readings ?? {})) {
+        acc.set(term, reading);
       }
-    }
-  }
-  return out;
+    },
+  });
+  return out ?? new Map();
 }

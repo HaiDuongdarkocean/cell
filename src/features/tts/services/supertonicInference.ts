@@ -7,6 +7,7 @@
 
 import { readTtsFile } from './ttsModelStorage';
 import { isVoicePackDownloaded } from './ttsDownloadManager';
+import { encodeWav } from '@/shared/lib/wav';
 import type { Tensor, InferenceSession } from 'onnxruntime-web';
 
 interface SupertonicConfig {
@@ -600,44 +601,10 @@ export async function synthesizeSupertonic(text: string, lang: string, voice = '
 
 export function writeWavBuffer(audioData: readonly number[], sampleRate: number, duration: number): ArrayBuffer {
   const sampleCount = Math.min(audioData.length, Math.floor(sampleRate * duration));
-  const audioSlice = audioData.slice(0, sampleCount);
-  const numChannels = 1;
-  const bitsPerSample = 16;
-  const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
-  const blockAlign = (numChannels * bitsPerSample) / 8;
-  const dataSize = audioSlice.length * 2;
-
-  const buffer = new ArrayBuffer(44 + dataSize);
-  const view = new DataView(buffer);
-
-  const writeString = (offset: number, str: string) => {
-    for (let i = 0; i < str.length; i++) {
-      view.setUint8(offset + i, str.charCodeAt(i));
-    }
-  };
-
-  writeString(0, 'RIFF');
-  view.setUint32(4, 36 + dataSize, true);
-  writeString(8, 'WAVE');
-  writeString(12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, numChannels, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, byteRate, true);
-  view.setUint16(32, blockAlign, true);
-  view.setUint16(34, bitsPerSample, true);
-  writeString(36, 'data');
-  view.setUint32(40, dataSize, true);
-
-  const int16Data = new Int16Array(audioSlice.length);
-  for (let i = 0; i < audioSlice.length; i++) {
-    const clamped = Math.max(-1.0, Math.min(1.0, audioSlice[i]));
-    int16Data[i] = Math.floor(clamped * 32767);
+  const samples = new Float32Array(sampleCount);
+  for (let i = 0; i < sampleCount; i++) {
+    samples[i] = audioData[i] ?? 0;
   }
-
-  const dataView = new Uint8Array(buffer, 44);
-  dataView.set(new Uint8Array(int16Data.buffer));
-
-  return buffer;
+  const bytes = encodeWav(samples, sampleRate);
+  return new Uint8Array(bytes).buffer;
 }

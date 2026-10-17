@@ -47,6 +47,13 @@ export function getActiveProfileSettings(
   return resolveProfile(profile, settings.universalNativeLanguage);
 }
 
+export function resolveResourceLangCode(
+  settings: Pick<Settings, 'universalNativeLanguage' | 'languageProfiles' | 'activeProfileId'>,
+  fallback: string,
+): string {
+  return getActiveProfileSettings(settings)?.resourceLangCode ?? fallback;
+}
+
 type ProfileShape = { target: string; native: string };
 
 export function validateLanguageProfile(

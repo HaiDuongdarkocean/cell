@@ -9,6 +9,7 @@
 import en from './messages/en.json';
 import viMessages from './messages/vi.json';
 import { STORAGE_KEYS } from '@/shared/config/config';
+import { getStorage, onStorageChanged } from '@/shared/lib/chrome-apis';
 
 export const SUPPORTED_LOCALES = ['en', 'vi'] as const;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
@@ -45,11 +46,10 @@ let storageSyncStarted = false;
 function syncUiLanguageFromStorage(): void {
   if (storageSyncStarted) return;
   storageSyncStarted = true;
-  if (typeof chrome === 'undefined' || !chrome.storage?.onChanged) return;
-  void chrome.storage.local.get(STORAGE_KEYS.SETTINGS).then((data) => {
-    applyStoredUiLanguage(data?.[STORAGE_KEYS.SETTINGS]);
+  void getStorage(STORAGE_KEYS.SETTINGS).then((data) => {
+    applyStoredUiLanguage(data[STORAGE_KEYS.SETTINGS]);
   });
-  chrome.storage.onChanged.addListener((changes, area) => {
+  onStorageChanged((changes, area) => {
     if (area !== 'local') return;
     const change = changes[STORAGE_KEYS.SETTINGS];
     if (change) applyStoredUiLanguage(change.newValue);

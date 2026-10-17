@@ -7,6 +7,10 @@
 // The decoder is intentionally self-contained: it only needs the encrypted body,
 // the seed string, and the media id. No network or DOM access.
 
+import { base64UrlToBytes } from '@/shared/lib/codec';
+
+export { base64UrlToBytes };
+
 const FNV_PRIME = 16777619;
 const FNV_OFFSET = 2166136261;
 const HASH_INIT = 2654435769;
@@ -99,20 +103,6 @@ function generateKeystream(state: PrngState, length: number): Uint8Array {
   }
 
   return stream;
-}
-
-export function base64UrlToBytes(input: string): Uint8Array {
-  const padded = input
-    .replace(/-/g, '+')
-    .replace(/_/g, '/')
-    .padEnd(4 * Math.ceil(input.length / 4), '=');
-
-  const binary = atob(padded);
-  const out = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    out[i] = binary.charCodeAt(i);
-  }
-  return out;
 }
 
 export interface VideasySource {

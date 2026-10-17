@@ -1,4 +1,6 @@
 import { getSessionStorage, getStorage, onStorageChanged } from '@/shared/lib/chrome-apis';
+import { newId } from '@/shared/lib/id';
+import { idbRequest } from '@/shared/lib/storage/idb';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { HybridClock } from '../../../domain/hlc';
@@ -51,10 +53,7 @@ interface SyncRuntime {
 const INVALID_DEVICE_IDS = new Set(['uninitialized', 'unavailable']);
 
 function newContextId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return `ctx-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  return `ctx-${newId()}`;
 }
 
 let runtime: SyncRuntime | null = null;
@@ -150,12 +149,7 @@ function hasConnectionEntry(state: unknown): boolean {
   return Object.keys(state).some((key) => key.startsWith('connection:'));
 }
 
-function idbReq<T>(request: IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
+const idbReq = idbRequest;
 
 export function metaPk(scope: Scope | null, key: RecordKey): string {
   return `${scope ?? ''}|${key}`;

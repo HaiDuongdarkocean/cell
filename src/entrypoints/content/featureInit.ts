@@ -19,6 +19,7 @@ import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigg
 import { modifierMatches, type LookupRequest, type TriggerMode } from '@/entities/dictionary';
 import { findAndInitOverlay } from './videoOverlay';
 import { isEditableTarget } from '@/shared/lib/dom/isEditable';
+import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
 import { resolveTopFrameOrigin } from '@/shared/lib/dom/frameOrigin';
 import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/TihokaUiHosts';
 import type { KeyboardShortcut, ShortcutAction } from '@/entities/settings/types';
@@ -48,7 +49,7 @@ let cachedSubtitleEnabled = false;
 /** Subtitle tokenize enablement keys the top-level page — inside a player
  *  iframe the href is the embed domain, so also honor the top frame origin. */
 function isSubtitleTokenizeEnabled(ts: Parameters<typeof isSubtitleTokenizeEnabledForUrl>[0]): boolean {
-  if (window.self === window.top) return isSubtitleTokenizeEnabledForUrl(ts, window.location.href);
+  if (!isChildFrame()) return isSubtitleTokenizeEnabledForUrl(ts, window.location.href);
   const top = resolveTopFrameOrigin();
   return top !== undefined
     ? isSubtitleTokenizeEnabledForOrigin(ts, top)
@@ -194,7 +195,7 @@ export function ensureUniversalPanelMount(): UniversalPanelMountController {
 /** Toggle subtitle tokenize for this URL — persists to storage + notifies panel. */
 async function toggleSubtitleTokenize(): Promise<void> {
   const ts = await loadTokenizeSettings();
-  const url = window.self === window.top
+  const url = !isChildFrame()
     ? window.location.href
     : (resolveTopFrameOrigin() ?? window.location.href);
   const next = !isSubtitleTokenizeEnabled(ts);
@@ -343,7 +344,7 @@ export async function initTokenize(): Promise<void> {
 // Re-init web-text dictionary when settings change (no page reload needed).
 export function installSettingsReloader(): void {
   onStorageChanged((changes, area) => {
-    if (window.self !== window.top) return;
+    if (isChildFrame()) return;
     if (area === 'local' && changes[STORAGE_KEYS.SETTINGS]) {
       void initWebTextDictionary();
       void initTokenize();

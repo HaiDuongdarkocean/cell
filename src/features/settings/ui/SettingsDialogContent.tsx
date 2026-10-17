@@ -24,7 +24,7 @@ import { Dictionary } from '@/features/dictionaryPopup';
 import { Toggle } from '@/shared/ui/Toggle';
 import { ShortcutInput } from '@/shared/ui/ShortcutInput';
 import { isShortcutConflict } from '@/entities/settings/lib/shortcutConflicts';
-import { getActiveProfileSettings } from '@/entities/settings';
+import { getActiveProfileSettings, resolveResourceLangCode } from '@/entities/settings';
 import { LanguageProfilePanel } from './LanguageProfilePanel';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Icon } from '@/shared/ui/Icon';
@@ -161,7 +161,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
   const sidebarExpanded = containerWidth >= SIDEBAR_LABEL_MIN_WIDTH;
   const activeProfile = getActiveProfileSettings(settings);
 
-  const resourceLang = activeProfile?.resourceLangCode ?? settings.subtitleOverlayTargetLanguage ?? 'en';
+  const resourceLang = resolveResourceLangCode(settings, settings.subtitleOverlayTargetLanguage ?? 'en');
 
   useEffect(() => {
     if (navOrientation !== 'horizontal') return;
@@ -507,7 +507,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               <AudioPanel
                 pronunciation={settings.pronunciation ?? DEFAULT_PRONUNCIATION_SETTINGS}
                 tts={settings.dictionaryPopup?.tts ?? DEFAULT_TTS_SETTINGS}
-                targetLang={activeProfile?.resourceLangCode ?? settings.subtitleOverlayTargetLanguage ?? 'en'}
+                targetLang={resolveResourceLangCode(settings, settings.subtitleOverlayTargetLanguage ?? 'en')}
                 onPronunciationChange={(p) => onChange({ ...settings, pronunciation: p })}
                 onTtsChange={(tts) => onChange({ ...settings, dictionaryPopup: { ...(settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS), tts } })}
               />

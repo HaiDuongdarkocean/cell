@@ -12,6 +12,7 @@
 // source: https://developer.mozilla.org/en-US/docs/Web/API/structuredClone
 
 import type { ComprehensionBand } from '@/entities/comprehension';
+import { idbRequest, txDone } from '@/shared/lib/storage/idb';
 
 // ─── Schema constants ────────────────────────────────────────────────────────
 
@@ -168,20 +169,7 @@ export async function deleteDB(): Promise<void> {
 
 // ─── IDB request helpers ─────────────────────────────────────────────────────
 
-function reqToPromise<T>(request: IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-
-function txDone(tx: IDBTransaction): Promise<void> {
-  return new Promise((resolve, reject) => {
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-  });
-}
+const reqToPromise = idbRequest;
 
 // ─── Video CRUD ──────────────────────────────────────────────────────────────
 

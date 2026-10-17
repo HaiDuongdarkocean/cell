@@ -2,6 +2,7 @@
 // spec §AD5: Avoid re-OCR same frame. LRU eviction max 100 entries.
 
 import type { OcrResultItem } from '@/features/ocr/engine/types';
+import { LruCache } from '@/shared/lib/lruCache';
 import type { ScriptRun } from '../language/scriptRunSegmenter';
 
 /** Cache entry — OCR results + script runs for one timestamp bucket. */
@@ -40,34 +41,20 @@ export function computeVideoId(video: { src: string; duration: number }): string
 
 /** LRU cache for OCR results. Max 100 entries. */
 export class OcrCache {
-  private cache = new Map<string, OcrCacheEntry>();
-  private readonly maxEntries: number;
+  private readonly cache: LruCache<string, OcrCacheEntry>;
 
   constructor(maxEntries = 100) {
-    this.maxEntries = maxEntries;
+    this.cache = new LruCache<string, OcrCacheEntry>(maxEntries);
   }
 
   /** Get cached entry. Returns undefined if miss. Moves to end (LRU). */
   get(videoId: string, timestampBucket: number): OcrCacheEntry | undefined {
-    const key = buildCacheKey(videoId, timestampBucket);
-    const entry = this.cache.get(key);
-    if (entry) {
-      // LRU: delete + re-insert to move to end (most recently used).
-      this.cache.delete(key);
-      this.cache.set(key, entry);
-    }
-    return entry;
+    return this.cache.get(buildCacheKey(videoId, timestampBucket));
   }
 
   /** Set cache entry. Evicts oldest if over max. */
   set(videoId: string, timestampBucket: number, entry: OcrCacheEntry): void {
-    const key = buildCacheKey(videoId, timestampBucket);
-    if (this.cache.size >= this.maxEntries) {
-      // Evict oldest (first entry in Map = least recently used).
-      const oldestKey = this.cache.keys().next().value;
-      if (oldestKey) this.cache.delete(oldestKey);
-    }
-    this.cache.set(key, entry);
+    this.cache.set(buildCacheKey(videoId, timestampBucket), entry);
   }
 
   /** Clear all entries for a videoId. */

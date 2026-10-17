@@ -28,6 +28,7 @@ import { Label } from '@/shared/ui/Label';
 import { Textarea } from '@/shared/ui/Textarea';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
+import { splitTags } from '../service/noteUpdate';
 import styles from './FieldRow.module.css';
 
 interface FieldRowProps {
@@ -208,10 +209,10 @@ export function TagInput({
 }: TagInputProps): ReactElement {
   const [input, setInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  const tags = value.split(/\s+/).filter(Boolean);
+  const tags = splitTags(value);
 
   const commit = (raw: string): void => {
-    const parts = raw.split(/\s+/).filter(Boolean);
+    const parts = splitTags(raw);
     if (parts.length === 0) return;
     const next = [...new Set([...tags, ...parts])];
     onChange(next.join(' '));

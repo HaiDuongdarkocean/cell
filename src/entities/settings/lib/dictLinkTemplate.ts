@@ -1,13 +1,11 @@
 import type { ExternalDictLinkTemplate } from '../types';
+import { newId } from '@/shared/lib/id';
 
 export const DICT_LINK_NAME_MAX = 64;
 export const DICT_LINK_TEMPLATE_MAX = 2048;
 
 export function makeDictLinkId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+  return newId();
 }
 
 export function isSafeDictUrl(url: string): boolean {

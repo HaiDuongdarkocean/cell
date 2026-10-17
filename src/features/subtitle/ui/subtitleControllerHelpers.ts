@@ -3,7 +3,7 @@ import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { showToast } from './subtitleUI';
 import { t } from '@/shared/i18n';
-import type { TranslateResult } from '@/entities/message';
+import { translateText } from '@/features/translate';
 import type { BilingualCue } from '@/entities/media';
 import type { Settings } from '@/entities/settings';
 
@@ -19,16 +19,7 @@ export function createTranslateFunction(
   sl: string,
   tl: string,
 ): (text: string) => Promise<string[]> {
-  return async (text: string): Promise<string[]> => {
-    const res = await sendMessage<{ success?: boolean; data?: TranslateResult; error?: string }>({
-      type: MESSAGE_TYPES.TRANSLATE,
-      payload: { text, sl, tl },
-    });
-    if (!res?.success || !res.data?.translated) {
-      throw new Error(res?.error ?? 'translate failed');
-    }
-    return res.data.translated;
-  };
+  return (text: string) => translateText(text, sl, tl);
 }
 
 /**

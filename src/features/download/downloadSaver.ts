@@ -1,3 +1,4 @@
+import { bytesToDataUrl } from '@/shared/lib/base64';
 import { download as chromeDownload, searchDownloads } from '@/shared/lib/chrome-apis/downloads';
 import {
   ensureDownloadSubdir,
@@ -84,20 +85,7 @@ export class PendingFilenameRegistry {
  * service worker global scope.
  */
 export async function blobToDataUrl(blob: Blob): Promise<string> {
-  const buffer = await blob.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-
-  // Base64-encode in chunks to avoid call-stack overflow on large inputs.
-  let binary = '';
-  const CHUNK_SIZE = 0x8000;
-  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
-    const chunk = bytes.subarray(i, i + CHUNK_SIZE);
-    binary += String.fromCharCode(...chunk);
-  }
-  const base64 = btoa(binary);
-
-  const mimeType = blob.type || 'application/octet-stream';
-  return `data:${mimeType};base64,${base64}`;
+  return bytesToDataUrl(await blob.arrayBuffer(), blob.type || 'application/octet-stream');
 }
 
 /**

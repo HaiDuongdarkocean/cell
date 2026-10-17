@@ -16,7 +16,8 @@ export const Tihoka_UI_HOST_SELECTORS =
   '.js-Tihoka-popup-host, .js-Tihoka-orbital-badge-host, .js-Tihoka-token-badge-host, ' +
   '.js-Tihoka-universal-panel, ' +
   '#Tihoka-settings-dialog-host, #Tihoka-card-creator-host, #Tihoka-universal-panel-host, ' +
-  '#Tihoka-subtitle-root';
+  '#Tihoka-subtitle-root, #Tihoka-manager-portal, #Tihoka-host-manager-sheet, ' +
+  '#Tihoka-settings-dialog-host-legacy, .Tihoka-ocr-overlay, .Tihoka-ocr-region-selector';
 
 /**
  * Hosts whose pointer-events get temporarily disabled while resolving a
@@ -26,7 +27,9 @@ export const Tihoka_UI_HOST_SELECTORS =
  */
 export const Tihoka_UI_POINTER_EVENT_HOST_SELECTORS =
   '.js-Tihoka-popup-host, .js-Tihoka-orbital-badge-host, .js-Tihoka-token-badge-host, ' +
-  '#Tihoka-settings-dialog-host, #Tihoka-card-creator-host, #Tihoka-subtitle-root';
+  '#Tihoka-settings-dialog-host, #Tihoka-card-creator-host, #Tihoka-subtitle-root, ' +
+  '#Tihoka-manager-portal, #Tihoka-host-manager-sheet, #Tihoka-settings-dialog-host-legacy, ' +
+  '.Tihoka-ocr-overlay, .Tihoka-ocr-region-selector';
 
 /**
  * Floating Tihoka surfaces that sit above the Universal Panel overlay — a

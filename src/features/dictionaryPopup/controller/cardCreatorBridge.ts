@@ -34,6 +34,7 @@ import { cardLookupResult, formatDefEntry, formatDefFromLookup } from '@/feature
 import { loadSettingsOrToast, showProgressToast } from '@/features/subtitle';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { translateText } from '@/features/translate';
 import { audioItemDataUrl, resolveSentenceAudioItems } from '@/features/pronunciation';
 import { t } from '@/shared/i18n';
 import type { PanelMountController } from './panelBridge';
@@ -446,12 +447,9 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
     if (needsTranslation) {
       void (async () => {
         try {
-          const res = await sendMessage<MessageResponse<{ translated: string[] }>>({
-            type: MESSAGE_TYPES.TRANSLATE,
-            payload: { tabId: 0, text: prefill.contextSentence, sl: sourceLang, tl: targetLang },
-          });
-          if (res?.success && res.data?.translated?.length) {
-            cardCreatorMount?.updateTextField('sentenceTranslation', res.data.translated.join(' '));
+          const translated = await translateText(prefill.contextSentence, sourceLang, targetLang);
+          if (translated.length) {
+            cardCreatorMount?.updateTextField('sentenceTranslation', translated.join(' '));
           }
         } catch { /* non-fatal */ }
       })();
@@ -639,12 +637,9 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
           const translationTask = (async (): Promise<string | undefined> => {
             if (prefill.translation || !prefill.contextSentence) return prefill.translation;
             try {
-              const res = await sendMessage<MessageResponse<{ translated: string[] }>>({
-                type: MESSAGE_TYPES.TRANSLATE,
-                payload: { tabId: 0, text: prefill.contextSentence, sl: sourceLang, tl: targetLang },
-              });
-              if (res?.success && res.data?.translated?.length) {
-                return res.data.translated.join(' ');
+              const translated = await translateText(prefill.contextSentence, sourceLang, targetLang);
+              if (translated.length) {
+                return translated.join(' ');
               }
             } catch { /* non-fatal */ }
             return undefined;

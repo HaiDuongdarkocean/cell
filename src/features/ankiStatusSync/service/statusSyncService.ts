@@ -1,8 +1,8 @@
 /** statusSyncService — orchestrates Anki ↔ wordStatus ↔ Tihoka SRS status
  *  sync per spec anki-known-seed (REQ-3/4/5/6/7). */
 
-import { STORAGE_KEYS } from '@/shared/config/config';
 import { DEFAULT_ANKI_STATUS_SYNC_SETTINGS } from '@/shared/config/config';
+import { loadSettings as loadStoredSettings } from '@/shared/lib/storage/settingsStore';
 import type { Settings } from '@/entities/settings';
 import type {
   AnkiCardLink,
@@ -18,7 +18,7 @@ import {
   getStoredAnkiConnectUrl,
   htmlToText,
 } from '@/features/ankiImport';
-import type { AnkiConnectInvoker } from '@/features/ankiImport';
+import type { AnkiConnectInvoker, CardsInfoRow } from '@/features/ankiImport';
 import { normalizeTerm, setWordStatusFromSync, setWordStatusesFromSync } from '@/features/dictionary';
 import type { SyncStatusUpdate } from '@/features/dictionary';
 import { getSrsDB, SRS_STORES } from '@/features/srs';
@@ -53,18 +53,6 @@ import { ANKI_QUEUE } from '../lib/statusRules';
 export const ANKI_STATUS_SYNC_ALARM = 'Tihoka.ankiStatusSync.tick';
 export const ANKI_SYNC_PERIOD_MINUTES = 5;
 
-interface CardsInfoRow {
-  readonly cardId: number;
-  readonly note: number;
-  readonly queue: number;
-  readonly due: number;
-  readonly interval: number;
-  readonly odid: number;
-  readonly odue?: number;
-  readonly mod?: number;
-  readonly fields?: Record<string, { value: string; order: number }>;
-}
-
 export interface SyncRunResult {
   readonly ok: boolean;
   readonly offline: boolean;
@@ -88,8 +76,7 @@ const CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 async function loadSettings(): Promise<Settings | undefined> {
   try {
-    const data = await chrome.storage.local.get(STORAGE_KEYS.SETTINGS);
-    return data?.[STORAGE_KEYS.SETTINGS] as Settings | undefined;
+    return await loadStoredSettings();
   } catch {
     return undefined;
   }

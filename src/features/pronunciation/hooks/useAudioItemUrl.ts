@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createBlobUrl, revokeBlobUrl } from '@/shared/lib/blobUrl';
 import type { AudioItem } from '@/entities/dictionary';
 
 /**
@@ -16,7 +17,7 @@ export function useAudioItemUrl(item: AudioItem | null | undefined): string | un
       setUrl(item.url);
     } else if (item?.audioBytes) {
       createdUrl = typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function'
-        ? URL.createObjectURL(new Blob([item.audioBytes as unknown as BlobPart], { type: 'audio/mpeg' }))
+        ? createBlobUrl(item.audioBytes, 'audio/mpeg')
         : undefined;
       setUrl(createdUrl);
     } else {
@@ -24,9 +25,7 @@ export function useAudioItemUrl(item: AudioItem | null | undefined): string | un
     }
 
     return (): void => {
-      if (createdUrl && typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
-        URL.revokeObjectURL(createdUrl);
-      }
+      if (createdUrl) revokeBlobUrl(createdUrl);
     };
   }, [item?.id, item?.url, item?.audioBytes]);
 
@@ -57,7 +56,7 @@ export function useAudioItemUrlMap(items: readonly AudioItem[]): AudioItemUrlMap
   // guarantee memory is freed without needing a separate effect per item.
   for (const [id, url] of map) {
     if (!currentIds.has(id)) {
-      if (canUseObjectUrl) URL.revokeObjectURL(url);
+      if (canUseObjectUrl) revokeBlobUrl(url);
       map.delete(id);
     }
   }
@@ -67,16 +66,15 @@ export function useAudioItemUrlMap(items: readonly AudioItem[]): AudioItemUrlMap
       if (item.url) {
         map.set(item.id, item.url);
       } else if (item.audioBytes && canUseObjectUrl) {
-        map.set(item.id, URL.createObjectURL(new Blob([item.audioBytes as unknown as BlobPart], { type: 'audio/mpeg' })));
+        map.set(item.id, createBlobUrl(item.audioBytes, 'audio/mpeg'));
       }
     }
   }
 
   useEffect(() => () => {
-    if (typeof URL === 'undefined' || typeof URL.revokeObjectURL !== 'function') return;
     const m = mapRef.current;
     for (const url of m.values()) {
-      URL.revokeObjectURL(url);
+      revokeBlobUrl(url);
     }
     m.clear();
   }, []);

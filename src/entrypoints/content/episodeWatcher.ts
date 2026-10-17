@@ -2,6 +2,7 @@ import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { VideoEpisodeChangedPayload } from '@/entities/message';
 import { getFirstVideo } from '@/shared/lib/dom/videoFinder';
+import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
 import { findAndInitOverlay } from './videoOverlay';
 import { scanAndReportIfFound } from './mediaScan';
 import { isTihokaDebug } from './debugLog';
@@ -189,14 +190,14 @@ function initEpisodeChangeWatcher(): void {
   // fetchInterceptor.iife.ts. Player iframes (videasy, vidnest) are visible and
   // must be instrumented so in-player episode switches (e.g. videasy's next-
   // episode button) are detected.
-  if (window.self !== window.top) {
+  if (isChildFrame()) {
     try {
       if (window.innerWidth <= 10 && window.innerHeight <= 10) return;
     } catch {
       return;
     }
   }
-  const isTop = window.self === window.top;
+  const isTop = !isChildFrame();
   // Baseline the first <video> or player iframe at inject time — these are not
   // considered an episode switch.
   const existing = getFirstVideo();

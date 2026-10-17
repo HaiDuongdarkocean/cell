@@ -1,4 +1,5 @@
 import { t } from '@/shared/i18n';
+import { newId } from '@/shared/lib/id';
 import type { DetectedSubtitle } from '@/entities/media';
 
 /**
@@ -37,10 +38,7 @@ export interface NetflixSubtitleTrack {
 const NETFLIX_INITIATOR = 'https://www.netflix.com/';
 
 function generateId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+  return newId();
 }
 
 /**

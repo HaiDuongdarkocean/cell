@@ -9,6 +9,7 @@ import {
   labelToIsoCode,
 } from '@/shared/config/languageRegistry';
 import { formatFromContent } from '@/shared/lib/parsers/subtitleFormat';
+import { newId } from '@/shared/lib/id';
 import type { SubtitleFormat } from '@/entities/media';
 import type {
   SubtitleCandidate,
@@ -29,10 +30,7 @@ const FORMAT_EXTENSIONS: ReadonlyArray<[SubtitleFormat, string]> = [
 const QUERY_FORMAT_KEYS = ['format', 'type', 'subtype'] as const;
 
 export function generateId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+  return newId();
 }
 
 export function formatFromUrl(url: string): SubtitleFormat | null {

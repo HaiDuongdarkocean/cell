@@ -1,14 +1,12 @@
 import { sendAction, invokeAnkiConnect } from '@/features/cardCreator';
-import { STORAGE_KEYS } from '@/shared/config/config';
 import { DEFAULT_CARD_CREATOR_SETTINGS } from '@/shared/config/config';
-import type { Settings } from '@/entities/settings';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import type { AnkiConnectInvoker } from '../adapters/connectAdapter';
 
 /** Saved AnkiConnect URL from Card Creator settings (falls back to localhost default). */
 export async function getStoredAnkiConnectUrl(): Promise<string> {
   try {
-    const data = await chrome.storage.local.get(STORAGE_KEYS.SETTINGS);
-    const settings = data?.[STORAGE_KEYS.SETTINGS] as Settings | undefined;
+    const settings = await loadSettings();
     return settings?.cardCreator?.ankiConnectUrl || DEFAULT_CARD_CREATOR_SETTINGS.ankiConnectUrl;
   } catch {
     return DEFAULT_CARD_CREATOR_SETTINGS.ankiConnectUrl;

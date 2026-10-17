@@ -7,8 +7,7 @@
 // of clearing to blank.
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
-import type { MessageResponse } from '@/entities/message';
+import { batchSendTerms } from '@/shared/lib/batchSendTerms';
 
 const TERMS_CHUNK = 500;
 
@@ -18,18 +17,19 @@ export async function getWordTranslations(
   terms: readonly string[],
   opts?: { cacheOnly?: boolean },
 ): Promise<Map<string, string> | null> {
-  const out = new Map<string, string>();
-  if (terms.length === 0 || !tl) return out;
+  if (terms.length === 0 || !tl) return new Map();
 
-  for (let i = 0; i < terms.length; i += TERMS_CHUNK) {
-    const response = await sendMessage<MessageResponse<{ glosses: Record<string, string> }>>({
-      type: MESSAGE_TYPES.TRANSLATE_TERMS,
-      payload: { tabId: -1, sl, tl, terms: terms.slice(i, i + TERMS_CHUNK), cacheOnly: opts?.cacheOnly },
-    });
-    if (response?.success !== true) return null;
-    for (const [term, gloss] of Object.entries(response.data?.glosses ?? {})) {
-      out.set(term, gloss);
-    }
-  }
-  return out;
+  return batchSendTerms<{ glosses: Record<string, string> }, Map<string, string>>({
+    type: MESSAGE_TYPES.TRANSLATE_TERMS,
+    terms,
+    chunkSize: TERMS_CHUNK,
+    makePayload: (chunk) => ({ tabId: -1, sl, tl, terms: [...chunk], cacheOnly: opts?.cacheOnly }),
+    empty: () => new Map<string, string>(),
+    merge: (acc, data) => {
+      for (const [term, gloss] of Object.entries(data.glosses ?? {})) {
+        acc.set(term, gloss);
+      }
+    },
+    abortOnFail: true,
+  });
 }

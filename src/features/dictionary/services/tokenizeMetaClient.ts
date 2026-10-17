@@ -5,6 +5,7 @@
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { batchSendTerms } from '@/shared/lib/batchSendTerms';
 import type { MessageResponse } from '@/entities/message';
 import type { FrequencyEntry, WordStatus } from '@/entities/dictionary';
 import { normalizeLangCode } from './wordStatusClient';
@@ -20,27 +21,25 @@ export async function getTokenizeMeta(
   langCode: string,
   terms: readonly string[],
 ): Promise<TokenizeMeta> {
-  const statuses = new Map<string, WordStatus>();
-  const frequencyEntries = new Map<string, FrequencyEntry[]>();
-  if (terms.length === 0) return { statuses, frequencyEntries };
-
-  for (let i = 0; i < terms.length; i += META_TERMS_CHUNK) {
-    const response = await sendMessage<
-      MessageResponse<{ statuses: Record<string, WordStatus>; frequencyEntries: Record<string, FrequencyEntry[]> }>
-    >({
-      type: MESSAGE_TYPES.TOKENIZE_META_GET,
-      payload: { tabId: -1, langCode: normalizeLangCode(langCode), terms: terms.slice(i, i + META_TERMS_CHUNK) },
-    });
-    if (response?.success && response.data) {
-      for (const [term, status] of Object.entries(response.data.statuses ?? {})) {
-        statuses.set(term, status);
+  const out = await batchSendTerms<
+    { statuses: Record<string, WordStatus>; frequencyEntries: Record<string, FrequencyEntry[]> },
+    TokenizeMeta
+  >({
+    type: MESSAGE_TYPES.TOKENIZE_META_GET,
+    terms,
+    chunkSize: META_TERMS_CHUNK,
+    makePayload: (chunk) => ({ tabId: -1, langCode: normalizeLangCode(langCode), terms: [...chunk] }),
+    empty: () => ({ statuses: new Map<string, WordStatus>(), frequencyEntries: new Map<string, FrequencyEntry[]>() }),
+    merge: (acc, data) => {
+      for (const [term, status] of Object.entries(data.statuses ?? {})) {
+        acc.statuses.set(term, status);
       }
-      for (const [term, entries] of Object.entries(response.data.frequencyEntries ?? {})) {
-        frequencyEntries.set(term, entries);
+      for (const [term, entries] of Object.entries(data.frequencyEntries ?? {})) {
+        acc.frequencyEntries.set(term, entries);
       }
-    }
-  }
-  return { statuses, frequencyEntries };
+    },
+  });
+  return out ?? { statuses: new Map(), frequencyEntries: new Map() };
 }
 
 /** Wake the service worker ahead of the first real flush — MV3 suspends idle

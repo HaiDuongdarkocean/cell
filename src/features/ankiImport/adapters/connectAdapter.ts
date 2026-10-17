@@ -7,13 +7,15 @@ import type {
   NormalizedAnkiNotetype,
   NormalizedAnkiRevlog,
 } from '../model/normalized';
+import { decodeBase64ToArrayBuffer } from '@/shared/lib/base64';
+import { extToMime } from '@/shared/lib/mime';
 
 export type AnkiConnectInvoker = (action: string, params?: Record<string, unknown>) => Promise<unknown>;
 
 const CHUNK = 500;
 const CLOZE_MARKUP = /\{\{c\d+::/;
 
-interface CardsInfoRow {
+export interface CardsInfoRow {
   cardId: number;
   note: number;
   deckName: string;
@@ -27,6 +29,9 @@ interface CardsInfoRow {
   lapses: number;
   left: number;
   odid: number;
+  odue?: number;
+  mod?: number;
+  fields?: Record<string, { value: string; order: number }>;
   modelName: string;
 }
 
@@ -233,14 +238,9 @@ export async function readViaAnkiConnect(
   const resolve: MediaResolver = async (filename) => {
     const b64 = (await invoke('retrieveMediaFile', { filename })) as string | false;
     if (!b64) return null;
-    const bin = atob(b64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const bytes = decodeBase64ToArrayBuffer(b64);
     const ext = filename.slice(filename.lastIndexOf('.') + 1).toLowerCase();
-    const mime = ext === 'mp3' ? 'audio/mpeg' : ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
-      : ext === 'webp' ? 'image/webp' : ext === 'gif' ? 'image/gif' : ext === 'svg' ? 'image/svg+xml'
-      : ext === 'wav' ? 'audio/wav' : ext === 'ogg' ? 'audio/ogg' : 'application/octet-stream';
-    return { bytes: bytes.buffer as ArrayBuffer, mimeType: mime };
+    return { bytes, mimeType: extToMime(ext) };
   };
 
   const hasScheduling = cards.some((c) => c.ivl > 0 || c.reps > 0) || revlog.length > 0;

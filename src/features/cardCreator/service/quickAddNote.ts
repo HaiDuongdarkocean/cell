@@ -11,6 +11,7 @@
 import type { FieldMapping } from './fieldMapping';
 import { buildAnkiFields, type AnkiTextFields, type AnkiMediaFields } from './buildAnkiFields';
 import { addNote } from './cardCreatorService';
+import { splitTags } from './noteUpdate';
 
 /** Text fields for Quick Add (reuses shared AnkiTextFields). */
 export type QuickAddTextFields = AnkiTextFields;
@@ -48,7 +49,7 @@ export async function quickAddNote(
 ): Promise<QuickAddResult> {
   const fields = await buildAnkiFields(url, fieldMapping, text, media, onWarning);
 
-  const tagList = tags.split(/\s+/).filter(Boolean);
+  const tagList = splitTags(tags);
   const r = await addNote(url, {
     deckName: deck,
     modelName: noteType,

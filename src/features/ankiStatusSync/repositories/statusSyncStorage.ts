@@ -8,6 +8,7 @@ import type {
   WriteBackTask,
 } from '@/entities/ankiStatusSync';
 import { EMPTY_ANKI_SYNC_STATE } from '@/entities/ankiStatusSync';
+import { idbRequest, txDone } from '@/shared/lib/storage/idb';
 
 const DB_NAME = 'cell-anki-status-sync';
 const DB_VERSION = 1;
@@ -63,17 +64,8 @@ export function closeStatusSyncDb(): void {
 }
 
 function req<T>(r: IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    r.onsuccess = () => resolve(r.result);
-    r.onerror = () => reject(r.error ?? new Error('idb request failed'));
-  });
-}
-
-function txDone(tx: IDBTransaction): Promise<void> {
-  return new Promise((resolve, reject) => {
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error ?? new Error('idb tx failed'));
-    tx.onabort = () => reject(tx.error ?? new Error('idb tx aborted'));
+  return idbRequest(r).catch((err: unknown) => {
+    throw err ?? new Error('idb request failed');
   });
 }
 

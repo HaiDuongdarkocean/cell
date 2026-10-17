@@ -10,6 +10,7 @@ import type { PlaybackSpeed } from '@/entities/studyMode/types';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveContentTab';
 import { handleShortcutKey } from '@/features/subtitle';
+import { isEditableEvent } from '@/shared/lib/dom/isEditable';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
 import { sendMessage, onMessage, removeOnMessageListener, addOnTabActivatedListener, addOnTabUpdatedListener, getTab } from '@/shared/lib/chrome-apis';
 import { canonicalNavUrl } from '@/features/subtitle/ui/contentScriptShared';
@@ -243,8 +244,7 @@ export function App() {
     }).catch(() => { /* fallback to defaults */ });
 
     const onKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+      if (isEditableEvent(e)) {
         return; // let the field handle the key
       }
 

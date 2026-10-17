@@ -4,6 +4,8 @@
 // where each part is base64url-encoded. AES-GCM expects ciphertext + authTag
 // concatenated. The key is a fixed hex string (base64-encoded in source).
 
+import { base64UrlToBytes, hexToBytes } from '@/shared/lib/codec';
+
 export interface PeachifySubtitle {
   readonly url?: string;
   readonly file?: string;
@@ -32,25 +34,6 @@ export interface PeachifyListing {
 const ENCRYPTION_KEY_HEX = atob(
   'YThmMmExYjVlOWM0NzA4MTRmNmIyYzNhNWQ4ZTdmOWMxYTJiM2M0ZDVlM2Y3YThiOGNhZDFlMmQwYTRkNWM1ZA==',
 );
-
-function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16);
-  }
-  return bytes;
-}
-
-function base64UrlToBytes(value: string): Uint8Array {
-  const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
-  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
-  const binary = atob(padded);
-  const out = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    out[i] = binary.charCodeAt(i);
-  }
-  return out;
-}
 
 async function importKey(): Promise<CryptoKey> {
   const keyBytes = hexToBytes(ENCRYPTION_KEY_HEX);

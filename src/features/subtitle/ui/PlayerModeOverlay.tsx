@@ -6,6 +6,7 @@
 
 import { memo, useEffect, useRef, useState } from 'react';
 import { dedupeGlobalKeydown, isCurrentWorld } from '@/shared/lib/dom/claimSingletonInstall';
+import { isEditableEvent } from '@/shared/lib/dom/isEditable';
 import type { Dispatch, SetStateAction } from 'react';
 import type { BilingualCue, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
@@ -525,8 +526,7 @@ function PlayerModeOverlayInner({
       }
       // Context-aware T: in Player Mode, toggle CueList instead of Chrome side panel.
       if (e.key.toLowerCase() === 't' && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        const target = e.target as HTMLElement | null;
-        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+        if (isEditableEvent(e)) return;
         if (!isCurrentWorld()) return;
         if (!dedupeGlobalKeydown(e)) return;
         e.preventDefault();

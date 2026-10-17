@@ -1,4 +1,4 @@
-import { idbRequest } from '@/shared/lib/storage/idb';
+import { idbRequest, txDone } from '@/shared/lib/storage/idb';
 import { compareHlc } from '../../domain/hlc';
 import type { ChangeRecord, ConnectionId, RecordKey, Scope } from '../../domain/types';
 
@@ -103,11 +103,7 @@ export async function deleteSyncDB(): Promise<void> {
 }
 
 export function awaitSyncTx(tx: IDBTransaction): Promise<void> {
-  return new Promise((resolve, reject) => {
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-  });
+  return txDone(tx);
 }
 
 export function sequenceKey(connectionId: ConnectionId, scope: Scope): string {

@@ -7,6 +7,7 @@
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { batchSendTerms } from '@/shared/lib/batchSendTerms';
 import { t } from '@/shared/i18n';
 import type { MessageResponse } from '@/entities/message';
 import type { WordStatus } from '@/entities/dictionary';
@@ -29,21 +30,19 @@ export async function getWordStatuses(
   langCode: string,
   terms: readonly string[],
 ): Promise<Map<string, WordStatus>> {
-  if (terms.length === 0) return new Map();
-
-  const out = new Map<string, WordStatus>();
-  for (let i = 0; i < terms.length; i += STATUS_TERMS_CHUNK) {
-    const response = await sendMessage<MessageResponse<{ statuses: Record<string, WordStatus> }>>({
-      type: MESSAGE_TYPES.WORD_STATUSES_GET,
-      payload: { tabId: -1, langCode: normalizeLangCode(langCode), terms: terms.slice(i, i + STATUS_TERMS_CHUNK) },
-    });
-    if (response?.success && response.data) {
-      for (const [term, status] of Object.entries(response.data.statuses ?? {})) {
-        out.set(term, status);
+  const out = await batchSendTerms<{ statuses: Record<string, WordStatus> }, Map<string, WordStatus>>({
+    type: MESSAGE_TYPES.WORD_STATUSES_GET,
+    terms,
+    chunkSize: STATUS_TERMS_CHUNK,
+    makePayload: (chunk) => ({ tabId: -1, langCode: normalizeLangCode(langCode), terms: [...chunk] }),
+    empty: () => new Map<string, WordStatus>(),
+    merge: (acc, data) => {
+      for (const [term, status] of Object.entries(data.statuses ?? {})) {
+        acc.set(term, status);
       }
-    }
-  }
-  return out;
+    },
+  });
+  return out ?? new Map();
 }
 
 /**

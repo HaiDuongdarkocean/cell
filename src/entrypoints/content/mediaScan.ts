@@ -2,6 +2,7 @@ import { sendMessage } from '@/shared/lib/chrome-apis';
 import { PageScanner } from './pageScanner';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { findLargestPlayableVideo } from '@/shared/lib/dom/videoFinder';
+import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
 import { isTihokaDebug } from './debugLog';
 import { resolveParentFrameOrigin } from '@/shared/lib/dom/frameOrigin';
 
@@ -38,13 +39,13 @@ export function runPageScan(): void {
   // entire subtitle list. Background deduplicates by URL, so overlapping scans
   // across frames are safe. Iframes without a video are skipped to avoid
   // observing ad/empty frames.
-  if (window.self !== window.top && !findLargestPlayableVideo()) return;
+  if (isChildFrame() && !findLargestPlayableVideo()) return;
   const urls = scanner.scan();
 
   // Debug: surface scan results so browser tests can verify the content script
   // is finding media. Only enabled for E2E builds via Tihoka_E2E=1.
   if (isTihokaDebug()) {
-    const isTop = window.self === window.top;
+    const isTop = !isChildFrame();
     const debugTarget = isTop ? window : window.parent;
     const targetOrigin = isTop ? '*' : resolveParentFrameOrigin();
     if (targetOrigin) {

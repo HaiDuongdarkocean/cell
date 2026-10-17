@@ -57,7 +57,7 @@ import type {
   RankedCandidateTrace,
 } from '@/features/dictionary';
 import { tokenizeSentence } from '@/features/dictionary';
-import { getActiveProfileSettings, type Settings } from '@/entities/settings';
+import { getActiveProfileSettings, resolveResourceLangCode, type Settings } from '@/entities/settings';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { ResourceInfo, DictionaryEntry } from '@/entities/dictionary';
@@ -374,7 +374,7 @@ export async function lookupOrchestratorMulti(
   // Resolve settings and build the resource context once per lookup.
   // lookup-hot-path: injected settings (tests) bypass the context cache.
   const settings = deps.settings ?? await loadSettingsCached();
-  const langCode = getActiveProfileSettings(settings)?.resourceLangCode ?? request.langCode;
+  const langCode = resolveResourceLangCode(settings, request.langCode);
   const resourceContext = deps.settings
     ? await buildResourceContext(langCode, settings)
     : await getCachedResourceContext(langCode);

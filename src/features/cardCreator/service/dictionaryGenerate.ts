@@ -18,6 +18,7 @@
  */
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { newId } from '@/shared/lib/id';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_PRONUNCIATION_SETTINGS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import { PronunciationAudioOrchestrator, audioItemDataUrl, resolveSentenceAudioItems } from '@/features/pronunciation';
@@ -45,10 +46,7 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 }
 
 function makeRequestId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return `cc-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return newId();
 }
 
 async function fetchWordAudioUrls(term: string, langCode: string): Promise<readonly string[]> {

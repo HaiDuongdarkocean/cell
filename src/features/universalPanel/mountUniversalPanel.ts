@@ -35,7 +35,7 @@ import { hasIframeVideo, IFRAME_MEDIA_CHANGED_EVENT } from '@/shared/lib/dom/ifr
 import { getSessionStorage, setSessionStorage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
-import { getActiveProfileSettings, resolveProfile, type Settings } from '@/entities/settings';
+import { resolveProfile, resolveResourceLangCode, type Settings } from '@/entities/settings';
 import { useCardCreatorStore } from '@/features/cardCreator';
 import { t } from '@/shared/i18n';
 import type { TokenizePanelState } from '@/features/tokenize';
@@ -178,7 +178,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
     loadedSettings = settings;
     dictionarySourceLang = settings.subtitleOverlayTargetLanguage || dictionarySourceLang;
     dictionaryTargetLang = settings.subtitleOverlayNativeLanguage || dictionaryTargetLang;
-    dictionaryLangCode = getActiveProfileSettings(settings)?.resourceLangCode ?? dictionarySourceLang;
+    dictionaryLangCode = resolveResourceLangCode(settings, dictionarySourceLang);
     languageProfiles = settings.languageProfiles.map((p) => ({ id: p.id, name: p.name, target: p.target }));
     activeProfileId = settings.activeProfileId;
     render();

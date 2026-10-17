@@ -12,7 +12,7 @@ import {
   mediaFieldValues,
 } from '@/features/srs';
 import { getQueueItem, listQueueRows } from '@/features/miningQueue';
-import { getActiveProfileSettings } from '@/entities/settings';
+import { resolveResourceLangCode } from '@/entities/settings';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { buildPumpSession, PUMP_SESSION_CAP } from '../logic/sessionBuilder';
 import { detectPumpFields, pumpFieldText } from '../logic/pumpFields';
@@ -64,7 +64,7 @@ export async function listPumpDecks(): Promise<readonly PumpDeckOption[]> {
 
 async function profileLangCode(): Promise<string> {
   const settings = await loadSettings();
-  return getActiveProfileSettings(settings)?.resourceLangCode ?? '';
+  return resolveResourceLangCode(settings, '');
 }
 
 function resolveAudioUrl(note: SrsNote, audioFieldId: string | null, audioByKey: Map<string, { bytes: ArrayBuffer; mimeType: string }>): string | undefined {

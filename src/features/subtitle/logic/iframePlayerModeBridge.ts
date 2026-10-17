@@ -218,7 +218,7 @@ function notifyChildByIframe(entered: boolean): void {
  * subtitle overlay.
  */
 export async function toggleTopFramePlayerMode(): Promise<void> {
-  if (window.self !== window.top) return; // only top frame
+  if (isChildFrame()) return; // only top frame
   if (topState) {
     const ok = await exitTopFramePlayerMode();
     if (ok) notifyChildByIframe(false);
@@ -245,7 +245,7 @@ function frameSrcMatchesOrigin(frameSrc: unknown, origin: string): boolean {
  * frame. Returns a cleanup function. Safe to call in child frames (no-op).
  */
 export function installIframePlayerModeBridge(): () => void {
-  if (window.self !== window.top) return () => undefined;
+  if (isChildFrame()) return () => undefined;
 
   const handler = (e: MessageEvent): void => {
     const data = e.data;
@@ -332,7 +332,7 @@ export function installIframeMediaBridge(): void {
     return null;
   };
 
-  const isTop = window.self === window.top;
+  const isTop = !isChildFrame();
   const onMessage = (e: MessageEvent): void => {
     const data = e.data;
     if (!data || typeof data !== 'object' || data.type !== IFRAME_MEDIA_MSG) return;
@@ -365,7 +365,7 @@ export function installIframeMediaBridge(): void {
 
 /** Child frame → parent: announce a playable video appeared/disappeared. */
 export function postIframeMediaState(present: boolean): void {
-  if (window.self === window.top) return;
+  if (!isChildFrame()) return;
   const parentOrigin = resolveParentFrameOrigin();
   if (!parentOrigin) return;
   try {

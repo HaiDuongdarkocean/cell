@@ -10,19 +10,14 @@
 
 import type { MediaFile, MediaKind } from '@/entities/media';
 import type { AudioItem, ImageItem } from '@/entities/dictionary';
+import { dataUrlToArrayBuffer, encodeBase64 } from '@/shared/lib/base64';
+import { mimeToExt } from '@/shared/lib/mime';
 
 export type { MediaFile, MediaKind };
 
 /** Convert ArrayBuffer to base64 string (no data: prefix). */
 export function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  const chunkSize = 0x8000; // 32KB chunks — avoid call stack overflow
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.subarray(i, i + chunkSize);
-    binary += String.fromCharCode.apply(null, chunk as unknown as number[]);
-  }
-  return btoa(binary);
+  return encodeBase64(buffer);
 }
 
 /** Build the Anki field reference for a media file.
@@ -53,24 +48,6 @@ export function generateMediaFilename(prefix: string, ext: string): string {
   const rand = Math.random().toString(36).slice(2, 8);
   return `Tihoka-${prefix}-${ts}-${rand}.${ext}`;
 }
-
-/** MIME type → file extension lookup for common media types. */
-const MIME_TO_EXT: Record<string, string> = {
-  'image/png': 'png',
-  'image/jpeg': 'jpg',
-  'image/jpg': 'jpg',
-  'image/gif': 'gif',
-  'image/webp': 'webp',
-  'image/svg+xml': 'svg',
-  'audio/mpeg': 'mp3',
-  'audio/mp3': 'mp3',
-  'audio/wav': 'wav',
-  'audio/x-wav': 'wav',
-  'audio/ogg': 'ogg',
-  'audio/webm': 'webm',
-  'audio/aac': 'aac',
-  'audio/mp4': 'm4a',
-};
 
 /** Per-file fetch timeout — a dead URL must not stall the caller forever
  *  (generate-all disables its button until every fetch settles). */
@@ -104,7 +81,7 @@ function withTimeout<T>(p: Promise<T>): Promise<T> {
 function mediaFromDataOrBlobUrl(url: string, kind: MediaKind): MediaFile | null {
   if (url.startsWith('data:')) {
     const mimeType = url.slice(5, url.indexOf(';'));
-    const ext = MIME_TO_EXT[mimeType] ?? (kind === 'image' ? 'png' : 'mp3');
+    const ext = mimeToExt(mimeType) ?? (kind === 'image' ? 'png' : 'mp3');
     const prefix = kind === 'image' ? 'img' : 'audio';
     return {
       kind,
@@ -131,7 +108,7 @@ export async function fetchUrlAsMediaFile(
   }
   const blob = await response.blob();
   const mimeType = blob.type || (kind === 'image' ? 'image/png' : 'audio/mpeg');
-  const ext = MIME_TO_EXT[mimeType] ?? (kind === 'image' ? 'png' : 'mp3');
+  const ext = mimeToExt(mimeType) ?? (kind === 'image' ? 'png' : 'mp3');
   const data = await blob.arrayBuffer();
   const prefix = kind === 'image' ? 'img' : 'audio';
   return {
@@ -141,18 +118,6 @@ export async function fetchUrlAsMediaFile(
     data,
     sourceUrl: url,
   };
-}
-
-/** Parse a data: URL (base64) into an ArrayBuffer without using fetch()
- *  (avoids CSP issues with data: URLs on strict pages). */
-function dataUrlToArrayBuffer(dataUrl: string): ArrayBuffer {
-  const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes.buffer;
 }
 
 /** Fetch a media URL via the background SW (bypasses page CSP).
@@ -171,7 +136,7 @@ async function fetchMediaViaBackground(url: string, kind: MediaKind): Promise<Me
   }
   const dataUrl = res.data.url;
   const mimeType = dataUrl.slice(5, dataUrl.indexOf(';'));
-  const ext = MIME_TO_EXT[mimeType] ?? (kind === 'image' ? 'png' : 'mp3');
+  const ext = mimeToExt(mimeType) ?? (kind === 'image' ? 'png' : 'mp3');
   const prefix = kind === 'image' ? 'img' : 'audio';
   return {
     kind,

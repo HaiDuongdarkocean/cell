@@ -1,4 +1,5 @@
 import { isSqlite, isZip, unzipAll, decodeText } from '@/features/dictionary';
+import { extToMime } from '@/shared/lib/mime';
 import { decodeMemoryState } from '../logic/stateConvert';
 import type {
   MediaResolver,
@@ -36,14 +37,9 @@ async function decompressZstd(data: Uint8Array): Promise<Uint8Array> {
   }
 }
 
-const MIME_BY_EXT: Record<string, string> = {
-  mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', m4a: 'audio/mp4', opus: 'audio/opus', webm: 'audio/webm', flac: 'audio/flac',
-  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml', avif: 'image/avif', bmp: 'image/bmp',
-};
-
 function mimeOf(filename: string): string {
   const ext = filename.slice(filename.lastIndexOf('.') + 1).toLowerCase();
-  return MIME_BY_EXT[ext] ?? 'application/octet-stream';
+  return extToMime(ext);
 }
 
 /** Extract memory_state (field 4, embedded message) from a cards.data protobuf blob. */
