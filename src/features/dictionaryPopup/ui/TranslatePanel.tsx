@@ -167,9 +167,8 @@ export function TranslatePanel({
         {sourceHead}
         <PanelCard id="dictionary-translate-answer">
           <PanelItem
-            checkMode="block"
+            checkMode="row"
             checked={selected}
-            loading={loading}
             onToggle={onToggle}
           >
             <div className={styles.TihokaTranslateText}>

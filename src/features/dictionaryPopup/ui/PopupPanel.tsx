@@ -95,7 +95,7 @@ export function PanelCard({ children, id }: {
 
 /** Check reveal mode: 'dot' = idle dot → box on hover (leading gutter);
  *  'box' = always-visible checkbox. */
-export type PanelCheckMode = 'dot' | 'audio' | 'block' | 'image';
+export type PanelCheckMode = 'dot' | 'row' | 'audio' | 'block' | 'image';
 
 function checkMarkup(
   mode: PanelCheckMode,
@@ -114,7 +114,7 @@ function checkMarkup(
       {loading ? <Spinner size="xl" color="accent" /> : <Icon name="check" size="md" />}
     </span>
   );
-  if (mode === 'dot') {
+  if (mode === 'dot' || mode === 'row') {
     return (
       <span className={`${checkStyles.TihokaDefCheck} ${checked ? checkStyles['TihokaDefCheck--checked'] : ''}`}>
         {box}
@@ -126,6 +126,7 @@ function checkMarkup(
 
 const HOST_CLASS: Record<PanelCheckMode, string> = {
   dot: checkStyles.TihokaDefExampleItem,
+  row: checkStyles.TihokaDefExampleItem,
   audio: checkStyles.TihokaAudioItem,
   block: checkStyles.TihokaTranslateBlock,
   image: checkStyles.TihokaImageCard,
@@ -133,6 +134,7 @@ const HOST_CLASS: Record<PanelCheckMode, string> = {
 
 const HOST_DISABLED: Record<PanelCheckMode, string> = {
   dot: checkStyles['TihokaDefItem--disabled'],
+  row: checkStyles['TihokaDefItem--disabled'],
   audio: checkStyles['TihokaAudioItem--disabled'],
   block: checkStyles['TihokaTranslateBlock--disabled'],
   image: checkStyles['TihokaImageCard--disabled'],
