@@ -56,6 +56,7 @@ Anh invokes manually. Good cadence: after ~10 new ADRs, after a big feature land
   - add a local instrument for an `uninstrumented` measure,
   - supersede a stale ADR, close a leaked touchpoint.
 - **Generation ≠ review** (`orchestration-patterns.md` #3–4): every shipped change gets a fresh-context `subagent_explore` verify; "after" numbers are re-derived by re-running the deterministic check post-commit — never asserted by the author.
+- Verifying shipped changes: prefer `node scripts/test-related.mjs <changed .test.ts files>` (runTestsByPath — exact, fast) over pointing findRelatedTests at shared leaf files (e.g. `messages.ts`) — those fan out to half the suite. Lesson from baseline run.
 - Commit each via `git-workflow-and-versioning` — atomic, own files only.
 - If nothing can ship: state why in the report (needs Anh's decision / needs an ADR first). Silence is not an allowed outcome.
 
