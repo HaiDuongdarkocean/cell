@@ -190,7 +190,7 @@ export function AiAnswerPanel({
                   {t('dict.ai.failoverNotice', [providerLabel(state.failoverFrom), providerLabel(state.provider ?? state.failoverFrom)])}
                 </PanelNotice>
               )}
-              <AiStreamStatus text={state.answer?.text} />
+              <AiStreamStatus text={state.answer?.text} textClassName={styles.TihokaAiText} />
             </PanelItem>
           )
         )}
