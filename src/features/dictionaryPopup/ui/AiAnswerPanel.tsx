@@ -184,7 +184,11 @@ export function AiAnswerPanel({
               </PanelItem>
             </>
           ) : (
-            <PanelItem padded>
+            <PanelItem
+              checkMode="dot"
+              checked={checked}
+              onToggle={onToggle}
+            >
               {state.failoverFrom && (
                 <PanelNotice>
                   {t('dict.ai.failoverNotice', [providerLabel(state.failoverFrom), providerLabel(state.provider ?? state.failoverFrom)])}
