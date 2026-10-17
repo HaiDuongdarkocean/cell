@@ -8,6 +8,7 @@ import type {
   SnapshotEntry,
   StoredRecordMeta,
 } from '@/features/sync';
+import { idbRequest } from '@/shared/lib/storage/idb';
 import {
   IdbLocalSource,
   allRowsAt,
@@ -15,7 +16,6 @@ import {
   getDeviceId,
   getMetaAt,
   getRowAt,
-  idbRequest,
   latestMetaByRecKeyAt,
   listMetaEntriesIn,
   scopeForTarget,

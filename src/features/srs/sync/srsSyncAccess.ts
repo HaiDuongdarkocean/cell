@@ -1,6 +1,7 @@
 import type { SrsCollection, SrsDeck } from '@/entities/srs/types';
 import type { SrsCollectionSummary, SrsSyncAccess } from '@/features/sync';
-import { allRowsAt, awaitIdbTx, idbRequest, rowsByIndexAt } from '@/features/sync';
+import { allRowsAt, awaitIdbTx, rowsByIndexAt } from '@/features/sync';
+import { idbRequest } from '@/shared/lib/storage/idb';
 import { SRS_INDEXES, SRS_STORES, getSrsDB } from '../repositories/srsDatabase';
 
 async function listCollectionSummaries(): Promise<SrsCollectionSummary[]> {

@@ -10,6 +10,7 @@ import type { WordStatus } from '@/entities/dictionary';
 import type { WordStatusEntry } from './wordStatusStore';
 import { normalizeStoredStatus, type StoredWordStatus } from './wordStatusSemantics';
 import { captureChange, ensureSyncRuntime, isCaptureEnabled, scopeForTarget, targetOf } from '@/features/sync';
+import { idbRequest } from '@/shared/lib/storage/idb';
 
 export interface TrashedWordEntry {
   readonly term: string;
@@ -27,13 +28,6 @@ function normalizePreviousStatus(status: StoredWordStatus): WordStatus {
   return normalizeStoredStatus(status);
 }
 
-function request<T>(req: IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
 /**
  * Soft-delete: read the status row, write a trash record, delete the row —
  * one tx, so the word is never in both stores. previousStatus derives from
@@ -45,7 +39,7 @@ export async function trashWordStatus(langCode: string, term: string): Promise<v
   const tx = db.transaction([STORES.WORD_STATUS, STORES.WORD_TRASH, STORES.SYNC_OUTBOX, STORES.SYNC_META], 'readwrite');
   const statusStore = tx.objectStore(STORES.WORD_STATUS);
   const trashStore = tx.objectStore(STORES.WORD_TRASH);
-  const row = (await request(statusStore.get(term))) as WordStatusEntry | undefined;
+  const row = (await idbRequest(statusStore.get(term))) as WordStatusEntry | undefined;
   if (row !== undefined) {
     trashStore.put({ term, previousStatus: normalizePreviousStatus(row.status as StoredWordStatus), trashedAt: Date.now() });
     statusStore.delete(term);
@@ -72,8 +66,8 @@ export async function listWordTrash(langCode: string): Promise<TrashedWordEntry[
   const trashStore = tx.objectStore(STORES.WORD_TRASH);
   const statusStore = tx.objectStore(STORES.WORD_STATUS);
   const [entries, statusKeys] = await Promise.all([
-    request(trashStore.getAll()) as Promise<TrashedWordEntry[]>,
-    request(statusStore.getAllKeys()),
+    idbRequest(trashStore.getAll()) as Promise<TrashedWordEntry[]>,
+    idbRequest(statusStore.getAllKeys()),
   ]);
   const cutoff = Date.now() - TRASH_TTL_MS;
   const marked = new Set(statusKeys.map(String));
@@ -113,7 +107,7 @@ export async function trashWordStatuses(
   const statusStore = tx.objectStore(STORES.WORD_STATUS);
   const trashStore = tx.objectStore(STORES.WORD_TRASH);
   const rows = await Promise.all(
-    terms.map((term) => request(statusStore.get(term)) as Promise<WordStatusEntry | undefined>),
+    terms.map((term) => idbRequest(statusStore.get(term)) as Promise<WordStatusEntry | undefined>),
   );
   const now = Date.now();
   for (const [i, term] of terms.entries()) {
@@ -145,7 +139,7 @@ export async function restoreWordStatus(langCode: string, term: string): Promise
   const tx = db.transaction([STORES.WORD_TRASH, STORES.WORD_STATUS, STORES.SYNC_OUTBOX, STORES.SYNC_META], 'readwrite');
   const trashStore = tx.objectStore(STORES.WORD_TRASH);
   const statusStore = tx.objectStore(STORES.WORD_STATUS);
-  const record = (await request(trashStore.get(term))) as TrashedWordEntry | undefined;
+  const record = (await idbRequest(trashStore.get(term))) as TrashedWordEntry | undefined;
   if (record === undefined) {
     await awaitTx(tx);
     return RESTORE_FALLBACK_STATUS;
@@ -183,7 +177,7 @@ export async function restoreWordStatuses(
   const trashStore = tx.objectStore(STORES.WORD_TRASH);
   const statusStore = tx.objectStore(STORES.WORD_STATUS);
   const records = await Promise.all(
-    terms.map((term) => request(trashStore.get(term)) as Promise<TrashedWordEntry | undefined>),
+    terms.map((term) => idbRequest(trashStore.get(term)) as Promise<TrashedWordEntry | undefined>),
   );
   const now = Date.now();
   for (const [i, term] of terms.entries()) {

@@ -1,3 +1,4 @@
+import { idbRequest } from '@/shared/lib/storage/idb';
 import { compareHlc } from '../../../domain/hlc';
 import type { ChangeRecord, DataClass, PendingKey, RecordKey, Scope } from '../../../domain/types';
 import type { ChangeOp, Hlc } from '../../../domain/types';
@@ -16,13 +17,6 @@ export interface OutboxRow {
 export interface PendingDrain {
   readonly pending: PendingKey;
   readonly rowIds: readonly number[];
-}
-
-export function idbRequest<T>(request: IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
 }
 
 export function awaitIdbTx(tx: IDBTransaction): Promise<void> {

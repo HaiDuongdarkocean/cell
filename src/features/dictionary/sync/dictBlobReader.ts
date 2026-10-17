@@ -1,5 +1,5 @@
 import type { BlobReader } from '@/features/sync';
-import { idbRequest } from '@/features/sync';
+import { idbRequest } from '@/shared/lib/storage/idb';
 import { getDB, stagedRowsForResource, INDEXES, STORES } from '../repositories/baseRepository';
 import { blobRowsForResource } from '../repositories/entryBlobStore';
 import { partitionResourceRows, serializeResourcePortable } from './resourceIdentity';

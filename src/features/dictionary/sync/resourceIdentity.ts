@@ -1,5 +1,5 @@
 import { stableJson } from '@/features/sync';
-import { idbRequest } from '@/features/sync';
+import { idbRequest } from '@/shared/lib/storage/idb';
 import { stagedRowsForResource, STORES } from '../repositories/baseRepository';
 import { blobRowsForResource } from '../repositories/entryBlobStore';
 import type { ResourceInfo } from '@/entities/dictionary';

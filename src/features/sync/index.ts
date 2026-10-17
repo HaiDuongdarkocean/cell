@@ -49,7 +49,6 @@ export {
   putMetaAt,
   tombstoneMetaAt,
   metaChangeRecord,
-  idbRequest,
   awaitIdbTx,
   keyPrefixRange,
   getRowAt,

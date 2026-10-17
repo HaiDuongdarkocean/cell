@@ -1,8 +1,8 @@
+import { idbRequest } from '@/shared/lib/storage/idb';
 import {
   awaitIdbTx,
   getMetaAt,
   getRowAt,
-  idbRequest,
   IdbLocalSource,
   listMetaEntriesIn,
   scopeForTarget,

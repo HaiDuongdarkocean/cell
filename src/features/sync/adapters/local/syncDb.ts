@@ -1,3 +1,4 @@
+import { idbRequest } from '@/shared/lib/storage/idb';
 import { compareHlc } from '../../domain/hlc';
 import type { ChangeRecord, ConnectionId, RecordKey, Scope } from '../../domain/types';
 
@@ -139,7 +140,7 @@ export async function getSequenceCounters(
   const request = tx
     .objectStore(SYNC_STORES.SEQUENCES)
     .get(sequenceKey(connectionId, scope)) as IDBRequest<SequenceCounters | undefined>;
-  return requestToPromise(request);
+  return idbRequest(request);
 }
 
 export async function nextSeqFor(connectionId: ConnectionId, scope: Scope): Promise<number> {
@@ -193,7 +194,7 @@ export async function freezeBatchInTx(
     cycleId: input.cycleId,
     createdAt: input.createdAt,
   };
-  await requestToPromise(tx.objectStore(SYNC_STORES.PENDING_BATCHES).put(batch));
+  await idbRequest(tx.objectStore(SYNC_STORES.PENDING_BATCHES).put(batch));
   return batch;
 }
 
@@ -203,7 +204,7 @@ export async function getPendingBatch(key: string): Promise<PendingBatch | undef
   const request = tx
     .objectStore(SYNC_STORES.PENDING_BATCHES)
     .get(key) as IDBRequest<PendingBatch | undefined>;
-  return requestToPromise(request);
+  return idbRequest(request);
 }
 
 export async function getPendingBatchForScope(
@@ -216,7 +217,7 @@ export async function getPendingBatchForScope(
     .objectStore(SYNC_STORES.PENDING_BATCHES)
     .index(SYNC_INDEXES.by_connection_scope)
     .getAll([connectionId, scope]) as IDBRequest<PendingBatch[]>;
-  const rows = await requestToPromise(request);
+  const rows = await idbRequest(request);
   return rows[0];
 }
 
@@ -227,7 +228,7 @@ export async function takePendingBatches(connectionId: ConnectionId): Promise<Pe
     .objectStore(SYNC_STORES.PENDING_BATCHES)
     .index(SYNC_INDEXES.by_connection)
     .getAll(connectionId) as IDBRequest<PendingBatch[]>;
-  const rows = await requestToPromise(request);
+  const rows = await idbRequest(request);
   return rows.sort(comparePendingBatches);
 }
 
@@ -240,7 +241,7 @@ export async function listPendingBatchesByCreatedAt(
     .objectStore(SYNC_STORES.PENDING_BATCHES)
     .index(SYNC_INDEXES.by_createdAt)
     .getAll() as IDBRequest<PendingBatch[]>;
-  const rows = await requestToPromise(request);
+  const rows = await idbRequest(request);
   if (connectionId === undefined) return rows;
   return rows.filter((row) => row.connectionId === connectionId);
 }
@@ -248,14 +249,14 @@ export async function listPendingBatchesByCreatedAt(
 export async function putPendingBatch(batch: PendingBatch): Promise<void> {
   const db = await getSyncDB();
   const tx = db.transaction(SYNC_STORES.PENDING_BATCHES, 'readwrite');
-  await requestToPromise(tx.objectStore(SYNC_STORES.PENDING_BATCHES).put(batch));
+  await idbRequest(tx.objectStore(SYNC_STORES.PENDING_BATCHES).put(batch));
   await awaitSyncTx(tx);
 }
 
 export async function removePendingBatch(key: string): Promise<void> {
   const db = await getSyncDB();
   const tx = db.transaction(SYNC_STORES.PENDING_BATCHES, 'readwrite');
-  await requestToPromise(tx.objectStore(SYNC_STORES.PENDING_BATCHES).delete(key));
+  await idbRequest(tx.objectStore(SYNC_STORES.PENDING_BATCHES).delete(key));
   await awaitSyncTx(tx);
 }
 
@@ -268,7 +269,7 @@ export async function putDeferredRecord(input: DeferredRecordInput): Promise<Def
   );
   const db = await getSyncDB();
   const tx = db.transaction(SYNC_STORES.DEFERRED_RECORDS, 'readwrite');
-  const existing = (await requestToPromise(
+  const existing = (await idbRequest(
     tx.objectStore(SYNC_STORES.DEFERRED_RECORDS).get(key),
   )) as DeferredRecordRow | undefined;
   if (existing && compareHlc(existing.record.hlc, input.record.hlc) > 0) {
@@ -277,7 +278,7 @@ export async function putDeferredRecord(input: DeferredRecordInput): Promise<Def
       attempts: Math.max(existing.attempts, input.attempts),
       firstDeferredAt: Math.min(existing.firstDeferredAt, input.firstDeferredAt),
     };
-    await requestToPromise(tx.objectStore(SYNC_STORES.DEFERRED_RECORDS).put(merged));
+    await idbRequest(tx.objectStore(SYNC_STORES.DEFERRED_RECORDS).put(merged));
     await awaitSyncTx(tx);
     return merged;
   }
@@ -292,7 +293,7 @@ export async function putDeferredRecord(input: DeferredRecordInput): Promise<Def
     firstDeferredAt: Math.min(input.firstDeferredAt, existing?.firstDeferredAt ?? Infinity),
     attempts: Math.max(input.attempts, existing?.attempts ?? 0),
   };
-  await requestToPromise(tx.objectStore(SYNC_STORES.DEFERRED_RECORDS).put(row));
+  await idbRequest(tx.objectStore(SYNC_STORES.DEFERRED_RECORDS).put(row));
   await awaitSyncTx(tx);
   return row;
 }
@@ -303,7 +304,7 @@ export async function getDeferredRecord(key: string): Promise<DeferredRecordRow 
   const request = tx
     .objectStore(SYNC_STORES.DEFERRED_RECORDS)
     .get(key) as IDBRequest<DeferredRecordRow | undefined>;
-  return requestToPromise(request);
+  return idbRequest(request);
 }
 
 export async function getAllDeferredRecords(
@@ -317,7 +318,7 @@ export async function getAllDeferredRecords(
     : store.index(SYNC_INDEXES.by_connection).getAll(connectionId)) as IDBRequest<
     DeferredRecordRow[]
   >;
-  return requestToPromise(request);
+  return idbRequest(request);
 }
 
 export async function findDeferredRecordsByBlobHash(
@@ -329,20 +330,20 @@ export async function findDeferredRecordsByBlobHash(
     .objectStore(SYNC_STORES.DEFERRED_RECORDS)
     .index(SYNC_INDEXES.by_blobHash)
     .getAll(contentHash) as IDBRequest<DeferredRecordRow[]>;
-  return requestToPromise(request);
+  return idbRequest(request);
 }
 
 export async function deleteDeferredRecord(key: string): Promise<void> {
   const db = await getSyncDB();
   const tx = db.transaction(SYNC_STORES.DEFERRED_RECORDS, 'readwrite');
-  await requestToPromise(tx.objectStore(SYNC_STORES.DEFERRED_RECORDS).delete(key));
+  await idbRequest(tx.objectStore(SYNC_STORES.DEFERRED_RECORDS).delete(key));
   await awaitSyncTx(tx);
 }
 
 export async function clearDeferredRecords(): Promise<void> {
   const db = await getSyncDB();
   const tx = db.transaction(SYNC_STORES.DEFERRED_RECORDS, 'readwrite');
-  await requestToPromise(tx.objectStore(SYNC_STORES.DEFERRED_RECORDS).clear());
+  await idbRequest(tx.objectStore(SYNC_STORES.DEFERRED_RECORDS).clear());
   await awaitSyncTx(tx);
 }
 
@@ -350,7 +351,7 @@ export async function putOpaqueRecord(record: ChangeRecord): Promise<OpaqueRecor
   const db = await getSyncDB();
   const tx = db.transaction(SYNC_STORES.OPAQUE_RECORDS, 'readwrite');
   const key = opaqueRecordKey(record.scope, record.key);
-  const existing = (await requestToPromise(
+  const existing = (await idbRequest(
     tx.objectStore(SYNC_STORES.OPAQUE_RECORDS).get(key),
   )) as OpaqueRecordRow | undefined;
   if (existing && compareHlc(existing.record.hlc, record.hlc) >= 0) {
@@ -363,7 +364,7 @@ export async function putOpaqueRecord(record: ChangeRecord): Promise<OpaqueRecor
     recordKey: record.key,
     record,
   };
-  await requestToPromise(tx.objectStore(SYNC_STORES.OPAQUE_RECORDS).put(row));
+  await idbRequest(tx.objectStore(SYNC_STORES.OPAQUE_RECORDS).put(row));
   await awaitSyncTx(tx);
   return row;
 }
@@ -374,7 +375,7 @@ export async function getOpaqueRecord(key: string): Promise<OpaqueRecordRow | un
   const request = tx
     .objectStore(SYNC_STORES.OPAQUE_RECORDS)
     .get(key) as IDBRequest<OpaqueRecordRow | undefined>;
-  return requestToPromise(request);
+  return idbRequest(request);
 }
 
 export async function getAllOpaqueRecords(scope?: Scope): Promise<OpaqueRecordRow[]> {
@@ -384,13 +385,13 @@ export async function getAllOpaqueRecords(scope?: Scope): Promise<OpaqueRecordRo
   const request = (scope === undefined
     ? store.getAll()
     : store.index(SYNC_INDEXES.by_scope).getAll(scope)) as IDBRequest<OpaqueRecordRow[]>;
-  return requestToPromise(request);
+  return idbRequest(request);
 }
 
 export async function deleteOpaqueRecord(key: string): Promise<void> {
   const db = await getSyncDB();
   const tx = db.transaction(SYNC_STORES.OPAQUE_RECORDS, 'readwrite');
-  await requestToPromise(tx.objectStore(SYNC_STORES.OPAQUE_RECORDS).delete(key));
+  await idbRequest(tx.objectStore(SYNC_STORES.OPAQUE_RECORDS).delete(key));
   await awaitSyncTx(tx);
 }
 
@@ -399,16 +400,16 @@ export async function clearOpaqueRecords(scope?: Scope): Promise<void> {
   const tx = db.transaction(SYNC_STORES.OPAQUE_RECORDS, 'readwrite');
   const store = tx.objectStore(SYNC_STORES.OPAQUE_RECORDS);
   if (scope === undefined) {
-    await requestToPromise(store.clear());
+    await idbRequest(store.clear());
     await awaitSyncTx(tx);
     return;
   }
   const keysRequest = store
     .index(SYNC_INDEXES.by_scope)
     .getAllKeys(scope) as IDBRequest<IDBValidKey[]>;
-  const keys = await requestToPromise(keysRequest);
+  const keys = await idbRequest(keysRequest);
   for (const key of keys) {
-    await requestToPromise(store.delete(key));
+    await idbRequest(store.delete(key));
   }
   await awaitSyncTx(tx);
 }
@@ -451,13 +452,6 @@ function createAllSyncStores(db: IDBDatabase): void {
   }
 }
 
-function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-
 async function allocateCounter(
   connectionId: ConnectionId,
   scope: Scope,
@@ -467,14 +461,14 @@ async function allocateCounter(
   const store = tx.objectStore(SYNC_STORES.SEQUENCES);
   const key = sequenceKey(connectionId, scope);
   const request = store.get(key) as IDBRequest<SequenceCounters | undefined>;
-  const existing = await requestToPromise(request);
+  const existing = await idbRequest(request);
   const value = existing ? existing[field] : 1;
   const row: SequenceCounters = {
     key,
     nextSeq: field === 'nextSeq' ? value + 1 : existing?.nextSeq ?? 1,
     nextSnapshotN: field === 'nextSnapshotN' ? value + 1 : existing?.nextSnapshotN ?? 1,
   };
-  await requestToPromise(store.put(row));
+  await idbRequest(store.put(row));
   return value;
 }
 

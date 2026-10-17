@@ -5,6 +5,7 @@
 // freq rows stamped `kind: 'freq'`). Singleton getDB() — 1 connection per lang.
 
 import { getDbHash } from '@/shared/lib/storage/dbHash';
+import { idbRequest } from '@/shared/lib/storage/idb';
 
 /** IndexedDB schema version (ADR-023 D2 + ADR-037 §7.1 — v10 adds langPhraseIndex, v12 adds langWordTrash, v13 adds sync capture stores, v14 unifies entry store, v15 adds immutable entry-blob stores). */
 export const DB_SCHEMA_VERSION = 15;
@@ -149,7 +150,7 @@ export async function stagedRowsForResource(
     let boundaryEmitted = 0;
     for (;;) {
       const limit = PAGE + boundaryEmitted;
-      const rows = await requestValue(
+      const rows = await idbRequest(
         getStore(db, STORES.ENTRY, 'readonly')
           .index(INDEXES.by_resource_term)
           .getAll(IDBKeyRange.bound(lowerBound, [resourceId, []]), limit),
@@ -357,13 +358,6 @@ export function reverseString(s: string): string {
 const SWEEP_CHUNK = 256;
 const SWEEP_GAP_MS = 32;
 
-function requestValue<T>(request: IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-
 /** Bounded delete of every row whose compound `indexName` key starts with
  *  `key` (e.g. by_resource_term [resourceId, term]). Each round-trip is a
  *  single readwrite txn of one `getAllKeys(range, 256)` + keyed deletes —
@@ -436,11 +430,11 @@ export async function deleteRowsByIndex(
   }
   // Stragglers: rows with the resourceId but no compound-index entry
   // (missing sort field) — rare; one probed pass removes them.
-  const orphan = await requestValue(
+  const orphan = await idbRequest(
     getStore(db, storeName, 'readonly').index(resourceIndex).openKeyCursor(IDBKeyRange.only(key)),
   );
   if (!orphan) return;
-  const keys = await requestValue(
+  const keys = await idbRequest(
     getStore(db, storeName, 'readonly').index(resourceIndex).getAllKeys(IDBKeyRange.only(key)),
   );
   for (let i = 0; i < keys.length; i += SWEEP_CHUNK) {

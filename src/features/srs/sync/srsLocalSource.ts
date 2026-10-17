@@ -6,13 +6,13 @@ import type {
   Scope,
   SnapshotEntry,
 } from '@/features/sync';
+import { idbRequest } from '@/shared/lib/storage/idb';
 import {
   IdbLocalSource,
   allRowsAt,
   compareHlc,
   getMetaAt,
   getRowAt,
-  idbRequest,
   rowsByIndexAt,
   scopeForTarget,
   targetOf,
