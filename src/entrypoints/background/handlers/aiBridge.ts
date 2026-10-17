@@ -68,6 +68,12 @@ const abortedAskIds = new Set<string>();
 /** askId -> the popup's host tab; AI_STREAM partials from provider tabs are
  *  relayed there. Set on AI_ASK entry, cleared in its finally. */
 const pendingStreams = new Map<string, number>();
+/** askIds that produced at least one AI_STREAM partial — the provider page
+ *  is alive and generating, so the no-response window does not apply. */
+const streamedAsks = new Set<string>();
+/** No reply AND no stream partial within this window → page is treated as
+ *  wedged and the recovery ladder runs. Streaming extends to the full cap. */
+const REPLY_WINDOW_MS = 30_000;
 
 /** Debug ring buffer — read via sw.evaluate(() => globalThis.__aiBridgeLog). */
 const g = globalThis as Record<string, unknown>;
@@ -155,15 +161,6 @@ async function awaitComposer(
   return ping;
 }
 
-function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
-  return Promise.race([
-    p,
-    sleep(ms).then(() => {
-      throw new Error(`${label} timeout`);
-    }),
-  ]);
-}
-
 async function askOnProvider(
   adapter: AiProviderAdapter,
   prompt: string,
@@ -176,41 +173,64 @@ async function askOnProvider(
     const ping = await awaitComposer(tabId, adapter, await awaitBridgeReady(tabId));
     if (isAborted()) return { ok: false, error: 'cancelled' };
     if (!ping.composer) return { ok: false, error: 'loginRequired', loginTabId: tabId };
-    const sendOnce = () =>
-      withTimeout(
-        sendTabMessage<BridgeReply>(tabId, {
-          type: MESSAGE_TYPES.AI_ASK,
-          payload: { prompt, askId },
-        }),
-        ATTEMPT_TIMEOUT_MS,
-        'AI_ASK',
-      );
-    const reply = await sendOnce();
-    if (reply?.success && reply.text) return { ok: true, text: reply.text };
-    let error = classifyAskError(reply?.error ?? 'noAnswer');
+    const sendOnce = async (): Promise<BridgeReply | null> => {
+      const t0 = Date.now();
+      const settled = sendTabMessage<BridgeReply>(tabId, {
+        type: MESSAGE_TYPES.AI_ASK,
+        payload: { prompt, askId },
+      })
+        .then((r) => ({ r }))
+        .catch(() => ({ r: null }));
+      for (;;) {
+        // 30s with zero activity = wedged page; a stream partial means the
+        // provider is generating and gets the full cap instead.
+        const streaming = askId !== undefined && streamedAsks.has(askId);
+        const cap = streaming ? ATTEMPT_TIMEOUT_MS : REPLY_WINDOW_MS;
+        const left = cap - (Date.now() - t0);
+        if (left <= 0) return null;
+        const res = (await Promise.race([settled, sleep(Math.min(left, 500))])) as
+          | { r: BridgeReply | null }
+          | undefined;
+        if (res) return res.r;
+      }
+    };
+    const attempt = async (): Promise<
+      { ok: true; text: string } | { ok: false; error: AiAskFailureKind }
+    > => {
+      const reply = await sendOnce();
+      if (reply?.success && reply.text) return { ok: true, text: reply.text };
+      return { ok: false, error: classifyAskError(reply?.error ?? 'noAnswer') };
+    };
+    let outcome = await attempt();
     // 'busy' right after a cancelled ask is transient — the provider page is
     // still unwinding its stopped generation. One grace retry absorbs it.
-    if (error === 'busy') {
+    if (!outcome.ok && outcome.error === 'busy') {
       await sleep(1_500);
-      const retry = await sendOnce();
-      if (retry?.success && retry.text) return { ok: true, text: retry.text };
-      error = classifyAskError(retry?.error ?? 'noAnswer');
+      outcome = await attempt();
     }
-    // A page that drops the prompt or wedges mid-ask may be recoverable —
-    // reload the bridge tab once and resend. 'busy'/'loginRequired' mean
-    // the page is alive; don't reload those.
-    if ((error === 'domError' || error === 'noAnswer') && !isAborted()) {
-      dbg(`ask ${askId} reload+retry after ${error}`);
-      await reloadTab(tabId).catch(() => {});
+    // Recovery ladder — a page that never responded: 1) reload the bridge
+    // tab, 2) start a new conversation in it. busy/loginRequired/rateLimit/
+    // cancelled mean the page is alive and answerable — no recovery value.
+    const recoverable = (e: AiAskFailureKind): boolean =>
+      e === 'domError' || e === 'noAnswer' || e === 'timeout';
+    for (const step of ['reload', 'newChat'] as const) {
+      if (outcome.ok || !recoverable(outcome.error) || isAborted()) break;
+      dbg(`ask ${askId} ${step} after ${outcome.error}`);
+      if (step === 'reload') {
+        await reloadTab(tabId).catch(() => {});
+      } else {
+        await updateTab(tabId, { url: adapter.url }).catch(() => {});
+      }
       await awaitBridgeReady(tabId);
       if (isAborted()) return { ok: false, error: 'cancelled' };
       const ping2 = await awaitComposer(tabId, adapter, (await pingBridge(tabId)) ?? {});
       if (!ping2.composer) return { ok: false, error: 'loginRequired', loginTabId: tabId };
-      const retry = await sendOnce();
-      if (retry?.success && retry.text) return { ok: true, text: retry.text };
-      error = classifyAskError(retry?.error ?? 'noAnswer');
+      outcome = await attempt();
     }
-    return { ok: false, error };
+    if (!outcome.ok) {
+      console.warn(`[aiBridge] ${adapter.id} failed: ${outcome.error}`);
+    }
+    return outcome;
   } catch (err) {
     return {
       ok: false,
@@ -271,6 +291,7 @@ async function runAskChain(ctx: BackgroundContext, data: AskPayload): Promise<As
     if (askId !== undefined) {
       pendingStreams.delete(askId);
       abortedAskIds.delete(askId);
+      streamedAsks.delete(askId);
     }
   }
 }
@@ -352,6 +373,7 @@ export function registerAiBridgeHandlers(ctx: BackgroundContext): void {
       if (!parsed.success) {
         return { success: false, error: `Invalid AI_STREAM payload: ${parsed.error.message}` };
       }
+      streamedAsks.add(parsed.data.askId);
       const tabId = pendingStreams.get(parsed.data.askId);
       if (tabId !== undefined) {
         await sendTabMessage(tabId, {
