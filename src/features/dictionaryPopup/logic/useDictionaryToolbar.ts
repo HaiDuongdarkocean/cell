@@ -120,6 +120,8 @@ export interface UseDictionaryToolbarReturn {
   /** Breakdown chunk indexes ticked for the card's Definitions field. */
   readonly checkedChunks: ReadonlySet<number>;
   readonly toggleChunk: (index: number) => void;
+  readonly checkedAiFeatures: ReadonlySet<AiFeature>;
+  readonly toggleAiFeature: (feature: AiFeature) => void;
   readonly translateEngine: 'google' | 'ai';
   /** Session source pick for the translate tab: Google or an AI provider. */
   readonly pickTranslateSource: (source: 'google' | AiProviderId) => void;
@@ -197,6 +199,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
   const googleTranslationRef = useRef(initialTranslation ?? '');
   /** Breakdown chunk indexes ticked for the card's Definitions field. */
   const [checkedChunks, setCheckedChunks] = useState<ReadonlySet<number>>(new Set());
+  const [checkedAiFeatures, setCheckedAiFeatures] = useState<ReadonlySet<AiFeature>>(new Set());
   /** Same-tick mirror of translateEngine — a source pick re-translates before
    *  the state update lands in the next render's closure. */
   const translateEngineRef = useRef(translateEngine);
@@ -302,11 +305,23 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     });
   }, []);
 
+  const toggleAiFeature = useCallback((feature: AiFeature): void => {
+    setCheckedAiFeatures((prev) => {
+      const next = new Set(prev);
+      if (next.has(feature)) next.delete(feature);
+      else next.add(feature);
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    setCheckedChunks(new Set());
+    setCheckedAiFeatures(new Set());
+  }, [result?.term]);
+
   const pickAiLanguage = useCallback(
     (lang: 'native' | 'target'): void => {
       setAiLanguage(lang);
-      // Stamp the ref synchronously — even before the first settings load —
-      // so a pick→re-ask in the same tick composes with the new language.
       aiCfgRef.current = {
         ...(aiCfgRef.current ?? DEFAULT_AI_BRIDGE_SETTINGS),
         answerLanguage: lang,
@@ -689,6 +704,8 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     pickAiLanguage,
     checkedChunks,
     toggleChunk,
+    checkedAiFeatures,
+    toggleAiFeature,
     translateEngine,
     pickTranslateSource,
     translationSource,

@@ -351,6 +351,8 @@ export function CandidateView({
               panel.askAi('wordExplain', true);
             }}
             onRetry={() => panel.askAi('wordExplain', true)}
+            checked={panel.checkedAiFeatures.has('wordExplain')}
+            onToggle={() => panel.toggleAiFeature('wordExplain')}
           />
         )}
         {panel.activeTab === 'breakdown' && (

@@ -43,6 +43,8 @@ export interface AiAnswerPanelProps {
   readonly chunks?: readonly BreakdownChunk[];
   readonly checkedChunks?: ReadonlySet<number>;
   readonly onToggleChunk?: (index: number) => void;
+  readonly checked?: boolean;
+  readonly onToggle?: () => void;
 }
 
 function providerLabel(id: AiProviderId): string {
@@ -61,6 +63,8 @@ export function AiAnswerPanel({
   chunks,
   checkedChunks,
   onToggleChunk,
+  checked,
+  onToggle,
 }: AiAnswerPanelProps): React.JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -170,7 +174,11 @@ export function AiAnswerPanel({
               </PanelItem>
             ))
           ) : (
-            <PanelItem padded>
+            <PanelItem
+              checkMode="block"
+              checked={checked}
+              onToggle={onToggle}
+            >
               <p className={styles.TihokaAiText}>{state.answer.text}</p>
             </PanelItem>
           )

@@ -127,6 +127,8 @@ export interface UseCandidateReturn {
   readonly pickAiLanguage: (lang: 'native' | 'target') => void;
   readonly checkedChunks: ReadonlySet<number>;
   readonly toggleChunk: (index: number) => void;
+  readonly checkedAiFeatures: ReadonlySet<AiFeature>;
+  readonly toggleAiFeature: (feature: AiFeature) => void;
   readonly translateEngine: 'google' | 'ai';
   readonly pickTranslateSource: (source: 'google' | AiProviderId) => void;
   readonly translationSource: 'google' | 'ai' | null;
@@ -475,7 +477,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
       toolbar.imageSelection,
       toolbar.translationSelected,
       variant ? { variant, accentIndex } : undefined,
-      formatAiNoteBlocks(toolbar.aiAnswers),
+      formatAiNoteBlocks(toolbar.aiAnswers.filter((a) => toolbar.checkedAiFeatures.has(a.feature))),
       chunkDefs,
     );
   }, [toolbar, candidate, selectedDefinitions, exampleSelection, definitionSelection, contextSentence, variant, accentIndex]);
@@ -489,12 +491,13 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
   });
   useEffect(() => {
     if (sentNoteRef.current === null) return;
-    const next = mergeAiNoteBlocks(sentNoteRef.current, toolbar.aiAnswers);
+    const optedIn = toolbar.aiAnswers.filter((a) => toolbar.checkedAiFeatures.has(a.feature));
+    const next = mergeAiNoteBlocks(sentNoteRef.current, optedIn);
     if (next !== sentNoteRef.current) {
       sentNoteRef.current = next;
-      onAiNoteUpdateRef.current?.(toolbar.aiAnswers);
+      onAiNoteUpdateRef.current?.(optedIn);
     }
-  }, [toolbar.aiAnswers]);
+  }, [toolbar.aiAnswers, toolbar.checkedAiFeatures]);
 
   // REQ-2: dictionary miss → auto-open the AI tab once per candidate.
   // The settings read resolves after the user may have picked a tab — a manual
@@ -592,6 +595,8 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     pickAiLanguage: toolbar.pickAiLanguage,
     checkedChunks: toolbar.checkedChunks,
     toggleChunk: toolbar.toggleChunk,
+    checkedAiFeatures: toolbar.checkedAiFeatures,
+    toggleAiFeature: toolbar.toggleAiFeature,
     translateEngine: toolbar.translateEngine,
     pickTranslateSource: toolbar.pickTranslateSource,
     translationSource: toolbar.translationSource,

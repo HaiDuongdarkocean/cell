@@ -5,7 +5,7 @@ import { EmptyState } from '@/shared/ui/EmptyState';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { Tooltip } from '@/shared/ui/Tooltip';
 import { Menu, MenuItem, MenuSeparator } from '@/shared/ui/Menu';
-import { Panel, PanelHead, PanelItem } from './PopupPanel';
+import { Panel, PanelCard, PanelHead, PanelItem } from './PopupPanel';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './TranslatePanel.module.css';
 import { AiStreamStatus } from './AiStreamStatus';
@@ -149,8 +149,6 @@ export function TranslatePanel({
     }
   }, [translation, error, loading, onTranslate]);
 
-  // Streamed partials land directly in the card's target slot — same layout
-  // as the finished translation, with the check slot spinning until done.
   const streamText = engine === 'ai' && aiStreamText ? aiStreamText : undefined;
   const displayText = translation || streamText;
 
@@ -167,17 +165,19 @@ export function TranslatePanel({
     return (
       <Panel id="dictionary-translate-panel">
         {sourceHead}
-        <PanelItem
-          checkMode="block"
-          checked={selected}
-          loading={loading}
-          onToggle={onToggle}
-        >
-          <div className={styles.TihokaTranslateText}>
-            <div className={styles.TihokaTranslateTarget} data-tihoka-id="translate-target">{displayText}</div>
-            <div className={styles.TihokaTranslateNative}>{sentence || term}</div>
-          </div>
-        </PanelItem>
+        <PanelCard id="dictionary-translate-answer">
+          <PanelItem
+            checkMode="block"
+            checked={selected}
+            loading={loading}
+            onToggle={onToggle}
+          >
+            <div className={styles.TihokaTranslateText}>
+              <div className={styles.TihokaTranslateTarget} data-tihoka-id="translate-target">{displayText}</div>
+              <div className={styles.TihokaTranslateNative}>{sentence || term}</div>
+            </div>
+          </PanelItem>
+        </PanelCard>
       </Panel>
     );
   }

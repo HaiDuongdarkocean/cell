@@ -31,10 +31,6 @@ export function assistantTurnCount(adapter: AiProviderAdapter, doc: Document): n
   return assistantUnits(adapter, doc).length;
 }
 
-/** Snapshot of the units present when the ask started — virtualized
- *  transcripts (DeepSeek) remount offscreen rows as NEW elements, so an
- *  index anchor drifts. Identity covers remounts; text covers a remounted
- *  turn that an index would happily settle on. */
 export interface AssistantBaseline {
   readonly units: readonly Element[];
   readonly texts: ReadonlySet<string>;
@@ -45,8 +41,6 @@ export function captureAssistantBaseline(adapter: AiProviderAdapter, doc: Docume
   return { units, texts: new Set(units.map((u) => unitText(adapter, u))) };
 }
 
-/** First assistant unit that wasn't on the page at baseline — remounted
- *  rows (element not in the set) are only new when their text is too. */
 export function newAssistantUnit(
   adapter: AiProviderAdapter,
   doc: Document,
