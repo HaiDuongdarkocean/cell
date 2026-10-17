@@ -160,8 +160,9 @@ export function CandidateView({
   }, []);
 
   const breakdownAnswer =
-    (panel.aiState.feature === 'sentenceBreakdown' ? panel.aiState.answer : null) ??
-    panel.aiAnswers.find((a) => a.feature === 'sentenceBreakdown');
+    panel.aiState.feature === 'sentenceBreakdown'
+      ? panel.aiState.answer
+      : panel.aiAnswers.find((a) => a.feature === 'sentenceBreakdown');
   const breakdownLoading =
     panel.aiState.feature === 'sentenceBreakdown' && panel.aiState.phase === 'loading';
   const breakdownChunks = breakdownAnswer
