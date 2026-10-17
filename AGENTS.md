@@ -35,7 +35,7 @@
 - KHI sửa bug → tái hiện end-to-end trên môi trường thật trước — chưa thấy bug chạy thì chưa sửa.
 - KHI viết test cho bug → viết sau reproduce và test phải fail khi bug còn đó.
 - KHI đụng shared hàm/type/field → grep hết callers + trace blast radius trước; đổi contract → migrate tất cả producers/consumers trong cùng commit.
-- KHI xong code → `npm run typecheck && npm run test:unit && npm run build` → verify Chrome thật → commit.
+- KHI xong code → `npm run typecheck && npm run test:related && npm run build` → verify Chrome thật → commit; `test:unit` full chỉ ở ship gate.
 - KHI UI đổi hình thái/tương tác → bắt buộc ảnh chụp before/after hoặc pixel-scan (DOM rect/computed không đủ — element đúng rect vẫn có thể không paint).
 
 ## Debug sai đường — signature đã trả giá

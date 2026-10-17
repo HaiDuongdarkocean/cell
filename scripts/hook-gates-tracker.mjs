@@ -9,6 +9,7 @@ const GATE_PATTERNS = [
   [/npx\s+eslint/, 'lint'],
   [/npm\s+run\s+test:unit/, 'testUnit'],
   [/npx\s+vitest\s+run/, 'testUnit'],
+  [/test:related|test-related\.mjs|npx\s+jest\b|\bjest\s+--/, 'testUnit'],
   [/npm\s+run\s+build/, 'build'],
   [/npx\s+vite\s+build/, 'build'],
   [/playwright\s+test/, 'browser'],

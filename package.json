@@ -30,6 +30,7 @@
     "preview": "vite preview",
     "test": "jest --passWithNoTests",
     "test:unit": "jest --selectProjects unit --passWithNoTests",
+    "test:related": "node scripts/test-related.mjs",
     "test:integration": "jest --selectProjects integration",
     "test:fast": "jest --selectProjects unit --passWithNoTests",
     "test:unit:design-system": "jest --selectProjects unit --passWithNoTests --testPathPatterns tests/unit/scripts --testPathPatterns tests/unit/entrypoints/design-system-showcase --testPathPatterns src/shared/ui",

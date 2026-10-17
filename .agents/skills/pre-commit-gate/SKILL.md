@@ -65,7 +65,8 @@ Change ready
     │
     ▼
 ┌─────────────────────┐
-│ 4. Unit tests       │ npm run test:unit (if logic changed)
+│ 4. Unit tests       │ npm run test:related (changed files only; │
+│                     │ full test:unit runs at ship gate)         │
 └─────────────────────┘
     │
     ▼

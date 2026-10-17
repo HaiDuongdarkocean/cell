@@ -41,8 +41,8 @@ readPayload((payload) => {
     const ui = mine.some((f) => /\.(tsx|css|module\.css)$/.test(f));
     emitBlock(
       `UNCOMMITTED SESSION WORK: ${mine.length} file(s) this session touched are dirty: ${mine.slice(0, 5).join(', ')}${mine.length > 5 ? ', …' : ''}. ` +
-      `Atomic-commit rule — verify then commit before stopping: npm run typecheck && npm run lint && npm run test:unit && npm run build` +
-      `${ui ? ' + verify UI in a real browser (UI files touched)' : ''}, then git add YOUR files only and commit. Dirty files you never touched belong to another lane — leave them alone.`,
+      `Atomic-commit rule — verify then commit before stopping: npm run typecheck && npm run lint && npm run test:related && npm run build` +
+      `${ui ? ' + verify UI in a real browser (UI files touched)' : ''}, then commit via the git-workflow-and-versioning skill (atomic commits, YOUR files only). Dirty files you never touched belong to another lane — leave them alone.`,
     );
   }
 
