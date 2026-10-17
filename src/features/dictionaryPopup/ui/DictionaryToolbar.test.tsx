@@ -10,7 +10,6 @@ describe('DictionaryToolbar', () => {
     expect(screen.getByTestId('dictionary-tab-image')).toHaveTextContent('Image');
     expect(screen.getByTestId('dictionary-tab-translate')).toHaveTextContent('Translate');
     expect(screen.getByTestId('dictionary-tab-links')).toHaveTextContent('Links');
-    expect(screen.getByTestId('dictionary-tab-pronunciation')).toHaveTextContent('Sounds');
   });
 
   it('calls onSelect with the clicked tab', () => {
@@ -34,14 +33,13 @@ describe('DictionaryToolbar', () => {
       <DictionaryToolbar
         activeTab={null}
         onSelect={jest.fn()}
-        counts={{ audio: 2, image: 0, translate: 1, links: 3, pronunciation: 1 }}
+        counts={{ audio: 2, image: 0, translate: 1, links: 3 }}
       />,
     );
 
     expect(screen.getByTestId('dictionary-badge-audio')).toHaveTextContent('2');
     expect(screen.queryByTestId('dictionary-badge-image')).not.toBeInTheDocument();
     expect(screen.getByTestId('dictionary-badge-translate')).toHaveTextContent('1');
-    expect(screen.getByTestId('dictionary-badge-pronunciation')).toHaveTextContent('1');
     // Links tab does not show a badge
     expect(screen.queryByTestId('dictionary-badge-links')).not.toBeInTheDocument();
   });

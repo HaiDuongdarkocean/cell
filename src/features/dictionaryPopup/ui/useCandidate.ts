@@ -42,8 +42,8 @@ import type { AiAnswer, AiAskState } from '../logic/useAiAsk';
 import type { AiFeature, AiProviderId } from '@/entities/settings';
 import { DEFAULT_AI_BRIDGE_SETTINGS } from '@/shared/config/config';
 
-const ACCENT_PREF_KEY = 'dictAccentPreference';
-let accentPrefCache: string | undefined;
+import { normalizeAccent } from '@/features/pronunciation';
+
 
 export interface UseCandidateOptions {
   readonly candidate: LookupResult;
@@ -78,8 +78,7 @@ export interface UseCandidateReturn {
   readonly variantIndex: number;
   readonly selectVariant: (index: number) => void;
   readonly accentIndex: number;
-  readonly cycleAccent: () => void;
-  readonly preferredAccent: string | undefined;
+
   readonly displayReading: string;
   readonly displayDefinitions: readonly DefinitionEntry[];
   readonly displayFrequencies: readonly VariantFrequency[];
@@ -174,7 +173,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
   const variants = candidate.variants;
   const [variantIndex, setVariantIndex] = useState(0);
   const variant = variants?.length ? variants[Math.min(variantIndex, variants.length - 1)] : undefined;
-  const [accentByPos, setAccentByPos] = useState<Record<string, number>>({});
+  const [accentPref, setAccentPref] = useState<'auto' | 'us' | 'uk'>('auto');
   const [variantStatusOverrides, setVariantStatusOverrides] = useState<Map<string, WordStatus>>(new Map());
   const variantSig = (variants ?? []).map((v) => `${v.pos}:${v.status}`).join('|');
   const [prevVariantSig, setPrevVariantSig] = useState(variantSig);
@@ -187,29 +186,22 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
   if (prevCandidateKey !== candidateKey) {
     setPrevCandidateKey(candidateKey);
     setVariantIndex(0);
-    setAccentByPos({});
   }
-  const [preferredAccent, setPreferredAccent] = useState<string | undefined>(accentPrefCache);
   useEffect(() => {
-    if (typeof chrome === 'undefined' || !chrome.storage?.local) return;
     let alive = true;
-    void chrome.storage.local.get(ACCENT_PREF_KEY).then((stored) => {
-      const saved = stored[ACCENT_PREF_KEY];
-      if (alive && typeof saved === 'string' && saved) {
-        accentPrefCache = saved;
-        setPreferredAccent(saved);
-      }
-    }).catch(() => undefined);
+    void loadSettings()
+      .then((s) => {
+        if (alive) setAccentPref(s.dictionaryPopup?.accentPreference ?? 'auto');
+      })
+      .catch(() => undefined);
     return () => { alive = false; };
   }, []);
 
   const accentIndex = (() => {
     if (!variant) return 0;
-    const max = Math.max(0, variant.prons.length - 1);
-    const explicit = accentByPos[variant.pos];
-    if (explicit != null) return Math.min(explicit, max);
-    if (preferredAccent) {
-      const idx = variant.prons.findIndex((p) => p.accent === preferredAccent);
+    if (accentPref !== 'auto') {
+      const want = accentPref === 'uk' ? 'br' : accentPref;
+      const idx = variant.prons.findIndex((p) => normalizeAccent(p.accent) === want);
       if (idx >= 0) return idx;
     }
     return 0;
@@ -218,20 +210,6 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
   const selectVariant = useCallback((index: number): void => {
     setVariantIndex(index);
   }, []);
-
-  const cycleAccent = useCallback((): void => {
-    if (!variant || variant.prons.length < 2) return;
-    const next = ((accentByPos[variant.pos] ?? accentIndex) + 1) % variant.prons.length;
-    setAccentByPos((prev) => ({ ...prev, [variant.pos]: next }));
-    const accent = variant.prons[next]?.accent;
-    if (accent) {
-      accentPrefCache = accent;
-      setPreferredAccent(accent);
-      if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-        void chrome.storage.local.set({ [ACCENT_PREF_KEY]: accent });
-      }
-    }
-  }, [variant, accentByPos, accentIndex]);
 
   const displayReading = variant
     ? (variant.prons[accentIndex]?.ipa ?? '')
@@ -546,8 +524,6 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     variantIndex,
     selectVariant,
     accentIndex,
-    cycleAccent,
-    preferredAccent,
     displayReading,
     displayDefinitions,
     displayFrequencies,

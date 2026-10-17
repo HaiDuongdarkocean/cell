@@ -75,40 +75,16 @@
   max-width: 100%;
 }
 
+.TihokaHeaderIpaWrap {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .TihokaHeaderIpa {
   font-size: var(--font-size-md);
   color: var(--color-text-secondary);
   overflow-wrap: anywhere;
   min-width: 0;
-}
-
-.TihokaAccentLabel {
-  padding: 0;
-  border: none;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--color-muted-foreground);
-  font-family: var(--font-family);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  line-height: var(--leading-normal);
-  cursor: pointer;
-  transition: color var(--duration-fast) var(--ease-out);
-}
-
-.TihokaAccentLabel:hover:not(:disabled) {
-  color: var(--color-text-primary);
-  text-decoration: underline;
-  text-underline-offset: var(--space-0-5);
-}
-
-.TihokaAccentLabel:focus-visible {
-  outline: var(--space-0-5) solid var(--color-border-focus);
-  outline-offset: var(--space-0-5);
-}
-
-.TihokaAccentLabel:disabled {
-  cursor: default;
 }
 
 .TihokaHeaderLevel {

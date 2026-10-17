@@ -46,6 +46,12 @@
   overscroll-behavior: auto;
 }
 
+/* Scroller padding-bottom is 0 — this margin is the room the sticky chips
+   need to hold their 12px bottom float at scroll end. */
+.popupMode .TihokaCandidatesChips {
+  margin-bottom: var(--space-3);
+}
+
 /* Integrated mode keeps overflow-y:auto (it scrolls itself inside a flex
    parent like DictionaryTab's .leftPane or the resources lookupColumn) but
    drops overscroll-behavior:contain — in an unbounded host the panel has no

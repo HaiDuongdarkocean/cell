@@ -32,14 +32,13 @@ const TRIGGER_LABEL_KEYS: Record<string, MessageKey> = {
   'hover-alt': 'settings.dictionaryPopup.openWith.hoverAlt',
 };
 
-const TAB_OPTIONS = ['', 'audio', 'image', 'translate', 'links', 'pronunciation'] as const;
+const TAB_OPTIONS = ['', 'audio', 'image', 'translate', 'links'] as const;
 const TAB_LABEL_KEYS: Record<string, MessageKey> = {
   '': 'settings.dictionaryPopup.showFirst.none',
   audio: 'settings.dictionaryPopup.showFirst.audio',
   image: 'settings.dictionaryPopup.showFirst.image',
   translate: 'settings.dictionaryPopup.showFirst.translate',
   links: 'settings.dictionaryPopup.showFirst.links',
-  pronunciation: 'settings.dictionaryPopup.showFirst.pronunciation',
 };
 
 const TRANSLATION_OPTIONS = ['hidden', 'shown'] as const;
@@ -58,6 +57,19 @@ const FREQUENCY_OPTIONS = ['stars', 'rank'] as const;
 const FREQUENCY_LABEL_KEYS: Record<string, MessageKey> = {
   stars: 'settings.dictionaryPopup.frequency.stars',
   rank: 'settings.dictionaryPopup.frequency.rank',
+};
+
+const PRONUNCIATION_OPTIONS = ['phonemes', 'ipa'] as const;
+const PRONUNCIATION_LABEL_KEYS: Record<string, MessageKey> = {
+  phonemes: 'settings.dictionaryPopup.pronunciation.phonemes',
+  ipa: 'settings.dictionaryPopup.pronunciation.ipa',
+};
+
+const ACCENT_OPTIONS = ['auto', 'us', 'uk'] as const;
+const ACCENT_LABEL_KEYS: Record<string, MessageKey> = {
+  auto: 'settings.dictionaryPopup.accent.auto',
+  us: 'settings.dictionaryPopup.accent.us',
+  uk: 'settings.dictionaryPopup.accent.uk',
 };
 
 type SurfaceTab = 'audio' | 'image' | 'translate' | 'links';
@@ -89,6 +101,16 @@ const STEPS = [
     labelKey: 'settings.dictionaryPopup.frequency' as MessageKey,
     valueKey: 'frequencyDisplay' as const,
     options: FREQUENCY_OPTIONS.map((o) => ({ value: o, labelKey: FREQUENCY_LABEL_KEYS[o] })),
+  },
+  {
+    labelKey: 'settings.dictionaryPopup.pronunciation' as MessageKey,
+    valueKey: 'pronunciationDisplay' as const,
+    options: PRONUNCIATION_OPTIONS.map((o) => ({ value: o, labelKey: PRONUNCIATION_LABEL_KEYS[o] })),
+  },
+  {
+    labelKey: 'settings.dictionaryPopup.accent' as MessageKey,
+    valueKey: 'accentPreference' as const,
+    options: ACCENT_OPTIONS.map((o) => ({ value: o, labelKey: ACCENT_LABEL_KEYS[o] })),
   },
 ];
 
@@ -135,7 +157,11 @@ export function DictionaryPopupSettingsPanel({
               ? (settings.includeAllExamplesOnDefSelect ? 'all' : 'manual')
               : step.valueKey === 'frequencyDisplay'
                 ? (settings.frequencyDisplay ?? 'stars')
-                : settings[step.valueKey];
+                : step.valueKey === 'pronunciationDisplay'
+                  ? (settings.pronunciationDisplay ?? 'phonemes')
+                  : step.valueKey === 'accentPreference'
+                    ? (settings.accentPreference ?? 'auto')
+                    : settings[step.valueKey];
 
           return (
             <SettingsRow key={step.valueKey} dense stacked title={t(step.labelKey)}>

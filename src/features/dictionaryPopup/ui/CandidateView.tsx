@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
+import { CollapsibleLine } from '@/shared/ui/CollapsibleLine';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Heading } from '@/shared/ui/Heading';
 import { DEFAULT_BAND_THRESHOLDS, type FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { usePronunciation } from '@/features/pronunciation';
 import { supportsEspeakIpa } from '@/features/pronunciation';
-import { PronunciationPanel, normalizeAccent } from '@/features/pronunciation';
+import { PhonemeList, normalizeAccent, parseIPA } from '@/features/pronunciation';
 import { t, type MessageKey } from '@/shared/i18n';
 import { openSrsStudyPage } from '@/features/srs';
 import { useCandidate } from './useCandidate';
@@ -110,18 +111,27 @@ export function CandidateView({
     preloadMedia,
   });
 
-  const needsEspeakReading = !panel.displayReading && supportsEspeakIpa(candidate.langCode);
-  const accentLabel = panel.variant?.prons[panel.accentIndex]?.accent ?? panel.preferredAccent;
+  const [pronunciationDisplay, setPronunciationDisplay] = useState<'ipa' | 'phonemes'>('phonemes');
+  const langSupportsIpa = supportsEspeakIpa(candidate.langCode);
+  const accentLabel = panel.variant?.prons[panel.accentIndex]?.accent;
   const phonemeLangCode =
-    supportsEspeakIpa(candidate.langCode) && normalizeAccent(accentLabel) === 'us'
+    langSupportsIpa && normalizeAccent(accentLabel) === 'us'
       ? 'en-us'
       : candidate.langCode;
   const { pronunciation } = usePronunciation({
     term: candidate.term,
     langCode: phonemeLangCode,
-    enabled: panel.activeTab === 'pronunciation' || needsEspeakReading,
+    enabled: !panel.displayReading && langSupportsIpa,
   });
-  const espeakReading = panel.displayReading ? '' : (pronunciation?.ipa ?? '');
+  // Single reading resolution — the dictionary IPA wins and eSpeak fills the
+  // gap. Both render modes (IPA text, phoneme chips) derive from this string.
+  const reading = panel.displayReading || pronunciation?.ipa || '';
+  const readingKind = panel.displayReading ? candidate.readingKind : 'ipa';
+  // Strip /…/ […] delimiters dictionaries wrap readings in.
+  const phonemes = langSupportsIpa && reading ? parseIPA(reading.replace(/[/[\]]/g, '')) : [];
+  const showPhonemes =
+    pronunciationDisplay === 'phonemes' &&
+    phonemes.some((p) => p.type !== 'separator');
 
   const wordRowRef = useRef<HTMLDivElement | null>(null);
   const [termTruncated, setTermTruncated] = useState(false);
@@ -153,6 +163,7 @@ export function CandidateView({
         didLoadRef.current = true;
         setFrequencyThresholds(next);
         setFrequencyDisplay(s.dictionaryPopup?.frequencyDisplay ?? 'stars');
+        setPronunciationDisplay(s.dictionaryPopup?.pronunciationDisplay ?? 'phonemes');
         setTranslationRevealed(s.dictionaryPopup?.translationVisibility === 'shown');
       })
       .catch(() => { /* keep defaults */ });
@@ -232,31 +243,22 @@ export function CandidateView({
       </header>
 
       <div className={styles.TihokaContent} data-tihoka-id="dictionary-content">
-        {(panel.displayReading || espeakReading || candidate.level) && (
+        {showPhonemes ? (
+          <PhonemeList phonemes={phonemes} language={phonemeLangCode} accent={accentLabel} align="start" />
+        ) : (
+          reading && (
+            <CollapsibleLine
+              dataTihokaId="dictionary-reading"
+              className={styles.TihokaHeaderIpaWrap}
+              contentClassName={styles.TihokaHeaderIpa}
+            >
+              {formatReading(reading, readingKind)}
+            </CollapsibleLine>
+          )
+        )}
+        {candidate.level && (
           <div className={styles.TihokaHeaderReading}>
-            {panel.variant && panel.variant.prons.length > 0 && (
-              <Button
-                variant="unstyled"
-                className={styles.TihokaAccentLabel}
-                disabled={panel.variant.prons.length < 2}
-                title={panel.variant.prons.length > 1 ? t('dict.accent.toggle', [panel.variant.prons[panel.accentIndex]?.accent ?? '']) : undefined}
-                onClick={panel.cycleAccent}
-                data-tihoka-id="dictionary-accent-toggle"
-                data-compact-hit
-              >
-                {panel.variant.prons[panel.accentIndex]?.accent ?? ''}
-              </Button>
-            )}
-            {(panel.displayReading || espeakReading) && (
-              <span className={styles.TihokaHeaderIpa} data-tihoka-id="dictionary-reading">
-                {panel.displayReading
-                  ? formatReading(panel.displayReading, candidate.readingKind)
-                  : formatReading(espeakReading, 'ipa')}
-              </span>
-            )}
-            {candidate.level && (
-              <span className={styles.TihokaHeaderLevel} data-tihoka-id="dictionary-level">[{candidate.level}]</span>
-            )}
+            <span className={styles.TihokaHeaderLevel} data-tihoka-id="dictionary-level">[{candidate.level}]</span>
           </div>
         )}
         <StatusRow
@@ -279,7 +281,6 @@ export function CandidateView({
             image: panel.selectedImageCount,
             translate: panel.selectedTranslationCount,
             links: panel.selectedLinkCount,
-            pronunciation: pronunciation ? 1 : 0,
           }}
         />
 
@@ -384,14 +385,6 @@ export function CandidateView({
           />
         )}
         {panel.activeTab === 'links' && <LinksPanel links={panel.links} />}
-        {panel.activeTab === 'pronunciation' && (
-          <div data-tihoka-id="dictionary-pronunciation-panel">
-            <PronunciationPanel
-              pronunciation={pronunciation}
-              accent={accentLabel}
-            />
-          </div>
-        )}
         </div>
         )}
 

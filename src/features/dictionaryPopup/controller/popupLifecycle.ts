@@ -169,7 +169,10 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
   function defaultTabFor(langCode: string) {
     const dp = deps.getDpSettings();
     const perLang = dp.defaultActiveTabPerLang?.[langCode];
-    return perLang !== undefined ? perLang : dp.defaultActiveTab;
+    const tab = perLang !== undefined ? perLang : dp.defaultActiveTab;
+    // 'pronunciation' was removed when phoneme chips moved into the header —
+    // stale stored values would open an empty tab panel.
+    return (tab as string) === 'pronunciation' ? null : tab;
   }
 
   /** Repaint the shared sheet mount with the top level's cached lookup data —

@@ -290,6 +290,8 @@ export const DEFAULT_DICTIONARY_POPUP_SETTINGS: DictionaryPopupSettings = {
   translationVisibility: 'hidden',
   includeAllExamplesOnDefSelect: false,
   frequencyDisplay: 'stars',
+  pronunciationDisplay: 'phonemes',
+  accentPreference: 'auto',
 };
 
 export const DEFAULT_CONDENSED_AUDIO_SETTINGS: CondensedAudioSettings = {

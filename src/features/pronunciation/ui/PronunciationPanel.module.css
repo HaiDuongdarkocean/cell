@@ -21,6 +21,10 @@
   gap: var(--space-1);
 }
 
+.phonemeListStart {
+  justify-content: flex-start;
+}
+
 .phoneme {
   display: inline-flex;
   align-items: center;

@@ -153,7 +153,9 @@ describe('CandidateView', () => {
     );
 
     expect(screen.getByTestId('dictionary-term')).toHaveTextContent('hello');
-    expect(screen.getByTestId('dictionary-reading')).toHaveTextContent('/həˈloʊ/');
+    // Default display is phoneme chips segmented from the dictionary IPA.
+    expect(screen.queryByTestId('dictionary-reading')).not.toBeInTheDocument();
+    expect(screen.getByTestId('pronunciation-phoneme-list')).toBeInTheDocument();
     expect(screen.getByTestId('dictionary-status-cycle')).toHaveTextContent('Known');
     expect(screen.getByTestId('dictionary-definitions')).toBeInTheDocument();
     expect(screen.getAllByTestId('dictionary-definition')).toHaveLength(1);
@@ -204,10 +206,10 @@ describe('CandidateView', () => {
   });
 
   it('shows a tooltip with the full term when it is truncated, and click does not re-trigger', () => {
-    let roCb: ResizeObserverCallback | undefined;
+    const roCbs: ResizeObserverCallback[] = [];
     const NativeRO = globalThis.ResizeObserver;
     globalThis.ResizeObserver = jest.fn((cb: ResizeObserverCallback) => {
-      roCb = cb;
+      roCbs.push(cb);
       return { observe: jest.fn(), unobserve: jest.fn(), disconnect: jest.fn() } as unknown as ResizeObserver;
     }) as unknown as typeof ResizeObserver;
 
@@ -225,7 +227,7 @@ describe('CandidateView', () => {
       const first = screen.getByTestId('dictionary-term');
       Object.defineProperty(first, 'scrollWidth', { value: 400, configurable: true });
       Object.defineProperty(first, 'clientWidth', { value: 100, configurable: true });
-      act(() => roCb?.([], {} as ResizeObserver));
+      act(() => roCbs.forEach((cb) => cb([], {} as ResizeObserver)));
 
       const term = screen.getByTestId('dictionary-term');
       fireEvent.mouseEnter(term);
@@ -674,12 +676,10 @@ describe('CandidateView', () => {
     }));
   });
 
-  it('fetches and renders the pronunciation panel when the phonemes tab is opened', async () => {
-    const candidate = makeResult('hello', { reading: 'həˈloʊ', readingKind: 'ipa' });
-
+  it('shows phoneme chips in place of the IPA reading by default', async () => {
     render(
       <CandidateView
-        candidate={candidate}
+        candidate={makeResult('hello')}
         index={0}
         contextSentence=""
         sourceLang="en"
@@ -687,10 +687,28 @@ describe('CandidateView', () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId('dictionary-tab-pronunciation'));
+    await waitFor(() => expect(screen.getAllByTestId('pronunciation-phoneme')).toHaveLength(5));
+    expect(screen.queryByTestId('dictionary-reading')).not.toBeInTheDocument();
+  });
 
-    await waitFor(() => expect(screen.getByText('/həˈloʊ/')).toBeInTheDocument());
-    expect(screen.getAllByTestId('pronunciation-phoneme')).toHaveLength(5);
+  it('shows the plain IPA reading when pronunciationDisplay is ipa', async () => {
+    mockLoadSettings.mockResolvedValue({
+      ...DEFAULT_SETTINGS,
+      dictionaryPopup: { ...DEFAULT_SETTINGS.dictionaryPopup!, pronunciationDisplay: 'ipa' },
+    });
+
+    render(
+      <CandidateView
+        candidate={makeResult('hello')}
+        index={0}
+        contextSentence=""
+        sourceLang="en"
+        targetLang="vi"
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByTestId('dictionary-reading')).toHaveTextContent('/həˈloʊ/'));
+    expect(screen.queryByTestId('pronunciation-phoneme')).not.toBeInTheDocument();
   });
 
   it('renders the label head for a gloss-less sense and hides fully empty defs', () => {

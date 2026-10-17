@@ -74,6 +74,7 @@ export { CloseButton } from './CloseButton';
 export { Code } from './Code';
 export { CollapseButton } from './CollapseButton';
 export { Collapsible } from './Collapsible';
+export { CollapsibleLine } from './CollapsibleLine';
 export { Container } from './Container';
 export { CopyButton } from './CopyButton';
 export { ToastStack, enqueueToast, upsertToast, type ToastItem, type ToastKind } from './Toast';

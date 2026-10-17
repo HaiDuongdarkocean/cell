@@ -240,9 +240,9 @@ export interface DictionaryPopupSettings {
    *  is now always mounted when the dictionary popup is enabled. */
   readonly triggerMode: 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt';
   /** Default active tab (null = chỉ dictionary). Default null. */
-  readonly defaultActiveTab: 'audio' | 'image' | 'translate' | 'links' | 'pronunciation' | null;
+  readonly defaultActiveTab: 'audio' | 'image' | 'translate' | 'links' | null;
   /** Per-language override for default active tab. */
-  readonly defaultActiveTabPerLang?: Record<string, 'audio' | 'image' | 'translate' | 'links' | 'pronunciation' | null>;
+  readonly defaultActiveTabPerLang?: Record<string, 'audio' | 'image' | 'translate' | 'links' | null>;
   /** SRS destination. Default 'anki'. */
   readonly srsDestination: SrsDestination;
   /** Popup width in px (popover mode). Default 560. */
@@ -269,6 +269,12 @@ export interface DictionaryPopupSettings {
    *  source+rank chips. Drives both popup chips and card fields.
    *  Default 'stars' (schema v42 — moved from cardCreator.frequencyDisplay). */
   readonly frequencyDisplay?: 'stars' | 'rank';
+  /** Header pronunciation rendering — 'ipa' shows the plain reading text,
+   *  'phonemes' shows clickable per-phoneme chips. Default 'phonemes'. */
+  readonly pronunciationDisplay?: 'ipa' | 'phonemes';
+  /** Accent preferred when a dictionary entry lists multiple pronunciations.
+   *  'auto' keeps the dictionary's own order. Default 'auto'. */
+  readonly accentPreference?: 'auto' | 'us' | 'uk';
 }
 
 /** Local Player settings slice (spec local-video-player.md — schema v22). */
