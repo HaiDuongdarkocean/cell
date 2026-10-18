@@ -43,6 +43,23 @@ function getPortalContainer(trigger: HTMLElement | null): Element | DocumentFrag
   return (root as Document).body ?? document.body;
 }
 
+/** A popover must always render above the surface that opened it — walk the
+ *  trigger's composed ancestor chain for the highest z-index and sit above
+ *  it (never below the base --z-popover). Fixed layers stop fighting: a menu
+ *  inside a z-2000 sheet lands at 2001 automatically. */
+function triggeredZIndex(trigger: HTMLElement | null, base: number): number {
+  let z = base;
+  let n: Element | null = trigger;
+  while (n) {
+    const v = getComputedStyle(n).zIndex;
+    if (v !== 'auto') z = Math.max(z, Number(v) || 0);
+    const parent = n.parentElement;
+    const root = n.getRootNode();
+    n = parent ?? (root instanceof ShadowRoot ? root.host : null);
+  }
+  return z + 1;
+}
+
 export function Popover({
   open,
   triggerRef,
@@ -83,7 +100,7 @@ export function Popover({
       <div
         ref={menuRef}
         className={cls}
-        style={style}
+        style={{ ...style, zIndex: triggeredZIndex(triggerRef.current, 1500) }}
         role={role}
         data-tihoka-id={dataTihokaId}
         aria-label={ariaLabel}
