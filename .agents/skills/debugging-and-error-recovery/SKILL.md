@@ -12,8 +12,8 @@ Use when: tests fail, build breaks, runtime mismatch, bug report, works on one p
 ## Loop
 
 ```text
-Contract → Triage → conf ≥80% → Fix → Verify → Guard
-                 → conf <80% → Reproduce → Localize → Falsify → (Snippet) → Fix → Verify → Guard
+Contract → (user-reported bug: consent gate) → Triage → conf ≥80% → Fix → Verify → Guard
+                                                      → conf <80% → Reproduce → Localize → Falsify → (Snippet) → Fix → Verify → Guard
 ```
 
 ## Contract
@@ -26,6 +26,8 @@ GOOD: Given: badge floating at (609,400), data-edge=null
 ```
 
 Every precondition the user named — timing, layout, mode — goes in Given. Dropping one = reproducing a different bug.
+
+Bug report comes from a human → infer the Contract from their report, present it, wait for consent. HARD GATE: no Triage, no probes, no code changes until the user confirms the Contract. An unconfirmed Contract = unknown bug. Machine-reported failures (CI, failing tests) skip the gate.
 
 ## Triage — diagnose before reproducing
 
