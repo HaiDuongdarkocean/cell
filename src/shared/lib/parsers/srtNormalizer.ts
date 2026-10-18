@@ -19,7 +19,7 @@ const NAMED_SUBTITLE_ENTITIES: Record<string, string> = {
 };
 
 function decodeSubtitleEntities(text: string): string {
-  return text.replace(/&([a-zA-Z]+|#\d+|#x[0-9a-fA-F]+);/g, (match, body: string) => {
+  return text.replace(/&([a-zA-Z]+|#\d+|#[xX][0-9a-fA-F]+);/g, (match, body: string) => {
     if (body.startsWith('#')) {
       const isHex = body[1] === 'x' || body[1] === 'X';
       const code = Number.parseInt(body.slice(isHex ? 2 : 1), isHex ? 16 : 10);
