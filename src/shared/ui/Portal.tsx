@@ -7,6 +7,9 @@ export interface PortalProps {
   children: ReactNode;
   /** Target container. Defaults to document.body. */
   container?: Element | DocumentFragment | null;
+  /** The wrapper is the element that competes against sibling surfaces — a
+   *  child's z-index can't escape this stacking context. */
+  zIndex?: number;
 }
 
 /**
@@ -14,9 +17,12 @@ export interface PortalProps {
  * React's `createPortal`. Useful for overlays, tooltips, and dialogs that
  * must escape parent stacking contexts.
  */
-export function Portal({ children, container }: PortalProps): React.JSX.Element | null {
+export function Portal({ children, container, zIndex }: PortalProps): React.JSX.Element | null {
   const target = container ?? (typeof document !== 'undefined' ? document.body : null);
   if (!target) return null;
 
-  return createPortal(<div className={styles.portal}>{children}</div>, target);
+  return createPortal(
+    <div className={styles.portal} style={zIndex == null ? undefined : { zIndex }}>{children}</div>,
+    target,
+  );
 }

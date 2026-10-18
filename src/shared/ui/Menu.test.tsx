@@ -72,6 +72,20 @@ describe('Menu', () => {
     host.remove();
   });
 
+  it('lifts the portal wrapper above the high-z surface that summoned it', () => {
+    // The .portal wrapper — not the menu inside it — competes with the sheet:
+    // a child z-index can't escape the wrapper's stacking context.
+    const surface = document.createElement('div');
+    surface.style.cssText = 'position:fixed;z-index:10003';
+    document.body.appendChild(surface);
+    render(<Harness />, { container: surface });
+
+    const menu = document.body.querySelector('[role="menu"]') as HTMLElement;
+    expect(menu.parentElement).toHaveStyle({ zIndex: '10004' });
+
+    surface.remove();
+  });
+
   it('stays open when the menu surface or an item scrolls', () => {
     const scroller = document.createElement('div');
     document.body.appendChild(scroller);

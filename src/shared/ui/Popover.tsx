@@ -95,12 +95,13 @@ export function Popover({
     .filter(Boolean)
     .join(' ');
 
+  const z = triggeredZIndex(triggerRef.current, 1500);
   return (
-    <Portal container={container ?? getPortalContainer(triggerRef.current)}>
+    <Portal container={container ?? getPortalContainer(triggerRef.current)} zIndex={z}>
       <div
         ref={menuRef}
         className={cls}
-        style={{ ...style, zIndex: triggeredZIndex(triggerRef.current, 1500) }}
+        style={{ ...style, zIndex: z }}
         role={role}
         data-tihoka-id={dataTihokaId}
         aria-label={ariaLabel}
