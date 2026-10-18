@@ -15,6 +15,7 @@ Skill này là **router** — entry point duy nhất để chọn skill:
 
 - **Khi task đổi** (nhận task mới, chuyển pha SDLC, gặp vấn đề mới): invoke lại `/using-agent-skills` để re-route.
 - **Khi không rõ skill nào**: invoke `/using-agent-skills` — không đoán.
+- **Khi nhận task**: phân loại verify form ngay ở intake (bảng VERIFY CLASS bên dưới) — không để tới lúc xong mới chọn, vì verify form quyết định env phải dựng trước (clone profile, watcher từ t=0, device adb).
 
 ## Skill Discovery
 
@@ -41,8 +42,7 @@ Task arrives
     ├── Reviewing UI text? ────────────→ audit-text-in-ui
     ├── Reviewing motion? ────────────→ review-animations / improve-animations / find-animation-opportunities
     ├── Writing/running tests? ────────→ test-driven-development
-    │   └── Browser-based? ───────────→ testing-with-playwright
-    │       ├── Interactive/stealth session? → testing-extension-browser
+    │   └── Browser-based? ───────────→ VERIFY CLASS bên dưới (chọn đúng 1)
     │       └── Model can't see images? → vision-reader
     ├── Research / new ideas for backlog? → idea-grab / inquiry-creativity / subtitle-player-research
     ├── Committing/branching? ─────────→ git-workflow-and-versioning
@@ -53,6 +53,19 @@ Task arrives
     ├── Adding logs/metrics/alerts? ───→ observability-and-instrumentation
     └── Deploying/launching? ─────────→ shipping-and-launch
 ```
+
+### Verify classification — chọn tại intake, đúng 1 dạng
+
+| Task shape | Verify form | Skill |
+|---|---|---|
+| Logic thuần, không cần browser | unit test | `test-driven-development` + `npm run test:unit` |
+| Bug/feature tái hiện được bằng script, cần extension thật trên trang thật | scripted one-shot real browser (launch → verify → die) | `testing-extension-browser` |
+| Bug ngẫu nhiên, không biết trigger, cần lướt tay + console log từ t=0 | persistent debug window per session | `testing-browser-with-profile` |
+| Regression tự động / headless CI | Playwright fixtures, stage2 specs | `testing-with-playwright` |
+| Bug/perf trên Android thật | Quetta qua ADB | `testing-extension-android` |
+| Cần đọc ảnh/screenshot mà model mù | vision subagent | `vision-reader` |
+
+Default khi phân vân giữa 2 dạng browser: bug có reproduce script → `testing-extension-browser`; bug chỉ xuất hiện "lâu lâu một lần" → `testing-browser-with-profile` (watcher phải chạy trước khi bug xảy ra).
 
 ### Layer 2 — Pipeline stage (feature work)
 
@@ -233,7 +246,9 @@ Not every task needs every skill. A bug fix might only need: `debugging-and-erro
 | Verify | test-driven-development | Failing test first, then make it pass |
 | Verify | pre-commit-gate | Deterministic local checks (lint, typecheck, test, build, debt smell) before commit |
 | Verify | testing-with-playwright | Playwright E2E — fixtures + actors + stage2 specs, Tihoka + uBOLite loaded in Chromium |
-| Verify | testing-extension-browser | Interactive real-Chrome Playwright session (packed .crx + clone profile) cho ad-hoc verify |
+| Verify | testing-extension-browser | Scripted one-shot real browser (Playwright Chromium + clone, hoặc stealth Chrome qua CDP) cho bug có repro |
+| Verify | testing-browser-with-profile | Brave debug window sống lâu per session + watcher console — bug ngẫu nhiên, lướt tay |
+| Verify | testing-extension-android | Quetta/Chromium Android qua ADB + CRX update channel |
 | Verify | vision-reader | Delegate image reading to a vision subagent when the coding model is blind |
 | Verify | debugging-and-error-recovery | Reproduce → localize → fix → guard |
 | Verify | learning-and-apply (ACCUMULATE) | Extract reusable principle to atom JSON after test pass + root cause understood |
