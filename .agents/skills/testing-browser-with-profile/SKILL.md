@@ -14,6 +14,11 @@ profile+port before touching it — foreign windows are refused, never
 shared. Override with `Tihoka_DEBUG_SESSION=<name>` for a stable named
 profile that survives CLI restarts.
 
+First launch reuses the newest orphan dir in `profiles/` (one no live
+session claims) renamed to your id — logins/IndexedDB carry over and the
+profile pool stays bounded. Pass `-New` to the launch script for a fresh
+profile, only when the user asks for one explicitly (`/profile -new`).
+
 Run the launch script **from the worktree you're working in** —
 junctions are per-session (`ext-dist-<id>`), so your window installs
 that worktree's `dist`. Registry stores the dist path; a worktree

@@ -1,3 +1,5 @@
+param([switch]$New)
+
 $ErrorActionPreference = 'Stop'
 
 $id = (& "$PSScriptRoot\session.ps1") | Select-Object -Last 1
@@ -48,12 +50,18 @@ if (Test-Path $regFile) {
 }
 
 $claimed = @{}
+$claimedProfiles = @{}
 Get-ChildItem $regDir -Filter '*.json' | ForEach-Object {
   try {
     $e = Get-Content $_.FullName | ConvertFrom-Json
-    if (Test-Mine $e) { $claimed[[int]$e.port] = $true }
+    if (Test-Mine $e) { $claimed[[int]$e.port] = $true; $claimedProfiles[$e.profile] = $true }
     else { Remove-Item $_.FullName -Force }
   } catch { Remove-Item $_.FullName -Force }
+}
+Get-CimInstance Win32_Process -Filter "name='brave.exe'" | ForEach-Object {
+  if ($_.CommandLine -match '--user-data-dir=("[^"]+"|\S+)') {
+    $claimedProfiles[$Matches[1].Trim('"')] = $true
+  }
 }
 
 $port = 0
@@ -67,6 +75,16 @@ if ($env:Tihoka_DEBUG_PORT) {
   }
 }
 if (-not $port) { throw 'no free debug port in 9330-9429 - set Tihoka_DEBUG_PORT' }
+
+if (-not $New -and -not (Test-Path $profile)) {
+  $orphan = Get-ChildItem $profiles -Directory |
+    Where-Object { -not $claimedProfiles[$_.FullName] } |
+    Sort-Object LastWriteTime -Descending | Select-Object -First 1
+  if ($orphan) {
+    Rename-Item $orphan.FullName -NewName $id
+    Write-Output "reusing orphan profile $($orphan.Name) -> $id"
+  }
+}
 
 if (-not (Test-Path $profile)) {
   New-Item -ItemType Directory -Force "$profile\Default" | Out-Null

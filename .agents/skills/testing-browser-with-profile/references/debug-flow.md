@@ -11,10 +11,12 @@
 - Registry: `C:\Tihoka-browser-sessions\sessions\<id>.json`
   `{port, pid, profile, out}`. Stale entries (pid dead or
   cmdline mismatch) are swept on next launch.
-- Profile: `C:\Tihoka-browser-sessions\profiles\<id>` — seeded once
-  from the `brave-debug` template (logins/cookies carry over,
-  caches excluded). Want a profile that survives CLI restarts?
-  `export Tihoka_DEBUG_SESSION=main-debug` first.
+- Profile: `C:\Tihoka-browser-sessions\profiles\<id>` — newest orphan
+  dir is adopted and renamed to your id first; only seeded from the
+  `brave-debug` template when no orphan exists (logins/cookies carry
+  over, caches excluded). `launch-brave-debug.ps1 -New` skips adoption
+  for an explicitly fresh profile. Want a profile that survives CLI
+  restarts? `export Tihoka_DEBUG_SESSION=main-debug` first.
 - Port: first free in 9330-9429, skipped if listening or claimed
   by another live session. `Tihoka_DEBUG_PORT` overrides.
   Port 9222 belongs to another tool — never reuse.
