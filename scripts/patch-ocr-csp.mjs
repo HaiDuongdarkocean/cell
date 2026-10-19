@@ -163,15 +163,27 @@ const PATCHES = [
     find: 't.Mat||await new Promise(e=>{t.onRuntimeInitialized=()=>{e()}}),e=$e.default',
     replace: 'await new Promise(r=>{if(t.then)t.then(()=>r());else if(t.calledRun)r();else t.onRuntimeInitialized=()=>r()}),e=$e.default',
   },
+  // === zod vendor chunk: jitless capability probe ===
+  // zod probes `new Function("")` in try/catch to decide JIT vs jitless mode.
+  // Under MV3 CSP it always lands in the catch — forcing the throw keeps
+  // behavior identical while removing the textual CSP violation.
+  {
+    name: 'zod jitless probe (vendor)',
+    find: 'new Function("");',
+    replace: 'throw 0;',
+  },
 ];
 
 let patched = 0;
 let failed = 0;
 const appliedCount = new Map(PATCHES.map(({ name }) => [name, 0]));
 
-for (const file of readdirSync(distAssets)) {
+const patchDirs = [distAssets, join(process.cwd(), 'dist', 'vendor')];
+for (const dir of patchDirs) {
+if (!existsSync(dir)) continue;
+for (const file of readdirSync(dir)) {
   if (!file.endsWith('.js')) continue;
-  const filePath = join(distAssets, file);
+  const filePath = join(dir, file);
   let content = readFileSync(filePath, 'utf-8');
   let modified = false;
   const applied = [];
@@ -219,6 +231,7 @@ for (const file of readdirSync(distAssets)) {
     }
     patched++;
   }
+}
 }
 
 // === Gate A: required patches must have applied to ≥1 file ===
