@@ -13,6 +13,8 @@ interface NavClusterProps {
   collapsed: boolean;
   /** Whether the video is playing. */
   isPlaying?: boolean;
+  /** Whether cues are loaded — false disables prev/next. */
+  hasCues?: boolean;
   /** Repeat AB-loop mode state. */
   repeatActive?: boolean;
   /** Repeat button icon name (key in ICON_CATALOG). */
@@ -40,6 +42,7 @@ interface NavClusterProps {
 function NavClusterInner({
   collapsed,
   isPlaying = false,
+  hasCues = true,
   repeatActive = false,
   repeatIcon = NAV_CLUSTER_ICONS.repeat,
   repeatLabel = t('player.nav.repeat'),
@@ -80,7 +83,7 @@ function NavClusterInner({
   return (
     <div className={rootClass} style={clusterStyle} data-tihoka-id="nav-cluster" aria-label={t('subtitle.nav.aria')}>
       <div className={styles.main} data-tihoka-id="nav-main">
-        <Button shape="circle" variant="overlay" aria-label={t('settings.shortcuts.action.prevCue')} data-tihoka-id="nav-prev" onClick={onPrev}>
+        <Button shape="circle" variant="overlay" aria-label={t('settings.shortcuts.action.prevCue')} data-tihoka-id="nav-prev" onClick={onPrev} disabled={!hasCues}>
           <Icon name={NAV_CLUSTER_ICONS.prev}  />
         </Button>
         <Button shape="circle" variant="overlay"
@@ -91,7 +94,7 @@ function NavClusterInner({
         >
           <Icon name={repeatIcon}  />
         </Button>
-        <Button shape="circle" variant="overlay" aria-label={t('settings.shortcuts.action.nextCue')} data-tihoka-id="nav-next" onClick={onNext}>
+        <Button shape="circle" variant="overlay" aria-label={t('settings.shortcuts.action.nextCue')} data-tihoka-id="nav-next" onClick={onNext} disabled={!hasCues}>
           <Icon name={NAV_CLUSTER_ICONS.next}  />
         </Button>
       </div>

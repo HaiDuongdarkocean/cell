@@ -483,6 +483,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           <NavCluster
             collapsed={collapsed}
             isPlaying={isPlaying}
+            hasCues={cues.length > 0}
             repeatActive={repeatActive}
             repeatIcon={repeatIcon}
             repeatLabel={repeatLabel}

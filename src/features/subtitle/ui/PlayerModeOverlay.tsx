@@ -700,6 +700,7 @@ function PlayerModeOverlayInner({
             <NavCluster
               collapsed={false}
               isPlaying={isPlaying}
+              hasCues={(cues?.length ?? 0) > 0}
               repeatActive={repeatActive}
               repeatIcon={repeatIcon}
               repeatLabel={repeatLabel}

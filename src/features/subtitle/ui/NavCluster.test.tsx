@@ -45,6 +45,14 @@ describe('NavCluster', () => {
     expect(screen.queryByTestId('nav-prev')).not.toBeInTheDocument();
   });
 
+  it('disables prev/next without cues', () => {
+    render(<NavCluster collapsed={false} hasCues={false} {...handlers} />);
+    expect(screen.getByTestId('nav-prev')).toBeDisabled();
+    expect(screen.getByTestId('nav-next')).toBeDisabled();
+    expect(screen.getByTestId('nav-repeat')).not.toBeDisabled();
+    expect(screen.getByTestId('nav-play')).not.toBeDisabled();
+  });
+
   it('renders full controls (no hasSubtitle prop needed)', () => {
     render(<NavCluster collapsed={false} {...handlers} />);
     expect(screen.getByTestId('nav-cluster')).toBeInTheDocument();
