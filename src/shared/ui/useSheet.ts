@@ -9,6 +9,7 @@ export const SHEET_CLICK_THRESHOLD_PX = 4;
 export const SHEET_DISMISS_THRESHOLD_PX = 100;
 export const SHEET_DISMISS_RATIO = 0.2;
 const SHEET_FLING_PX_PER_MS = 0.5;
+const SHEET_FLING_MIN_PX = 50;
 const SHEET_DISMISS_ANIM_MS = 300;
 const CLICK_SWALLOW_WINDOW_MS = 500;
 
@@ -49,20 +50,28 @@ function isEditableTarget(target: EventTarget | null): boolean {
 /** Pull-to-dismiss gate: the swipe may grab the sheet only when every
  *  scrollable element between the touch point and the sheet is already at
  *  scroll top — no room left to scroll up. Otherwise the swipe belongs to
- *  the inner scroller (e.g. a long candidate list). */
-function scrollersAtTop(path: readonly EventTarget[], stopAt: HTMLElement, content: HTMLElement | null): boolean {
-  const check = (el: HTMLElement): boolean => {
-    if (el.scrollHeight <= el.clientHeight) return true;
+ *  the inner scroller (e.g. a long candidate list). Returns the scrollable
+ *  elements found (for mid-gesture re-check) or null when blocked. */
+function scrollersAtTop(path: readonly EventTarget[], stopAt: HTMLElement, content: HTMLElement | null): readonly HTMLElement[] | null {
+  const scrollable = (el: HTMLElement): boolean => {
+    if (el.scrollHeight <= el.clientHeight) return false;
     const overflowY = getComputedStyle(el).overflowY;
-    if (overflowY !== 'auto' && overflowY !== 'scroll') return true;
-    return el.scrollTop <= 0;
+    return overflowY === 'auto' || overflowY === 'scroll';
   };
+  const found: HTMLElement[] = [];
   for (const node of path) {
     if (!(node instanceof HTMLElement)) continue;
-    if (!check(node)) return false;
+    if (scrollable(node)) {
+      if (node.scrollTop > 0) return null;
+      found.push(node);
+    }
     if (node === stopAt) break;
   }
-  return content === null || check(content);
+  if (content && !found.includes(content)) {
+    if (scrollable(content) && content.scrollTop > 0) return null;
+    if (scrollable(content)) found.push(content);
+  }
+  return found;
 }
 
 interface SheetSession {
@@ -72,6 +81,10 @@ interface SheetSession {
   readonly fromHandle: boolean;
   readonly target: HTMLElement;
   readonly pointerId: number;
+  /** Scrollable elements between the touch point and the sheet (content
+   *  sessions only) — re-checked mid-gesture so a reversed drag that
+   *  scrolled content up stops pulling the sheet. */
+  readonly scrollers?: readonly HTMLElement[];
 }
 
 export interface UseSheetOptions {
@@ -249,9 +262,11 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
       return;
     }
 
+    const scrolledAway = session.scrollers?.some((el) => el.scrollTop > 0) ?? false;
     const fling = last !== null
+      && dy > SHEET_FLING_MIN_PX
       && (clientY - last.clientY) / Math.max(1, performance.now() - last.t) > SHEET_FLING_PX_PER_MS;
-    if (dy > SHEET_DISMISS_THRESHOLD_PX || fling) {
+    if (!scrolledAway && (dy > SHEET_DISMISS_THRESHOLD_PX || fling)) {
       animateClose();
       return;
     }
@@ -279,16 +294,19 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
       sheetHeightRef.current = next;
       setSheetHeight(next);
     } else {
-      // Clamp at 0 — reversing the drag back up snaps the sheet to rest and
-      // lets the native scroller take the gesture.
-      setTransform(`translateY(${Math.max(0, dy)}px)`);
+      // Reversing the drag can scroll content up mid-gesture — once any
+      // scroller leaves the top the pull belongs to it, not the sheet.
+      const dragged = session.scrollers?.some((el) => el.scrollTop > 0);
+      // Clamp at 0 — the sheet only moves down; an up-drag rests it.
+      const pull = dragged ? 0 : Math.max(0, dy);
+      setTransform(`translateY(${pull}px)`);
       setTransition('none');
-      setDismissArmed(dy > SHEET_DISMISS_THRESHOLD_PX);
+      setDismissArmed(pull > SHEET_DISMISS_THRESHOLD_PX);
     }
   }, [getAvailableHeight, getEffectiveMin]);
 
   const onPointerMove = useCallback((e: globalThis.PointerEvent) => {
-    if (!sessionRef.current) return;
+    if (sessionRef.current?.pointerId !== e.pointerId) return;
     lastPointerRef.current = { clientX: e.clientX, clientY: e.clientY, t: performance.now() };
     if (!pointerRafRef.current) {
       pointerRafRef.current = requestAnimationFrame(() => {
@@ -303,7 +321,7 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
   }, [applyPointerUpdate]);
 
   const onPointerUp = useCallback((e: globalThis.PointerEvent) => {
-    if (!sessionRef.current) return;
+    if (sessionRef.current?.pointerId !== e.pointerId) return;
     if (pointerRafRef.current) {
       cancelAnimationFrame(pointerRafRef.current);
       pointerRafRef.current = null;
@@ -313,14 +331,38 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
     endSession(e.clientX, e.clientY);
   }, [applyPointerUpdate, endSession]);
 
+  // Touch: when the browser claims the gesture for native scrolling it fires
+  // pointercancel — release the session and snap back instead of leaving the
+  // sheet stuck mid-translate.
+  const onPointerCancel = useCallback((e: globalThis.PointerEvent) => {
+    const session = sessionRef.current;
+    if (!session || session.pointerId !== e.pointerId) return;
+    sessionRef.current = null;
+    lastPointerRef.current = null;
+    setWillChange(undefined);
+    setDismissArmed(false);
+    if (!session.fromHandle) {
+      setTransition('transform var(--duration-normal) var(--ease-spring)');
+      setTransform('translateY(0)');
+      if (snapBackTimerRef.current) clearTimeout(snapBackTimerRef.current);
+      snapBackTimerRef.current = setTimeout(() => {
+        snapBackTimerRef.current = null;
+        setTransition(undefined);
+        setTransform(undefined);
+      }, 200);
+    }
+  }, []);
+
   useEffect(() => {
     document.addEventListener('pointermove', onPointerMove, true);
     document.addEventListener('pointerup', onPointerUp, true);
+    document.addEventListener('pointercancel', onPointerCancel, true);
     return () => {
       document.removeEventListener('pointermove', onPointerMove, true);
       document.removeEventListener('pointerup', onPointerUp, true);
+      document.removeEventListener('pointercancel', onPointerCancel, true);
     };
-  }, [onPointerMove, onPointerUp]);
+  }, [onPointerMove, onPointerUp, onPointerCancel]);
 
   const onPointerDownHandle = useCallback((e: PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -357,7 +399,8 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
 
   const onPointerDownContent = useCallback((e: PointerEvent<HTMLDivElement>) => {
     if (isEditableTarget(e.target)) return;
-    if (!scrollersAtTop(e.nativeEvent.composedPath(), e.currentTarget, contentRef.current)) return;
+    const scrollers = scrollersAtTop(e.nativeEvent.composedPath(), e.currentTarget, contentRef.current);
+    if (!scrollers) return;
     e.stopPropagation();
     sessionRef.current = {
       startX: e.clientX,
@@ -366,9 +409,32 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
       fromHandle: false,
       target: e.currentTarget,
       pointerId: e.pointerId,
+      scrollers,
     };
     setWillChange('transform');
   }, []);
+
+  // Touch gesture arbitration: the browser claims vertical pans for native
+  // scrolling on the FIRST touchmove (pointercancel kills our session). A
+  // non-passive touchmove listener lets us take the gesture only while the
+  // pull is downward and no scroller has room above — an upward flick stays
+  // native and keeps scrolling the content.
+  const onTouchMove = useCallback((e: TouchEvent) => {
+    const session = sessionRef.current;
+    if (!session || session.fromHandle) return;
+    const t = e.touches[0];
+    if (!t) return;
+    const dy = t.clientY - session.startY;
+    const scrolledAway = session.scrollers?.some((el) => el.scrollTop > 0) ?? false;
+    if (dy > 2 && !scrolledAway) e.preventDefault();
+  }, []);
+
+  useEffect(() => {
+    const el = sheetRef.current;
+    if (!el) return;
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    return () => el.removeEventListener('touchmove', onTouchMove);
+  }, [onTouchMove]);
 
   const avail = getAvailableHeight();
   const style: CSSProperties = {
