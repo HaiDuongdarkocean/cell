@@ -3,10 +3,12 @@ import { Button } from '@/shared/ui/Button';
 
 import { Icon } from '@/shared/ui/Icon';
 import { FlagIcon } from '@/shared/ui/FlagIcon';
-import { Menu, MenuItem } from '@/shared/ui/Menu';
+import { Menu } from '@/shared/ui/Menu';
 import { TokenizeControls } from './TokenizeControls';
+import { LanguageProfileCard, LanguageProfileCardList } from '@/features/settings';
 import { t } from '@/shared/i18n';
 import type { TokenizePanelState } from '@/features/tokenize';
+import type { LanguageProfile } from '@/entities/settings';
 import styles from './UniversalPanelHeader.module.css';
 
 export interface UniversalPanelHeaderProps {
@@ -19,11 +21,15 @@ export interface UniversalPanelHeaderProps {
   /** Whether the current page has a video (disables the Media half). */
   readonly hasMedia?: boolean;
   /** Language profiles for the profile switcher menu. */
-  readonly languageProfiles?: readonly { readonly id: string; readonly name: string; readonly target?: string }[];
+  readonly languageProfiles?: readonly LanguageProfile[];
+  /** Universal native language — resolves empty profile.native on the cards. */
+  readonly universalNativeLanguage?: string;
   /** Active profile id. */
   readonly activeProfileId?: string | null;
   /** Called when user switches active profile. */
   readonly onProfileChange?: (profileId: string) => void;
+  /** Deep-link into the panel's Settings → language profiles section. */
+  readonly onOpenProfileSettings?: () => void;
   /** Pointer entering the text-tokenize half — prewarms the SW before the click. */
   readonly onHoverTokenizeText?: () => void;
 }
@@ -40,8 +46,10 @@ export function UniversalPanelHeader({
   onClose,
   hasMedia = true,
   languageProfiles = [],
+  universalNativeLanguage = '',
   activeProfileId = null,
   onProfileChange,
+  onOpenProfileSettings,
   onHoverTokenizeText,
 }: UniversalPanelHeaderProps): ReactElement {
   const profileTriggerRef = useRef<HTMLButtonElement>(null);
@@ -51,12 +59,13 @@ export function UniversalPanelHeader({
     onToggleTokenize(mode === 'text' ? 'enabled' : 'subtitleEnabled');
   }, [onToggleTokenize]);
 
-  const activeProfile = languageProfiles.find((p) => p.id === activeProfileId);
+  const ordered = [...languageProfiles].sort((a, b) => a.order - b.order);
+  const activeProfile = ordered.find((p) => p.id === activeProfileId);
   const profileName = activeProfile?.name ?? t('panel.profile.select');
 
   return (
     <header className={styles.header} data-tihoka-id="universal-panel-header">
-      {activeProfile && onProfileChange && (
+      {onProfileChange && (
         <>
           <Button
             ref={profileTriggerRef}
@@ -64,14 +73,18 @@ export function UniversalPanelHeader({
             variant="ghost"
             shape="circle"
             className={styles.profileButton}
-            onClick={() => setIsProfileMenuOpen(true)}
+            onClick={() => (ordered.length > 0 ? setIsProfileMenuOpen(true) : onOpenProfileSettings?.())}
             aria-label={t('panel.profile.switch', [profileName])}
             aria-haspopup="menu"
             aria-expanded={isProfileMenuOpen}
             title={profileName}
             data-tihoka-id="universal-panel-profile-button"
           >
-            <FlagIcon lang={activeProfile.target ?? ''} title={profileName} />
+            {activeProfile ? (
+              <FlagIcon lang={activeProfile.target} title={profileName} />
+            ) : (
+              <span className={styles.profileMissing} aria-hidden="true">?</span>
+            )}
           </Button>
           <Menu
             open={isProfileMenuOpen}
@@ -80,20 +93,40 @@ export function UniversalPanelHeader({
             ariaLabel={t('panel.profileDialog.title')}
             data-tihoka-id="universal-panel-profile-menu"
           >
-            {languageProfiles.map((profile) => (
-              <MenuItem
-                key={profile.id}
-                radio
-                selected={profile.id === activeProfileId}
-                onSelect={() => {
-                  onProfileChange(profile.id);
+            <div className={styles.profileMenuHead}>
+              <span className={styles.profileMenuCount}>
+                {t('settings.profiles.list.label', [String(ordered.length)])}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                shape="circle"
+                aria-label={t('settings.nav.languageProfile')}
+                onClick={() => {
                   setIsProfileMenuOpen(false);
+                  onOpenProfileSettings?.();
                 }}
-                data-tihoka-id={`universal-panel-profile-option-${profile.id}`}
+                data-tihoka-id="universal-panel-profile-settings"
               >
-                {profile.name}
-              </MenuItem>
-            ))}
+                <Icon name="settings" />
+              </Button>
+            </div>
+            <LanguageProfileCardList>
+              {ordered.map((profile, index) => (
+                <LanguageProfileCard
+                  key={profile.id}
+                  profile={profile}
+                  universalNative={universalNativeLanguage}
+                  selected={profile.id === activeProfileId}
+                  tabIndex={profile.id === activeProfileId || (!activeProfile && index === 0) ? 0 : -1}
+                  onSelect={() => {
+                    onProfileChange(profile.id);
+                    setIsProfileMenuOpen(false);
+                  }}
+                  data-tihoka-id={`universal-panel-profile-option-${profile.id}`}
+                />
+              ))}
+            </LanguageProfileCardList>
           </Menu>
         </>
       )}

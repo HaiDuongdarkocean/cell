@@ -5,150 +5,16 @@
 
 
 /* === Profile cards === */
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-/* The row item owns the surface so its border/background enclose the whole
-   row — card content AND the trailing kebab menu — as one unit. */
-.item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  min-width: 0;
-  padding-right: var(--space-1);
-  border: var(--border-width-hairline) solid var(--color-divider);
-  border-radius: var(--radius-lg);
-  background: transparent;
-}
+/* Row chrome + card visuals live in LanguageProfileCard.module.css (SSOT —
+   the settings list and the universal-panel quick switcher share them). */
 
 /* Edit mode swaps the row content for the inline form, which carries its
-   own surface — drop the row chrome so they don't double up. */
-.item:has(> .profileForm) {
-  padding-right: 0;
-  border-color: transparent;
-  background: transparent;
-}
-
-.card {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  /* Card reads padding/background via its --card-* vars; the row item owns
-     the visible surface, so the card itself stays chromeless. */
-  --card-padding: var(--space-1) var(--space-2);
-  --card-background: transparent;
-  --card-border: none;
-}
-
-/* Selection swaps instantly — the dot and row highlight must not fade in. */
-.list .card {
-  transition: none;
-}
-
-.item:has(.card[aria-checked='true']),
-.item:has(.card[aria-checked='true']):hover {
-  background: var(--color-primary-subtle);
-  border-color: transparent;
-  box-shadow: var(--shadow-inset-selected);
-}
-
-/* The item row carries the selected surface — suppress Card's own
-   selected paint so the ring doesn't double up. */
-.list .card[aria-checked='true'] {
-  background: transparent;
-  box-shadow: none;
-}
-
-/* Custom radio dot — visual mirror of aria-checked on the card. */
-.radio {
-  width: var(--space-4);
-  height: var(--space-4);
-  border-radius: var(--radius-full);
-  border: var(--border-width-thick) solid var(--color-border-emphasized);
-  flex-shrink: 0;
-  position: relative;
-}
-
-.radio::after {
-  content: '';
-  position: absolute;
-  inset: var(--space-0-5);
-  border-radius: var(--radius-full);
-  background: var(--color-primary);
-  transform: scale(0);
-}
-
-/* Profile list is a radio switcher, not a collection of actionable tiles —
-   neutralize Card's interactive/selected hover (surface swap + lift + shadow)
-   and keep the resting look. Scoped under .list so it beats Card's
-   .interactive:hover / .selected:hover on specificity, not load order. */
-@media (hover: hover) and (pointer: fine) {
-  .list .card:hover {
-    background: transparent;
-    border: var(--card-border);
-    transform: none;
-    box-shadow: none;
-    opacity: 1;
-  }
-
-  .list .item:hover:not(:has(.card[aria-checked='true'])) {
-    background: var(--color-surface-hover);
-  }
-}
-
-.item:has(.card:focus-visible) {
-  outline: var(--border-width-thick) solid var(--color-border-focus);
-  outline-offset: var(--space-0-5);
-}
-
-.card[aria-checked='true'] .radio {
-  border-color: var(--color-primary);
-}
-
-.card[aria-checked='true'] .radio::after {
-  transform: scale(1);
-}
-
-.flags {
+   own surface — the row stays chromeless. */
+.itemForm {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  color: var(--color-text-tertiary);
-  flex-shrink: 0;
-}
-
-.cardText {
-  flex: 1 1 auto;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-0-5);
-}
-
-.cardName {
-  display: block;
-  min-width: 0;
-  font-weight: var(--font-weight-medium);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cardMeta {
-  display: block;
-  min-width: 0;
-  font-size: var(--font-size-sm);
-  /* Field surface is ~4% darker than the section card — secondary text
-     drops below AA on it, so the meta line uses the primary text color. */
-  color: var(--color-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* === Inline profile form (add + edit) === */
@@ -282,19 +148,6 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--space-2);
-}
-
-/* Compact: cardText can shrink to nothing beside radio + flags + menu, so
-   it takes the full first line — the dot and flags wrap below. */
-@container (max-width: 479px) {
-  .card {
-    flex-wrap: wrap;
-  }
-
-  .cardText {
-    flex: 1 1 100%;
-    order: -1;
-  }
 }
 
 /* === Motion === */

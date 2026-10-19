@@ -1,9 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
-import { FlagIcon } from '@/shared/ui/FlagIcon';
 import { SearchableSelect } from '@/shared/ui/SearchableSelect';
-import { SelectableCard } from '@/shared/ui/SelectableCard';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Dialog } from '@/shared/ui/Dialog';
 import { SettingsGroup } from '@/shared/ui/SettingsGroup';
@@ -22,10 +20,9 @@ import {
   buildProfileName,
   profileIdForTarget,
   getActiveProfileSettings,
-  resolveProfile,
   validateLanguageProfile,
 } from '@/entities/settings';
-import { handleRadioGroupKeyDown } from '@/shared/lib/dom/radioGroupKeyNav';
+import { LanguageProfileCard, LanguageProfileCardList } from './LanguageProfileCard';
 import { ProfileForm } from './ProfileForm';
 import { ProfileMenu } from './ProfileMenu';
 import { Text } from '@/shared/ui/Text';
@@ -42,9 +39,6 @@ function recomputeOrder(profiles: LanguageProfile[]): LanguageProfile[] {
   return profiles.map((p, index) => ({ ...p, order: index + 1 }));
 }
 
-const langLabel = (code: string): string =>
-  OVERLAY_LANGUAGE_OPTIONS.find((o) => o.value === code)?.label ?? code;
-const langShort = (code: string): string => langLabel(code).split(' (')[0];
 
 export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePanelProps): React.JSX.Element {
   const [form, setForm] = useState<FormState>(null);
@@ -238,15 +232,14 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
             onSubmit={handleAdd}
           />
         )}
-        <div className={styles.list} role="radiogroup" aria-label={t('settings.profiles.list.aria')} onKeyDown={handleRadioGroupKeyDown}>
+        <LanguageProfileCardList>
           {profiles.map((profile, index) => {
-            const resolved = resolveProfile(profile, settings.universalNativeLanguage);
             const isActive = settings.activeProfileId === profile.id;
             const noActive = !profiles.some((p) => p.id === settings.activeProfileId);
 
             if (form?.mode === 'edit' && form.id === profile.id) {
               return (
-                <div key={profile.id} className={styles.item}>
+                <div key={profile.id} className={styles.itemForm}>
                   <ProfileForm
                     mode="edit"
                     universalNative={settings.universalNativeLanguage}
@@ -261,67 +254,52 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
             }
 
             return (
-              <div key={profile.id} className={styles.item}>
-                <SelectableCard
-                  role="radio"
-                  selected={isActive}
-                  tabIndex={isActive || (noActive && index === 0) ? 0 : -1}
-                  onSelect={() => setActive(profile.id)}
-                  className={styles.card}
-                  data-tihoka-id={`language-profile-card-${profile.id}`}
-                >
-                  <span className={styles.radio} aria-hidden="true" />
-                  <span className={styles.flags}>
-                    <FlagIcon lang={resolved.native} size={20} title={langLabel(resolved.native)} />
-                    <Icon name="chevronRight" size="xs" />
-                    <FlagIcon lang={resolved.target} size={28} title={langLabel(resolved.target)} />
-                  </span>
-                  <span className={styles.cardText}>
-                    <span className={styles.cardName}>{langLabel(resolved.target)}</span>
-                    <span className={styles.cardMeta}>
-                      {profile.native
-                        ? t('settings.profiles.card.nativeCustom', [langShort(resolved.native)])
-                        : t('settings.profiles.card.native', [langShort(resolved.native)])}
-                    </span>
-                  </span>
-                </SelectableCard>
-                <ProfileMenu
-                  label={t('settings.profiles.menu.aria', [profile.name])}
-                  items={[
-                    {
-                      key: 'edit',
-                      label: t('settings.profiles.menu.edit'),
-                      icon: 'pencil',
-                      onSelect: () => setForm({ mode: 'edit', id: profile.id }),
-                    },
-                    {
-                      key: 'up',
-                      label: t('settings.profiles.menu.moveUp'),
-                      icon: 'moveVertical',
-                      disabled: index === 0,
-                      onSelect: () => move(profile.id, -1),
-                    },
-                    {
-                      key: 'down',
-                      label: t('settings.profiles.menu.moveDown'),
-                      icon: 'moveVertical',
-                      disabled: index === profiles.length - 1,
-                      onSelect: () => move(profile.id, 1),
-                    },
-                    {
-                      key: 'delete',
-                      label: t('settings.profiles.menu.delete'),
-                      icon: 'trash',
-                      danger: true,
-                      disabled: profiles.length === 1 && isActive,
-                      onSelect: () => setDeletingId(profile.id),
-                    },
-                  ]}
-                />
-              </div>
+              <LanguageProfileCard
+                key={profile.id}
+                profile={profile}
+                universalNative={settings.universalNativeLanguage}
+                selected={isActive}
+                tabIndex={isActive || (noActive && index === 0) ? 0 : -1}
+                onSelect={() => setActive(profile.id)}
+                data-tihoka-id={`language-profile-card-${profile.id}`}
+                trailing={(
+                  <ProfileMenu
+                    label={t('settings.profiles.menu.aria', [profile.name])}
+                    items={[
+                      {
+                        key: 'edit',
+                        label: t('settings.profiles.menu.edit'),
+                        icon: 'pencil',
+                        onSelect: () => setForm({ mode: 'edit', id: profile.id }),
+                      },
+                      {
+                        key: 'up',
+                        label: t('settings.profiles.menu.moveUp'),
+                        icon: 'moveVertical',
+                        disabled: index === 0,
+                        onSelect: () => move(profile.id, -1),
+                      },
+                      {
+                        key: 'down',
+                        label: t('settings.profiles.menu.moveDown'),
+                        icon: 'moveVertical',
+                        disabled: index === profiles.length - 1,
+                        onSelect: () => move(profile.id, 1),
+                      },
+                      {
+                        key: 'delete',
+                        label: t('settings.profiles.menu.delete'),
+                        icon: 'trash',
+                        danger: true,
+                        onSelect: () => setDeletingId(profile.id),
+                      },
+                    ]}
+                  />
+                )}
+              />
             );
           })}
-        </div>
+        </LanguageProfileCardList>
         </SettingsGroup>
       )}
 

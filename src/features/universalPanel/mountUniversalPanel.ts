@@ -35,7 +35,7 @@ import { hasIframeVideo, IFRAME_MEDIA_CHANGED_EVENT } from '@/shared/lib/dom/ifr
 import { getSessionStorage, setSessionStorage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
-import { resolveProfile, resolveResourceLangCode, type Settings } from '@/entities/settings';
+import { resolveProfile, resolveResourceLangCode, type LanguageProfile, type Settings } from '@/entities/settings';
 import { useCardCreatorStore } from '@/features/cardCreator';
 import { t } from '@/shared/i18n';
 import type { TokenizePanelState } from '@/features/tokenize';
@@ -169,7 +169,8 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
   let dictionaryLangCode = 'en';
   let dictionarySourceLang = 'en';
   let dictionaryTargetLang = 'vi';
-  let languageProfiles: { readonly id: string; readonly name: string; readonly target: string }[] = [];
+  let languageProfiles: LanguageProfile[] = [];
+  let universalNativeLanguage = '';
   let activeProfileId: string | null = null;
   let loadedSettings: Settings | null = null;
 
@@ -179,7 +180,8 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
     dictionarySourceLang = settings.subtitleOverlayTargetLanguage || dictionarySourceLang;
     dictionaryTargetLang = settings.subtitleOverlayNativeLanguage || dictionaryTargetLang;
     dictionaryLangCode = resolveResourceLangCode(settings, dictionarySourceLang);
-    languageProfiles = settings.languageProfiles.map((p) => ({ id: p.id, name: p.name, target: p.target }));
+    languageProfiles = settings.languageProfiles;
+    universalNativeLanguage = settings.universalNativeLanguage;
     activeProfileId = settings.activeProfileId;
     render();
   };
@@ -325,7 +327,11 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
           // the freq-index prewarm so the toggle's meta request lands hot.
           onHoverTokenizeText: () => pingTokenizeMeta(dictionaryLangCode),
           languageProfiles,
+          universalNativeLanguage,
           activeProfileId,
+          onOpenProfileSettings: () => {
+            void openSettingsSection(mountController, 'languageProfile');
+          },
           onProfileChange: (id: string) => {
             activeProfileId = id;
             // Re-point dictionary/card-creator languages at the new profile

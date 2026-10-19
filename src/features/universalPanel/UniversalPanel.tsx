@@ -11,6 +11,7 @@ import { getLocalPlayerUrl } from './localPlayerLink';
 import { PANEL_TABS } from './panelTabs';
 import { t, type MessageKey } from '@/shared/i18n';
 import type { TokenizePanelState } from '@/features/tokenize';
+import type { LanguageProfile } from '@/entities/settings';
 import type { UniversalPanelTab } from './types';
 import styles from './UniversalPanel.module.css';
 
@@ -30,11 +31,15 @@ export interface UniversalPanelProps {
   /** Whether the current page has a video (disables the Media half). */
   readonly hasMedia?: boolean;
   /** Language profiles for quick switch. */
-  readonly languageProfiles?: { readonly id: string; readonly name: string; readonly target?: string }[];
+  readonly languageProfiles?: LanguageProfile[];
+  /** Universal native language — resolves empty profile.native on the cards. */
+  readonly universalNativeLanguage?: string;
   /** Active profile id. */
   readonly activeProfileId?: string | null;
   /** Called when user switches active profile. */
   readonly onProfileChange?: (profileId: string) => void;
+  /** Deep-link into the Settings → language profiles section. */
+  readonly onOpenProfileSettings?: () => void;
   /** Pointer entering the text-tokenize half — prewarms the SW before the click. */
   readonly onHoverTokenizeText?: () => void;
   /** Content for the Dictionary tab. */
@@ -92,8 +97,10 @@ export function UniversalPanel({
   onToggleTokenize,
   hasMedia = true,
   languageProfiles = [],
+  universalNativeLanguage = '',
   activeProfileId = null,
   onProfileChange = () => {},
+  onOpenProfileSettings,
   onHoverTokenizeText,
   dictionaryPanel,
   vocabularyPanel,
@@ -239,8 +246,10 @@ export function UniversalPanel({
             onClose={onClose}
             hasMedia={hasMedia}
             languageProfiles={languageProfiles}
+            universalNativeLanguage={universalNativeLanguage}
             activeProfileId={activeProfileId}
             onProfileChange={onProfileChange}
+            onOpenProfileSettings={onOpenProfileSettings}
             onHoverTokenizeText={onHoverTokenizeText}
           />
 

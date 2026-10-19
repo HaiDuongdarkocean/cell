@@ -102,6 +102,7 @@ export function Showcase(): ReactElement {
               onToggleTokenize={handleToggleTokenize}
               hasMedia={hasMedia}
               languageProfiles={LANGUAGE_PROFILES}
+              universalNativeLanguage="vi"
               activeProfileId={activeProfileId}
               onProfileChange={setActiveProfileId}
               dictionaryPanel={

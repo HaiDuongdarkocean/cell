@@ -46,6 +46,36 @@
   flex-shrink: 0;
 }
 
+/* No active profile — the badge keeps its slot and size but shows a '?'
+   so the entry point to profile setup never disappears. */
+.profileMissing {
+  width: var(--universal-panel-profile-flag-size);
+  height: var(--universal-panel-profile-flag-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Menu header: count label on the left; the gear (deep-link to Settings →
+   language profiles) pinned to the far right. */
+.profileMenuHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2) var(--space-1);
+}
+
+.profileMenuHead > :last-child {
+  margin-left: auto;
+}
+
+.profileMenuCount {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
 @media (max-width: 839px) {
   .header {
     gap: var(--space-2);

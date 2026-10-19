@@ -93,9 +93,9 @@ export function getMockSettings(variant: DataVariant = SHOWCASE_DATA): Settings 
   };
 }
 
-/** Lightweight profile list used by the Universal Panel header selector. */
-export function getMockUniversalPanelProfiles(variant: DataVariant = SHOWCASE_DATA): { readonly id: string; readonly name: string; readonly target: string }[] {
-  return getMockLanguageProfiles(variant).map((p) => ({ id: p.id, name: p.name, target: p.target }));
+/** Profile list used by the Universal Panel header selector. */
+export function getMockUniversalPanelProfiles(variant: DataVariant = SHOWCASE_DATA): LanguageProfile[] {
+  return getMockLanguageProfiles(variant);
 }
 
 function makeCustomMode(id: string, title: string, steps: StudyMode['steps']): StudyMode {

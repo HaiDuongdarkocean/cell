@@ -8,4 +8,4 @@
  * Settings constants (DEFAULT_SETTINGS, STORAGE_KEYS) live in shared/config/.
  * Settings store stays in entrypoints/popup/store/ (Q2 — not split yet).
  */
-export { MultiSelect, SettingsDialog, SettingsDialogContent } from './ui';
+export { MultiSelect, SettingsDialog, SettingsDialogContent, LanguageProfileCard, LanguageProfileCardList } from './ui';
