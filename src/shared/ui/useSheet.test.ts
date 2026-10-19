@@ -81,7 +81,8 @@ describe('useSheet content pull-to-dismiss', () => {
       'data-tihoka-id': 'content',
       onPointerDown: onPointerDownContent,
       style: { overflowY: 'auto' },
-    }, createElement('div', { 'data-tihoka-id': 'inner', style: { overflowY: 'auto' } }));
+    }, createElement('div', { 'data-tihoka-id': 'inner', style: { overflowY: 'auto' } },
+      createElement('button', { 'data-tihoka-id': 'innerBtn', type: 'button' }, 'x')));
   }
 
   function setScrollable(el: HTMLElement, scrollTop: number): void {
@@ -118,6 +119,19 @@ describe('useSheet content pull-to-dismiss', () => {
     setScrollable(getByTestId('inner'), 50);
     drag(getByTestId('inner'), 200, 350);
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('closes on a drag that starts on a button, and swallows its click', () => {
+    jest.useFakeTimers();
+    const onClose = jest.fn();
+    const { getByTestId } = render(createElement(ContentProbe, { onClose }));
+    const btn = getByTestId('innerBtn');
+    const click = jest.fn();
+    btn.addEventListener('click', click);
+    drag(btn, 200, 350);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 }));
+    expect(click).not.toHaveBeenCalled();
   });
 });
 

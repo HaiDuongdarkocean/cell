@@ -62,6 +62,14 @@
   height: var(--space-1);
   border-radius: var(--radius-full);
   background: var(--color-text-secondary);
+  transition: background var(--transition), width var(--transition);
+}
+
+/* Pull-to-dismiss armed: the drag passed the dismiss threshold, releasing
+   closes — the bar lights up as the release-to-close affordance. */
+.sheet[data-dismiss-armed='true'] .handle::before {
+  width: var(--space-16);
+  background: var(--color-primary);
 }
 
 /* Invisible hit-zone extension above the sheet's top edge. The sheet clips

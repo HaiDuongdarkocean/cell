@@ -63,7 +63,9 @@ export function Sheet({
 }: SheetProps): React.JSX.Element | null {
   const {
     sheetRef,
+    contentRef,
     style,
+    dismissArmed,
     onPointerDownHandle,
     onKeyDownHandle,
     onPointerDownContent,
@@ -119,9 +121,11 @@ export function Sheet({
         aria-modal="true"
         aria-label={ariaLabel}
         data-tihoka-id={dataTestId}
+        data-dismiss-armed={dismissArmed || undefined}
         style={style}
         onKeyDown={handleKeyDown}
         onKeyUp={handleKeyUp}
+        onPointerDown={onPointerDownContent}
       >
         <div
           className={styles.handle}
@@ -141,8 +145,8 @@ export function Sheet({
         />
         {header}
         <div
+          ref={contentRef}
           className={contentClassName ? `${styles.content} ${contentClassName}` : styles.content}
-          onPointerDown={onPointerDownContent}
         >
           {children}
         </div>

@@ -41,16 +41,16 @@ function getClientHeight(): number {
   return document.documentElement?.clientHeight ?? window.innerHeight;
 }
 
-function isInteractiveTarget(target: EventTarget | null): boolean {
+function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
-  return !!target.closest('button, a, input, textarea, select, [role="button"]');
+  return !!target.closest('input, textarea, select, [contenteditable]');
 }
 
 /** Pull-to-dismiss gate: the swipe may grab the sheet only when every
- *  scrollable element between the touch point and the sheet content is
- *  already at scroll top — no room left to scroll up. Otherwise the swipe
- *  belongs to the inner scroller (e.g. a long candidate list). */
-function scrollersAtTop(path: readonly EventTarget[], boundary: HTMLElement): boolean {
+ *  scrollable element between the touch point and the sheet is already at
+ *  scroll top — no room left to scroll up. Otherwise the swipe belongs to
+ *  the inner scroller (e.g. a long candidate list). */
+function scrollersAtTop(path: readonly EventTarget[], stopAt: HTMLElement, content: HTMLElement | null): boolean {
   const check = (el: HTMLElement): boolean => {
     if (el.scrollHeight <= el.clientHeight) return true;
     const overflowY = getComputedStyle(el).overflowY;
@@ -60,9 +60,9 @@ function scrollersAtTop(path: readonly EventTarget[], boundary: HTMLElement): bo
   for (const node of path) {
     if (!(node instanceof HTMLElement)) continue;
     if (!check(node)) return false;
-    if (node === boundary) return true;
+    if (node === stopAt) break;
   }
-  return check(boundary);
+  return content === null || check(content);
 }
 
 interface SheetSession {
@@ -84,8 +84,11 @@ export interface UseSheetOptions {
 
 export interface UseSheetResult {
   readonly sheetRef: RefObject<HTMLDivElement | null>;
+  readonly contentRef: RefObject<HTMLDivElement | null>;
   readonly sheetHeight: number;
   readonly style: CSSProperties;
+  /** True while a pull-down has passed the dismiss threshold (release closes). */
+  readonly dismissArmed: boolean;
   readonly onPointerDownHandle: (e: PointerEvent<HTMLDivElement>) => void;
   readonly onKeyDownHandle: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   readonly onPointerDownContent: (e: PointerEvent<HTMLDivElement>) => void;
@@ -101,6 +104,7 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
   } = options;
 
   const sheetRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
   const onCloseRef = useRef(onClose);
   const onHeightChangeRef = useRef(onHeightChange);
 
@@ -124,6 +128,7 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
   const [willChange, setWillChange] = useState<string | undefined>();
   const [transform, setTransform] = useState<string | undefined>();
   const [transition, setTransition] = useState<string | undefined>();
+  const [dismissArmed, setDismissArmed] = useState(false);
 
   const sheetHeightRef = useRef(sheetHeight);
   const sessionRef = useRef<SheetSession | null>(null);
@@ -197,6 +202,7 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
     setWillChange(undefined);
     setTransition(undefined);
     setTransform(undefined);
+    setDismissArmed(false);
     const last = lastPointerRef.current;
     lastPointerRef.current = null;
 
@@ -249,6 +255,9 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
       animateClose();
       return;
     }
+    // A real drag (not a tap) must not let the release click through to the
+    // element under the finger — swallow it the same way dismiss does.
+    if (dy > SHEET_CLICK_THRESHOLD_PX) armClickSwallower();
     setTransition('transform var(--duration-normal) var(--ease-spring)');
     setTransform('translateY(0)');
     if (snapBackTimerRef.current) clearTimeout(snapBackTimerRef.current);
@@ -274,6 +283,7 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
       // lets the native scroller take the gesture.
       setTransform(`translateY(${Math.max(0, dy)}px)`);
       setTransition('none');
+      setDismissArmed(dy > SHEET_DISMISS_THRESHOLD_PX);
     }
   }, [getAvailableHeight, getEffectiveMin]);
 
@@ -346,8 +356,8 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
   }, [getAvailableHeight, getEffectiveMin, emitHeightChange]);
 
   const onPointerDownContent = useCallback((e: PointerEvent<HTMLDivElement>) => {
-    if (isInteractiveTarget(e.target)) return;
-    if (!scrollersAtTop(e.nativeEvent.composedPath(), e.currentTarget)) return;
+    if (isEditableTarget(e.target)) return;
+    if (!scrollersAtTop(e.nativeEvent.composedPath(), e.currentTarget, contentRef.current)) return;
     e.stopPropagation();
     sessionRef.current = {
       startX: e.clientX,
@@ -371,8 +381,10 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
 
   return {
     sheetRef,
+    contentRef,
     sheetHeight,
     style,
+    dismissArmed,
     onPointerDownHandle,
     onKeyDownHandle,
     onPointerDownContent,
