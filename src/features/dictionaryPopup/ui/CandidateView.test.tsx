@@ -830,4 +830,70 @@ describe('CandidateView', () => {
       payload: expect.objectContaining({ term: 'hello', langCode: 'en', status: 'tracking' }),
     }));
   });
+
+  describe('POS variant swipe', () => {
+    function makeVariant(pos: string) {
+      return { pos, prons: [], frequencies: [], status: 'unknown' as const, definitions: [] };
+    }
+
+    function renderSwipable() {
+      const candidate = makeResult('ranking', {
+        variants: [makeVariant('noun'), makeVariant('adjective'), makeVariant('')],
+      });
+      render(
+        <CandidateView
+          candidate={candidate}
+          index={0}
+          contextSentence=""
+          sourceLang="en"
+          targetLang="vi"
+        />,
+      );
+      return screen.getByTestId('dictionary-candidate-0');
+    }
+
+    function swipe(el: Element, dx: number, dy: number): void {
+      act(() => {
+        const down = new MouseEvent('pointerdown', { bubbles: true, clientX: 300, clientY: 300, button: 0 });
+        Object.defineProperty(down, 'pointerId', { value: 1 });
+        el.dispatchEvent(down);
+      });
+      act(() => {
+        const up = new MouseEvent('pointerup', { bubbles: true, clientX: 300 + dx, clientY: 300 + dy, button: 0 });
+        Object.defineProperty(up, 'pointerId', { value: 1 });
+        el.dispatchEvent(up);
+      });
+    }
+
+    it('swipe left moves to the next variant, swipe right back', () => {
+      const article = renderSwipable();
+      expect(screen.getByTestId('dictionary-pos-noun')).toHaveAttribute('aria-pressed', 'true');
+
+      swipe(article, -100, 10);
+      expect(screen.getByTestId('dictionary-pos-adjective')).toHaveAttribute('aria-pressed', 'true');
+
+      swipe(article, 100, 10);
+      expect(screen.getByTestId('dictionary-pos-noun')).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('clamps at the last variant', () => {
+      const article = renderSwipable();
+      swipe(article, -100, 10);
+      swipe(article, -100, 10);
+      swipe(article, -100, 10);
+      expect(screen.getByTestId('dictionary-pos-other')).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('ignores vertical-dominant drags', () => {
+      const article = renderSwipable();
+      swipe(article, -80, 90);
+      expect(screen.getByTestId('dictionary-pos-noun')).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('ignores short drags', () => {
+      const article = renderSwipable();
+      swipe(article, -30, 5);
+      expect(screen.getByTestId('dictionary-pos-noun')).toHaveAttribute('aria-pressed', 'true');
+    });
+  });
 });

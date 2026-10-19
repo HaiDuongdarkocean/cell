@@ -31,6 +31,8 @@ import { makeSubsenseId } from '../logic/definitionSelection';
 import type { LookupResult, DefinitionEntry, SubsenseBlock, RelationGroup, WordStatus, PopupCardCreatorPrefill, PopupTab, PopupSelectionSnapshot, SenseLine, RelatedEntry } from '@/entities/dictionary';
 
 const EMPTY_EXAMPLE_SET: ReadonlySet<number> = new Set<number>();
+const SWIPE_MIN_PX = 56;
+const SWIPE_DOMINANCE = 1.4;
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
@@ -133,6 +135,65 @@ export function CandidateView({
     pronunciationDisplay === 'phonemes' &&
     phonemes.some((p) => p.type !== 'separator');
 
+  const variants = candidate.variants;
+  const swipeRef = useRef<{ x: number; y: number; scrollers: [HTMLElement, number][]; cleanup: () => void } | null>(null);
+  const articleRef = useRef<HTMLElement | null>(null);
+  const swipeDirRef = useRef<'next' | 'prev' | null>(null);
+
+  const selectVariant = (i: number): void => {
+    if (i === panel.variantIndex) return;
+    swipeDirRef.current = i > panel.variantIndex ? 'next' : 'prev';
+    panel.selectVariant(i);
+  };
+
+  useEffect(() => {
+    const el = articleRef.current;
+    const dir = swipeDirRef.current;
+    if (!el || !dir) return;
+    el.classList.remove(styles.swipeNext, styles.swipePrev);
+    void el.offsetWidth;
+    el.classList.add(dir === 'next' ? styles.swipeNext : styles.swipePrev);
+  }, [panel.variantIndex]);
+
+  useEffect(() => () => swipeRef.current?.cleanup(), []);
+
+  const onSwipePointerDown = (e: React.PointerEvent<HTMLElement>): void => {
+    if ((variants?.length ?? 0) < 2 || e.button !== 0) return;
+    if (e.target instanceof HTMLElement
+      && e.target.closest('input, textarea, select, [contenteditable]')) return;
+    if (onHeaderPointerDown
+      && e.target instanceof HTMLElement
+      && e.target.closest('[class*=TihokaHeaderRowDraggable]')) return;
+    const scrollers: [HTMLElement, number][] = [];
+    for (const node of e.nativeEvent.composedPath()) {
+      if (!(node instanceof HTMLElement)) continue;
+      if (node === e.currentTarget) break;
+      if (node.scrollWidth <= node.clientWidth) continue;
+      const overflowX = getComputedStyle(node).overflowX;
+      if (overflowX === 'auto' || overflowX === 'scroll') scrollers.push([node, node.scrollLeft]);
+    }
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const cleanup = (): void => {
+      document.removeEventListener('pointerup', onUp, true);
+      document.removeEventListener('pointercancel', onCancel, true);
+      swipeRef.current = null;
+    };
+    const onUp = (ev: globalThis.PointerEvent): void => {
+      cleanup();
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      if (Math.abs(dx) < SWIPE_MIN_PX || Math.abs(dx) < Math.abs(dy) * SWIPE_DOMINANCE) return;
+      if (scrollers.some(([el, left]) => el.scrollLeft !== left)) return;
+      const last = (variants?.length ?? 1) - 1;
+      selectVariant(Math.max(0, Math.min(panel.variantIndex + (dx < 0 ? 1 : -1), last)));
+    };
+    const onCancel = (): void => { cleanup(); };
+    swipeRef.current = { x: startX, y: startY, scrollers, cleanup };
+    document.addEventListener('pointerup', onUp, true);
+    document.addEventListener('pointercancel', onCancel, true);
+  };
+
   const wordRowRef = useRef<HTMLDivElement | null>(null);
   const [termTruncated, setTermTruncated] = useState(false);
 
@@ -182,14 +243,16 @@ export function CandidateView({
 
   return (
     <article
+      ref={articleRef}
       className={styles.candidate}
       data-tihoka-id={`dictionary-candidate-${index}`}
+      onPointerDown={onSwipePointerDown}
     >
       {candidate.variants && candidate.variants.length > 1 && (
         <PosVariantNav
           variants={candidate.variants}
           selectedIndex={panel.variantIndex}
-          onSelect={panel.selectVariant}
+          onSelect={selectVariant}
         />
       )}
       <header className={styles.TihokaHeader} data-tihoka-id="dictionary-header">
