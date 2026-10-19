@@ -17,6 +17,7 @@ import {
   buildTranslateRequest,
   parseGoogleResponse,
 } from '@/features/translate/service/translateService';
+import { googleTranslatePaced } from '@/features/translate/service/googleRateLimiter';
 
 const GOOGLE_TRANSLATE_TIMEOUT_MS = 8000;
 
@@ -34,23 +35,32 @@ export function registerTranslateHandlers(ctx: BackgroundContext): void {
 
     try {
       const { url, body } = buildTranslateRequest(text, sl, tl);
-      const response = await fetchWithTimeout(url, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json, text/plain, */*',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body,
-      }, GOOGLE_TRANSLATE_TIMEOUT_MS);
-      if (response.ok) {
-        const data = await response.json();
-        const translated = parseGoogleResponse(data);
-        if (translated.length > 0) {
-          return { success: true, data: { translated } };
+      const paced = await googleTranslatePaced(async () => {
+        try {
+          const response = await fetchWithTimeout(url, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json, text/plain, */*',
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body,
+          }, GOOGLE_TRANSLATE_TIMEOUT_MS);
+          if (response.ok) {
+            const translated = parseGoogleResponse(await response.json());
+            return { status: 200, value: translated };
+          }
+          return { status: response.status, value: null };
+        } catch {
+          return { status: 0, value: null };
+        }
+      });
+      if (paced.status === 200 && paced.value) {
+        if (paced.value.length > 0) {
+          return { success: true, data: { translated: paced.value } };
         }
         return { success: false, error: t('translate.error.empty') };
       }
-      return { success: false, error: t('translate.error.http', [response.status]) };
+      return { success: false, error: t('translate.error.http', [paced.status]) };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       return { success: false, error: t('translate.error.fetch', [msg]) };

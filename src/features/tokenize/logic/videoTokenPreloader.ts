@@ -58,6 +58,8 @@ const IDLE_LOOKAHEAD_CUES = 60;
 /** A service-worker/fetch leg that never resolves must not wedge isFlushing —
  *  the batch retries as a normal failure instead of stalling silently. */
 export const METADATA_FLUSH_TIMEOUT_MS = 30_000;
+const GLOSS_RETRY_DELAY_MS = 15_000;
+const GLOSS_RETRY_MAX_ATTEMPTS = 4;
 
 export function createVideoTokenPreloader(
   options: VideoTokenPreloaderOptions,
@@ -90,6 +92,24 @@ export function createVideoTokenPreloader(
   let frequencyBandOptions: FrequencyBandOptions | null = null;
   let freqOptsPromise: Promise<FrequencyBandOptions> | null = null;
   let pendingFlushTimer: ReturnType<typeof setTimeout> | null = null;
+  const glossRetries = new Map<string, number>();
+  let glossRetryTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function scheduleGlossRetry(terms: readonly string[]): void {
+    let any = false;
+    for (const term of terms) {
+      const attempts = (glossRetries.get(term) ?? 0) + 1;
+      if (attempts > GLOSS_RETRY_MAX_ATTEMPTS) continue;
+      glossRetries.set(term, attempts);
+      pendingTerms.add(term);
+      any = true;
+    }
+    if (!any || isPaused || glossRetryTimer) return;
+    glossRetryTimer = setTimeout(() => {
+      glossRetryTimer = null;
+      scheduler.schedule(() => flushPendingTerms(), PRIORITY_IDLE);
+    }, GLOSS_RETRY_DELAY_MS);
+  }
 
   async function loadBandOptions(): Promise<FrequencyBandOptions> {
     if (frequencyBandOptions) return frequencyBandOptions;
@@ -133,15 +153,16 @@ export function createVideoTokenPreloader(
     // statuses/readings, and a hung leg cannot trip the flush watchdog. The
     // cacheOnly leg paints already-cached glosses instantly; the full leg
     // follows with provider misses.
-    const glossLegs: Array<Promise<Map<string, string> | null>> = showGlosses && tl
+    const glossLegs: Array<{ promise: Promise<Map<string, string> | null>; full: boolean }> = showGlosses && tl
       ? [
-          getWordTranslations(langCode, tl, terms, { cacheOnly: true }),
-          getWordTranslations(langCode, tl, terms),
-        ].map((p) =>
+          { promise: getWordTranslations(langCode, tl, terms, { cacheOnly: true }), full: false },
+          { promise: getWordTranslations(langCode, tl, terms), full: true },
+        ].map(({ promise, full }) => ({
+          full,
           // Drop results that resolve after a target-language switch —
           // writing them would persist the old language's glosses.
-          p.then((g) => (glossTargetLanguage === tl ? g : null)).catch(() => null),
-        )
+          promise: promise.then((g) => (glossTargetLanguage === tl ? g : null)).catch(() => null),
+        }))
       : [];
     // Dictionary readings detach too — blob lookups can cost ~1.5s on large
     // corpora. eSpeak IPA fills uncovered terms eagerly; the merged dict map
@@ -159,8 +180,15 @@ export function createVideoTokenPreloader(
     const pendingGlosses = new Map<string, string>();
     let applyGlosses: () => void = () => {};
     for (const leg of glossLegs) {
-      void leg.then((g) => {
-        if (!g || g.size === 0) return;
+      void leg.promise.then((g) => {
+        if (g === null) {
+          // Provider failure → the terms would otherwise stay resolved
+          // forever with no gloss. Re-queue them so a later flush retries
+          // once the provider recovers.
+          if (leg.full) scheduleGlossRetry(terms);
+          return;
+        }
+        if (g.size === 0) return;
         for (const [term, gloss] of g) pendingGlosses.set(term, gloss);
         applyGlosses();
       });
@@ -352,11 +380,16 @@ export function createVideoTokenPreloader(
       pendingViewport.clear();
       pendingTerms.clear();
       flushRetries.clear();
+      glossRetries.clear();
       map.clear();
       scheduler.clear();
       if (pendingFlushTimer) {
         clearTimeout(pendingFlushTimer);
         pendingFlushTimer = null;
+      }
+      if (glossRetryTimer) {
+        clearTimeout(glossRetryTimer);
+        glossRetryTimer = null;
       }
       freqOptsPromise = null;
       frequencyBandOptions = null;
@@ -396,6 +429,11 @@ export function createVideoTokenPreloader(
       pendingViewport.clear();
       pendingTerms.clear();
       flushRetries.clear();
+      glossRetries.clear();
+      if (glossRetryTimer) {
+        clearTimeout(glossRetryTimer);
+        glossRetryTimer = null;
+      }
     },
 
     setShowReadings(show: boolean): void {
@@ -419,6 +457,7 @@ export function createVideoTokenPreloader(
       if (tl === glossTargetLanguage) return;
       glossTargetLanguage = tl;
       map.clearGlosses();
+      glossRetries.clear();
       if (!showGlosses) return;
       resolvedTerms.clear();
       pendingViewport.clear();

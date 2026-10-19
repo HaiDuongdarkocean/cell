@@ -19,6 +19,7 @@ import {
   alignTermGlosses,
   chunkTermMarkerTexts,
 } from '@/features/translate/service/translateService';
+import { googleTranslatePaced, type PacedResult } from '@/features/translate/service/googleRateLimiter';
 
 const GOOGLE_TRANSLATE_TIMEOUT_MS = 8000;
 const TERM_REQUEST_CHAR_BUDGET = 4500;
@@ -43,57 +44,76 @@ function glossCacheSet(key: string, gloss: string): void {
   void setSessionStorage({ [GLOSS_SESSION_PREFIX + key]: gloss });
 }
 
-async function fetchSegments(text: string, sl: string, tl: string): Promise<string[]> {
-  try {
-    const { url, body } = buildTranslateRequest(text, sl, tl);
-    const response = await fetchWithTimeout(url, {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json, text/plain, */*',
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body,
-    }, GOOGLE_TRANSLATE_TIMEOUT_MS);
-    if (response.ok) {
-      const segments = parseGoogleResponse(await response.json());
-      if (segments.length > 0 && segments.some((s) => s.length > 0)) return segments;
+async function fetchSegments(
+  text: string,
+  sl: string,
+  tl: string,
+): Promise<PacedResult<string[]>> {
+  const { url, body } = buildTranslateRequest(text, sl, tl);
+  return googleTranslatePaced(async () => {
+    try {
+      const response = await fetchWithTimeout(url, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json, text/plain, */*',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body,
+      }, GOOGLE_TRANSLATE_TIMEOUT_MS);
+      if (response.ok) {
+        const segments = parseGoogleResponse(await response.json());
+        if (segments.length > 0 && segments.some((s) => s.length > 0)) {
+          return { status: 200, value: segments };
+        }
+      }
+      return { status: response.status, value: null };
+    } catch {
+      // failure is non-fatal — caller renders tokens without glosses
+      return { status: 0, value: null };
     }
-  } catch {
-    // failure is non-fatal — caller renders tokens without glosses
-  }
-  return [];
+  });
 }
 
 async function translateTermChunk(
   terms: readonly string[],
   sl: string,
   tl: string,
-): Promise<readonly string[] | null> {
+): Promise<{ glosses: readonly string[] | null; providerFailed: boolean }> {
   // Primary: newline-joined terms — Google returns one segment per line,
   // which zips positionally and produces better single-word glosses than the
   // marker form. Terms are pre-sanitized so embedded newlines can't skew the
   // count.
   const plain = await fetchSegments(terms.map((t) => t.replace(/\n/g, ' ')).join('\n'), sl, tl);
-  if (plain.length === terms.length) {
-    return plain.map((g) => g.trim());
+  const plainSegments = plain.value ?? [];
+  if (plainSegments.length === terms.length) {
+    return { glosses: plainSegments.map((g) => g.trim()), providerFailed: false };
   }
 
   if (terms.length === 1) {
     // All segments belong to the one term — join them.
-    return plain.length > 0 ? [plain.join(' ').trim()] : null;
+    return {
+      glosses: plainSegments.length > 0 ? [plainSegments.join(' ').trim()] : null,
+      providerFailed: plain.status !== 200,
+    };
+  }
+
+  // A 429/time-out is not worth a second request — the marker retry would hit
+  // the same wall. Only fall back on a well-formed-but-misaligned response.
+  if (plain.status !== 200) {
+    return { glosses: null, providerFailed: true };
   }
 
   // Fallback: marker-joined request realigns by ⟦Ti⟧ index even when the
   // provider merges or splits lines.
   const marked = await fetchSegments(joinTermTexts(terms), sl, tl);
-  if (marked.length > 0) {
-    return alignTermGlosses(marked, terms.length);
+  if (marked.value && marked.value.length > 0) {
+    return { glosses: alignTermGlosses(marked.value, terms.length), providerFailed: false };
   }
   // A wrong-length plain result must not zip positionally — misaligned
   // glosses are worse than none. null = whole sub-batch failed (provider
   // error/rate limit): caller skips it so the terms are NOT cached as ''
   // — caching '' would permanently suppress glosses for the session.
-  return null;
+  return { glosses: null, providerFailed: marked.status !== 200 };
 }
 
 export function registerTranslateTermsHandlers(ctx: BackgroundContext): void {
@@ -142,16 +162,24 @@ export function registerTranslateTermsHandlers(ctx: BackgroundContext): void {
       return { success: true, data: { glosses } };
     }
 
+    let providerFailed = false;
     for (const chunk of chunkTermMarkerTexts(misses, TERM_REQUEST_CHAR_BUDGET)) {
-      const aligned = await translateTermChunk(chunk, sl, tl);
-      if (aligned === null) continue;
+      const result = await translateTermChunk(chunk, sl, tl);
+      providerFailed = providerFailed || result.providerFailed;
+      if (result.glosses === null) continue;
       for (let i = 0; i < chunk.length; i++) {
         const term = chunk[i]!;
-        const gloss = (aligned[i] ?? '').trim();
+        const gloss = (result.glosses[i] ?? '').trim();
         const final = gloss.toLowerCase() === term.toLowerCase() ? '' : gloss;
         glossCacheSet(glossCacheKey(sl, tl, term), final);
         if (final) glosses[term] = final;
       }
+    }
+    // Total provider failure (rate limit/outage) must surface as a failed
+    // response — a silent empty map would tell the preloader's gloss leg
+    // "done" and the terms would never retry.
+    if (providerFailed && Object.keys(glosses).length === 0) {
+      return { success: false, error: 'translate.provider.unavailable' };
     }
     return { success: true, data: { glosses } };
   });
