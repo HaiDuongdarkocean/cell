@@ -166,7 +166,10 @@ export function registerTranslateTermsHandlers(ctx: BackgroundContext): void {
     for (const chunk of chunkTermMarkerTexts(misses, TERM_REQUEST_CHAR_BUDGET)) {
       const result = await translateTermChunk(chunk, sl, tl);
       providerFailed = providerFailed || result.providerFailed;
-      if (result.glosses === null) continue;
+      // Sequential coverage: stop at the first provider failure — remaining
+      // chunks would fail identically while scattering holes across later
+      // cues. They retry on the next leg.
+      if (result.glosses === null) break;
       for (let i = 0; i < chunk.length; i++) {
         const term = chunk[i]!;
         const gloss = (result.glosses[i] ?? '').trim();

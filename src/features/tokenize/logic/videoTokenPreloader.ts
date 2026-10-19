@@ -94,6 +94,10 @@ export function createVideoTokenPreloader(
   let pendingFlushTimer: ReturnType<typeof setTimeout> | null = null;
   const glossRetries = new Map<string, number>();
   let glossRetryTimer: ReturnType<typeof setTimeout> | null = null;
+  // First cue index each term was scheduled from — glosses flush in cue order
+  // so a provider failure degrades coverage linearly by playback position
+  // instead of leaving random holes across every cue.
+  const termCueOrder = new Map<string, number>();
 
   function scheduleGlossRetry(terms: readonly string[]): void {
     let any = false;
@@ -147,6 +151,14 @@ export function createVideoTokenPreloader(
       pendingTerms.delete(term);
       terms.push(term);
     }
+    // (ADR-123) glosses resolve in playback order from the active cue — when
+    // the provider dies mid-flush, the unflushed tail belongs to later cues,
+    // so coverage drops linearly instead of leaving scattered holes.
+    const cueForward = (term: string): number => {
+      const i = termCueOrder.get(term);
+      return i === undefined ? Infinity : (i - activeIndex + cues.length) % cues.length;
+    };
+    terms.sort((a, b) => cueForward(a) - cueForward(b));
 
     const tl = glossTargetLanguage;
     // Glosses ride their own promises — provider latency must not hold back
@@ -302,10 +314,16 @@ export function createVideoTokenPreloader(
     }
   }
 
-  function scheduleResolve(terms: ReadonlySet<string>, priority: number): void {
+  function scheduleResolve(terms: ReadonlySet<string>, priority: number, cueIndex?: number): void {
     const urgent = priority === PRIORITY_VIEWPORT;
     let hasNew = false;
     for (const term of terms) {
+      if (cueIndex !== undefined && !resolvedTerms.has(term)) {
+        const existing = termCueOrder.get(term);
+        if (existing === undefined || cueIndex < existing) {
+          termCueOrder.set(term, cueIndex);
+        }
+      }
       if (resolvedTerms.has(term) || pendingViewport.has(term)) continue;
       if (urgent) {
         pendingViewport.add(term);
@@ -340,7 +358,7 @@ export function createVideoTokenPreloader(
       map.prepare(index, cue.text);
       prepared.add(index);
       const terms = getTermsForCue(index);
-      scheduleResolve(terms, priority);
+      scheduleResolve(terms, priority, index);
     }, priority);
   }
 
@@ -381,6 +399,7 @@ export function createVideoTokenPreloader(
       pendingTerms.clear();
       flushRetries.clear();
       glossRetries.clear();
+      termCueOrder.clear();
       map.clear();
       scheduler.clear();
       if (pendingFlushTimer) {
@@ -430,6 +449,7 @@ export function createVideoTokenPreloader(
       pendingTerms.clear();
       flushRetries.clear();
       glossRetries.clear();
+      termCueOrder.clear();
       if (glossRetryTimer) {
         clearTimeout(glossRetryTimer);
         glossRetryTimer = null;
@@ -458,6 +478,7 @@ export function createVideoTokenPreloader(
       glossTargetLanguage = tl;
       map.clearGlosses();
       glossRetries.clear();
+      termCueOrder.clear();
       if (!showGlosses) return;
       resolvedTerms.clear();
       pendingViewport.clear();
