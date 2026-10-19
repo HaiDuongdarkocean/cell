@@ -1,98 +1,115 @@
-# ADR-123: Subtitle Loading Pipeline and Navigation-Window Guard
+# ADR-123: Subtitle Loading Pipeline — Channel Map and Invariants
 
 **Date:** 2026-10-16
 **Status:** Accepted
 
 ## Context
 
-Subtitles can reach the extension through several independent channels.
-Historically each was added ad-hoc, so fixing one channel has silently broken
-another (YouTube SPA nav wiped loaded cues; kisskh's caption list was never
-imported). This ADR records every channel, the trust boundaries between them,
-and the invariant that prevents a later channel from destroying an earlier
-one's work.
+Subtitles reach the extension through many independent channels. Each was
+added for a class of sites that another channel cannot reach. Removing or
+"cleaning up" one silently regresses sites (YouTube SPA nav wiped loaded
+cues; kisskh's caption list was never imported because it is fetched via
+XHR). This ADR is the complete map of every load path, what it covers, and
+what breaks if it is removed.
 
-## Load channels (all must stay)
+## Inventory model
 
-1. **Network response interception** — `chrome.webRequest` in the background
-   watches every request; subtitle-file URLs (`SUBTITLE_PATTERN`) and listing
-   URLs (`setListingMatcher` → `resolveListing`) feed
-   `networkInterceptor.addDetectedSubtitles` / the discovery pipeline.
-   Covers every site without page scripting. Cannot read response bodies.
+`networkInterceptor` owns the per-tab inventory (`subtitlesByTab` with
+`byUrl`/`byId` indexes). Every channel writes into it —
+`handleRequest` (webRequest-style `NetworkRequest`) or
+`addDetectedSubtitles` (pre-built `DetectedSubtitle`). Dedup is by URL per
+tab. `notifyListeners` → `wireEvents.onMediaDetected` →
+`pushAutoLoadSubtitles` → `AUTO_LOAD_SUBTITLES` (with
+`targetMatches`/`nativeMatches`) to every frame of the tab. A null push
+clears the overlay. Content answers `SUBTITLE_CUES_LOADED`.
 
-2. **`window.fetch` patch (MAIN world)** — `fetchInterceptor.iife.ts` patches
-   `window.fetch` at `document_start`. Emits `__DETECTED_SUBTITLE_FETCH` for
-   subtitle files and `__Tihoka_SUBTITLE_DISCOVERY` `network-response` signals
-   carrying a bounded body clone for listing/HLS fetches. Required for signed
-   one-time-token listings that cannot be replayed (lookmovie hash, kisskh
-   `kkey`, videasy seed) and for bodies served by the page's own SW cache.
+Persistence: `saveSessionMedia` → `chrome.storage.session` →
+`loadSessionMedia`/`restoreMedia` on SW restart. Session is a mirror of the
+in-memory store — it is saved at specific call sites, not on every change.
 
-3. **`XMLHttpRequest` patch (MAIN world)** — same file patches
-   `XMLHttpRequest.prototype.open/send`. Sites that fetch listings over XHR
-   (kisskh `/api/Sub/<epId>`) otherwise produce no `network-response` signal —
-   webRequest sees the request but not the body, and replaying a signed URL
-   returns 403. Both patches must stay in place; removing either regresses a
-   whole class of sites.
+## Discovery channels (all must stay)
 
-4. **Page scan** — `mediaScan` reports `<track>`/`<video>` sources via
-   `PAGE_SCAN_RESULT`. Catches DOM-visible tracks but cannot read `blob:`
-   sources.
+| # | Channel | Entry point | Covers | Breaks if removed |
+|---|---------|-------------|--------|-------------------|
+| 1 | `chrome.webRequest` URL patterns | `networkInterceptor.handleRequest` + `detectSubtitle` | Every site; subtitle-file URLs (.srt/.vtt/.ass, `/subtitles/` paths) | Baseline detection everywhere |
+| 2 | webRequest listing matcher | `setListingMatcher` → `onListingDetected` → `subtitleDiscovery.resolveListing` | Listing APIs that are replayable | Non-signed JSON listings never resolve |
+| 3 | `window.fetch` patch (MAIN world) | `fetchInterceptor.iife.ts` → `__DETECTED_SUBTITLE_FETCH` + `__Tihoka_SUBTITLE_DISCOVERY` | Signed one-time listings (lookmovie hash, kisskh `kkey`, videasy seed); bodies behind page-SW cache | Signed listings → 403 on replay → 0 candidates |
+| 4 | `XMLHttpRequest` patch (MAIN world) | same file | Sites that fetch listings over XHR (kisskh `/api/Sub/<epId>`) | kisskh: only the one active subtitle |
+| 5 | Page DOM scan | `mediaScan` → `PAGE_SCAN_RESULT` → `mediaDetection.ts` handler | `<track>`/`<video>`/`source` elements, `<a>` subtitle links | Track-visible subs; also drives `lastPageUrl` nav detection |
+| 6 | Generic MAIN-world player-state poller | `subtitleDiscovery-main-world.iife.ts` | Player globals (`the_subtitles`, `playerjsSubtitle`, `subtitleTracks` — noxx, MyAsianTV, vidrift); also fetches `blob:` `<track>` bodies the isolated world cannot read | Encrypted/blob player subs (OnzLoad) |
+| 7 | YouTube MAIN-world | `youtube-main-world.iife.ts` → `__YT_DETECTED_SUBTITLES` → `DETECTED_SUBTITLES` → `detectionDispatch.ts` | InnerTube `captionTracks`, incl. ASR | All YouTube subtitles |
+| 8 | Site IIFEs | `iqiyi-main-world.iife.ts`, `netflix-main-world.iife.ts` | Provider-specific player APIs | Those providers |
+| 9 | External search | `SEARCH_SUBTITLES` handler (SubDL → OpenSubtitles fallback) | User-initiated search when no tracks found | Manual search UI |
+| 10 | Manual/ASR | Import file; Generate native | User file import; ASR generation | Import/Generate features |
 
-5. **Site-specific MAIN-world parsers** — `youtube-main-world.iife.ts`
-   (InnerTube `captionTracks`), `iqiyi`, `netflix` IIFEs post
-   `__YT_DETECTED_SUBTITLES`-style signals. Required where the player keeps
-   the list in JS state, not the DOM.
+Signal kinds flowing through the shared pipeline (`SUBTITLE_DISCOVERY_SIGNAL`
+→ `subtitleDiscovery.ts` → `SubtitleDiscoveryService.processSignal`):
+`network-response`, `frame-source`, `player-state`, `document-html`,
+`hls-playlist`. Adapters live in
+`features/detection/subtitleDiscovery/adapters/` as profile entries
+(`kisskh`, `lookmovie`, `broodingmovies`, `peachify`, `opensubtitles`,
+`onzload`, `cinesrc`, `stremio`, HLS, encrypted). New sites belong in a
+profile/adapter — never a branch inside `networkInterceptor`.
 
-6. **Player-state / frame-source / document-html signals** — cross-origin
-   embed frames announce their location; adapters (`stremio`, `onzload`,
-   `peachify`, `opensubtitles`, `lookmovie`, `broodingmovies`, `cinesrc`,
-   `kisskh`, HLS) convert listings into `DetectedSubtitle` candidates in the
-   background pipeline.
+## Trust boundaries
 
-All observation signals cross the same trust boundary:
-`subtitleDiscoveryPayloadSchema` (zod) validates shape and size in the
-isolated content script, `subtitleBridges` verifies `event.origin` is a
-resolvable http(s) origin, and `messageBus.handleMessage` re-injects
-`tabId`/`frameId` from `sender` — page-supplied values are never trusted.
+- `subtitleSignalSchema` / `subtitleDiscoveryPayloadSchema` (zod) validate
+  shape and cap body sizes in the isolated content script.
+- `subtitleBridges` verifies `event.origin` is a resolvable http(s) origin
+  before relaying page posts.
+- `messageBus.handleMessage` re-injects `tabId`/`frameId` from `sender` —
+  page-supplied values are never trusted.
+- `normalizeCandidate` rejects non-http(s) candidate URLs (`blob:`,
+  `data:`); unresolved candidates (encrypted payloads, metadata-only) keep
+  `status: 'unresolved'` and never become playable `DetectedSubtitle`s.
+- `detectSubtitle` `NON_SUBTITLE_KEYWORDS` rejects chapter/thumbnail VTT.
 
-## Inventory and selection
+## Nav clears and the freshness invariant
 
-`networkInterceptor` owns the per-tab inventory (`byUrl`/`byId` indexes).
-`pushAutoLoadSubtitles` runs on every media notification and pushes
-`AUTO_LOAD_SUBTITLES` with `targetMatches`/`nativeMatches` to every frame,
-filtered by the active language profile. A null push clears the overlay.
+Tab state is cleared at:
 
-## Navigation clears and the freshness invariant
+- `tabs.onUpdated` status `loading` — full reload (`clearTabState`)
+- `webNavigation.onHistoryStateUpdated` with `isMediaRelevantUrlChange` —
+  SPA `pushState` (`clearTabStateKeepingFreshSubtitles`)
+- `VIDEO_EPISODE_CHANGED` — in-page episode switch (fresh-window guard)
+- `PAGE_SCAN_RESULT` with changed document `pageUrl`
+  (`clearTabStateKeepingFreshSubtitles`)
+- `DETECTED_SUBTITLES` with zero tracks — real "no subs" page
+- `clearTab` also deletes `lastPageUrlByTab` and fires `onTabCleared` →
+  pipeline `clearTab` (dedup reset)
 
-Tab state is cleared on: full reload (`tabs.onUpdated` loading), SPA
-`history.pushState` (`webNavigation.onHistoryStateUpdated` when
-`isMediaRelevantUrlChange`), `VIDEO_EPISODE_CHANGED`, `PAGE_SCAN_RESULT` with
-a changed document URL, and `DETECTED_SUBTITLES` with zero tracks.
-
-Invariant: **a clear must not wipe subtitles detected inside the nav window
+**Invariant: a clear must not wipe subtitles detected inside the nav window
 (±5 s, same wall clock).** New-episode detection routinely lands before the
-URL-flip event (kisskh fires its listing ~300 ms before `pushState`; YouTube
-InnerTube responds ~2 s before `video.src` flips). Violations observed:
+URL-flip event: kisskh fires its listing ~300 ms before `pushState`; YouTube
+InnerTube responds ~2 s before `video.src` flips.
 
-- `VIDEO_EPISODE_CHANGED` stored the media `blob:` URL into `lastPageUrl`,
-  which `PAGE_SCAN_RESULT` then read as a document-URL change and wiped the
-  fresh listing. Media URLs must never be written to the document-URL field.
-- The YouTube `episodeWatcher` source-poll treated MSE `blob:` rotation as an
-  episode change. `blob:` src changes are ignored; element replacement still
-  reports but the freshness window protects real detections.
-- `onHistoryStateUpdated` cleared unconditionally.
+Violations observed and fixed:
 
-All nav-clear call sites use `clearTabStateKeepingFreshSubtitles`, which
-preserves subtitles with `detectedAt >= eventTime - 5 s` and re-saves session
-media.
+- `VIDEO_EPISODE_CHANGED` stored the media `blob:` URL into `lastPageUrl`
+  (a document-URL field); every later `PAGE_SCAN_RESULT` read it as a nav
+  and wiped the fresh listing. Media URLs must never enter `lastPageUrl`.
+- `episodeWatcher`'s source poll treated MSE `blob:` rotation as an episode
+  change on YouTube; `blob:` src changes are ignored.
+- Element-replacement `VIDEO_EPISODE_CHANGED` is still legit (Angular
+  two-phase video mounts) — the freshness window absorbs it.
 
-## Guardrails for future changes
+## Editing checklist
 
-- A new detection channel must emit through the validated signal/pipeline,
-  not write directly to `networkInterceptor` from the page.
-- A new clear point must use `clearTabStateKeepingFreshSubtitles` (or prove
-  detection cannot precede it).
-- A new listing site belongs in a `JsonListingProfile`/`SubtitleDiscoveryAdapter`
-  entry, not a branch in `networkInterceptor`.
-- Never replay a signed listing URL as a substitute for the captured body.
-- Never treat `blob:` URLs as episode identity.
+Before touching this pipeline, check:
+
+- Changing a signal shape → update the zod schema AND every
+  producer/consumer in the same commit (`messageBus` schema map,
+  `subtitleBridges`, adapters).
+- Changing clear semantics → use `clearTabStateKeepingFreshSubtitles`, and
+  never write media/blob URLs into `lastPageUrl`.
+- Adding a site → new adapter/profile + a replay test with a captured real
+  body (see `adapters/kisskhListing.test.ts`), not a regex in
+  `networkInterceptor`.
+- Never substitute a replayed signed URL for the captured body — signed
+  tokens are single-use.
+- `window.fetch` AND `XMLHttpRequest` must both stay patched; players mix
+  them arbitrarily.
+- Verify by evidence level: DOM/UI list visible ≠ extension inventory —
+  confirm via badge count / `session_media` / `targetMatches` count
+  (`chrome.runtime.sendMessage` from the SW does NOT reach its own
+  handlers, so self-sends always return empty).
