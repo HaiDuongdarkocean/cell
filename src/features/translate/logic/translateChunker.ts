@@ -8,6 +8,11 @@
 
 import type { SrtCue } from '@/entities/media';
 
+/** Per-cue marker + separator overhead added by `joinCueTexts`
+ *  (`⟦C{n}⟧…⟦/C{n}⟧` + '\n') — counted so the budget bounds the JOINED
+ *  request text, not just raw cue text. */
+export const CUE_MARKER_OVERHEAD = 24;
+
 /**
  * Chunk cue indices by character budget.
  *
@@ -18,9 +23,10 @@ import type { SrtCue } from '@/entities/media';
  *
  * @param cues - Full cue array (indexed by `indices`).
  * @param indices - Ordered cue indices to chunk (e.g. [0,1,2,...,n] or seek range).
- * @param charBudget - Max total text length per chunk (default 1500, ADR-021 D3).
- * @returns Array of index groups, each group's total text ≤ charBudget (except
- *          single-cue chunks that exceed budget).
+ * @param charBudget - Max joined request length per chunk (marker overhead
+ *          included; default 1500, ADR-021 D3).
+ * @returns Array of index groups, each group's joined request text ≤ charBudget
+ *          (except single-cue chunks that exceed budget).
  */
 export function chunkCuesByCharBudget(
   cues: readonly SrtCue[],
@@ -36,7 +42,7 @@ export function chunkCuesByCharBudget(
   for (const i of indices) {
     const cue = cues[i];
     if (!cue) continue;
-    const cueChars = cue.text.length;
+    const cueChars = cue.text.length + CUE_MARKER_OVERHEAD;
 
     // If current chunk is non-empty and adding this cue exceeds budget,
     // flush current chunk and start a new one.

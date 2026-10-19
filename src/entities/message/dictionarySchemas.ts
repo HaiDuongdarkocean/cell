@@ -509,7 +509,7 @@ export const TtsDownloadProgressPayloadSchema = z.object({
 
 export const TranslatePayloadSchema = z.object({
   tabId: z.number().int(),
-  text: z.string().min(1).max(2000),
+  text: z.string().min(1).max(6000),
   sl: z.string().optional(),
   tl: z.string().length(2),
 });

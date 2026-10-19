@@ -1,4 +1,6 @@
-import { chunkCuesByCharBudget, buildSequentialIndices } from '@/features/translate/logic/translateChunker';
+import { chunkCuesByCharBudget, buildSequentialIndices, CUE_MARKER_OVERHEAD } from '@/features/translate/logic/translateChunker';
+import { joinCueTexts } from '@/features/translate/service/translateService';
+import { TranslatePayloadSchema } from '@/entities/message/dictionarySchemas';
 import type { SrtCue } from '@/entities/media';
 
 function makeCue(text: string, i: number): SrtCue {
@@ -28,8 +30,8 @@ describe('translateChunker', () => {
     });
 
     it('splits into 2 chunks when total exceeds budget', () => {
-      const cues = makeCues(['aaaa', 'bbbb', 'cccc']); // 4+4+4=12
-      const chunks = chunkCuesByCharBudget(cues, [0, 1, 2], 8);
+      const cues = makeCues(['aaaa', 'bbbb', 'cccc']); // cost 28 each, budget 56
+      const chunks = chunkCuesByCharBudget(cues, [0, 1, 2], 56);
       expect(chunks).toEqual([[0, 1], [2]]);
     });
 
@@ -40,14 +42,14 @@ describe('translateChunker', () => {
     });
 
     it('exact budget boundary — cue fills chunk exactly', () => {
-      const cues = makeCues(['aaaa', 'bbbb']); // 4+4=8
-      const chunks = chunkCuesByCharBudget(cues, [0, 1], 8);
+      const cues = makeCues(['aaaa', 'bbbb']); // cost 28 each, budget 56
+      const chunks = chunkCuesByCharBudget(cues, [0, 1], 56);
       expect(chunks).toEqual([[0, 1]]);
     });
 
     it('cue that exactly fills + 1 more → 2 chunks', () => {
-      const cues = makeCues(['aaaa', 'bbbb', 'c']); // 4+4+1=9, budget 8
-      const chunks = chunkCuesByCharBudget(cues, [0, 1, 2], 8);
+      const cues = makeCues(['aaaa', 'bbbb', 'c']); // costs 28+28+25, budget 56
+      const chunks = chunkCuesByCharBudget(cues, [0, 1, 2], 56);
       expect(chunks).toEqual([[0, 1], [2]]);
     });
 
@@ -78,9 +80,20 @@ describe('translateChunker', () => {
     });
 
     it('handles non-sequential indices (seek range)', () => {
-      const cues = makeCues(['aa', 'bb', 'cc', 'dd', 'ee']); // 2 each, budget 4
-      const chunks = chunkCuesByCharBudget(cues, [2, 3, 4], 4);
+      const cues = makeCues(['aa', 'bb', 'cc', 'dd', 'ee']); // cost 26 each, budget 52
+      const chunks = chunkCuesByCharBudget(cues, [2, 3, 4], 52);
       expect(chunks).toEqual([[2, 3], [4]]);
+    });
+
+    it('joined request fits the TRANSLATE payload schema limit', () => {
+      const cues = makeCues(Array.from({ length: 250 }, (_, i) => `short line ${i}`));
+      const chunks = chunkCuesByCharBudget(cues, buildSequentialIndices(cues.length), 4500);
+      expect(chunks.length).toBeGreaterThan(1);
+      for (const chunk of chunks) {
+        const joined = joinCueTexts(chunk.map((i) => cues[i]!));
+        expect(joined.length).toBeLessThanOrEqual(4500 + CUE_MARKER_OVERHEAD);
+        expect(TranslatePayloadSchema.safeParse({ tabId: 0, text: joined, sl: 'en', tl: 'vi' }).success).toBe(true);
+      }
     });
   });
 
