@@ -99,7 +99,7 @@ try {
   Move-Item $manifestBackup $manifestPath -Force
 }
 
-$ffZip = Join-Path $work "Tihoka_firefox-$version.zip"
+$ffZip = Join-Path $work "Tihoka_firefox_$version.zip"
 Push-Location dist-firefox
 & $bsdtar -a -cf $ffZip *
 Pop-Location
@@ -126,7 +126,7 @@ if (-not $refs) {
   Write-Output '  [OK] bootstrapped repo with README + LICENSE (no source)'
 }
 
-$notes = "Tihoka $version`n`n- Chrome (self-hosted): $crxAssetName — auto-update via updates.xml`n- Firefox: Tihoka_firefox-$version.zip — install/update via addons.mozilla.org`n"
+$notes = "Tihoka $version`n`n- Chrome (self-hosted): $crxAssetName — auto-update via updates.xml`n- Firefox: Tihoka_firefox_$version.zip — install/update via addons.mozilla.org`n"
 & gh release create $tag $crx $updates $ffZip --repo $repo --title "Tihoka $version" --notes $notes
 if ($LASTEXITCODE -ne 0) { throw 'gh release create failed' }
 

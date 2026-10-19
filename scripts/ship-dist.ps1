@@ -176,16 +176,33 @@ try {
   Write-Host '  [OK] Copied dist folder'
 
   # 6. Zip the copied dist folder.
-  $destZip = Join-Path $release 'dist.zip'
+  $zipAssetName = "Tihoka_$version.zip"
+  $destZip = Join-Path $release $zipAssetName
   Compress-Archive -Path $destDist -DestinationPath $destZip -Force
   Write-Host "  [OK] Created $destZip"
+
+  # 6b. Firefox zip — bsdtar writes forward-slash entries (AMO rejects
+  # Compress-Archive output).
+  $ffDist = Join-Path $SourceRoot 'dist-firefox'
+  if (-not (Test-Path (Join-Path $ffDist 'manifest.json'))) {
+    & node (Join-Path $SourceRoot 'scripts\build-firefox.mjs')
+    if ($LASTEXITCODE -ne 0) { throw 'build-firefox failed' }
+  }
+  $ffZipName = "Tihoka_firefox_$version.zip"
+  $ffZip = Join-Path $release $ffZipName
+  $bsdtar = "$env:WINDIR\System32\tar.exe"
+  Push-Location $ffDist
+  try { & $bsdtar -a -cf $ffZip * } finally { Pop-Location }
+  if ($LASTEXITCODE -ne 0) { throw 'firefox zip failed' }
+  if ((& $bsdtar -tf $ffZip) -notcontains 'manifest.json') { throw 'firefox zip missing manifest.json at root' }
+  Write-Host "  [OK] Created $ffZip"
 
   # 7. Optionally publish to GitHub releases.
   if ($publishToGitHub -and $githubRepo) {
     if (Get-Command gh -ErrorAction SilentlyContinue) {
       $tag = "v$version"
       $releaseTitle = "Tihoka $version"
-      gh release create $tag "$crxOutput#$crxAssetName" "$xmlOutput#$updateXmlPath" --repo $githubRepo --title $releaseTitle --generate-notes
+      gh release create $tag "$crxOutput#$crxAssetName" "$xmlOutput#$updateXmlPath" "$destZip#$zipAssetName" "$ffZip#$ffZipName" --repo $githubRepo --title $releaseTitle --generate-notes
       if ($LASTEXITCODE -ne 0) { throw "gh release create failed with exit code $LASTEXITCODE" }
       Write-Host "  [OK] Created GitHub release $tag"
     } else {
