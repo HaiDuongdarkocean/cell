@@ -104,6 +104,7 @@ import { registerOcrHandlers } from './handlers/ocr';
 import { registerReaderHandlers } from './handlers/reader';
 import { registerSyncHandlers, wireSyncScheduling } from './handlers/sync';
 import { registerCondensedAudioHandlers } from './handlers/condensedAudio';
+import { registerProfileDataHandlers } from './handlers/profileData';
 import {
   registerAnkiStatusSyncHandlers,
   wireAnkiStatusSyncScheduling,
@@ -352,6 +353,7 @@ export class BackgroundService implements BackgroundContext {
     registerOcrHandlers(this);
     registerSyncHandlers(this);
     registerCondensedAudioHandlers(this);
+    registerProfileDataHandlers(this);
     registerAnkiStatusSyncHandlers(this);
     registerMiningQueueHandlers(this);
   }

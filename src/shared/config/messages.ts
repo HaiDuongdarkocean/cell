@@ -131,6 +131,9 @@ export const MESSAGE_TYPES = {
   RESOURCE_FIND: 'RESOURCE_FIND',
   RESOURCE_IMPORT_CHUNK: 'RESOURCE_IMPORT_CHUNK',
   RESOURCE_IMPORT_BEGIN: 'RESOURCE_IMPORT_BEGIN',
+  // === Profile retarget — check + wipe a profile's lang-scoped data ===
+  PROFILE_DATA_CHECK: 'PROFILE_DATA_CHECK',
+  PROFILE_DATA_WIPE: 'PROFILE_DATA_WIPE',
 
   // === Durable job registry (spec durable-job-registry) ===
   JOB_LIST: 'JOB_LIST',

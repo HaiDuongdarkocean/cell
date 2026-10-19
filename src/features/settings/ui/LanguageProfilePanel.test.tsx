@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { LanguageProfilePanel } from './LanguageProfilePanel';
 
 // jsdom lacks matchMedia — the panel's FLIP animation effect queries it.
@@ -11,6 +11,15 @@ beforeAll(() => {
 });
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { LanguageProfile, Settings } from '@/entities/settings';
+import { checkProfileData, wipeProfileData } from '../services/profileDataClient';
+
+jest.mock('../services/profileDataClient', () => ({
+  checkProfileData: jest.fn().mockResolvedValue({ vocab: 0, resources: 0, srs: false }),
+  wipeProfileData: jest.fn().mockResolvedValue(undefined),
+}));
+
+const mockCheck = checkProfileData as jest.MockedFunction<typeof checkProfileData>;
+const mockWipe = wipeProfileData as jest.MockedFunction<typeof wipeProfileData>;
 
 function makeProfile(id: string, target: string, order: number): LanguageProfile {
   return {
@@ -94,5 +103,86 @@ describe('LanguageProfilePanel — delete cleanup', () => {
         }),
       }),
     );
+  });
+});
+
+describe('LanguageProfilePanel — retarget', () => {
+  beforeEach(() => {
+    mockCheck.mockReset().mockResolvedValue({ vocab: 0, resources: 0, srs: false });
+    mockWipe.mockReset().mockResolvedValue(undefined);
+  });
+
+  const openEditForm = () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Actions for Profile p1' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit' }));
+  };
+
+  const pickTarget = (value: string) => {
+    fireEvent.click(screen.getByRole('button', { name: 'Select target language' }));
+    fireEvent.click(screen.getByTestId(`profile-target-language-option-${value}`));
+  };
+
+  it('retargets on save when the profile has no data (no warning)', async () => {
+    const onChange = jest.fn();
+    render(<LanguageProfilePanel settings={makeSettings()} onChange={onChange} />);
+
+    openEditForm();
+    pickTarget('aa');
+    await screen.findByRole('button', { name: 'Save' });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(mockWipe).not.toHaveBeenCalled();
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        languageProfiles: expect.arrayContaining([
+          expect.objectContaining({ id: 'profile-aa', target: 'aa' }),
+        ]),
+        activeProfileId: 'profile-aa',
+      }),
+    );
+  });
+
+  it('warns, then wipes and retargets on confirm when data exists', async () => {
+    mockCheck.mockResolvedValue({ vocab: 3, resources: 1, srs: true });
+    const onChange = jest.fn();
+    const settings = makeSettings({
+      srs: { ...DEFAULT_SETTINGS.srs, activeLanguageProfileId: 'p1', activeCollectionId: 'col-1' },
+    });
+    render(<LanguageProfilePanel settings={settings} onChange={onChange} />);
+
+    openEditForm();
+    pickTarget('aa');
+    const confirm = await screen.findByTestId('profile-retarget-confirm');
+    fireEvent.click(confirm);
+    await waitFor(() => expect(mockWipe).toHaveBeenCalled());
+
+    expect(mockWipe).toHaveBeenCalledWith('en', 'p1');
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        languageProfiles: expect.arrayContaining([
+          expect.objectContaining({ id: 'profile-aa', target: 'aa' }),
+        ]),
+        srs: expect.objectContaining({
+          activeLanguageProfileId: 'profile-aa',
+          activeCollectionId: null,
+        }),
+      }),
+    );
+  });
+
+  it('blocks the pick when a profile for that target already exists', async () => {
+    const onChange = jest.fn();
+    const settings = makeSettings({
+      languageProfiles: [makeProfile('p1', 'en', 1), makeProfile('profile-ja', 'ja', 2)],
+    });
+    render(<LanguageProfilePanel settings={settings} onChange={onChange} />);
+
+    openEditForm();
+    pickTarget('ja'); // profile-ja owns ja
+    await screen.findByTestId('profile-retarget-notice');
+
+    expect(mockCheck).not.toHaveBeenCalled();
+    expect(mockWipe).not.toHaveBeenCalled();
+    expect(onChange).not.toHaveBeenCalled();
   });
 });

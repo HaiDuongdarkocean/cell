@@ -22,6 +22,7 @@ import {
   getActiveProfileSettings,
   validateLanguageProfile,
 } from '@/entities/settings';
+import { checkProfileData, wipeProfileData } from '../services/profileDataClient';
 import { LanguageProfileCard, LanguageProfileCardList } from './LanguageProfileCard';
 import { ProfileForm } from './ProfileForm';
 import { ProfileMenu } from './ProfileMenu';
@@ -39,10 +40,15 @@ function recomputeOrder(profiles: LanguageProfile[]): LanguageProfile[] {
   return profiles.map((p, index) => ({ ...p, order: index + 1 }));
 }
 
+const langLabel = (code: string): string =>
+  OVERLAY_LANGUAGE_OPTIONS.find((o) => o.value === code)?.label ?? code;
+
 
 export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePanelProps): React.JSX.Element {
   const [form, setForm] = useState<FormState>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [retarget, setRetarget] = useState<{ profile: LanguageProfile; newTarget: string } | null>(null);
+  const [retargetNotice, setRetargetNotice] = useState<string | null>(null);
 
   const profiles = useMemo(
     () => [...(settings.languageProfiles ?? [])].sort((a, b) => a.order - b.order),
@@ -144,6 +150,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
     if (errors) return errors;
 
     const names = settings.languageProfiles.filter((p) => p.id !== id).map((p) => p.name);
+    const newId = profileIdForTarget(target);
     onChange({
       ...settings,
       languageProfiles: recomputeOrder(
@@ -151,15 +158,74 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
           p.id === id
             ? {
                 ...p,
+                id: newId,
+                target,
                 native: nativeOverride,
-                name: buildProfileName(nativeOverride, settings.universalNativeLanguage, p.target, names),
+                name: buildProfileName(nativeOverride, settings.universalNativeLanguage, target, names),
               }
             : p,
         ),
       ),
+      activeProfileId: settings.activeProfileId === id ? newId : settings.activeProfileId,
+      srs: settings.srs?.activeLanguageProfileId === id
+        ? { ...settings.srs, activeLanguageProfileId: newId }
+        : settings.srs,
     });
     setForm(null);
     return null;
+  };
+
+  /** Edit-form gate — runs when the user picks a different target. Returns
+   *  true to accept the pick silently (no data to lose), false to revert. */
+  const handleTargetChange = async (profile: LanguageProfile, newTarget: string): Promise<boolean> => {
+    if (newTarget === profile.target) return true;
+    if (settings.languageProfiles.some((p) => p.id === profileIdForTarget(newTarget))) {
+      setRetargetNotice(t('settings.profiles.retarget.dupBody', [langLabel(newTarget)]));
+      return false;
+    }
+    try {
+      const status = await checkProfileData(profile.target, profile.id);
+      if (status.vocab === 0 && status.resources === 0 && !status.srs) return true;
+    } catch {
+      /* check failed — still warn; a missing store wipes clean anyway */
+    }
+    setRetarget({ profile, newTarget });
+    return false;
+  };
+
+  const confirmRetarget = async (): Promise<void> => {
+    const pending = retarget;
+    setRetarget(null);
+    if (!pending) return;
+    const { profile, newTarget } = pending;
+    try {
+      await wipeProfileData(profile.target, profile.id);
+    } catch (err) {
+      setRetargetNotice(t('settings.profiles.retarget.failed', [err instanceof Error ? err.message : String(err)]));
+      return;
+    }
+    const newId = profileIdForTarget(newTarget);
+    const names = settings.languageProfiles.filter((p) => p.id !== profile.id).map((p) => p.name);
+    onChange({
+      ...settings,
+      languageProfiles: settings.languageProfiles.map((p) =>
+        p.id === profile.id
+          ? { ...p, id: newId, target: newTarget, name: buildProfileName(p.native, settings.universalNativeLanguage, newTarget, names) }
+          : p,
+      ),
+      activeProfileId: settings.activeProfileId === profile.id ? newId : settings.activeProfileId,
+      srs: settings.srs?.activeLanguageProfileId === profile.id
+        ? {
+            ...settings.srs,
+            activeLanguageProfileId: newId,
+            activeCollectionId: null,
+            activeDeckId: null,
+            activeNotetypeId: null,
+            defaultStudyConfigId: null,
+          }
+        : settings.srs,
+    });
+    setForm(null);
   };
 
   const canAdd = profiles.length === 0 || active !== null;
@@ -246,6 +312,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
                     activeName={null}
                     initialTarget={profile.target}
                     initialNative={profile.native}
+                    onTargetChange={(v) => handleTargetChange(profile, v)}
                     onCancel={() => setForm(null)}
                     onSubmit={(t2, n) => handleUpdate(profile.id, t2, n)}
                   />
@@ -329,6 +396,49 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
       >
         <Text as="p" color="secondary">
           {t('settings.profiles.delete.body')}
+        </Text>
+      </Dialog>
+
+      <Dialog
+        open={retarget !== null}
+        onOpenChange={(open) => { if (!open) setRetarget(null); }}
+        title={retarget ? t('settings.profiles.retarget.title', [langLabel(retarget.newTarget)]) : ''}
+        showCloseButton
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setRetarget(null)}>
+              {t('settings.profiles.retarget.cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              data-tihoka-id="profile-retarget-confirm"
+              onClick={() => void confirmRetarget()}
+            >
+              {t('settings.profiles.retarget.confirm')}
+            </Button>
+          </>
+        }
+        data-tihoka-id="profile-retarget-dialog"
+      >
+        <Text as="p" color="secondary">
+          {retarget ? t('settings.profiles.retarget.body', [langLabel(retarget.profile.target)]) : ''}
+        </Text>
+      </Dialog>
+
+      <Dialog
+        open={retargetNotice !== null}
+        onOpenChange={(open) => { if (!open) setRetargetNotice(null); }}
+        title={t('settings.profiles.retarget.dupTitle')}
+        showCloseButton
+        footer={
+          <Button variant="outline" onClick={() => setRetargetNotice(null)}>
+            {t('settings.profiles.retarget.ok')}
+          </Button>
+        }
+        data-tihoka-id="profile-retarget-notice"
+      >
+        <Text as="p" color="secondary">
+          {retargetNotice ?? ''}
         </Text>
       </Dialog>
     </SettingsPanel>

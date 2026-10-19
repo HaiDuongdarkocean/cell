@@ -113,6 +113,7 @@ import {
   WordStatusTrashManyPayloadSchema,
   WordStatusTrashPayloadSchema,
   WordStatusesGetPayloadSchema,
+  ProfileDataPayloadSchema,
 } from './dictionarySchemas';
 import {
   ResourceDeletePayloadSchema,
@@ -920,6 +921,18 @@ export const MESSAGE_REGISTRY = {
     schema: ResourceImportBeginPayloadSchema,
     direction: 'panel->bg',
     owner: 'background/handlers/resources',
+  },
+  [MESSAGE_TYPES.PROFILE_DATA_CHECK]: {
+    type: MESSAGE_TYPES.PROFILE_DATA_CHECK,
+    schema: ProfileDataPayloadSchema,
+    direction: 'panel->bg',
+    owner: 'background/handlers/profileData',
+  },
+  [MESSAGE_TYPES.PROFILE_DATA_WIPE]: {
+    type: MESSAGE_TYPES.PROFILE_DATA_WIPE,
+    schema: ProfileDataPayloadSchema,
+    direction: 'panel->bg',
+    owner: 'background/handlers/profileData',
   },
   [MESSAGE_TYPES.JOB_LIST]: {
     type: MESSAGE_TYPES.JOB_LIST,

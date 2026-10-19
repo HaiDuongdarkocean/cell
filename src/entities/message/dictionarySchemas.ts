@@ -301,6 +301,13 @@ export const WordStatusTrashPayloadSchema = WordStatusGetPayloadSchema;
 
 export const WordStatusTrashListPayloadSchema = WordStatusListPayloadSchema;
 
+// === Profile retarget (vocab + dictionary + SRS data bound to a lang/profile) ===
+
+export const ProfileDataPayloadSchema = z.object({
+  langCode: z.string().min(1),
+  profileId: z.string().min(1),
+});
+
 export const WordStatusRestorePayloadSchema = WordStatusGetPayloadSchema;
 
 export const WordStatusTrashDeletePayloadSchema = WordStatusGetPayloadSchema;

@@ -22,6 +22,9 @@ export interface ProfileFormProps {
   readonly initialTarget?: string;
   /** '' = inherit universal native; undefined → default inherit (add mode). */
   readonly initialNative?: string;
+  /** Edit mode only — async gate run before a target change is accepted;
+   *  return false to revert the pick. */
+  readonly onTargetChange?: (newTarget: string) => Promise<boolean>;
   readonly onCancel: () => void;
   /** Returns validation error messages to display, or null when the save succeeded. */
   readonly onSubmit: (target: string, nativeOverride: string, copyFromActive: boolean) => string[] | null;
@@ -39,6 +42,7 @@ export function ProfileForm({
   activeName,
   initialTarget = '',
   initialNative,
+  onTargetChange,
   onCancel,
   onSubmit,
 }: ProfileFormProps): React.JSX.Element {
@@ -93,19 +97,20 @@ export function ProfileForm({
             ariaLabel={t('settings.hint.aria', [t('settings.profiles.form.target')])}
           />
         </div>
-        {isEdit ? (
-          <div className={styles.formStaticValue}>{langLabel(target)}</div>
-        ) : (
-          <SearchableSelect
-            testId="profile-target-language"
-            dataTestId="profile-target-language"
-            options={OVERLAY_LANGUAGE_OPTIONS.filter((o) => o.value !== '')}
-            value={target}
-            onChange={setTarget}
-            ariaLabel={t('settings.profiles.form.targetAria')}
-            placeholder={t('settings.profiles.form.search')}
-          />
-        )}
+        <SearchableSelect
+          testId="profile-target-language"
+          dataTestId="profile-target-language"
+          options={OVERLAY_LANGUAGE_OPTIONS.filter((o) => o.value !== '')}
+          value={target}
+          onChange={(v) => {
+            if (!isEdit || !onTargetChange) { setTarget(v); return; }
+            const prev = target;
+            setTarget(v);
+            void onTargetChange(v).then((ok) => { if (!ok) setTarget(prev); });
+          }}
+          ariaLabel={t('settings.profiles.form.targetAria')}
+          placeholder={t('settings.profiles.form.search')}
+        />
       </div>
 
       <div className={styles.formField}>
