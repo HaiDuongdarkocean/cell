@@ -81,3 +81,8 @@ if (!existingCrypto?.subtle) {
     configurable: true,
   });
 }
+
+// Content scripts gate handlers on isCurrentWorld(); production stamps it at
+// content-script init, tests must do the same or every handler no-ops.
+import { stampWorldGeneration } from '@/shared/lib/dom/claimSingletonInstall';
+stampWorldGeneration();

@@ -103,7 +103,7 @@ describe('wireEvents — lookup cache invalidation on settings change', () => {
 describe('wireEvents — SPA nav overlay clear', () => {
   const anyCallable: unknown = new Proxy(() => undefined, {
     get: () => anyCallable,
-    apply: () => undefined,
+    apply: () => [],
   });
   const ctx = new Proxy(
     {},
