@@ -47,11 +47,6 @@ function isEditableTarget(target: EventTarget | null): boolean {
   return !!target.closest('input, textarea, select, [contenteditable]');
 }
 
-/** Pull-to-dismiss gate: the swipe may grab the sheet only when every
- *  scrollable element between the touch point and the sheet is already at
- *  scroll top — no room left to scroll up. Otherwise the swipe belongs to
- *  the inner scroller (e.g. a long candidate list). Returns the scrollable
- *  elements found (for mid-gesture re-check) or null when blocked. */
 function scrollersAtTop(path: readonly EventTarget[], stopAt: HTMLElement, content: HTMLElement | null): readonly HTMLElement[] | null {
   const scrollable = (el: HTMLElement): boolean => {
     if (el.scrollHeight <= el.clientHeight) return false;
@@ -81,9 +76,6 @@ interface SheetSession {
   readonly fromHandle: boolean;
   readonly target: HTMLElement;
   readonly pointerId: number;
-  /** Scrollable elements between the touch point and the sheet (content
-   *  sessions only) — re-checked mid-gesture so a reversed drag that
-   *  scrolled content up stops pulling the sheet. */
   readonly scrollers?: readonly HTMLElement[];
 }
 
@@ -100,7 +92,6 @@ export interface UseSheetResult {
   readonly contentRef: RefObject<HTMLDivElement | null>;
   readonly sheetHeight: number;
   readonly style: CSSProperties;
-  /** True while a pull-down has passed the dismiss threshold (release closes). */
   readonly dismissArmed: boolean;
   readonly onPointerDownHandle: (e: PointerEvent<HTMLDivElement>) => void;
   readonly onKeyDownHandle: (e: React.KeyboardEvent<HTMLDivElement>) => void;
@@ -227,8 +218,6 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
       armClickSwallower();
       onClose();
     };
-    // Drag dismiss: keep the sheet mounted sliding past the bottom edge so
-    // the close reads as the gesture completing, not the panel vanishing.
     const animateClose = (): void => {
       const onClose = onCloseRef.current;
       if (!onClose) return;
@@ -270,8 +259,6 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
       animateClose();
       return;
     }
-    // A real drag (not a tap) must not let the release click through to the
-    // element under the finger — swallow it the same way dismiss does.
     if (dy > SHEET_CLICK_THRESHOLD_PX) armClickSwallower();
     setTransition('transform var(--duration-normal) var(--ease-spring)');
     setTransform('translateY(0)');
@@ -283,7 +270,7 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
     }, 200);
   }, [emitHeightChange]);
 
-  const applyPointerUpdate = useCallback((_clientX: number, clientY: number) => {
+  const applyPointerUpdate = useCallback((clientX: number, clientY: number) => {
     const session = sessionRef.current;
     if (!session) return;
     const dy = clientY - session.startY;
@@ -294,11 +281,9 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
       sheetHeightRef.current = next;
       setSheetHeight(next);
     } else {
-      // Reversing the drag can scroll content up mid-gesture — once any
-      // scroller leaves the top the pull belongs to it, not the sheet.
       const dragged = session.scrollers?.some((el) => el.scrollTop > 0);
-      // Clamp at 0 — the sheet only moves down; an up-drag rests it.
-      const pull = dragged ? 0 : Math.max(0, dy);
+      const sideways = Math.abs(clientX - session.startX) > Math.abs(dy);
+      const pull = dragged || sideways ? 0 : Math.max(0, dy);
       setTransform(`translateY(${pull}px)`);
       setTransition('none');
       setDismissArmed(pull > SHEET_DISMISS_THRESHOLD_PX);
@@ -331,9 +316,6 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
     endSession(e.clientX, e.clientY);
   }, [applyPointerUpdate, endSession]);
 
-  // Touch: when the browser claims the gesture for native scrolling it fires
-  // pointercancel — release the session and snap back instead of leaving the
-  // sheet stuck mid-translate.
   const onPointerCancel = useCallback((e: globalThis.PointerEvent) => {
     const session = sessionRef.current;
     if (!session || session.pointerId !== e.pointerId) return;
@@ -414,11 +396,6 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
     setWillChange('transform');
   }, []);
 
-  // Touch gesture arbitration: the browser claims vertical pans for native
-  // scrolling on the FIRST touchmove (pointercancel kills our session). A
-  // non-passive touchmove listener lets us take the gesture only while the
-  // pull is downward and no scroller has room above — an upward flick stays
-  // native and keeps scrolling the content.
   const onTouchMove = useCallback((e: TouchEvent) => {
     const session = sessionRef.current;
     if (!session || session.fromHandle) return;

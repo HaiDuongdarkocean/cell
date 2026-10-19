@@ -177,6 +177,7 @@ export function CandidateView({
     const cleanup = (): void => {
       document.removeEventListener('pointerup', onUp, true);
       document.removeEventListener('pointercancel', onCancel, true);
+      document.removeEventListener('touchmove', onTouchMove, { capture: true });
       swipeRef.current = null;
     };
     const onUp = (ev: globalThis.PointerEvent): void => {
@@ -189,9 +190,17 @@ export function CandidateView({
       selectVariant(Math.max(0, Math.min(panel.variantIndex + (dx < 0 ? 1 : -1), last)));
     };
     const onCancel = (): void => { cleanup(); };
+    const onTouchMove = (ev: TouchEvent): void => {
+      const t = ev.touches[0];
+      if (!t) return;
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+      if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) ev.preventDefault();
+    };
     swipeRef.current = { x: startX, y: startY, scrollers, cleanup };
     document.addEventListener('pointerup', onUp, true);
     document.addEventListener('pointercancel', onCancel, true);
+    document.addEventListener('touchmove', onTouchMove, { capture: true, passive: false });
   };
 
   const wordRowRef = useRef<HTMLDivElement | null>(null);
