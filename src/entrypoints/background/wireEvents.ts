@@ -41,7 +41,7 @@ import {
   findMediaForDownloadItem,
   isMediaRelevantUrlChange,
 } from './helpers';
-import { broadcastDetectedMedia, clearTabState } from './helpers/broadcast';
+import { broadcastDetectedMedia, clearTabState, clearTabStateKeepingFreshSubtitles } from './helpers/broadcast';
 import { sleep } from '@/shared/lib/async';
 // SubtitleDiscoveryService is exposed on BackgroundContext; see subtitleDiscoveryService.ts.
 import type {
@@ -472,7 +472,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
     const prevUrl = lastCommittedTopUrl.get(details.tabId);
     lastCommittedTopUrl.set(details.tabId, details.url);
     if (!isMediaRelevantUrlChange(prevUrl, details.url)) return;
-    clearTabState(ctx, details.tabId);
+    clearTabStateKeepingFreshSubtitles(ctx, details.tabId, Date.now());
     // Tell every frame's content-script the media switched — without this the
     // overlay keeps showing the previous video's cues on sites whose detection
     // arrives late or finds no tracks (generic, non-YouTube SPAs).

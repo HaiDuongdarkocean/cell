@@ -10,11 +10,10 @@ import {
   getActiveTabId,
   updateBadgeForTab,
   pushAutoLoadSubtitles,
-  clearSessionMedia,
   saveSessionMedia,
   buildDetails,
 } from '../helpers';
-import { broadcastDetectedMedia } from '../helpers/broadcast';
+import { broadcastDetectedMedia, clearTabStateKeepingFreshSubtitles } from '../helpers/broadcast';
 import type {
   NetworkRequest,
 } from '@/entities/media';
@@ -68,10 +67,8 @@ export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
     // subtitle for the new video.
     const lastPageUrl = ctx.networkInterceptor.getLastPageUrl(tabId);
     if (payload.pageUrl && lastPageUrl && payload.pageUrl !== lastPageUrl) {
-      ctx.networkInterceptor.clearTab(tabId);
-      clearSessionMedia(ctx, tabId);
-      ctx.lastCuesByTab.delete(tabId);
-      ctx.autoDownloadedTabs.delete(tabId);
+      // (ADR-123) detection can land before the doc URL flips.
+      clearTabStateKeepingFreshSubtitles(ctx, tabId, Date.now());
     }
     ctx.networkInterceptor.setLastPageUrl(tabId, payload.pageUrl);
 

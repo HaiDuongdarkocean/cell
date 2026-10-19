@@ -18,8 +18,9 @@
 // the first intercepted fetch. We cache the last signals and re-post them
 // when the content script announces `__Tihoka_CS_READY`.
 //
-// Ceiling: only `fetch` is patched; `XMLHttpRequest` is not. Sites using XHR
-// for listing fetches will not have their bodies captured.
+// XHR is patched the same way — streaming sites that fetch their subtitle
+// listing over XMLHttpRequest (kisskh's /api/Sub/<id>) otherwise produce no
+// `network-response` signal and the listing adapters never run.
 
 declare const __Tihoka_DEBUG__: string;
 
@@ -144,6 +145,31 @@ declare const __Tihoka_DEBUG__: string;
     return false;
   }
 
+  function pageOrigin(): string {
+    try {
+      return window.location.origin;
+    } catch {
+      return '';
+    }
+  }
+
+  function emitNetworkResponse(url: string, body: string, method: string): void {
+    const origin = pageOrigin();
+    post('__Tihoka_SUBTITLE_DISCOVERY', {
+      signal: {
+        kind: 'network-response',
+        url,
+        body,
+        tabId: 0,
+        frameId: 0,
+        initiator: origin,
+        method,
+        type: 'xmlhttprequest',
+      },
+      origin,
+    });
+  }
+
   window.fetch = function patchedFetch(
     input: RequestInfo | URL,
     init?: RequestInit,
@@ -184,33 +210,7 @@ declare const __Tihoka_DEBUG__: string;
               const body = decoder.decode(slice);
               if (looksLikeSubtitleBody(body)) {
                 post('__DETECTED_SUBTITLE_FETCH', { url });
-                const initiator = (() => {
-                  try {
-                    return window.location.origin;
-                  } catch {
-                    return '';
-                  }
-                })();
-                const origin = (() => {
-                  try {
-                    return window.location.origin;
-                  } catch {
-                    return '';
-                  }
-                })();
-                post('__Tihoka_SUBTITLE_DISCOVERY', {
-                  signal: {
-                    kind: 'network-response',
-                    url,
-                    body,
-                    tabId: 0,
-                    frameId: 0,
-                    initiator,
-                    method: init?.method ?? 'GET',
-                    type: 'xmlhttprequest',
-                  },
-                  origin,
-                });
+                emitNetworkResponse(url, body, init?.method ?? 'GET');
               }
             } catch {
               // swallow
@@ -233,37 +233,7 @@ declare const __Tihoka_DEBUG__: string;
               const slice = buffer.slice(0, size);
               const decoder = new TextDecoder('utf-8', { fatal: false });
               const body = decoder.decode(slice);
-              const initiator = (() => {
-                try {
-                  return window.location.origin;
-                } catch {
-                  return '';
-                }
-              })();
-              const origin = (() => {
-                try {
-                  return window.location.origin;
-                } catch {
-                  return '';
-                }
-              })();
-
-              post(
-                '__Tihoka_SUBTITLE_DISCOVERY',
-                {
-                  signal: {
-                    kind: 'network-response',
-                    url,
-                    body,
-                    tabId: 0,
-                    frameId: 0,
-                    initiator,
-                    method: init?.method ?? 'GET',
-                    type: 'xmlhttprequest',
-                  },
-                  origin,
-                },
-              );
+              emitNetworkResponse(url, body, init?.method ?? 'GET');
             } catch {
               // swallow
               countMiss('readListingBody');
@@ -277,5 +247,78 @@ declare const __Tihoka_DEBUG__: string;
 
       return response;
     });
+  };
+
+  // XHR patch — many streaming sites (kisskh's /api/Sub/<id>) fetch the
+  // subtitle LISTING over XMLHttpRequest, which window.fetch never sees.
+  // Mirror the fetch instrumentation so listing bodies reach the discovery
+  // adapters; the signed one-time query tokens make replay impossible, so the
+  // captured body is the only copy the background ever gets.
+  type PatchedXHR = XMLHttpRequest & { __TihokaUrl?: string; __TihokaMethod?: string };
+  const originalXhrOpen = XMLHttpRequest.prototype.open;
+  const originalXhrSend = XMLHttpRequest.prototype.send;
+
+  XMLHttpRequest.prototype.open = function (
+    this: PatchedXHR,
+    method: string,
+    url: string | URL,
+    async?: boolean,
+    user?: string | null,
+    password?: string | null,
+  ): void {
+    try {
+      this.__TihokaUrl = String(url);
+      this.__TihokaMethod = method;
+    } catch {
+      // swallow
+      countMiss('xhrOpen');
+    }
+    if (user === undefined && password === undefined) {
+      return originalXhrOpen.call(this, method, url, async === undefined ? true : async);
+    }
+    return originalXhrOpen.call(this, method, url, async === undefined ? true : async, user, password);
+  };
+
+  XMLHttpRequest.prototype.send = function (
+    this: PatchedXHR,
+    body?: Document | XMLHttpRequestBodyInit | null,
+  ): void {
+    try {
+      const url = this.__TihokaUrl ?? '';
+      const method = this.__TihokaMethod ?? 'GET';
+      const isSubtitle = SUBTITLE_PATTERN_COMBINED.test(url);
+      const isListing = isListingUrl(url);
+      if (isSubtitle || isListing) {
+        this.addEventListener('load', () => {
+          try {
+            if (this.status < 200 || this.status >= 300) return;
+            let text = '';
+            if (this.responseType === '' || this.responseType === 'text') {
+              text = this.responseText;
+            } else if (this.responseType === 'json') {
+              text = JSON.stringify(this.response);
+            } else {
+              return;
+            }
+            if (text.length > MAX_BODY_BYTES) {
+              text = text.slice(0, MAX_BODY_BYTES);
+            }
+            if (isListing) {
+              emitNetworkResponse(url, text, method);
+            } else if (looksLikeSubtitleBody(text)) {
+              post('__DETECTED_SUBTITLE_FETCH', { url });
+              emitNetworkResponse(url, text, method);
+            }
+          } catch {
+            // swallow
+            countMiss('xhrBody');
+          }
+        });
+      }
+    } catch {
+      // swallow
+      countMiss('xhrSend');
+    }
+    return originalXhrSend.call(this, body);
   };
 })();

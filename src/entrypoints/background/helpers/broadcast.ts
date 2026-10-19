@@ -9,6 +9,7 @@ import type { DetectedVideo, DetectedSubtitle } from '@/entities/media';
 import {
   saveSessionAutoDownloadedTabs,
   clearSessionMedia,
+  saveSessionMedia,
   updateBadgeForTab,
 } from '../helpers';
 
@@ -59,6 +60,26 @@ export function clearTabState(ctx: BackgroundContext, tabId: number): void {
   ctx.lastCuesByTab.delete(tabId);
   ctx.immersionTracker?.closeTab(tabId);
   updateBadgeForTab(ctx, tabId);
+}
+
+// (ADR-123) nav clears run after detection of the next episode has already
+// landed — keep subtitles detected inside the nav window.
+const NAV_FRESH_SUBTITLE_WINDOW_MS = 5000;
+
+export function clearTabStateKeepingFreshSubtitles(
+  ctx: BackgroundContext,
+  tabId: number,
+  sinceMs: number,
+): void {
+  const freshSubtitles = ctx.networkInterceptor
+    .getSubtitles(tabId)
+    .filter((s) => s.detectedAt >= sinceMs - NAV_FRESH_SUBTITLE_WINDOW_MS);
+  clearTabState(ctx, tabId);
+  if (freshSubtitles.length > 0) {
+    ctx.networkInterceptor.addDetectedSubtitles(freshSubtitles);
+    saveSessionMedia(ctx, tabId, ctx.networkInterceptor.getVideos(tabId), freshSubtitles);
+    broadcastDetectedMedia(ctx, tabId);
+  }
 }
 
 export async function openExtensionTab(

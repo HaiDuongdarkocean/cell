@@ -64,6 +64,7 @@
 /* Check slot tracks the xs example line-box, not the sm def line-box. */
 .TihokaDefExampleItem .TihokaDefCheck {
   height: calc(var(--font-size-xs) * var(--leading-normal));
+  margin-top: var(--space-0-75);
 }
 
 .TihokaDefCheck {

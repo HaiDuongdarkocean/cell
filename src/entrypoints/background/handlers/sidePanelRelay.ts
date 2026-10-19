@@ -310,7 +310,8 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
     clearSessionMedia(ctx, tabId);
     ctx.lastCuesByTab.delete(tabId);
     ctx.autoDownloadedTabs.delete(tabId);
-    ctx.networkInterceptor.setLastPageUrl(tabId, payload.pageUrl ?? '');
+    // (ADR-123) lastPageUrl tracks the document URL; payload.pageUrl is the
+    // media URL — storing it corrupts PAGE_SCAN_RESULT's nav detection.
     if (freshSubtitles.length > 0) {
       ctx.networkInterceptor.addDetectedSubtitles(freshSubtitles);
       saveSessionMedia(ctx, tabId, ctx.networkInterceptor.getVideos(tabId), freshSubtitles);
