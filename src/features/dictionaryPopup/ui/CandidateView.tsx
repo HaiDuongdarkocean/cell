@@ -33,6 +33,13 @@ import type { LookupResult, DefinitionEntry, SubsenseBlock, RelationGroup, WordS
 const EMPTY_EXAMPLE_SET: ReadonlySet<number> = new Set<number>();
 const SWIPE_MIN_PX = 56;
 const SWIPE_DOMINANCE = 1.4;
+const SWIPE_SLOP_PX = 10;
+const SWIPE_RUBBER_PX = 80;
+
+function rubberBand(dx: number, atEdge: boolean): number {
+  const pull = Math.abs(dx) / (atEdge ? 4 : 1.6);
+  return Math.sign(dx) * Math.min(pull, SWIPE_RUBBER_PX);
+}
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
@@ -136,7 +143,7 @@ export function CandidateView({
     phonemes.some((p) => p.type !== 'separator');
 
   const variants = candidate.variants;
-  const swipeRef = useRef<{ x: number; y: number; scrollers: [HTMLElement, number][]; cleanup: () => void } | null>(null);
+  const swipeRef = useRef<{ pointerId: number; moved: boolean; cleanup: () => void } | null>(null);
   const articleRef = useRef<HTMLElement | null>(null);
   const swipeDirRef = useRef<'next' | 'prev' | null>(null);
 
@@ -164,40 +171,86 @@ export function CandidateView({
     if (onHeaderPointerDown
       && e.target instanceof HTMLElement
       && e.target.closest('[class*=TihokaHeaderRowDraggable]')) return;
+    const article = e.currentTarget;
+    const startX = e.clientX;
+    const startY = e.clientY;
     const scrollers: [HTMLElement, number][] = [];
     for (const node of e.nativeEvent.composedPath()) {
       if (!(node instanceof HTMLElement)) continue;
-      if (node === e.currentTarget) break;
+      if (node === article) break;
       if (node.scrollWidth <= node.clientWidth) continue;
       const overflowX = getComputedStyle(node).overflowX;
       if (overflowX === 'auto' || overflowX === 'scroll') scrollers.push([node, node.scrollLeft]);
     }
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const cleanup = (): void => {
-      document.removeEventListener('pointerup', onUp, true);
-      document.removeEventListener('pointercancel', onCancel, true);
-      document.removeEventListener('touchmove', onTouchMove, { capture: true });
-      swipeRef.current = null;
+    const rest = (): void => {
+      article.style.transform = '';
+      article.style.transition = '';
+      article.style.opacity = '';
+    };
+    const snapBack = (): void => {
+      article.style.transition = 'transform var(--duration-normal) var(--ease-spring)';
+      article.style.transform = 'translateX(0)';
+      setTimeout(rest, 220);
+    };
+    const onMove = (ev: globalThis.PointerEvent): void => {
+      const sess = swipeRef.current;
+      if (!sess || ev.pointerId !== sess.pointerId) return;
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      if (!sess.moved) {
+        if (Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(dx) > Math.abs(dy)) sess.moved = true;
+        else return;
+      }
+      const last = (variants?.length ?? 1) - 1;
+      const atEdge = (dx < 0 && panel.variantIndex >= last) || (dx > 0 && panel.variantIndex <= 0);
+      article.style.transition = 'none';
+      article.style.transform = `translateX(${rubberBand(dx, atEdge)}px)`;
     };
     const onUp = (ev: globalThis.PointerEvent): void => {
+      const sess = swipeRef.current;
+      if (!sess || ev.pointerId !== sess.pointerId) return;
       cleanup();
       const dx = ev.clientX - startX;
       const dy = ev.clientY - startY;
-      if (Math.abs(dx) < SWIPE_MIN_PX || Math.abs(dx) < Math.abs(dy) * SWIPE_DOMINANCE) return;
-      if (scrollers.some(([el, left]) => el.scrollLeft !== left)) return;
+      if (!sess.moved) return;
+      const commit = Math.abs(dx) >= SWIPE_MIN_PX
+        && Math.abs(dx) > Math.abs(dy) * SWIPE_DOMINANCE
+        && !scrollers.some(([el, left]) => el.scrollLeft !== left);
       const last = (variants?.length ?? 1) - 1;
-      selectVariant(Math.max(0, Math.min(panel.variantIndex + (dx < 0 ? 1 : -1), last)));
+      const next = Math.max(0, Math.min(panel.variantIndex + (dx < 0 ? 1 : -1), last));
+      if (!commit || next === panel.variantIndex) {
+        snapBack();
+        return;
+      }
+      article.style.transition = 'transform var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out)';
+      article.style.transform = `translateX(${dx < 0 ? -60 : 60}%)`;
+      article.style.opacity = '0';
+      setTimeout(() => {
+        rest();
+        selectVariant(next);
+      }, 150);
     };
-    const onCancel = (): void => { cleanup(); };
+    const onCancel = (): void => {
+      const sess = swipeRef.current;
+      cleanup();
+      if (sess?.moved) snapBack();
+    };
     const onTouchMove = (ev: TouchEvent): void => {
       const t = ev.touches[0];
       if (!t) return;
       const dx = t.clientX - startX;
       const dy = t.clientY - startY;
-      if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) ev.preventDefault();
+      if (Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(dx) > Math.abs(dy)) ev.preventDefault();
     };
-    swipeRef.current = { x: startX, y: startY, scrollers, cleanup };
+    const cleanup = (): void => {
+      document.removeEventListener('pointermove', onMove, true);
+      document.removeEventListener('pointerup', onUp, true);
+      document.removeEventListener('pointercancel', onCancel, true);
+      document.removeEventListener('touchmove', onTouchMove, { capture: true });
+      swipeRef.current = null;
+    };
+    swipeRef.current = { pointerId: e.pointerId, moved: false, cleanup };
+    document.addEventListener('pointermove', onMove, true);
     document.addEventListener('pointerup', onUp, true);
     document.addEventListener('pointercancel', onCancel, true);
     document.addEventListener('touchmove', onTouchMove, { capture: true, passive: false });

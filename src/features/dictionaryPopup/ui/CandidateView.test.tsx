@@ -832,6 +832,9 @@ describe('CandidateView', () => {
   });
 
   describe('POS variant swipe', () => {
+    beforeEach(() => { jest.useFakeTimers(); });
+    afterEach(() => { jest.useRealTimers(); });
+
     function makeVariant(pos: string) {
       return { pos, prons: [], frequencies: [], status: 'unknown' as const, definitions: [] };
     }
@@ -859,10 +862,16 @@ describe('CandidateView', () => {
         el.dispatchEvent(down);
       });
       act(() => {
+        const move = new MouseEvent('pointermove', { bubbles: true, clientX: 300 + dx, clientY: 300 + dy });
+        Object.defineProperty(move, 'pointerId', { value: 1 });
+        document.dispatchEvent(move);
+      });
+      act(() => {
         const up = new MouseEvent('pointerup', { bubbles: true, clientX: 300 + dx, clientY: 300 + dy, button: 0 });
         Object.defineProperty(up, 'pointerId', { value: 1 });
-        el.dispatchEvent(up);
+        document.dispatchEvent(up);
       });
+      act(() => { jest.advanceTimersByTime(300); });
     }
 
     it('swipe left moves to the next variant, swipe right back', () => {
@@ -882,6 +891,30 @@ describe('CandidateView', () => {
       swipe(article, -100, 10);
       swipe(article, -100, 10);
       expect(screen.getByTestId('dictionary-pos-other')).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('card follows the finger mid-drag and snaps back on a short release', () => {
+      const article = renderSwipable() as HTMLElement;
+      act(() => {
+        const down = new MouseEvent('pointerdown', { bubbles: true, clientX: 300, clientY: 300, button: 0 });
+        Object.defineProperty(down, 'pointerId', { value: 1 });
+        article.dispatchEvent(down);
+      });
+      act(() => {
+        const move = new MouseEvent('pointermove', { bubbles: true, clientX: 220, clientY: 302 });
+        Object.defineProperty(move, 'pointerId', { value: 1 });
+        document.dispatchEvent(move);
+      });
+      expect(article.style.transform).toMatch(/translateX\(-\d+(\.\d+)?px\)/);
+      act(() => {
+        const up = new MouseEvent('pointerup', { bubbles: true, clientX: 280, clientY: 302, button: 0 });
+        Object.defineProperty(up, 'pointerId', { value: 1 });
+        document.dispatchEvent(up);
+      });
+      expect(article.style.transform).toBe('translateX(0)');
+      act(() => { jest.advanceTimersByTime(300); });
+      expect(article.style.transform).toBe('');
+      expect(screen.getByTestId('dictionary-pos-noun')).toHaveAttribute('aria-pressed', 'true');
     });
 
     it('ignores vertical-dominant drags', () => {
