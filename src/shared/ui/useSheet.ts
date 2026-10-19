@@ -8,6 +8,8 @@ const SHEET_MARGIN_PX = 8;
 export const SHEET_CLICK_THRESHOLD_PX = 4;
 export const SHEET_DISMISS_THRESHOLD_PX = 100;
 export const SHEET_DISMISS_RATIO = 0.2;
+const SHEET_FLING_PX_PER_MS = 0.5;
+const SHEET_DISMISS_ANIM_MS = 300;
 const CLICK_SWALLOW_WINDOW_MS = 500;
 
 let releaseClickSwallower: (() => void) | null = null;
@@ -42,6 +44,25 @@ function getClientHeight(): number {
 function isInteractiveTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   return !!target.closest('button, a, input, textarea, select, [role="button"]');
+}
+
+/** Pull-to-dismiss gate: the swipe may grab the sheet only when every
+ *  scrollable element between the touch point and the sheet content is
+ *  already at scroll top — no room left to scroll up. Otherwise the swipe
+ *  belongs to the inner scroller (e.g. a long candidate list). */
+function scrollersAtTop(path: readonly EventTarget[], boundary: HTMLElement): boolean {
+  const check = (el: HTMLElement): boolean => {
+    if (el.scrollHeight <= el.clientHeight) return true;
+    const overflowY = getComputedStyle(el).overflowY;
+    if (overflowY !== 'auto' && overflowY !== 'scroll') return true;
+    return el.scrollTop <= 0;
+  };
+  for (const node of path) {
+    if (!(node instanceof HTMLElement)) continue;
+    if (!check(node)) return false;
+    if (node === boundary) return true;
+  }
+  return check(boundary);
 }
 
 interface SheetSession {
@@ -106,7 +127,8 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
 
   const sheetHeightRef = useRef(sheetHeight);
   const sessionRef = useRef<SheetSession | null>(null);
-  const lastPointerRef = useRef<{ readonly clientX: number; readonly clientY: number } | null>(null);
+  const lastPointerRef = useRef<{ readonly clientX: number; readonly clientY: number; readonly t: number } | null>(null);
+  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pointerRafRef = useRef<number | null>(null);
   const snapBackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -163,6 +185,7 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
   useEffect(() => {
     return () => {
       if (snapBackTimerRef.current) clearTimeout(snapBackTimerRef.current);
+      if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
     };
   }, []);
 
@@ -174,6 +197,7 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
     setWillChange(undefined);
     setTransition(undefined);
     setTransform(undefined);
+    const last = lastPointerRef.current;
     lastPointerRef.current = null;
 
     const dy = clientY - session.startY;
@@ -184,6 +208,25 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
       armClickSwallower();
       onClose();
     };
+    // Drag dismiss: keep the sheet mounted sliding past the bottom edge so
+    // the close reads as the gesture completing, not the panel vanishing.
+    const animateClose = (): void => {
+      const onClose = onCloseRef.current;
+      if (!onClose) return;
+      armClickSwallower();
+      if (typeof window.matchMedia === 'function'
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        onClose();
+        return;
+      }
+      setTransition('transform var(--duration-300) var(--ease-standard)');
+      setTransform('translateY(105%)');
+      if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+      dismissTimerRef.current = setTimeout(() => {
+        dismissTimerRef.current = null;
+        onClose();
+      }, SHEET_DISMISS_ANIM_MS);
+    };
 
     if (session.fromHandle) {
       const dx = clientX - session.startX;
@@ -193,15 +236,17 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
       }
       const rawHeight = session.startHeight - dy;
       if (rawHeight < vh * SHEET_DISMISS_RATIO) {
-        closeFromPointer();
+        animateClose();
         return;
       }
       emitHeightChange(sheetHeightRef.current);
       return;
     }
 
-    if (dy > SHEET_DISMISS_THRESHOLD_PX) {
-      closeFromPointer();
+    const fling = last !== null
+      && (clientY - last.clientY) / Math.max(1, performance.now() - last.t) > SHEET_FLING_PX_PER_MS;
+    if (dy > SHEET_DISMISS_THRESHOLD_PX || fling) {
+      animateClose();
       return;
     }
     setTransition('transform var(--duration-normal) var(--ease-spring)');
@@ -224,15 +269,17 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
       const next = Math.max(min, Math.min(session.startHeight - dy, avail));
       sheetHeightRef.current = next;
       setSheetHeight(next);
-    } else if (dy > 0) {
-      setTransform(`translateY(${dy}px)`);
+    } else {
+      // Clamp at 0 — reversing the drag back up snaps the sheet to rest and
+      // lets the native scroller take the gesture.
+      setTransform(`translateY(${Math.max(0, dy)}px)`);
       setTransition('none');
     }
   }, [getAvailableHeight, getEffectiveMin]);
 
   const onPointerMove = useCallback((e: globalThis.PointerEvent) => {
     if (!sessionRef.current) return;
-    lastPointerRef.current = { clientX: e.clientX, clientY: e.clientY };
+    lastPointerRef.current = { clientX: e.clientX, clientY: e.clientY, t: performance.now() };
     if (!pointerRafRef.current) {
       pointerRafRef.current = requestAnimationFrame(() => {
         pointerRafRef.current = null;
@@ -300,7 +347,7 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
 
   const onPointerDownContent = useCallback((e: PointerEvent<HTMLDivElement>) => {
     if (isInteractiveTarget(e.target)) return;
-    if (e.currentTarget.scrollTop > 0) return;
+    if (!scrollersAtTop(e.nativeEvent.composedPath(), e.currentTarget)) return;
     e.stopPropagation();
     sessionRef.current = {
       startX: e.clientX,

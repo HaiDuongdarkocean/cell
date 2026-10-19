@@ -41,7 +41,9 @@ export interface SheetProps {
  * Sheet — shared bottom sheet atom (SSOT).
  * Edge-to-edge, slide-up from bottom, top corners rounded.
  * Drag handle: 1:1 height resize + click-to-close.
- * Content drag: translateY dismiss + spring snap-back.
+ * Content pull-down: arms only when every scrollable under the touch point is
+ * at scroll top — translateY dismiss with slide-out, spring snap-back on
+ * short drags, fling velocity dismiss.
  * Used by: Dictionary popup (mobile), SubtitleManager (mobile).
  */
 export function Sheet({

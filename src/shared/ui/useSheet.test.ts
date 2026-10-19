@@ -74,6 +74,53 @@ describe('useSheet ghost-click swallower', () => {
   });
 });
 
+describe('useSheet content pull-to-dismiss', () => {
+  function ContentProbe({ onClose }: { readonly onClose: () => void }): React.JSX.Element {
+    const { onPointerDownContent } = useSheet({ onClose });
+    return createElement('div', {
+      'data-tihoka-id': 'content',
+      onPointerDown: onPointerDownContent,
+      style: { overflowY: 'auto' },
+    }, createElement('div', { 'data-tihoka-id': 'inner', style: { overflowY: 'auto' } }));
+  }
+
+  function setScrollable(el: HTMLElement, scrollTop: number): void {
+    Object.defineProperty(el, 'scrollHeight', { value: 1000, configurable: true });
+    Object.defineProperty(el, 'clientHeight', { value: 200, configurable: true });
+    Object.defineProperty(el, 'scrollTop', { value: scrollTop, configurable: true });
+  }
+
+  function drag(content: EventTarget, fromY: number, toY: number): void {
+    act(() => {
+      firePointer(content, 'pointerdown', 100, fromY);
+      firePointer(document, 'pointermove', 100, toY);
+      firePointer(document, 'pointerup', 100, toY);
+      jest.advanceTimersByTime(400);
+    });
+  }
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('closes when content is scrolled to top', () => {
+    jest.useFakeTimers();
+    const onClose = jest.fn();
+    const { getByTestId } = render(createElement(ContentProbe, { onClose }));
+    drag(getByTestId('inner'), 200, 350);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not close while a nested scroller still has room above', () => {
+    jest.useFakeTimers();
+    const onClose = jest.fn();
+    const { getByTestId } = render(createElement(ContentProbe, { onClose }));
+    setScrollable(getByTestId('inner'), 50);
+    drag(getByTestId('inner'), 200, 350);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
 describe('useSheet persistKey', () => {
   function PersistProbe(): React.JSX.Element {
     const { sheetHeight, onKeyDownHandle } = useSheet({ persistKey: 'testSheetVh' });
