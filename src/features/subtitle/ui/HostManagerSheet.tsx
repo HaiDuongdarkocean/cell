@@ -50,7 +50,7 @@ function buildAppearance(
  * Spec: docs/specs/subtitle-panels-atom-decomposition.md (Decision D1, Task 8)
  */
 export function HostManagerSheet({ state, onAction, onClose }: HostManagerSheetProps): React.JSX.Element {
-  const isMobile = useIsMobile(BREAKPOINTS.medium);
+  const isMobile = useIsMobile(BREAKPOINTS.expanded);
   const handleBackdropClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget) onClose();
   }, [onClose]);

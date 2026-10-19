@@ -137,6 +137,11 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [managerExiting, setManagerExiting] = useState(false);
     const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isMobile = useIsMobile(BREAKPOINTS.medium);
+    // Manager sheet breakpoint is 840 (its CSS switches at min-width:840) —
+    // at 600-839px the shared isMobile is false but the manager must still
+    // render via the <Sheet> atom, otherwise the dead-zone gets the CSS
+    // fallback sheet without Sheet behavior (drag, persisted height).
+    const managerIsMobile = useIsMobile(BREAKPOINTS.expanded);
     const activeModeId = useStudyModeStore((s) => s.activeModeId);
     const customModes = useStudyModeStore((s) => s.customModes);
     const setActiveModeId = useStudyModeStore((s) => s.setActiveModeId);
@@ -151,7 +156,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     // Desktop: trigger slide-out animation, then unmount after 280ms.
     // Mobile: unmount immediately (Sheet handles its own exit animation).
     const closeManager = useCallback(() => {
-      if (!isMobile) {
+      if (!managerIsMobile) {
         setManagerExiting(true);
         if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
         exitTimerRef.current = setTimeout(() => {
@@ -162,7 +167,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       } else {
         setManagerOpen(false);
       }
-    }, [isMobile]);
+    }, [managerIsMobile]);
     const [offsetOpen, setOffsetOpen] = useState(false);
     const [hintOpen, setHintOpen] = useState(false);
     const { toasts, addToast, clearToasts, removeToast } = useToasts();
@@ -171,7 +176,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [ocrEnabledState, setOcrEnabledState] = useState(ocrEnabled ?? false);
     const [toolsExpanded, setToolsExpanded] = useState(false);
     const rootRef = useRef<HTMLDivElement>(null);
-    const { managerPortalTarget } = useOverlayPortals({ rootRef, managerShadowCss, isMobile });
+    const { managerPortalTarget } = useOverlayPortals({ rootRef, managerShadowCss, isMobile: managerIsMobile });
     const [playerMode, setPlayerMode] = useState(false);
     const [cues, setCues] = useState<readonly BilingualCue[]>(initialCues ?? []);
     const [tokenize, setTokenize] = useState(initialTokenize);
@@ -390,7 +395,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             <ShadowThemeProvider container={managerPortalTarget}>
               <ManagerLayer
                 manager={manager}
-                isMobile={isMobile}
+                isMobile={managerIsMobile}
                 exiting={managerExiting}
                 onClose={closeManager}
                 generateNativeEnabled={generateNativeEnabled}
