@@ -153,6 +153,8 @@ export const mockIframeHashProfile = {
   provider: 'mock',
 } as const;
 
+// (ADR-123) new listing sites go here as profile/adapter entries — never as
+// branches inside networkInterceptor.
 export function createDefaultAdapters(): SubtitleDiscoveryAdapter[] {
   return [
     createJsonListingAdapter(cinesrcProfile),

@@ -137,9 +137,10 @@ function initVideoSrcWatcher(): void {
     // on sites that reuse the element). We don't check element identity here
     // — the replacement watcher handles element-swap cases, and a src change
     // on a different element is still an episode switch worth reporting.
-    // blob: URLs rotate every few seconds during MSE playback (YouTube) — they
-    // carry no episode semantics, so reporting them wipes freshly auto-loaded
-    // cues. Element replacement still covers blob sites that swap <video>.
+    // (ADR-123) blob: URLs rotate every few seconds during MSE playback
+    // (YouTube) — they carry no episode semantics, so reporting them wipes
+    // freshly auto-loaded cues. Element replacement still covers blob sites
+    // that swap <video>.
     if (currentSrc !== lastVideoSrc) {
       const isBlob = currentSrc.startsWith('blob:');
       lastVideoSrc = currentSrc;

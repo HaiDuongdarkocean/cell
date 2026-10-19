@@ -440,6 +440,8 @@ export class NetworkInterceptor {
    * the JSON listing, extracts `subtitles[].url`, and re-injects the real
    * subtitle URLs through `handleRequest`.
    */
+  // (ADR-123) listing URLs are routed to the discovery pipeline — site
+  // specifics live in adapters, not here.
   onListingDetected(callback: ListingDetectedCallback): () => void {
     this.listingListener = callback;
     return () => {

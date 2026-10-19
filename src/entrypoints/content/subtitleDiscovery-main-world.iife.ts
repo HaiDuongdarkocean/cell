@@ -1,4 +1,4 @@
-// === Generic MAIN-world subtitle discovery bridge (ADR-NNN) ===
+// === Generic MAIN-world subtitle discovery bridge (ADR-123) ===
 //
 // Runs in every frame (all_frames: true, world: MAIN, document_idle) and polls
 // an allow-list of player-global variables. When it finds one, it posts a

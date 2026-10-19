@@ -102,7 +102,8 @@ export function registerDetectionDispatchHandlers(
         // subtitles to one WITHOUT). Clear the previous video's subtitles so
         // the overlay does not persist into the new video. Broadcast empty
         // media update + send AUTO_LOAD_SUBTITLES with null target/native so
-        // the content-script overlay clears its cues. (Clone ADR-020 logic.)
+        // the content-script overlay clears its cues. (Clone ADR-020 logic;
+        // legit-zero-track clear, see ADR-123 clear-point table.)
         clearTabState(ctx, tabId);
         broadcastDetectedMedia(ctx, tabId);
         await sendTabMessage(tabId, {

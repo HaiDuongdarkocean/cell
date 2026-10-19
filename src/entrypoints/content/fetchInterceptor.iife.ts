@@ -1,4 +1,4 @@
-// === Main-world fetch interceptor (ADR-011 + generic subtitle discovery) ===
+// === Main-world fetch interceptor (ADR-011 + ADR-123 channel map) ===
 // Runs in the PAGE's main world (world: 'MAIN', run_at: 'document_start') to
 // patch `window.fetch` BEFORE page JS saves a reference to it.
 //
@@ -18,9 +18,10 @@
 // the first intercepted fetch. We cache the last signals and re-post them
 // when the content script announces `__Tihoka_CS_READY`.
 //
-// XHR is patched the same way — streaming sites that fetch their subtitle
+// (ADR-123) XHR is patched the same way — sites that fetch their subtitle
 // listing over XMLHttpRequest (kisskh's /api/Sub/<id>) otherwise produce no
-// `network-response` signal and the listing adapters never run.
+// `network-response` signal and the listing adapters never run. Both
+// fetch and XHR must stay patched.
 
 declare const __Tihoka_DEBUG__: string;
 
@@ -249,8 +250,8 @@ declare const __Tihoka_DEBUG__: string;
     });
   };
 
-  // XHR patch — many streaming sites (kisskh's /api/Sub/<id>) fetch the
-  // subtitle LISTING over XMLHttpRequest, which window.fetch never sees.
+  // (ADR-123) XHR patch — many streaming sites (kisskh's /api/Sub/<id>) fetch
+  // the subtitle LISTING over XMLHttpRequest, which window.fetch never sees.
   // Mirror the fetch instrumentation so listing bodies reach the discovery
   // adapters; the signed one-time query tokens make replay impossible, so the
   // captured body is the only copy the background ever gets.
