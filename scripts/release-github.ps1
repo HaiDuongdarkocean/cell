@@ -127,7 +127,7 @@ if (-not $refs) {
 }
 
 $notes = "Tihoka $version`n`n- Chrome (self-hosted): $crxAssetName — auto-update via updates.xml`n- Firefox: Tihoka_firefox_$version.zip — install/update via addons.mozilla.org`n"
-& gh release create $tag $crx $updates $ffZip --repo $repo --title "Tihoka $version" --notes $notes
+& gh release create $tag $crx $updates --repo $repo --title "Tihoka $version" --notes $notes
 if ($LASTEXITCODE -ne 0) { throw 'gh release create failed' }
 
 Remove-Item $work -Recurse -Force
