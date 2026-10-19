@@ -202,7 +202,7 @@ try {
     if (Get-Command gh -ErrorAction SilentlyContinue) {
       $tag = "v$version"
       $releaseTitle = "Tihoka $version"
-      gh release create $tag "$crxOutput#$crxAssetName" "$xmlOutput#$updateXmlPath" "$destZip#$zipAssetName" "$ffZip#$ffZipName" --repo $githubRepo --title $releaseTitle --generate-notes
+      gh release create $tag "$crxOutput#$crxAssetName" "$xmlOutput#$updateXmlPath" --repo $githubRepo --title $releaseTitle --generate-notes
       if ($LASTEXITCODE -ne 0) { throw "gh release create failed with exit code $LASTEXITCODE" }
       Write-Host "  [OK] Created GitHub release $tag"
     } else {
