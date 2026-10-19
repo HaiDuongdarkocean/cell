@@ -63,6 +63,8 @@ jest.mock('@/shared/lib/storage/settingsStore', () => ({
   saveSettings: jest.fn(),
 }));
 
+jest.mock('./reloadActivePage', () => ({ reloadActivePage: jest.fn() }));
+
 jest.mock('@/shared/lib/chrome-apis', () => ({
   onStorageChanged: jest.fn(),
   removeOnStorageChangedListener: jest.fn(),
@@ -73,12 +75,15 @@ jest.mock('@/shared/lib/chrome-apis', () => ({
 }));
 
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
-import { getSessionStorage } from '@/shared/lib/chrome-apis';
+import { getSessionStorage, onStorageChanged } from '@/shared/lib/chrome-apis';
+import { reloadActivePage } from './reloadActivePage';
 import { mountUniversalPanel } from './mountUniversalPanel';
 import type { UniversalPanelMountController } from './UniversalPanelController';
 
 const mockLoadSettings = jest.mocked(loadSettings);
 const mockGetSessionStorage = jest.mocked(getSessionStorage);
+const mockOnStorageChanged = jest.mocked(onStorageChanged);
+const mockReload = jest.mocked(reloadActivePage);
 
 beforeAll(() => {
   window.matchMedia = jest.fn().mockImplementation((query: string) => ({
@@ -247,6 +252,35 @@ describe('mountUniversalPanel', () => {
     act(() => { listener?.({ ...state, showFrequency: true }); });
     expect(countVideoQueries()).toBe(before + 1);
     videoQueries.mockRestore();
+  });
+
+  it('reloads the page when a settings change flips the active profile', () => {
+    const listener = mockOnStorageChanged.mock.calls[0][0] as (
+      changes: Record<string, chrome.storage.StorageChange>,
+      area: string,
+    ) => void;
+
+    const same = { ...DEFAULT_SETTINGS, activeProfileId: 'profile-en' } as Settings;
+    act(() => {
+      listener(
+        { [STORAGE_KEYS.SETTINGS]: { oldValue: same, newValue: { ...same } } as chrome.storage.StorageChange },
+        'local',
+      );
+    });
+    expect(mockReload).not.toHaveBeenCalled();
+
+    act(() => {
+      listener(
+        {
+          [STORAGE_KEYS.SETTINGS]: {
+            oldValue: same,
+            newValue: { ...same, activeProfileId: 'profile-ja' },
+          } as chrome.storage.StorageChange,
+        },
+        'local',
+      );
+    });
+    expect(mockReload).toHaveBeenCalledTimes(1);
   });
 
   it('openDictionaryLookup pre-fills the dictionary term without arming the card creator', async () => {

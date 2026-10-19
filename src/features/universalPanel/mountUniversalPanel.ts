@@ -30,6 +30,7 @@ import { addToOceanSrs } from '@/features/srs';
 import { pingTokenizeMeta } from '@/features/dictionary';
 import { createUniversalPanelController, type UniversalPanelMountController } from './UniversalPanelController';
 import { openSettingsSection } from './deepLink';
+import { reloadActivePage } from './reloadActivePage';
 import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/TihokaUiHosts';
 import { hasIframeVideo, IFRAME_MEDIA_CHANGED_EVENT } from '@/shared/lib/dom/iframeVideoRegistry';
 import { getSessionStorage, setSessionStorage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
@@ -193,6 +194,13 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
     area: string,
   ): void => {
     if (area !== 'local' || !(STORAGE_KEYS.SETTINGS in changes)) return;
+    const change = changes[STORAGE_KEYS.SETTINGS];
+    const prevId = (change.oldValue as Settings | undefined)?.activeProfileId;
+    const nextId = (change.newValue as Settings | undefined)?.activeProfileId;
+    if (prevId !== nextId) {
+      reloadActivePage();
+      return;
+    }
     void loadSettings().then(applySettings);
   };
   onStorageChanged(onSettingsStorageChange);
