@@ -19,7 +19,9 @@ import type { BackgroundContext } from '../context';
 import {
   updateBadgeForTab,
   clearSessionMedia,
+  saveSessionMedia,
 } from '../helpers';
+import { broadcastDetectedMedia } from '../helpers/broadcast';
 import type { MessageResponse, AutoLoadSubtitlesPayload } from '@/entities/message';
 import {
   TogglePlayPayloadSchema,
@@ -295,11 +297,27 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
     if (payload.pageUrl && ctx.networkInterceptor.getLastPageUrl(tabId) === payload.pageUrl) {
       return { success: true };
     }
+    // Subtitles mapped within the episode-switch window belong to the NEW
+    // episode — async detection (YouTube InnerTube) resolves before the video
+    // element's src flips. Keep them through the clear; without this, the wipe
+    // + null push lands AFTER the fresh auto-load and blanks the overlay.
+    const freshSubtitles = payload.episodeAt === undefined
+      ? []
+      : ctx.networkInterceptor.getSubtitles(tabId).filter(
+          (s) => s.detectedAt >= payload.episodeAt! - 5000,
+        );
     ctx.networkInterceptor.clearTab(tabId);
     clearSessionMedia(ctx, tabId);
     ctx.lastCuesByTab.delete(tabId);
     ctx.autoDownloadedTabs.delete(tabId);
     ctx.networkInterceptor.setLastPageUrl(tabId, payload.pageUrl ?? '');
+    if (freshSubtitles.length > 0) {
+      ctx.networkInterceptor.addDetectedSubtitles(freshSubtitles);
+      saveSessionMedia(ctx, tabId, ctx.networkInterceptor.getVideos(tabId), freshSubtitles);
+      updateBadgeForTab(ctx, tabId);
+      broadcastDetectedMedia(ctx, tabId);
+      return { success: true };
+    }
     updateBadgeForTab(ctx, tabId);
     // Episode switches that keep the page URL (in-page <video> src swap,
     // element replacement, player-iframe provider swap) fire no navigation

@@ -200,6 +200,7 @@ export const ShortcutActionPayloadSchema = z.object({
 export const VideoEpisodeChangedPayloadSchema = z.object({
   tabId: z.number().int().optional(),
   pageUrl: z.string().optional(),
+  episodeAt: z.number().optional(),
 });
 
 // === Detection dispatch payloads ===

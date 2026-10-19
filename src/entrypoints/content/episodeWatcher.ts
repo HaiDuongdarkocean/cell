@@ -72,6 +72,7 @@ function reportEpisodeChanged(
   const payload: VideoEpisodeChangedPayload = {
     tabId: undefined, // background resolves from sender.tab.id
     pageUrl,
+    episodeAt: Date.now(),
   };
   // Await the clear before re-scanning. The PageScanner's MutationObserver
   // (registered before this watcher) already fired on the same mutation batch
@@ -136,10 +137,16 @@ function initVideoSrcWatcher(): void {
     // on sites that reuse the element). We don't check element identity here
     // — the replacement watcher handles element-swap cases, and a src change
     // on a different element is still an episode switch worth reporting.
+    // blob: URLs rotate every few seconds during MSE playback (YouTube) — they
+    // carry no episode semantics, so reporting them wipes freshly auto-loaded
+    // cues. Element replacement still covers blob sites that swap <video>.
     if (currentSrc !== lastVideoSrc) {
+      const isBlob = currentSrc.startsWith('blob:');
       lastVideoSrc = currentSrc;
       lastSeenVideo = video;
-      reportEpisodeChanged('src-change', currentSrc);
+      if (!isBlob) {
+        reportEpisodeChanged('src-change', currentSrc);
+      }
     }
   }, 500);
 }

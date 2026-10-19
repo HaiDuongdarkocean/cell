@@ -504,6 +504,10 @@ export interface VideoEpisodeChangedPayload {
   // The URL of the player frame after the switch. Used by the background to
   // avoid clearing media that a PAGE_SCAN_RESULT already replaced.
   readonly pageUrl?: string;
+  // Page-side Date.now() at the moment the switch was detected. The
+  // background keeps subtitles mapped within this window (fresh detection
+  // for the new episode) instead of wiping them.
+  readonly episodeAt?: number;
 }
 
 /** Content-script → background: a subtitle URL was detected by the main-world
