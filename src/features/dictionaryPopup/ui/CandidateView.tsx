@@ -153,10 +153,19 @@ export function CandidateView({
     panel.selectVariant(i);
   };
 
+  const restArticle = (): void => {
+    const article = articleRef.current;
+    if (!article) return;
+    article.style.transform = '';
+    article.style.transition = '';
+    article.style.opacity = '';
+  };
+
   useEffect(() => {
     const el = articleRef.current;
     const dir = swipeDirRef.current;
     if (!el || !dir) return;
+    restArticle();
     el.classList.remove(styles.swipeNext, styles.swipePrev);
     void el.offsetWidth;
     el.classList.add(dir === 'next' ? styles.swipeNext : styles.swipePrev);
@@ -182,15 +191,10 @@ export function CandidateView({
       const overflowX = getComputedStyle(node).overflowX;
       if (overflowX === 'auto' || overflowX === 'scroll') scrollers.push([node, node.scrollLeft]);
     }
-    const rest = (): void => {
-      article.style.transform = '';
-      article.style.transition = '';
-      article.style.opacity = '';
-    };
     const snapBack = (): void => {
       article.style.transition = 'transform var(--duration-normal) var(--ease-spring)';
       article.style.transform = 'translateX(0)';
-      setTimeout(rest, 220);
+      setTimeout(restArticle, 220);
     };
     const onMove = (ev: globalThis.PointerEvent): void => {
       const sess = swipeRef.current;
@@ -225,10 +229,7 @@ export function CandidateView({
       article.style.transition = 'transform var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out)';
       article.style.transform = `translateX(${dx < 0 ? -60 : 60}%)`;
       article.style.opacity = '0';
-      setTimeout(() => {
-        rest();
-        selectVariant(next);
-      }, 150);
+      setTimeout(() => selectVariant(next), 120);
     };
     const onCancel = (): void => {
       const sess = swipeRef.current;

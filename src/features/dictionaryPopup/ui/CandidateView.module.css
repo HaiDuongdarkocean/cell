@@ -468,21 +468,18 @@
   padding-bottom: 0;
 }
 
-/* POS variant swipe — card slides in from the swipe side on every variant
-   switch (swipe or nav click). Reduced-motion is handled globally by
-   .dictionaryPanel's media query. */
 @keyframes swipeInNext {
-  from { transform: translateX(var(--space-7)); opacity: 0; }
+  from { transform: translateX(60%); opacity: 0; }
 }
 
 @keyframes swipeInPrev {
-  from { transform: translateX(calc(var(--space-7) * -1)); opacity: 0; }
+  from { transform: translateX(-60%); opacity: 0; }
 }
 
 .swipeNext {
-  animation: swipeInNext var(--duration-normal) var(--ease-out) both;
+  animation: swipeInNext var(--duration-fast) var(--ease-out) both;
 }
 
 .swipePrev {
-  animation: swipeInPrev var(--duration-normal) var(--ease-out) both;
+  animation: swipeInPrev var(--duration-fast) var(--ease-out) both;
 }
