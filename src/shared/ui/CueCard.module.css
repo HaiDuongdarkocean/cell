@@ -13,11 +13,6 @@
   color: var(--color-text);
   user-select: text;
   overflow: hidden;
-  transition:
-    background var(--transition),
-    border-color var(--transition),
-    box-shadow var(--transition),
-    opacity var(--transition);
 }
 
 .card[data-upcoming='true'] {
@@ -79,8 +74,3 @@
   height: var(--iconbutton-size-xs);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .card {
-    transition: none;
-  }
-}
