@@ -153,11 +153,25 @@ describe('SubtitleCueEngine.loadBilingualCues', () => {
     engine.loadBilingualCues(targetCues, nativeCues);
     const hits = collect(engine);
 
-    engine.loadBilingualCues(targetCues.map((c) => ({ ...c })), []);
+    engine.loadBilingualCues(targetCues.map((c) => ({ ...c })), null);
 
     expect(hits).toHaveLength(0);
     expect(engine.getTargetCues()).toHaveLength(1);
     expect(engine.getNativeCues()).toHaveLength(1);
+  });
+
+  it('clears only the empty side and keeps the other (manager off)', () => {
+    const video = document.createElement('video');
+    const engine = new SubtitleCueEngine(video);
+    engine.loadBilingualCues([makeCue(1, 0, 1000, 'A')], [makeCue(1, 0, 1000, 'a')]);
+    const hits = collect(engine);
+
+    engine.loadBilingualCues([], [makeCue(1, 0, 1000, 'a')]);
+
+    expect(hits).toHaveLength(1);
+    expect(engine.getTargetCues()).toHaveLength(0);
+    expect(engine.getNativeCues()).toHaveLength(1);
+    expect(engine.hasSubtitles()).toBe(true);
   });
 
   it('clears both lanes and emits once when both sides arrive empty', () => {

@@ -229,7 +229,7 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
         if (isStaleAutoLoad()) return;
         await handleAutoLoadSubtitles(payload, {
         controller: {
-          loadBilingualCues: (t: SrtCue[], n: SrtCue[]) => { if (isStaleAutoLoad()) return; blockController?.loadBilingualCues(t, n); ctx.showOverlay(); },
+          loadBilingualCues: (t: SrtCue[], n: SrtCue[]) => { if (isStaleAutoLoad()) return; blockController?.loadBilingualCues(t.length ? t : null, n.length ? n : null); ctx.showOverlay(); },
           loadCues: (c: SrtCue[]) => { if (isStaleAutoLoad()) return; blockController?.loadCues(c); ctx.showOverlay(); },
           clearCues: () => {
             if (isStaleAutoLoad()) return;

@@ -171,7 +171,7 @@ describe('createContentScriptMessageHandlers AUTO_LOAD_SUBTITLES', () => {
 
     const cues: SrtCue[] = [{ index: 1, start: 0, end: 1000, text: 'a' }];
     capturedDeps!.controller.loadBilingualCues(cues, []);
-    expect(blockController.loadBilingualCues).toHaveBeenCalledWith(cues, []);
+    expect(blockController.loadBilingualCues).toHaveBeenCalledWith(cues, null);
     history.pushState({}, '', '/');
   });
 

@@ -46,7 +46,7 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
 
     if (role === 'target') {
       const cues = cleanTargetCues(parsed.cues);
-      blockController?.loadBilingualCues(cues, []);
+      blockController?.loadBilingualCues(cues, null);
       syncController.latestTargetCues = cues;
       ctx.clearTranslatedNativeState();
       syncController.activeNativeSource = 'auto';
@@ -54,7 +54,7 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
       ctx.refreshPanel('native');
       ctx.updateGenerateNativeEnabled();
     } else {
-      blockController?.loadBilingualCues([], parsed.cues);
+      blockController?.loadBilingualCues(null, parsed.cues);
     }
     ctx.showOverlay();
     ctx.syncSidePanelFromBlock();
@@ -92,7 +92,7 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
       // We only update the selected side by passing its cues + empty other side.
       if (role === 'target') {
         const cues = cleanTargetCues(result.cues);
-        blockController?.loadBilingualCues(cues, []);
+        blockController?.loadBilingualCues(cues, null);
         // ADR-018: update nav cluster — keep native side, replace target
         syncController.latestTargetCues = cues;
         ctx.clearTranslatedNativeState();
@@ -102,7 +102,7 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
         ctx.updateGenerateNativeEnabled();
         // updateCues(syncController.latestTargetCues, latestNativeCues);
       } else {
-        blockController?.loadBilingualCues([], result.cues);
+        blockController?.loadBilingualCues(null, result.cues);
         // ADR-018: update nav cluster — keep target side, replace native
         // updateCues(syncController.latestTargetCues, latestNativeCues);
       }
@@ -150,7 +150,7 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
     const cues = role === 'target' ? cleanTargetCues(cachedCues) : cachedCues;
 
     if (role === 'target') {
-      blockController?.loadBilingualCues(cues, []);
+      blockController?.loadBilingualCues(cues, null);
       syncController.latestTargetCues = cues;
       ctx.clearTranslatedNativeState();
       syncController.activeNativeSource = 'auto';
@@ -158,7 +158,7 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
       ctx.refreshPanel('native');
       ctx.updateGenerateNativeEnabled();
     } else {
-      blockController?.loadBilingualCues([], cues);
+      blockController?.loadBilingualCues(null, cues);
     }
     ctx.showOverlay();
     ctx.syncSidePanelFromBlock();
@@ -212,7 +212,7 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
         else syncController.activeNativeSource = 'ocr';
         ctx.refreshPanel(role);
         // D1 merge: empty other side keeps the existing side (onSubtitleSelect pattern).
-        blockController?.loadBilingualCues(role === 'target' ? slot.cues : [], role === 'native' ? slot.cues : []);
+        blockController?.loadBilingualCues(role === 'target' ? slot.cues : null, role === 'native' ? slot.cues : null);
         ctx.showOverlay();
         ctx.syncSidePanelFromBlock();
       }
@@ -298,10 +298,10 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
     // Load cues (D1 merge keeps the other side).
     if (role === 'target') {
       const cleanedCues = cleanTargetCues(cues);
-      blockController?.loadBilingualCues(cleanedCues, []);
+      blockController?.loadBilingualCues(cleanedCues, null);
       syncController.latestTargetCues = cleanedCues;
     } else {
-      blockController?.loadBilingualCues([], cues);
+      blockController?.loadBilingualCues(null, cues);
     }
     ctx.showOverlay();
     ctx.syncSidePanelFromBlock();

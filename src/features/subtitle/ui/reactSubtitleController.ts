@@ -515,7 +515,7 @@ export class ReactSubtitleController {
     this.syncStudyMode();
   }
 
-  loadBilingualCues(targetCues: SrtCue[], nativeCues: SrtCue[]): void {
+  loadBilingualCues(targetCues: SrtCue[] | null, nativeCues: SrtCue[] | null): void {
     this.engine.loadBilingualCues(targetCues, nativeCues);
     this.engine.onTimeUpdate();
     this.syncFromEngine();

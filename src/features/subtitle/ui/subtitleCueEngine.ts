@@ -260,19 +260,16 @@ export class SubtitleCueEngine {
     this.emitCuesUpdated();
   }
 
-  loadBilingualCues(targetCues: SrtCue[], nativeCues: SrtCue[]): void {
+  /** null = keep that side unchanged; [] = clear that side (manager "off"). */
+  loadBilingualCues(targetCues: SrtCue[] | null, nativeCues: SrtCue[] | null): void {
     const prevTarget = this.targetCues;
     const prevNative = this.nativeCues;
     const prevBilingual = this.bilingual;
-    if (targetCues.length > 0 && !cuesEqual(this.targetCues, targetCues)) {
+    if (targetCues !== null && !cuesEqual(this.targetCues, targetCues)) {
       this.targetCues = [...targetCues];
     }
-    if (nativeCues.length > 0 && !cuesEqual(this.nativeCues, nativeCues)) {
+    if (nativeCues !== null && !cuesEqual(this.nativeCues, nativeCues)) {
       this.nativeCues = [...nativeCues];
-    }
-    if (targetCues.length === 0 && nativeCues.length === 0) {
-      this.targetCues = [];
-      this.nativeCues = [];
     }
     this.bilingual = this.targetCues.length > 0 || this.nativeCues.length > 0;
     if (
