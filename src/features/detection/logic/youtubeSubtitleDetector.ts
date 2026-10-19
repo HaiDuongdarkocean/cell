@@ -2,7 +2,8 @@ import { newId } from '@/shared/lib/id';
 import type { DetectedSubtitle } from '@/entities/media';
 
 /**
- * YouTube subtitle detection — map `ytInitialPlayerResponse` caption tracks
+ * YouTube subtitle detection (channel 7, ADR-123) — map
+ * `ytInitialPlayerResponse` caption tracks
  * to the extension's `DetectedSubtitle[]` for the auto-load flow.
  *
  * YouTube serves subtitles via a proprietary `timedtext` API whose URLs do

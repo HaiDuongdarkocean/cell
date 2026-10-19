@@ -1,5 +1,6 @@
 /**
  * Unified DETECTED_SUBTITLES handler — dispatch by `payload.source` (ADR-028).
+ * Channel map / clear invariants: ADR-123.
  *
  * CRITICAL: `messageBus.on()` throws on a second registration for the same
  * type. This file is the SINGLE registrant for `DETECTED_SUBTITLES`;

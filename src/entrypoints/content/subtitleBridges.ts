@@ -74,7 +74,7 @@ export function postSiteReadyHandshakes(csInjectTime: number): void {
   window.postMessage({ type: '__NF_CS_READY', time: csInjectTime }, '*');
 }
 
-// === Main-world message bridge (ADR-011/020/028/029) ===
+// === Main-world message bridge (ADR-011/020/028/029, channel map ADR-123) ===
 // Register the MAIN→ISOLATED postMessage listener BEFORE any potentially-
 // throwing initialization (clearAutoLoadCache, PageScanner, overlay init).
 // The listener only depends on `sendMessage` + `MESSAGE_TYPES` (imported at

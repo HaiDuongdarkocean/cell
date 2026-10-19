@@ -1,4 +1,4 @@
-// === YouTube MAIN-world subtitle detector (ADR-020) ===
+// === YouTube MAIN-world subtitle detector (ADR-020, channel map ADR-123) ===
 // Runs in the PAGE's main world (world: 'MAIN', run_at: 'document_start',
 // matches: *://*.youtube.com/*) to fetch caption tracks via the InnerTube
 // ANDROID client — which returns tracks WITHOUT PO Token requirement.
